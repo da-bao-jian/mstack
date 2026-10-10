@@ -72,6 +72,33 @@ The compiled `mob` binary supports `scan`, `rates`, `history`, `explain`, `statu
 
 Scans show Executable on Mobius (top five) and Best anywhere (top ten), each sorted by net APY for a seven-day hold. Use `--hold-days`, `--top-exec`, and `--top` to change these defaults. Negative mark entry estimates do not count as gains in net APY. Funding output reports snapshot age, source, simple annualization, failures, and unmatched symbols. Scans also report thin pairs hidden by the default $1 million per-leg volume filter. Status reports API base, fetch age, and task/log counts. JSON stays on stdout; its human footer goes to stderr. Fee defaults are estimates. Entry costs use marks and do not measure executable depth.
 
+## Use from any MCP client
+
+`mob mcp` serves the same command results over stdio. The server is read-only: it never signs, trades, holds keys, or changes config. The Claude Code plugin registers it through the bundled `.mcp.json`.
+
+For a separate Claude Code registration, with `mob` on PATH:
+
+```sh
+claude mcp add mobstack -- mob mcp
+```
+
+For Cursor, Claude Desktop, or Windsurf, add this to the client's MCP server settings. Replace the command with the absolute path to the compiled binary or installed shim; GUI clients may not inherit your shell's PATH.
+
+```json
+{
+  "mcpServers": {
+    "mobstack": {
+      "command": "/absolute/path/to/mobstack/bin/mob",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+The seven tools are `funding_scan`, `funding_rates`, `funding_history`, `explain`, `task_list`, `task_get`, and `config_get`. Task tools use the public `owner` config key when an owner is omitted; set it yourself with `mob config set owner 0x…`. There is no configuration write tool. Tool calls have a 60-second deadline, and snapshots use the CLI's 30-second timeout. Venue failures remain visible in `failed`; command errors become MCP tool errors.
+
+`funding_scan` returns the full ranked result plus the two selected views, even when `top` is small. A small `top` limits the display, not the response size. Funding output uses simple annualization and estimated fees and marks. After building, `MOB_LIVE=1 bun run live:mcp` checks the compiled server with the SDK stdio client.
+
 ## Skills and installation maintenance
 
 `/mob` routes questions to `/mob-scan`, `/mob-explain`, or `/mob-status`. Skills ask for an unstated size or missing public owner address. They never request credentials or execute the future P1 command strings in scan output. Trading requests point to [the Mobius app](https://app.mob.exchange).

@@ -1,6 +1,6 @@
 # mob CLI
 
-Build with `bun run build` at the root, then run `apps/cli/dist/mob`. The compiled binary includes the funding and ranking workspace packages and all ten knowledge files. It can run from any directory without Bun, source files, or `node_modules`. There are no external runtime dependencies. It uses `node:util` `parseArgs` and a small table renderer.
+Build with `bun run build` at the root, then run `apps/cli/dist/mob`. The compiled binary includes the funding and ranking workspace packages and all ten knowledge files. It can run from any directory without Bun, source files, or `node_modules`. Its only external direct runtime dependency is `@modelcontextprotocol/sdk`, pinned to `1.32.1` for the MCP protocol and transports. The CLI uses `node:util` `parseArgs` and a small table renderer.
 
 ```sh
 mob scan --size 5000 --top 5
@@ -54,8 +54,28 @@ The API base defaults to `https://funding.mob.exchange`. `--api-base` overrides 
 
 Allowed keys are `api_base`, `owner`, `default_size_usd`, `taker_fee_bps.<venue>`, and `builder_fee_tenths_bps`. Owner must be a 20-byte `0x` address; getting an unset owner prints an empty line. The venue must be one of the seven supported identifiers. Fee values must be finite and nonnegative; the builder setting is an integer in tenths of a basis point. Size must be positive. Config contains no credentials.
 
+## MCP server
+
+`mob mcp` runs a read-only stdio server. See the root [client setup instructions](../../README.md#use-from-any-mcp-client). Stdout carries protocol messages only; there are no CLI tables or footers on the protocol stream.
+
+| Tool | Input | Result |
+|---|---|---|
+| `funding_scan` | Optional sizeUsd, market, venues, topExec, top, allPairs, executable, minApy, minVolume24hUsd, includeThin, holdDays | Full ranked result, two views, thinHidden |
+| `funding_rates` | Optional venue, market | Raw snapshot and filtered view |
+| `funding_history` | base; optional days, venues | Settled history, coverage, best average spread, failures |
+| `explain` | Optional topic, simple | Bundled Markdown or topic list |
+| `task_list` | Optional owner | Public tasks |
+| `task_get` | taskId; optional owner, trims, resizes | Public task and requested logs |
+| `config_get` | key | Effective local config value |
+
+Defaults and validation match the CLI. Each tool returns one text content block: JSON for command objects, Markdown for explanations, or the config value. Missing owner errors name `mob config set owner`. There is no `config_set` tool. The server exposes no signing, trading, upgrade, or shell tool.
+
+All tools share a 60-second deadline that aborts outstanding network requests. Snapshots keep the same 30-second timeout as the CLI. Domain errors have the same `mob:` messages and `isError: true`. Partial venue failures remain in the returned JSON so clients can inspect usable data. The six modules under `src/commands/` accept typed options and an injected fetch, clock, and config home; CLI rendering and MCP transport wrap these same command functions.
+
 ## Verification
 
 Run `bun run check`, `bun run lint`, and `bun test` here. At the root, `bun run test` runs `bun test packages apps` with the network-blocking preload. Bun 1.3.8 has one test root and does not implement the newer path-ignore setting, so `packages/cli.test.ts` imports the CLI tests while keeping `reference/` outside test discovery. Bare root `bun test` runs the same suite.
 
 After building, `MOB_LIVE=1 bun run --filter @mobstack/cli live:smoke` runs the compiled binary for the six assigned smoke commands. It uses an empty temporary config directory and prints command output and wall time. The JSON scan is summarized to keep logs small. The status check uses only the assigned dummy address.
+
+`MOB_LIVE=1 bun run live:mcp` at the root spawns the compiled server through the SDK stdio client. It lists tools, requests a scan, and reads the simple funding explanation. Unit tests use `InMemoryTransport`, recorded venue fixtures, and the hand-written publicTask fixture with the network guard enabled.

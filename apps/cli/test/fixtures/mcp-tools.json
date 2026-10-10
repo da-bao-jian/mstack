@@ -1,0 +1,223 @@
+[
+	{
+		"name": "funding_scan",
+		"description": "Rank current funding with estimated net APY for a hold period. Returns the full ranked result plus executable/anywhere views, failures, unmatched and hidden-thin counts. Annualization is simple, not compounded. Read-only. This tool never signs, trades, or holds keys.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {
+				"sizeUsd": {
+					"type": "number",
+					"description": "Positive USD size. Defaults to default_size_usd config or 1000."
+				},
+				"market": {
+					"type": "string",
+					"description": "Normalized base ticker; omit to scan all markets."
+				},
+				"venues": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"description": "Venue IDs: hl, lighter, lighter-mainnet, aster, binance, bybit, okx. Omit for all."
+				},
+				"topExec": {
+					"type": "number",
+					"description": "Positive integer limit for executable view; default 5."
+				},
+				"top": {
+					"type": "number",
+					"description": "Positive integer limit for anywhere view, or executable-only view; default 10."
+				},
+				"allPairs": {
+					"type": "boolean",
+					"description": "Include every pair instead of the best per base in each view."
+				},
+				"executable": {
+					"type": "boolean",
+					"description": "Only the executable view, limited by top."
+				},
+				"minApy": {
+					"type": "number",
+					"description": "Minimum gross simple annualized spread percentage; not the net APY filter."
+				},
+				"minVolume24hUsd": {
+					"type": "number",
+					"description": "Nonnegative minimum known USD volume per leg; default 1000000."
+				},
+				"includeThin": {
+					"type": "boolean",
+					"description": "Include below-threshold or unknown-volume pairs in the views."
+				},
+				"holdDays": {
+					"type": "number",
+					"description": "Positive hold horizon in days for fee amortization; default 7."
+				}
+			},
+			"required": [],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": true,
+			"destructiveHint": false,
+			"idempotentHint": true,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "funding_rates",
+		"description": "Read current native-market funding observations with hourly and simple annualized rates and snapshot metadata. Read-only. This tool never signs, trades, or holds keys.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {
+				"venue": {
+					"type": "string",
+					"description": "Venue ID; omit for all venues."
+				},
+				"market": {
+					"type": "string",
+					"description": "Normalized base ticker; omit for all markets."
+				}
+			},
+			"required": [],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": true,
+			"destructiveHint": false,
+			"idempotentHint": true,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "funding_history",
+		"description": "Read settled keyless funding history, interval-weighted averages, coverage, and the best average spread. Lighter has no keyless history. Annualization is simple, not compounded. Read-only. This tool never signs, trades, or holds keys.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {
+				"base": {
+					"type": "string",
+					"description": "Required normalized base ticker, for example BTC or PEPE."
+				},
+				"days": {
+					"type": "number",
+					"description": "Positive lookback in days; default 7."
+				},
+				"venues": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"description": "Venue IDs: hl, lighter, lighter-mainnet, aster, binance, bybit, okx. Omit for all."
+				}
+			},
+			"required": ["base"],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": true,
+			"destructiveHint": false,
+			"idempotentHint": true,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "explain",
+		"description": "Read bundled Markdown about funding, basis, fees, and Mobius protection. Omit topic to list topics. Read-only. This tool never signs, trades, or holds keys.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {
+				"topic": {
+					"type": "string",
+					"description": "Bundled topic name, such as funding, annualization, or liquidation-protection."
+				},
+				"simple": {
+					"type": "boolean",
+					"description": "Return the plain-language Simple section only."
+				}
+			},
+			"required": [],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": true,
+			"destructiveHint": false,
+			"idempotentHint": true,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "task_list",
+		"description": "Read public tasks for an owner. Funding accrued is an estimate. Read-only. This tool never signs, trades, or holds keys.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {
+				"owner": {
+					"type": "string",
+					"description": "Public 20-byte 0x owner address. Defaults to the owner config key."
+				}
+			},
+			"required": [],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": true,
+			"destructiveHint": false,
+			"idempotentHint": true,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "task_get",
+		"description": "Read one public task and optional trim/resize logs. Funding accrued is an estimate. Read-only. This tool never signs, trades, or holds keys.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {
+				"owner": {
+					"type": "string",
+					"description": "Public 20-byte 0x owner address. Defaults to the owner config key."
+				},
+				"taskId": {
+					"type": "string",
+					"description": "Required nonempty task ID."
+				},
+				"trims": {
+					"type": "boolean",
+					"description": "Include liquidation trim logs."
+				},
+				"resizes": {
+					"type": "boolean",
+					"description": "Include resize logs."
+				}
+			},
+			"required": ["taskId"],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": true,
+			"destructiveHint": false,
+			"idempotentHint": true,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "config_get",
+		"description": "Read a local setting: api_base, owner, default_size_usd, taker_fee_bps.<venue>, or builder_fee_tenths_bps. No setting is changed. Read-only. This tool never signs, trades, or holds keys.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {
+				"key": {
+					"type": "string",
+					"description": "Config key to read."
+				}
+			},
+			"required": ["key"],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": true,
+			"destructiveHint": false,
+			"idempotentHint": true,
+			"openWorldHint": true
+		}
+	}
+]

@@ -1,5 +1,5 @@
 import type { Snapshot } from "@mobstack/funding";
-import type { Opportunity, RankedOpportunities } from "@mobstack/opportunities";
+import type { Opportunity } from "@mobstack/opportunities";
 
 export function clean(value: unknown): string {
 	const text =
@@ -38,58 +38,7 @@ export function footer(
 	return `snapshot age: ${Math.max(0, (now - snapshot.observedAt) / 1000).toFixed(1)}s | source: ${snapshot.source} | annualized = simple, not compounded\nfailed: ${snapshot.failed.length ? snapshot.failed.map((f) => `${clean(f.venue)} (${clean(f.error)})`).join("; ") : "none"} | unmatched: ${unmatched}`;
 }
 
-export interface ViewOptions {
-	market?: string;
-	top: number;
-	topExec?: number;
-	allPairs: boolean;
-	executable: boolean;
-	minApy?: number;
-	includeThin?: boolean;
-}
-
-export function scanView(
-	result: RankedOpportunities,
-	options: ViewOptions,
-): {
-	view: { executable: Opportunity[]; anywhere: Opportunity[] };
-	thinHidden: number;
-} {
-	const candidates = result.opportunities.filter(
-		(r) =>
-			(!options.market || r.base === options.market) &&
-			(!options.executable || r.executable) &&
-			(options.minApy === undefined || r.spreadAnnualizedPct >= options.minApy),
-	);
-	const rows = candidates.filter(
-		(r) => options.includeThin || !r.flags.includes("thin"),
-	);
-	const thinHidden = candidates.length - rows.length;
-	rows.sort((a, b) => {
-		if (a.netApyPct === null) return b.netApyPct === null ? 0 : 1;
-		if (b.netApyPct === null) return -1;
-		return b.netApyPct - a.netApyPct;
-	});
-	const select = (candidates: Opportunity[], limit: number) => {
-		const seen = new Set<string>();
-		return candidates
-			.filter((r) => {
-				if (options.allPairs) return true;
-				if (seen.has(r.base)) return false;
-				seen.add(r.base);
-				return true;
-			})
-			.slice(0, limit);
-	};
-	const view = {
-		executable: select(
-			rows.filter((r) => r.executable),
-			options.executable ? options.top : (options.topExec ?? 5),
-		),
-		anywhere: options.executable ? [] : select(rows, options.top),
-	};
-	return { view, thinHidden };
-}
+export { scanView } from "./scan-view.ts";
 
 function usd(value: number | undefined): string {
 	if (value === undefined) return "—";

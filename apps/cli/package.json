@@ -6,13 +6,15 @@
 	"license": "MIT",
 	"dependencies": {
 		"@mobstack/funding": "workspace:*",
-		"@mobstack/opportunities": "workspace:*"
+		"@mobstack/opportunities": "workspace:*",
+		"@modelcontextprotocol/sdk": "1.32.1"
 	},
 	"scripts": {
 		"check": "tsc --build",
 		"lint": "biome check . --error-on-warnings",
 		"test": "bun test",
 		"build": "bun build --compile src/main.ts --outfile dist/mob",
-		"live:smoke": "bun run scripts/live-smoke.ts"
+		"live:smoke": "bun run scripts/live-smoke.ts",
+		"live:mcp": "bun run scripts/live-mcp.ts"
 	}
 }

@@ -1,0 +1,5 @@
+{
+	"mcpServers": {
+		"mobstack": { "command": "${CLAUDE_PLUGIN_ROOT}/bin/mob", "args": ["mcp"] }
+	}
+}
