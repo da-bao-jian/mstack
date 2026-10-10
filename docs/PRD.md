@@ -1,4 +1,4 @@
-# PRD 014 — Mobius Agent Stack ("mobstack")
+# PRD 014 — Mobius Agent Stack ("mstack")
 
 | | |
 |---|---|
@@ -6,7 +6,7 @@
 | Owner | Harry |
 | Scope | An open-source skill pack, CLI and MCP server so any AI agent can scan funding rates across perp DEXs and CEXs and open, manage and close Mobius delta-neutral positions. The user's keys never leave their wallet. |
 | Depends on | funding-server (PRD 011 venues, Delta-Neutral worker), referral service, incentives engine (PRD 012), tg-monitor |
-| Name | `mstack` (repo `da-bao-jian/mstack`), `mob` (CLI binary), `/mob-*` (skills). Decided 2026-10-10; earlier drafts said `mobstack`. |
+| Name | `mstack` (repo `da-bao-jian/mstack`), `mob` (CLI binary), `/mob-*` (skills). Decided 2026-10-10; earlier drafts used the working name `mobstack`. |
 
 ## 0. TL;DR
 
@@ -35,7 +35,7 @@
 
 Source: aomi.dev/docs (concepts/permission-model, concepts/transaction-pipeline, concepts/accounts-and-wallets, guides/mcp, reference/client-cli).
 
-| Aomi principle | Quote | How mobstack applies it |
+| Aomi principle | Quote | How mstack applies it |
 |---|---|---|
 | Composition open, signing gated | "The model may compose a transaction and explain why it wants to run it … None of them can grant themselves permission to sign." | The agent calls `mob open …`, which stages a Proposal and stops. Only `mob sign <id>` signs, and the skill may only run it after the user names the id. No `--yes` flag exists. |
 | Simulate before sign | "An action that fails simulation does not cross the signing boundary." | Every Proposal runs the server preview (`POST /api/arbitrage/preview`, section 10) before it can be signed. A failed preview marks the Proposal `rejected`. |
@@ -53,9 +53,9 @@ What we deliberately do not copy: aomi's account-abstraction default (EIP-7702 /
 
 Source: `~/.claude/skills/gstack` (README, setup, SKILL.md.tmpl, ARCHITECTURE.md, openclaw/).
 
-| gstack mechanism | How mobstack applies it |
+| gstack mechanism | How mstack applies it |
 |---|---|
-| One repo, `git clone … ~/.claude/skills/gstack && ./setup` | Same. `git clone … ~/.claude/skills/mobstack && ./setup`. |
+| One repo, `git clone … ~/.claude/skills/gstack && ./setup` | Same. `git clone … ~/.claude/skills/mstack && ./setup`. |
 | `./setup --host codex|cursor|opencode|factory` with per-host skill paths | Same host table. SKILL.md files are generated per host from one template. |
 | `SKILL.md` generated from `SKILL.md.tmpl` with a bash preamble (update check, config, telemetry, routing rules) | Same. The preamble also prints the wallet policy and whether a signer is configured, so a skill never stages a Proposal it cannot sign. |
 | Compiled Bun binaries in `bin/`, localhost daemon with a bearer token in a 0600 state file | `mob` is a compiled Bun binary. The sign bridge is a localhost daemon with the same token model. |
@@ -135,7 +135,7 @@ Reuse `@mobius/funding-rates` as the canonical shape. Do not invent a second one
 
 ```ts
 FundingRate { venue, market, ratePerInterval, intervalHours, annualizedPct }
-// mobstack adds, per row:
+// mstack adds, per row:
 observedAt, nextFundingAt?, markPrice?, openInterestUsd?, oiCapped?, source: "direct" | "hosted"
 ```
 
@@ -147,7 +147,7 @@ Rules, all already encoded in tg-monitor and funding-rates:
 
 ### 4.3 Opportunity model
 
-Extract tg-monitor's `scanner.ts` math into a shared pure package, `@mobius/funding-opportunities`, consumed by tg-monitor, the frontend and mobstack. The TG alert, the app and the agent must quote the same number.
+Extract tg-monitor's `scanner.ts` math into a shared pure package, `@mobius/funding-opportunities`, consumed by tg-monitor, the frontend and mstack. The TG alert, the app and the agent must quote the same number.
 
 What it computes per (market, long venue, short venue):
 - Spread per hour and annualized.
@@ -212,7 +212,7 @@ Messages are space-joined segments. Optional segments appear only when the key i
 
 Venues: `aster | hl | lighter | lighter-mainnet`. Task statuses: `pending, ordering, running, neutralizing, trimming, resizing, mismatch_checking, leg_gone_checking, closing, closed, failed`.
 
-The frontend mirrors of these builders (`frontend/src/features/delta-neutral/lib/*Message.ts`) are the reference implementation. mobstack vendors them with byte-exact tests, the same way the frontend and server already pin each other.
+The frontend mirrors of these builders (`frontend/src/features/delta-neutral/lib/*Message.ts`) are the reference implementation. mstack vendors them with byte-exact tests, the same way the frontend and server already pin each other.
 
 ### 5.3 Gotchas to carry
 
@@ -377,7 +377,7 @@ All skills are prefixed `/mob-` by default. `./setup` offers the gstack short-na
 | `/mob-close` | "close it" | Close Proposal. | After the user names the id |
 | `/mob-grant` | "let the agent trade", "session key" | Create, show, revoke a T2 grant. | Create/revoke: owner |
 | `/mob-watch` | "watch my positions" | Starts `mob watch` (a plugin monitor) that posts health and funding changes into the session. | No |
-| `/mob-upgrade` | "upgrade mobstack" | gstack's inline upgrade flow. | No |
+| `/mob-upgrade` | "upgrade mstack" | gstack's inline upgrade flow. | No |
 
 ### 7.2 `/mob-open` flow
 
@@ -419,21 +419,21 @@ Bundled markdown, each with a one-paragraph plain version and a precise version:
 
 | Path | Command | Gives |
 |---|---|---|
-| Claude Code plugin (primary) | `/plugin marketplace add lu-bann/mobstack` then `/plugin install mobstack` | Skills, `.mcp.json` (stdio `mob mcp`), `bin/mob` on the Bash PATH, `userConfig` prompts (owner address, referral code), a `mob watch` monitor. Pinned `version`, auto-updates with the marketplace. |
-| gstack-style clone (every host) | `git clone --single-branch --depth 1 https://github.com/lu-bann/mobstack ~/.claude/skills/mobstack && cd ~/.claude/skills/mobstack && ./setup` and `./setup --host codex|cursor|opencode|factory` | Per-host generated SKILL.md, compiled binary built locally |
-| Agent Skills registry | `npx skills add lu-bann/mobstack` | The skills only; the CLI installs on first run |
-| MCP, any client | `claude mcp add mobstack -- mob mcp` or the JSON block for Cursor, Windsurf, Claude Desktop | Tools only |
-| Hosted MCP (P2) | `claude mcp add --transport http mobstack https://mcp.mob.exchange/mcp` | Zero install, OAuth, reads and staging; signing at `app.mob.exchange/sign/<id>` |
-| Package managers | `brew install lu-bann/tap/mob`, `curl -fsSL https://mob.exchange/install.sh \| sh`, GitHub Releases with checksums, `ghcr.io/lu-bann/mobstack` for T3 | The CLI alone |
-| OpenClaw / Hermes | README paste that adds a "Funding tasks" section to `AGENTS.md` (spawn Claude Code with `Load mobstack. Run /mob-scan`), plus native ClawHub skills `mobstack-openclaw-scan` and `-explain` | Chat-native scan and explain |
+| Claude Code plugin (primary) | `/plugin marketplace add lu-bann/mstack` then `/plugin install mstack` | Skills, `.mcp.json` (stdio `mob mcp`), `bin/mob` on the Bash PATH, `userConfig` prompts (owner address, referral code), a `mob watch` monitor. Pinned `version`, auto-updates with the marketplace. |
+| gstack-style clone (every host) | `git clone --single-branch --depth 1 https://github.com/lu-bann/mstack ~/.claude/skills/mstack && cd ~/.claude/skills/mstack && ./setup` and `./setup --host codex|cursor|opencode|factory` | Per-host generated SKILL.md, compiled binary built locally |
+| Agent Skills registry | `npx skills add lu-bann/mstack` | The skills only; the CLI installs on first run |
+| MCP, any client | `claude mcp add mstack -- mob mcp` or the JSON block for Cursor, Windsurf, Claude Desktop | Tools only |
+| Hosted MCP (P2) | `claude mcp add --transport http mstack https://mcp.mob.exchange/mcp` | Zero install, OAuth, reads and staging; signing at `app.mob.exchange/sign/<id>` |
+| Package managers | `brew install lu-bann/tap/mob`, `curl -fsSL https://mob.exchange/install.sh \| sh`, GitHub Releases with checksums, `ghcr.io/lu-bann/mstack` for T3 | The CLI alone |
+| OpenClaw / Hermes | README paste that adds a "Funding tasks" section to `AGENTS.md` (spawn Claude Code with `Load mstack. Run /mob-scan`), plus native ClawHub skills `mstack-openclaw-scan` and `-explain` | Chat-native scan and explain |
 | Telegram (exists) | tg-monitor alerts gain a second line: `open in your agent: mob open HYPE --long lighter --short hl --size 1000` beside the app deep link | Cross-channel conversion |
 
 ### 8.2 Plugin layout
 
 ```
-mobstack/
+mstack/
 ├── .claude-plugin/plugin.json      # name, version, userConfig (owner, referral_code), mcpServers inline
-├── .claude-plugin/marketplace.json # single-plugin marketplace so `/plugin marketplace add lu-bann/mobstack` works
+├── .claude-plugin/marketplace.json # single-plugin marketplace so `/plugin marketplace add lu-bann/mstack` works
 ├── skills/mob*/SKILL.md            # generated per host by scripts/gen-skill-docs.ts
 ├── bin/mob                         # compiled Bun binary (on the Bash PATH while enabled)
 ├── monitors/monitors.json          # mob watch, when: on-skill-invoke:mob-watch
@@ -469,7 +469,7 @@ install → first scan (T0) → setup + bind (T1) → first open → second open
 | Installs | plugin installs + clones + `npx skills add` | 5,000 |
 | Activation | weekly active scanners | 1,000 |
 | Bind | wallets with ≥1 venue bound via the CLI | 300 |
-| Open | tasks created with `X-Mobius-Client: mobstack/*` | 150 / week |
+| Open | tasks created with `X-Mobius-Client: mstack/*` | 150 / week |
 | Notional | agent-originated open notional | $5M |
 | Revenue | HL builder fees attributed to agent-originated tasks | measured, reported weekly |
 | Retention | wallets with an open task in week 4 | 40% of first-openers |
@@ -514,7 +514,7 @@ install → first scan (T0) → setup + bind (T1) → first open → second open
 
 ## 11. Repo and packaging
 
-- **Public repo from day one:** `lu-bann/mobstack`, MIT. It consumes the pure math as published npm packages: `@mobius/funding-rates`, `@mobius/liquidation`, `@mobius/funding-opportunities` (new), `@mobius/aster-client`. These are `"private": true` today and contain no secrets; publishing them is the enabling step. Alternative: develop under `agent-stack/` in the monorepo and mirror with `git subtree split`. Slower to contribute to, faster to iterate. Decide in section 13.
+- **Public repo from day one:** `lu-bann/mstack`, MIT. It consumes the pure math as published npm packages: `@mobius/funding-rates`, `@mobius/liquidation`, `@mobius/funding-opportunities` (new), `@mobius/aster-client`. These are `"private": true` today and contain no secrets; publishing them is the enabling step. Alternative: develop under `agent-stack/` in the monorepo and mirror with `git subtree split`. Slower to contribute to, faster to iterate. Decide in section 13.
 - **Message builders are vendored with byte-exact tests** against the frontend mirrors, the same way the frontend and server pin each other.
 - **CI:** typecheck, unit tests, adapter contract tests against recorded fixtures, skill evals (every mutation skill stops before signing), `knip` dead-code gate (as in `carry-livetest`), release workflow that builds `mob` for macOS arm64/x64, Linux x64/arm64, Windows x64, signs and checksums the binaries, and bumps `plugin.json` version.
 - **Bun** throughout, like gstack and the rest of the repo: compiled binaries, native SQLite for the proposal and scan cache, no `node_modules` at runtime.
@@ -531,7 +531,7 @@ install → first scan (T0) → setup + bind (T1) → first open → second open
 
 ## 13. Decisions needed
 
-1. **Name.** `mobstack` / `mob` / `/mob-*`, or something else.
+1. **Name.** `mstack` / `mob` / `/mob-*`, or something else.
 2. **Repo.** Public from day one with published `@mobius/*` pure packages (recommended), or monorepo folder with a mirrored split.
 3. **Publishing the pure packages** to npm under `@mobius`: `funding-rates`, `liquidation`, `aster-client`, and the new `funding-opportunities`.
 4. **EIP-712 migration** of all server messages (domain, chain id, EIP-1271). Worth doing once; it also makes session grants cleaner. P2 or later.
