@@ -9,6 +9,8 @@ export interface RankOptions {
 	breakEvenHours?: number;
 	/** Minimum known 24h USD volume on each leg; default $1,000,000. */
 	minVolume24hUsd?: number;
+	/** Fee amortization horizon; default seven days. */
+	holdDays?: number;
 	executableVenues?: readonly string[];
 	quoteClasses?: readonly QuoteClass[];
 }
@@ -24,6 +26,7 @@ export interface Opportunity {
 	sizeUsd: number;
 	spreadRate1hPct: number;
 	spreadAnnualizedPct: number;
+	netApyPct: number | null;
 	/** Open and close taker fees on both legs; excludes the builder fee. */
 	roundTripFeePct: number;
 	builderFeePct: number;
@@ -40,6 +43,7 @@ export interface Opportunity {
 }
 
 export interface RankedOpportunities {
+	holdDays: number;
 	observedAt: number;
 	source: Snapshot["source"];
 	annualizationMethod: "simple";

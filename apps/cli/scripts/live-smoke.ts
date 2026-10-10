@@ -39,7 +39,10 @@ try {
 						qualifying: data.opportunities.filter(
 							(r: { qualifies: boolean }) => r.qualifies,
 						).length,
-						view: data.view.length,
+						view: {
+							executable: data.view.executable.length,
+							anywhere: data.view.anywhere.length,
+						},
 						unmatched: data.unmatched.length,
 						failed: data.failed,
 						observedAt: data.observedAt,

@@ -41,6 +41,7 @@ export function footer(
 export interface ViewOptions {
 	market?: string;
 	top: number;
+	topExec?: number;
 	allPairs: boolean;
 	executable: boolean;
 	minApy?: number;
@@ -50,7 +51,10 @@ export interface ViewOptions {
 export function scanView(
 	result: RankedOpportunities,
 	options: ViewOptions,
-): { view: Opportunity[]; thinHidden: number } {
+): {
+	view: { executable: Opportunity[]; anywhere: Opportunity[] };
+	thinHidden: number;
+} {
 	const candidates = result.opportunities.filter(
 		(r) =>
 			(!options.market || r.base === options.market) &&
@@ -61,22 +65,29 @@ export function scanView(
 		(r) => options.includeThin || !r.flags.includes("thin"),
 	);
 	const thinHidden = candidates.length - rows.length;
-	const priority = (r: Opportunity) =>
-		r.qualifies ? (r.executable ? 2 : 1) : 0;
-	rows.sort(
-		(a, b) =>
-			priority(b) - priority(a) ||
-			b.spreadAnnualizedPct - a.spreadAnnualizedPct,
-	);
-	const seen = new Set<string>();
-	const view = rows
-		.filter((r) => {
-			if (options.allPairs) return true;
-			if (seen.has(r.base)) return false;
-			seen.add(r.base);
-			return true;
-		})
-		.slice(0, options.top);
+	rows.sort((a, b) => {
+		if (a.netApyPct === null) return b.netApyPct === null ? 0 : 1;
+		if (b.netApyPct === null) return -1;
+		return b.netApyPct - a.netApyPct;
+	});
+	const select = (candidates: Opportunity[], limit: number) => {
+		const seen = new Set<string>();
+		return candidates
+			.filter((r) => {
+				if (options.allPairs) return true;
+				if (seen.has(r.base)) return false;
+				seen.add(r.base);
+				return true;
+			})
+			.slice(0, limit);
+	};
+	const view = {
+		executable: select(
+			rows.filter((r) => r.executable),
+			options.executable ? options.top : (options.topExec ?? 5),
+		),
+		anywhere: options.executable ? [] : select(rows, options.top),
+	};
 	return { view, thinHidden };
 }
 
@@ -91,19 +102,20 @@ function usd(value: number | undefined): string {
 	return `$${value.toFixed(0)}`;
 }
 
-export function renderScan(view: Opportunity[]): string {
+function scanTable(view: Opportunity[], executable: boolean): string {
 	return table(
 		[
 			"base",
 			"long",
 			"short",
 			"spread/yr",
+			"net APY",
 			"fees",
 			"entry (mark est.)",
 			"vol24h (long/short)",
 			"OI (long/short)",
 			"break-even h",
-			"EXEC",
+			...(executable ? [] : ["EXEC"]),
 			"flags",
 		],
 		view.map((r) => [
@@ -111,13 +123,29 @@ export function renderScan(view: Opportunity[]): string {
 			`${r.long.venue}:${r.long.market}`,
 			`${r.short.venue}:${r.short.market}`,
 			pct(r.spreadAnnualizedPct, 2),
+			pct(r.netApyPct, 2),
 			pct(r.roundTripFeePct + r.builderFeePct),
 			pct(r.entryCostPct),
 			`${usd(r.long.volume24hUsd)}/${usd(r.short.volume24hUsd)}`,
 			`${usd(r.long.openInterestUsd)}/${usd(r.short.openInterestUsd)}`,
 			r.breakEvenHours?.toFixed(2),
-			r.executable ? "EXEC" : "—",
+			...(executable ? [] : [r.executable ? "EXEC" : "—"]),
 			r.flags.join(",") || "—",
 		]),
 	);
+}
+
+export function renderScan(
+	view: { executable: Opportunity[]; anywhere: Opportunity[] },
+	executableOnly = false,
+	holdDays = 7,
+): string {
+	return [
+		`Net APY estimate: ${holdDays}-day hold; annualized = simple, not compounded`,
+		"Executable on Mobius",
+		scanTable(view.executable, true),
+		...(executableOnly
+			? []
+			: ["\nBest anywhere", scanTable(view.anywhere, false)]),
+	].join("\n");
 }

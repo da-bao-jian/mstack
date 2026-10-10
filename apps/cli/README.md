@@ -20,7 +20,9 @@ Run `mob --help` or `mob --version` for local information. Unknown commands, fla
 
 ## Scan and rates
 
-`scan` defaults to size USD 1,000 and 15 rows. It sorts qualifying executable pairs first, then other qualifying pairs, then annualized spread descending within each group. It selects the first pair per base after sorting. `--all-pairs` keeps alternatives; `--executable`, `--min-apy`, `--market`, and `--venues` filter before the top limit. `--min-apy` refers to simple annualization, despite the flag name. Venue filters select which adapters are called.
+`scan` defaults to size USD 1,000 and a seven-day hold (`--hold-days`). It shows two sections: Executable on Mobius (five rows, `--top-exec`) and Best anywhere (ten rows, `--top`). Each section sorts by estimated net APY descending, null last, and independently picks the first pair per base. `--all-pairs` keeps alternatives in both. `--executable` shows only the first section, using `--top`. `--min-apy` continues to filter the gross simple annualized spread; `--market` filters both sections. `--venues` selects which adapters are called.
+
+Net APY subtracts `(taker + builder + max(mark entry cost, 0)) × 365 / holdDays` from the gross annualized spread. Negative mark entry cost never counts as a gain. Break-even retains the signed upstream calculation. This is a simple annualized estimate for a fixed hold, not compounding or a promise that rates persist. The first section omits EXEC; the second includes it.
 
 Columns show native long/short listings, annualized spread, round-trip taker plus builder fees, signed mark entry cost, break-even hours, execution eligibility, and flags. An unmeasured entry cost is `—`. Execution eligibility does not promise order depth or a profitable fill. Fee defaults are estimates; override them for actual account terms.
 
@@ -28,7 +30,7 @@ Columns show native long/short listings, annualized spread, round-trip taker plu
 
 `rates` returns raw snapshot observations with per-hour and annualized rates. `--venue` selects its adapter; `--market` filters on the classified base. Neither command changes venue-native names.
 
-Human data output always ends with snapshot age, source, simple annualization, failed venues with errors, and unmatched count. With `--json`, stdout contains one JSON document and the same human footer goes to stderr. Scan JSON is the full `RankedOpportunities` plus a filtered `view`; filters do not delete its full opportunity list. Rates JSON retains the raw snapshot and adds `unmatched` and a `view` with `ratePerHour`.
+Funding output ends with snapshot age, source, simple annualization, failed venues with errors, and unmatched count. With `--json`, stdout contains one JSON document and the same human footer goes to stderr. Scan JSON is the full `RankedOpportunities` plus `view: { executable: [...], anywhere: [...] }` and `thinHidden`; filters do not delete its full opportunity list. Rates JSON retains the raw snapshot and adds `unmatched` and a `view` with `ratePerHour`.
 
 Exit codes: 0 success; 1 usage, config, or request error; 2 no venue returned any rates; 3 any snapshot/history failure with `--strict`. No-rate exit 2 takes precedence over strict partial-failure exit 3. An empty filtered view with a healthy snapshot exits 0. Partial failures remain visible with or without strict mode.
 

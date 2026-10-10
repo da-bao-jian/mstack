@@ -43,9 +43,9 @@ const adapters = [
 const help = `mob ${pkg.version} — public funding and Mobius task reads
 
 Usage:
-  mob scan [--size N=1000] [--market BASE] [--venues a,b] [--top N=15]
+  mob scan [--size N=1000] [--market BASE] [--venues a,b] [--top N=10]
            [--all-pairs] [--executable] [--min-apy PCT] [--strict] [--json]
-           [--min-volume N=1000000] [--include-thin]
+           [--min-volume N=1000000] [--include-thin] [--hold-days N=7] [--top-exec N=5]
   mob rates [--venue V] [--market BASE] [--strict] [--json]
   mob history <BASE> [--days N=7] [--venues a,b] [--strict] [--json]
   mob explain [topic] [--simple]
@@ -74,6 +74,8 @@ const definitions: Record<string, ParseArgsConfig["options"]> = {
 		market: flag("string"),
 		venues: flag("string"),
 		top: flag("string"),
+		"top-exec": flag("string"),
+		"hold-days": flag("string"),
 		"all-pairs": flag("boolean"),
 		executable: flag("boolean"),
 		"min-apy": flag("string"),
@@ -410,7 +412,13 @@ export async function run(
 			"size",
 			Number.MIN_VALUE,
 		);
-		const top = numberFlag(text("top") ?? "15", "top", 1, true);
+		const top = numberFlag(text("top") ?? "10", "top", 1, true);
+		const topExec = numberFlag(text("top-exec") ?? "5", "top-exec", 1, true);
+		const holdDays = numberFlag(
+			text("hold-days") ?? "7",
+			"hold-days",
+			Number.MIN_VALUE,
+		);
 		const minVolume = numberFlag(
 			text("min-volume") ?? "1000000",
 			"min-volume",
@@ -428,6 +436,7 @@ export async function run(
 		if (command === "scan") {
 			const result = rankOpportunities(snapshot, {
 				sizeUsd: size,
+				holdDays,
 				minVolume24hUsd: minVolume,
 				takerFeeBps: config.taker_fee_bps,
 				builderFeeTenthsBps: Number(
@@ -437,6 +446,7 @@ export async function run(
 			const { view, thinHidden } = scanView(result, {
 				market,
 				top,
+				topExec,
 				allPairs: values["all-pairs"] === true,
 				executable: values.executable === true,
 				minApy,
@@ -445,7 +455,7 @@ export async function run(
 			display(
 				rt,
 				{ ...result, view, thinHidden },
-				renderScan(view),
+				renderScan(view, values.executable === true, holdDays),
 				`${footer(snapshot, result.unmatched.length, rt.now())} | thin hidden: ${thinHidden}`,
 				json,
 			);

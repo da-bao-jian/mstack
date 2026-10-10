@@ -6,7 +6,7 @@ import { rankOpportunities } from "../../../packages/opportunities/src/index.ts"
 import { scanView } from "../src/render.ts";
 import { run } from "../src/run.ts";
 
-test("view priority precedes per-base selection and all-pairs retains alternatives", () => {
+test("net APY sorts both sections independently, selects per base, and puts null last", () => {
 	const result = rankOpportunities(
 		{
 			observedAt: 1,
@@ -28,6 +28,7 @@ test("view priority precedes per-base selection and all-pairs retains alternativ
 			qualifies: false,
 			executable: true,
 			spreadAnnualizedPct: 1000,
+			netApyPct: null,
 		},
 		{
 			...sample,
@@ -35,6 +36,7 @@ test("view priority precedes per-base selection and all-pairs retains alternativ
 			qualifies: true,
 			executable: false,
 			spreadAnnualizedPct: 100,
+			netApyPct: 90,
 		},
 		{
 			...sample,
@@ -42,6 +44,7 @@ test("view priority precedes per-base selection and all-pairs retains alternativ
 			qualifies: true,
 			executable: true,
 			spreadAnnualizedPct: 1,
+			netApyPct: -1,
 		},
 		{
 			...sample,
@@ -49,20 +52,31 @@ test("view priority precedes per-base selection and all-pairs retains alternativ
 			qualifies: true,
 			executable: false,
 			spreadAnnualizedPct: 200,
+			netApyPct: 190,
 		},
 	];
 	const options = { top: 15, allPairs: false, executable: false };
 	expect(
-		scanView(result, options).view.map((r) => [r.base, r.spreadAnnualizedPct]),
+		scanView(result, options).view.anywhere.map((r) => [r.base, r.netApyPct]),
 	).toEqual([
-		["BTC", 1],
-		["ETH", 200],
+		["ETH", 190],
+		["BTC", 90],
 	]);
 	expect(
-		scanView(result, { ...options, allPairs: true }).view.map(
-			(r) => r.spreadAnnualizedPct,
+		scanView(result, options).view.executable.map((r) => r.netApyPct),
+	).toEqual([-1]);
+	expect(
+		scanView(result, { ...options, allPairs: true }).view.anywhere.map(
+			(r) => r.netApyPct,
 		),
-	).toEqual([1, 200, 100, 1000]);
+	).toEqual([190, 90, -1, null]);
+	expect(
+		scanView(result, { ...options, allPairs: true, topExec: 1 }).view
+			.executable,
+	).toHaveLength(1);
+	expect(
+		scanView(result, { ...options, market: "ETH" }).view.executable,
+	).toEqual([]);
 });
 
 test("history resolves a normalized base to native market and reports Lighter explicitly", async () => {

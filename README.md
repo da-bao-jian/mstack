@@ -70,15 +70,17 @@ The compiled `mob` binary supports `scan`, `rates`, `history`, `explain`, `statu
 | `mob status --owner 0x…` | Read public tasks and estimated funding accrued |
 | `mob config get api_base` | Read or set local settings, including the public owner address |
 
-Funding output reports snapshot age, source, simple annualization, failures, and unmatched symbols. Scans also report thin pairs hidden by the default $1 million per-leg volume filter. Status reports API base, fetch age, and task/log counts. JSON stays on stdout; its human footer goes to stderr. Fee defaults are estimates. Entry costs use marks and do not measure executable depth.
+Scans show Executable on Mobius (top five) and Best anywhere (top ten), each sorted by net APY for a seven-day hold. Use `--hold-days`, `--top-exec`, and `--top` to change these defaults. Negative mark entry estimates do not count as gains in net APY. Funding output reports snapshot age, source, simple annualization, failures, and unmatched symbols. Scans also report thin pairs hidden by the default $1 million per-leg volume filter. Status reports API base, fetch age, and task/log counts. JSON stays on stdout; its human footer goes to stderr. Fee defaults are estimates. Entry costs use marks and do not measure executable depth.
 
 ## Skills and installation maintenance
 
 `/mob` routes questions to `/mob-scan`, `/mob-explain`, or `/mob-status`. Skills ask for an unstated size or missing public owner address. They never request credentials or execute the future P1 command strings in scan output. Trading requests point to [the Mobius app](https://app.mob.exchange).
 
-`./setup --host auto` installs into every detected `~/.claude/` and `~/.codex/` host directory. If neither exists, choose a host explicitly. Re-running setup is safe. It refuses conflicting paths. `./setup --host codex --uninstall` removes only links recorded as created by that checkout; config, user replacements, and pre-existing links remain. `-q` suppresses successful setup output. Bun is required for setup and rebuilds.
+`./setup --host auto` installs into every detected `~/.claude/` and `~/.codex/` host directory. If neither exists, choose a host explicitly. Re-running setup is safe. It refuses conflicting paths. `./setup --host codex --uninstall` removes links and empty host directories recorded as created by that checkout; config, user replacements, pre-existing paths, and non-empty directories remain. Old ledgers without directory ownership never imply permission to remove a directory. `-q` suppresses successful setup output. Bun is required for setup and rebuilds.
 
 `mob upgrade` runs `git pull --ff-only`, a frozen dependency install, and a rebuild when the installation has an `origin` remote. With no remote, it prints `no remote configured`. It never creates a remote. Skill preambles only check for updates, at most once an hour per checkout, and print changed commit hashes. They do not install updates.
+
+The preamble probes `/api/client-ip` with a ten-second timeout. Failed health, config, or update checks are reports and do not block the skill; failed updates print `UPGRADE_CHECK: fail`. Only `MOB_MISSING` stops it. Commands still report their own data/config errors normally.
 
 Edit `skills-src/*.md.tmpl`, `hosts/{claude,codex}/overlay.json`, and `scripts/skill-preamble.sh`; run `bun run gen:skills`. Commit both `skills/` and `skills-codex/` outputs. CI regenerates them and rejects a diff. Run `MOB_LIVE=1 bun run live:skills` for the temporary-home setup, preamble, and plugin-validation smoke checks.
 

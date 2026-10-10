@@ -38,8 +38,13 @@ test("scan JSON preserves all ranked rows and selects a distinct-base view", asy
 	expect(result.code).toBe(0);
 	const body = JSON.parse(result.out);
 	expect(body.opportunities).toHaveLength(29);
-	expect(body.view).toHaveLength(2);
-	expect(new Set(body.view.map((r: { base: string }) => r.base)).size).toBe(2);
+	expect(body.view.anywhere).toHaveLength(2);
+	expect(
+		new Set(body.view.anywhere.map((r: { base: string }) => r.base)).size,
+	).toBe(2);
+	expect(
+		body.view.executable.every((r: { executable: boolean }) => r.executable),
+	).toBe(true);
 	expect(
 		body.opportunities.every((r: { sizeUsd: number }) => r.sizeUsd === 5000),
 	).toBe(true);
@@ -60,9 +65,10 @@ test("scan filters venues, base, execution, and annualized spread before top", a
 		"--json",
 	]);
 	const body = JSON.parse(result.out);
-	expect(body.view).toHaveLength(1);
-	expect(body.view[0].base).toBe("BTC");
-	expect(body.view[0].executable).toBe(true);
+	expect(body.view.executable).toHaveLength(1);
+	expect(body.view.anywhere).toEqual([]);
+	expect(body.view.executable[0].base).toBe("BTC");
+	expect(body.view.executable[0].executable).toBe(true);
 	expect(
 		result.calls.every(
 			(c) => c.url.includes("hyperliquid") || c.url.includes("rh.lighter"),
@@ -93,6 +99,9 @@ test("human scan includes costs, execution flags, and footer even when empty", a
 	for (const word of [
 		"break-even h",
 		"entry (mark est.)",
+		"net APY",
+		"Executable on Mobius",
+		"Best anywhere",
 		"vol24h",
 		"OI (long/short)",
 		"thin hidden: 0",
@@ -148,6 +157,8 @@ test.each(
 		["config", "get", "unknown"],
 		["config", "set", "owner", "0x123"],
 		["scan", "--min-volume", "-1"],
+		["scan", "--hold-days", "0"],
+		["scan", "--top-exec", "1.5"],
 		["config", "set", "default_size_usd", "NaN"],
 		["config", "set", "api_base", "file:///tmp"],
 		["scan", "extra"],
@@ -211,7 +222,7 @@ test("config stores only allowed settings at mode 0600 and affects scans", async
 		const result = await invoke(["scan", "--venues", "hl,lighter", "--json"], {
 			home: isolated,
 		});
-		const [row] = JSON.parse(result.out).view;
+		const [row] = JSON.parse(result.out).view.executable;
 		expect(row.sizeUsd).toBe(5000);
 		expect(row.roundTripFeePct).toBe(0.02);
 		expect(row.builderFeePct).toBe(0);
@@ -352,17 +363,39 @@ test("thin rows are hidden and counted before top, and can be included", async (
 	const args = ["scan", "--min-volume", "1000000000000000", "--json"];
 	const hidden = await invoke(args);
 	const body = JSON.parse(hidden.out);
-	expect(body.view).toEqual([]);
+	expect(body.view).toEqual({ executable: [], anywhere: [] });
 	expect(body.thinHidden).toBe(29);
 	expect(hidden.err).toContain("thin hidden: 29");
 	const included = await invoke([...args, "--include-thin"]);
-	expect(JSON.parse(included.out).view).toHaveLength(2);
+	expect(JSON.parse(included.out).view.anywhere).toHaveLength(2);
 	expect(
-		JSON.parse(included.out).view.every((r: { flags: string[] }) =>
+		JSON.parse(included.out).view.anywhere.every((r: { flags: string[] }) =>
 			r.flags.includes("thin"),
 		),
 	).toBe(true);
 	expect(included.err).toContain("thin hidden: 0");
+});
+
+test("executable-only uses top, omits the EXEC column, and carries the hold horizon", async () => {
+	const args = [
+		"scan",
+		"--executable",
+		"--top",
+		"1",
+		"--top-exec",
+		"5",
+		"--hold-days",
+		"30",
+	];
+	const result = await invoke([...args, "--json"]);
+	const body = JSON.parse(result.out);
+	expect(body.holdDays).toBe(30);
+	expect(body.view.executable).toHaveLength(1);
+	expect(body.view.anywhere).toEqual([]);
+	const human = await invoke(args);
+	expect(human.out).toContain("30-day hold");
+	expect(human.out).not.toContain("Best anywhere");
+	expect(human.out).not.toMatch(/\bEXEC\b/);
 });
 
 test("status defaults to the saved owner, permits an override, and names the unset key", async () => {

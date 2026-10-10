@@ -125,13 +125,11 @@ test.each([...outputs.keys()])(
 			.trim()
 			.split("\n");
 		expect(calls).toHaveLength(1);
-		expect(calls[0]).toContain("-m 5");
+		expect(calls[0]).toContain("-m 10");
 		expect(calls[0]).toContain("-o /dev/null");
 		expect(calls[0]).toContain("X-Mobius-Client: mobstack/0.1.0");
 		expect(calls[0]).toContain("-A mobstack/0.1.0");
-		expect(calls[0]).toContain(
-			"https://funding.mob.exchange/api/arbitrage/rates",
-		);
+		expect(calls[0]).toContain("https://funding.mob.exchange/api/client-ip");
 	},
 );
 
@@ -243,10 +241,10 @@ esac`,
 	const fail = await command(["/bin/bash", "-c", code], home, path, {
 		TEST_FETCH_FAIL: "1",
 	});
-	expect(fail.code).toBe(1);
-	expect(fail.err).toContain("no cached upgrade result");
+	expect(fail.code).toBe(0);
+	expect(fail.out).toContain("UPGRADE_CHECK: fail");
 	expect(fail.out).not.toContain("UPGRADE_AVAILABLE");
-	expect((await command(["/bin/bash", "-c", code], home, path)).code).toBe(1);
+	expect((await command(["/bin/bash", "-c", code], home, path)).code).toBe(0);
 	expect(await readFile(join(home, "fetch-calls"), "utf8")).toBe(
 		"fetch\nfetch\n",
 	);
@@ -310,8 +308,37 @@ test("setup installs host outputs once and uninstalls only links it made", async
 	await setup(["--host", "codex", "--uninstall", "-q"], options);
 	expect(builds).toBe(2);
 	expect(await readFile(changed, "utf8")).toBe("user replacement");
+	await expect(lstat(join(home, ".codex/skills/mobstack"))).rejects.toThrow();
 	await expect(lstat(join(home, ".codex/skills/mob"))).rejects.toThrow();
 	await setup(["--host", "codex", "--uninstall", "-q"], options);
+});
+
+test("uninstall preserves nonempty and pre-existing directories", async () => {
+	for (const existing of [false, true]) {
+		const home = await mkdtemp(join(temporary, "directories-"));
+		const runtime = join(home, ".claude/skills/mobstack");
+		if (existing) await mkdir(runtime, { recursive: true });
+		const options = { root, home, build: async () => {}, out: () => {} };
+		await setup(["--host", "claude"], options);
+		if (!existing) await writeFile(join(runtime, "user-file"), "keep");
+		await setup(["--host", "claude", "--uninstall"], options);
+		expect((await lstat(runtime)).isDirectory()).toBe(true);
+	}
+});
+
+test("preamble config errors are explicit reports and do not block a local skill", async () => {
+	const { home, path } = await preambleHome();
+	await mkdir(join(home, ".mob"));
+	await writeFile(join(home, ".mob/config.json"), "invalid json");
+	const result = await command(
+		["/bin/bash", "-c", preamble(outputs.get("skills/mob/SKILL.md") as string)],
+		home,
+		path,
+	);
+	expect(result.code).toBe(0);
+	expect(result.out).toContain("API_BASE: fail");
+	expect(result.out).toContain("API_REACHABLE: fail");
+	expect(result.out).toContain("OWNER: fail");
 });
 
 test("setup preserves pre-existing matching links and rejects conflicts before build", async () => {

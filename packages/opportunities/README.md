@@ -6,7 +6,7 @@ Pure funding opportunity classification and ranking. This package reads a fundin
 import { rankOpportunities } from "@mobstack/opportunities";
 
 const result = rankOpportunities(snapshot, { sizeUsd: 1_000 });
-// result.opportunities: positive-carry pairs, sorted by spreadAnnualizedPct
+// result.opportunities: positive-carry pairs, sorted by netApyPct (null last)
 // result.unmatched: every venue/market that could not be classified
 // result.failed: failures carried through from the input snapshot
 ```
@@ -62,6 +62,8 @@ When either mark is missing, `entryCostPct` is `null`, `entryCostBasis` is `"unm
 With measured marks, total cost is `roundTripFeePct + builderFeePct + entryCostPct`. Break-even is total cost divided by `spreadRate1hPct`. Nonpositive spread returns `null`; nonpositive cost with positive spread returns `0`. `qualifies` means the known break-even is at most the configured window. Values retain JavaScript floating-point precision; display rounding belongs to callers.
 
 For example, equal-mark HL/Lighter rows with a 0.01% hourly spread have 0.09% taker fees and 0.06% builder fees. Break-even is 15 hours. The simple annualized spread is approximately 87.6%.
+
+`netApyPct = spreadAnnualizedPct − (roundTripFeePct + builderFeePct + max(entryCostPct, 0)) × (365 / holdDays)`. The positive `holdDays` option defaults to 7 and is included in the result. Costs are amortized over that hold period. A favorable mark estimate never increases net APY; break-even keeps the signed entry-cost calculation above. Missing entry cost produces null net APY. Opportunities sort by net APY descending, with null last. Despite its name, net APY uses simple annualization, not compounding, and assumes the current spread persists.
 
 `executable` means both venues are in `executableVenues` and no HL leg is OI-capped. It is independent of `qualifies`. An OI cap adds `hl-oi-capped`; an included coin-margined leg adds `coin-margined`. Only executable rows include:
 

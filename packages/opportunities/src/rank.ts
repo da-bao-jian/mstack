@@ -92,6 +92,8 @@ export function rankOpportunities(
 ): RankedOpportunities {
 	if (nonnegative(options.sizeUsd, "sizeUsd") === 0)
 		throw new Error("sizeUsd must be positive");
+	const holdDays = nonnegative(options.holdDays ?? 7, "holdDays");
+	if (holdDays === 0) throw new Error("holdDays must be positive");
 	const fees = { ...DEFAULT_TAKER_FEE_BPS, ...options.takerFeeBps };
 	for (const [venue, fee] of Object.entries(fees))
 		nonnegative(fee, `${venue} takerFeeBps`);
@@ -182,6 +184,17 @@ export function rankOpportunities(
 					? finite((2 * (builderFee / 10) * multiplier) / 100, "builderFeePct")
 					: 0;
 				const entryCostPct = entryCost(long, short, options.sizeUsd);
+				const netApyPct =
+					entryCostPct === null
+						? null
+						: finite(
+								spreadAnnualizedPct -
+									(roundTripFeePct +
+										builderFeePct +
+										Math.max(entryCostPct, 0)) *
+										(365 / holdDays),
+								"netApyPct",
+							);
 				const breakEvenHours = calculateBreakEvenHours(
 					entryCostPct === null
 						? null
@@ -214,6 +227,7 @@ export function rankOpportunities(
 					sizeUsd: options.sizeUsd,
 					spreadRate1hPct,
 					spreadAnnualizedPct,
+					netApyPct,
 					roundTripFeePct,
 					builderFeePct,
 					entryCostPct,
@@ -235,8 +249,13 @@ export function rankOpportunities(
 			}
 		}
 	}
-	opportunities.sort((a, b) => b.spreadAnnualizedPct - a.spreadAnnualizedPct);
+	opportunities.sort((a, b) => {
+		if (a.netApyPct === null) return b.netApyPct === null ? 0 : 1;
+		if (b.netApyPct === null) return -1;
+		return b.netApyPct - a.netApyPct;
+	});
 	return {
+		holdDays,
 		observedAt: snapshot.observedAt,
 		source: snapshot.source,
 		annualizationMethod: "simple",

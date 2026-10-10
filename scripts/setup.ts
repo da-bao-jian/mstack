@@ -5,6 +5,7 @@ import {
 	readlink,
 	realpath,
 	rename,
+	rmdir,
 	symlink,
 	unlink,
 	writeFile,
@@ -15,6 +16,8 @@ import { parseArgs } from "node:util";
 interface InstallRecord {
 	root: string;
 	links: { path: string; target: string }[];
+	/** Optional for ledgers written before W4.1; never infer old ownership. */
+	directories?: string[];
 }
 
 async function exists(path: string): Promise<boolean> {
@@ -93,17 +96,25 @@ export async function setup(
 			(values.host === "auto" && (await exists(join(home, `.${host}`))))
 		)
 			hosts.push(host);
-	if (!hosts.length)
+	if (!hosts.length) {
+		if (values.uninstall) return;
 		throw new Error("No host detected. Use --host claude or --host codex.");
+	}
 	const plans: {
 		host: string;
 		ledger: string;
 		record: InstallRecord;
 		wanted: InstallRecord["links"];
+		directories: string[];
 	}[] = [];
 	for (const host of hosts) {
 		const skills = join(home, `.${host}`, "skills");
 		const ledger = join(home, ".mob", `mobstack-install-${host}.json`);
+		const directories = [
+			join(home, `.${host}`),
+			skills,
+			join(skills, "mobstack"),
+		];
 		const wanted = [
 			{ path: join(skills, "mobstack", "bin"), target: join(root, "bin") },
 			...["mob", "mob-scan", "mob-explain", "mob-status"].map((name) => ({
@@ -125,6 +136,12 @@ export async function setup(
 			throw new Error(
 				`Install record does not belong to this checkout: ${ledger}`,
 			);
+		if (
+			record.directories !== undefined &&
+			(!Array.isArray(record.directories) ||
+				record.directories.some((path) => !directories.includes(path)))
+		)
+			throw new Error(`Invalid directory ownership: ${ledger}`);
 		// Preflight all hosts before a build or mutation. Never replace unrelated files.
 		if (!values.uninstall)
 			for (const link of wanted) {
@@ -136,15 +153,27 @@ export async function setup(
 				if (!(await exists(link.target)))
 					throw new Error(`Missing generated asset: ${link.target}`);
 			}
-		plans.push({ host, ledger, record, wanted });
+		plans.push({ host, ledger, record, wanted, directories });
 	}
 	if (!values.uninstall)
 		await (options.build ?? build)(root, values.quiet === true);
-	for (const { host, ledger, record, wanted } of plans) {
+	for (const { host, ledger, record, wanted, directories } of plans) {
 		if (values.uninstall) {
 			for (const link of record.links)
 				if (await isLink(link.path, link.target)) await unlink(link.path);
 			if (await exists(ledger)) await unlink(ledger);
+			for (const path of [...(record.directories ?? [])].reverse()) {
+				try {
+					if ((await lstat(path)).isDirectory()) await rmdir(path);
+				} catch (error) {
+					if (
+						!["ENOENT", "ENOTEMPTY", "EEXIST"].includes(
+							(error as NodeJS.ErrnoException).code ?? "",
+						)
+					)
+						throw error;
+				}
+			}
 			if (!values.quiet)
 				out(
 					`Removed owned ${host} symlinks. Config and unrelated files remain.`,
@@ -152,6 +181,12 @@ export async function setup(
 			continue;
 		}
 		await mkdir(join(home, ".mob"), { recursive: true, mode: 0o700 });
+		record.directories ??= [];
+		for (const path of directories)
+			if (!(await exists(path))) {
+				await mkdir(path);
+				if (!record.directories.includes(path)) record.directories.push(path);
+			}
 		for (const link of wanted) {
 			if (await exists(link.path)) continue;
 			await mkdir(resolve(link.path, ".."), { recursive: true });

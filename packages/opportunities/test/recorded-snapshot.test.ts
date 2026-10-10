@@ -21,8 +21,10 @@ test("ranks the complete recorded funding fixture snapshot without network acces
 	expect(ranked.failed).toEqual([]);
 	for (let index = 1; index < ranked.opportunities.length; index++) {
 		expect(
-			ranked.opportunities[index - 1].spreadAnnualizedPct,
-		).toBeGreaterThanOrEqual(ranked.opportunities[index].spreadAnnualizedPct);
+			ranked.opportunities[index - 1].netApyPct ?? Number.NEGATIVE_INFINITY,
+		).toBeGreaterThanOrEqual(
+			ranked.opportunities[index].netApyPct ?? Number.NEGATIVE_INFINITY,
+		);
 	}
 	expect(
 		ranked.opportunities.some(

@@ -310,6 +310,9 @@ test.each([
 	{ breakEvenHours: Number.POSITIVE_INFINITY },
 	{ minVolume24hUsd: -1 },
 	{ minVolume24hUsd: Number.NaN },
+	{ holdDays: 0 },
+	{ holdDays: -1 },
+	{ holdDays: Number.POSITIVE_INFINITY },
 ])("rejects invalid options %j", (options) => {
 	expect(() => rank([], options)).toThrow();
 });
@@ -346,6 +349,7 @@ test("every unclassified occurrence is reported, including repeated odd listings
 
 test("empty input returns an empty ranking with metadata", () => {
 	expect(rank([])).toEqual({
+		holdDays: 7,
 		observedAt: 1_791_635_200_000,
 		source: "direct",
 		annualizationMethod: "simple",
@@ -353,6 +357,35 @@ test("empty input returns an empty ranking with metadata", () => {
 		failed: [],
 		unmatched: [],
 	});
+});
+
+test("net APY amortizes fees over the hold and never counts favorable marks as income", () => {
+	const equal = rank([rate("hl", "BTC", 0), rate("lighter", "BTC", 0.0008, 8)])
+		.opportunities[0];
+	expect(equal.netApyPct).toBeCloseTo(87.6 - (0.15 * 365) / 7, 12);
+	const favorable = [
+		rate("hl", "BTC", 0, 1, { markPrice: 99.9 }),
+		rate("lighter", "BTC", 0.0008, 8, { markPrice: 100.1 }),
+	];
+	const row = rank(favorable).opportunities[0];
+	expect(row.entryCostPct).toBe(-0.1);
+	expect(row.netApyPct).toBe(equal.netApyPct);
+	expect(row.breakEvenHours).toBeCloseTo(5, 12);
+	expect(
+		rank(favorable, { holdDays: 30 }).opportunities[0].netApyPct,
+	).toBeCloseTo(87.6 - (0.15 * 365) / 30, 12);
+	const adverse = rank([
+		rate("hl", "BTC", 0, 1, { markPrice: 100.1 }),
+		rate("lighter", "BTC", 0.0008, 8, { markPrice: 99.9 }),
+	]).opportunities[0];
+	expect(adverse.netApyPct).toBeCloseTo(87.6 - (0.25 * 365) / 7, 12);
+	const unknown = rank([
+		rate("hl", "BTC", 0),
+		rate("lighter", "BTC", 0.0008, 8, { markPrice: undefined }),
+		rate("aster", "BTC", 0.00001),
+	]).opportunities;
+	expect(unknown[0].netApyPct).not.toBeNull();
+	expect(unknown.slice(1).every((r) => r.netApyPct === null)).toBe(true);
 });
 
 test.each([undefined, 0, 999_999, 1_000_000])(
