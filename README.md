@@ -4,7 +4,14 @@ An open-source funding-rate scanner and Mobius agent stack. The current P0 scope
 
 ## 30-second install (placeholder)
 
-The installer, CLI binary, skills, and plugin arrive in later work packages. They are not available yet.
+Build the local CLI with Bun 1.3 or newer. The installer, skills, and plugin arrive in later work packages.
+
+```sh
+bun install
+bun run build
+./apps/cli/dist/mob scan --size 1000 --top 5
+./apps/cli/dist/mob explain funding --simple
+```
 
 For development, install Bun 1.3 or newer, then run:
 
@@ -28,7 +35,13 @@ import { rankOpportunities } from "@mobstack/opportunities";
 const result = rankOpportunities(snapshot, { sizeUsd: 1_000 });
 ```
 
-See [funding](packages/funding/README.md) and [opportunities](packages/opportunities/README.md) for the APIs, assumptions, and fee defaults. `mob open` strings in ranked output are suggestions for a later CLI package; these libraries do not execute them.
+See [funding](packages/funding/README.md) and [opportunities](packages/opportunities/README.md) for the APIs, assumptions, and fee defaults. `mob open` strings in ranked output are suggestions for the future execution phase; no current command executes them.
+
+## CLI
+
+The compiled `mob` binary supports `scan`, `rates`, `history`, `explain`, `status`, and `config`. It runs without Bun or `node_modules` installed. [CLI documentation](apps/cli/README.md) describes flags, output, exit codes, and config. The ten [knowledge topics](docs/knowledge/) are embedded at build time.
+
+Human data output always reports snapshot age, source, simple annualization, failures, and unmatched symbols. JSON stays on stdout; its human footer goes to stderr. Fee defaults are estimates. Entry costs use marks and do not measure executable depth.
 
 ## Custody
 

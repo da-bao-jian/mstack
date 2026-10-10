@@ -1,0 +1,14 @@
+{
+	"name": "@mobstack/cli",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"license": "MIT",
+	"scripts": {
+		"check": "tsc --build",
+		"lint": "biome check . --error-on-warnings",
+		"test": "bun test",
+		"build": "bun build --compile src/main.ts --outfile dist/mob",
+		"live:smoke": "bun run scripts/live-smoke.ts"
+	}
+}

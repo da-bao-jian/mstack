@@ -1,0 +1,55 @@
+# mob CLI
+
+Build with `bun run build` at the root, then run `apps/cli/dist/mob`. The compiled binary includes the funding and ranking libraries and all ten knowledge files. It can run from any directory without Bun, source files, or `node_modules`. This package adds no runtime dependencies. It uses `node:util` `parseArgs` and a small table renderer.
+
+```sh
+mob scan --size 5000 --top 5
+mob scan --market PEPE --venues hl,lighter-mainnet,aster --all-pairs --json
+mob scan --executable --min-apy 10 --strict
+mob rates --venue hl --market BTC
+mob history BTC --days 3
+mob explain funding --simple
+mob status --owner 0x0000000000000000000000000000000000000001
+mob config set default_size_usd 5000
+mob config get taker_fee_bps.hl
+```
+
+Run `mob --help` or `mob --version` for local information. Unknown commands, flags, config keys, and invalid numeric inputs exit 1.
+
+## Scan and rates
+
+`scan` defaults to size USD 1,000 and 15 rows. It sorts qualifying executable pairs first, then other qualifying pairs, then annualized spread descending within each group. It selects the first pair per base after sorting. `--all-pairs` keeps alternatives; `--executable`, `--min-apy`, `--market`, and `--venues` filter before the top limit. `--min-apy` refers to simple annualization, despite the flag name. Venue filters select which adapters are called.
+
+Columns show native long/short listings, annualized spread, round-trip taker plus builder fees, signed mark entry cost, break-even hours, execution eligibility, and flags. An unmeasured entry cost is `—`. Execution eligibility does not promise order depth or a profitable fill. Fee defaults are estimates; override them for actual account terms.
+
+`rates` returns raw snapshot observations with per-hour and annualized rates. `--venue` selects its adapter; `--market` filters on the classified base. Neither command changes venue-native names.
+
+Human data output always ends with snapshot age, source, simple annualization, failed venues with errors, and unmatched count. With `--json`, stdout contains one JSON document and the same human footer goes to stderr. Scan JSON is the full `RankedOpportunities` plus a filtered `view`; filters do not delete its full opportunity list. Rates JSON retains the raw snapshot and adds `unmatched` and a `view` with `ratePerHour`.
+
+Exit codes: 0 success; 1 usage, config, or request error; 2 no venue returned any rates; 3 any snapshot/history failure with `--strict`. No-rate exit 2 takes precedence over strict partial-failure exit 3. An empty filtered view with a healthy snapshot exits 0. Partial failures remain visible with or without strict mode.
+
+## History
+
+`history <BASE>` defaults to seven days and all venues. It resolves all current USD-stable native listings through the snapshot classifier, including HIP-3 names and contract multipliers. Each listing reports sample count, covered hours, average/min/max hourly rate, and simple annualization. Average is total interval funding divided by total measured hours. It then compares averages across distinct venues and prints the best positive gross spread. Coverage can differ between listings. Missing listings and unavailable Lighter history are explicit; history failures appear in `failed`.
+
+Fetchers and offline fixtures live in `packages/funding/src/history/` and `packages/funding/fixtures/`. See the [funding README](../../packages/funding/README.md#public-history) for interval boundaries, pagination, retention, and error behavior. No historical rate is replaced by a current quote.
+
+## Explanations and task status
+
+`explain` lists topics with no argument. Each topic has Simple and Precise sections; `--simple` prints the plain paragraph only. The Markdown files under `docs/knowledge/` are imported as text and embedded at build time. Rebuild to include edits. Unknown topics exit 1 and list valid topics.
+
+`status` requires a public owner address. Without `--task`, it reads the owner's task list. With a task ID, it reads that task. `--trims` and `--resizes` require `--task` and read every available log page. The output displays every field projected by the pinned upstream `publicTask`, including funding accrued labeled **estimate**, protection/mismatch controls, notices, close reason, error context, and timestamps.
+
+The API base defaults to `https://funding.mob.exchange`. `--api-base` overrides config for that request. Every Mobius request sends `X-Mobius-Client: mobstack/0.0.0` and `User-Agent: mobstack/0.0.0`. Non-2xx and malformed responses fail with HTTP status and a bounded body excerpt. JSON status output wraps tasks/logs with observation and source metadata. Reads by owner address are public. No populated task was verified live; tests use the explicitly hand-written public-task fixture.
+
+## Config
+
+`config get|set <key> [value]` uses `~/.mob/config.json`, or `$MOB_HOME/config.json` when set. Writes replace the file atomically with mode 0600. Missing files use documented defaults; malformed files fail. `get` returns the effective value.
+
+Allowed keys are `api_base`, `default_size_usd`, `taker_fee_bps.<venue>`, and `builder_fee_tenths_bps`. The venue must be one of the seven supported identifiers. Fee values must be finite and nonnegative; the builder setting is an integer in tenths of a basis point. Size must be positive. Config contains no credentials.
+
+## Verification
+
+Run `bun run check`, `bun run lint`, and `bun test` here. At the root, `bun run test` runs `bun test packages apps` with the network-blocking preload. Bun 1.3.8 has one test root and does not implement the newer path-ignore setting, so `packages/cli.test.ts` imports the CLI tests while keeping `reference/` outside test discovery. Bare root `bun test` runs the same suite.
+
+After building, `MOB_LIVE=1 bun run --filter @mobstack/cli live:smoke` runs the compiled binary for the six assigned smoke commands. It uses an empty temporary config directory and prints command output and wall time. The JSON scan is summarized to keep logs small. The status check uses only the assigned dummy address.

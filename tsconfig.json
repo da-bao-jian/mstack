@@ -4,6 +4,7 @@
 	"references": [
 		{ "path": "./tsconfig.tools.json" },
 		{ "path": "./packages/funding" },
-		{ "path": "./packages/opportunities" }
+		{ "path": "./packages/opportunities" },
+		{ "path": "./apps/cli" }
 	]
 }

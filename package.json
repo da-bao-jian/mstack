@@ -15,7 +15,7 @@
 	"scripts": {
 		"check": "tsc --build",
 		"lint": "biome check . --error-on-warnings",
-		"test": "bun test",
+		"test": "bun test packages apps",
 		"build": "bun run --workspaces --if-present build",
 		"deadcode": "knip",
 		"live:smoke": "bun run --filter @mobstack/funding live:smoke"
