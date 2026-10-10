@@ -159,7 +159,7 @@ test.each(Object.keys(readRoutes) as (keyof ReadRoutes)[])(
 	async (route) => {
 		const fixture = reads[route];
 		const client = new MobiusClient({
-			version: "0.1.0",
+			version: "0.2.0",
 			limit: async () => {},
 			fetch: async (url, init) => {
 				expect(new URL(url).pathname).toBe(route);
@@ -185,7 +185,7 @@ test.each(Object.keys(writeRoutes) as (keyof WriteRoutes)[])(
 		const fixture = writes[route];
 		let count = 0;
 		const client = new MobiusClient({
-			version: "0.1.0",
+			version: "0.2.0",
 			limit: async () => {},
 			fetch: async (url, init) => {
 				count++;

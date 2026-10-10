@@ -1,0 +1,4 @@
+{"type":"user","message":{"role":"user","content":"Sign p-1 in the browser wallet."}}
+{"type":"assistant","message":{"role":"assistant","content":"p-1"}}
+{"type":"user","message":{"role":"user","content":"Show status first."}}
+{"type":"assistant","message":{"role":"assistant","content":"Sign p-1"}}

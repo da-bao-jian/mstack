@@ -117,7 +117,15 @@ export async function setup(
 		];
 		const wanted = [
 			{ path: join(skills, "mstack", "bin"), target: join(root, "bin") },
-			...["mob", "mob-scan", "mob-explain", "mob-status"].map((name) => ({
+			...[
+				"mob",
+				"mob-scan",
+				"mob-explain",
+				"mob-status",
+				"mob-open",
+				"mob-manage",
+				"mob-close",
+			].map((name) => ({
 				path: join(skills, name),
 				target: join(root, host === "claude" ? "skills" : "skills-codex", name),
 			})),
@@ -202,10 +210,10 @@ export async function setup(
 		}
 		if (!values.quiet) {
 			out(
-				`Installed ${host}: mob, mob-scan, mob-explain, mob-status. Binary: ${join(home, `.${host}`, "skills/mstack/bin/mob")}`,
+				`Installed ${host}: mob, mob-scan, mob-explain, mob-status, mob-open, mob-manage, mob-close. Binary: ${join(home, `.${host}`, "skills/mstack/bin/mob")}`,
 			);
 			out(
-				`Paste into ${host === "claude" ? "CLAUDE.md" : "AGENTS.md"}:\nUse /mob for funding and Mobius questions. The installed mstack skills are /mob (router), /mob-scan (funding comparisons), /mob-explain (bundled explanations), and /mob-status (public task reads). These skills use the read-only P0 CLI; they cannot sign or trade.`,
+				`Paste into ${host === "claude" ? "CLAUDE.md" : "AGENTS.md"}:\nUse /mob for funding and Mobius questions. The installed mstack skills are /mob (router), /mob-scan (funding comparisons), /mob-explain (bundled explanations), /mob-status (public task reads), /mob-open, /mob-manage, and /mob-close (stage a Proposal and stop for explicit approval). Browser signing requires the latest user message to name the Proposal id; keystore signing needs the human's own terminal.`,
 			);
 		}
 	}

@@ -2,15 +2,15 @@
 	"name": "mstack",
 	"owner": { "name": "mstack contributors" },
 	"metadata": {
-		"description": "mstack P0 read-only skills",
-		"version": "0.1.0"
+		"description": "mstack funding and Proposal skills",
+		"version": "0.2.0"
 	},
 	"plugins": [
 		{
 			"name": "mstack",
 			"source": "./",
-			"description": "Read-only funding scans, explanations, and public task status.",
-			"version": "0.1.0"
+			"description": "Funding reads and Proposal skills with explicit human approval.",
+			"version": "0.2.0"
 		}
 	]
 }

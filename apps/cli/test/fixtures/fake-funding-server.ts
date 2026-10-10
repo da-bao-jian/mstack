@@ -80,8 +80,8 @@ export function fakeFundingServer(
 		async fetch(req) {
 			try {
 				const url = new URL(req.url);
-				assert.equal(req.headers.get("X-Mobius-Client"), "mstack/0.1.0");
-				assert.equal(req.headers.get("User-Agent"), "mstack/0.1.0");
+				assert.equal(req.headers.get("X-Mobius-Client"), "mstack/0.2.0");
+				assert.equal(req.headers.get("User-Agent"), "mstack/0.2.0");
 				if (req.method === "GET" && url.pathname === "/api/arbitrage/task") {
 					assert.equal(url.searchParams.get("owner"), owner);
 					return Response.json({ ...task, owner });
@@ -227,8 +227,8 @@ export function fakePositionServer(owner: Address, now = Date.now) {
 		async fetch(req) {
 			try {
 				const url = new URL(req.url);
-				assert.equal(req.headers.get("X-Mobius-Client"), "mstack/0.1.0");
-				assert.equal(req.headers.get("User-Agent"), "mstack/0.1.0");
+				assert.equal(req.headers.get("X-Mobius-Client"), "mstack/0.2.0");
+				assert.equal(req.headers.get("User-Agent"), "mstack/0.2.0");
 				if (req.method === "GET") {
 					if (url.pathname === "/api/arbitrage/task") {
 						assert.equal(url.searchParams.get("owner"), owner);

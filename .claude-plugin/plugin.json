@@ -1,10 +1,10 @@
 {
 	"name": "mstack",
-	"version": "0.1.0",
-	"description": "Read-only funding scans, explanations, and public Mobius task status.",
+	"version": "0.2.0",
+	"description": "Funding reads and Proposal skills with explicit human approval.",
 	"author": { "name": "mstack contributors" },
 	"license": "MIT",
-	"keywords": ["funding", "perpetuals", "mobius", "read-only"],
+	"keywords": ["funding", "perpetuals", "mobius", "proposals"],
 	"skills": ["./skills/"],
 	"userConfig": {
 		"api_base": {

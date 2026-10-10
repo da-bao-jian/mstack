@@ -45,12 +45,23 @@ try {
 		"mob-scan",
 		"mob-explain",
 		"mob-status",
+		"mob-open",
+		"mob-manage",
+		"mob-close",
 		"mstack/bin",
 	]) {
 		const path = join(home, ".codex/skills", name);
 		console.log(`~/.codex/skills/${name} -> ${await readlink(path)}`);
 	}
-	for (const name of ["mob", "mob-scan", "mob-explain", "mob-status"]) {
+	for (const name of [
+		"mob",
+		"mob-scan",
+		"mob-explain",
+		"mob-status",
+		"mob-open",
+		"mob-manage",
+		"mob-close",
+	]) {
 		console.log(`\n$ bash <${name} preamble>`);
 		const body = await readFile(
 			join(home, ".codex/skills", name, "SKILL.md"),

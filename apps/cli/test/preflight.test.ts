@@ -64,7 +64,7 @@ function reads(
 		...options.credentials,
 	};
 	const client = new MobiusClient({
-		version: "0.1.0",
+		version: "0.2.0",
 		limit: async () => {},
 		fetch: async (url) => {
 			const u = new URL(url);

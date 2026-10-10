@@ -17,4 +17,4 @@ Run the preamble first. Use the resolved `$MOB` path in place of `mob`; shell-qu
 6. State failed venues with their errors, unmatched count, and thin-hidden count from the footer. JSON `failed`, `counts.unmatched`, and `counts.thinHidden` provide the same information. The default JSON contains bounded views and counts; keep the full result opt-in. If the view is empty, explain the filters and failures; never invent a winner. State "annualized = simple, not compounded".
 7. Offer `mob history <base> --days 7` to check stability. History is a separate read and its covered hours may differ by venue.
 
-If quoting `mobOpen`, label it only as "the command the P1 CLI will accept". Never present it as something to run now. This P0 version has no trading commands. For an execution request, say P1 adds it and point to https://app.mob.exchange.
+If quoting `mobOpen`, label it as a staging command. Its presence never authorizes execution. For an execution request, load `/mob-open` and follow its questions and stop rule. Never stage or sign from scan output alone.

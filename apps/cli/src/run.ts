@@ -54,6 +54,7 @@ Usage:
 Venues: hl,lighter,lighter-mainnet,aster,binance,bybit,okx
 Config keys: api_base, owner, signer, policy, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps
 Keystore secrets are read only from /dev/tty. Mutation commands stage, preview, and stop before signing.
+MCP tools stage Proposals; no sign, reject, or config-set tool is exposed.
 Protection at open requires assumed leverage, not verified on the venue. Leverage and margin mode are never set by these commands.
 Browser signing can start from an agent's shell; the human approves in the wallet.
 Fee defaults are estimates. Annualized rates are simple, not compounded.
@@ -200,8 +201,13 @@ export async function run(
 				"size-mismatch-close",
 			].includes(command)
 		) {
-			const { positions } = await import("./positions.ts");
-			await positions(command, positionals, values, rt);
+			const { stagePosition } = await import("./positions.ts");
+			const { showProposal } = await import("./proposal-view.ts");
+			const proposal = await stagePosition(command, positionals, values, rt);
+			rt.out(showProposal(proposal));
+			rt.out(
+				`Stopped before signing. To authorize, name ${proposal.id} and run mob sign ${proposal.id}.`,
+			);
 			return 0;
 		}
 		if (

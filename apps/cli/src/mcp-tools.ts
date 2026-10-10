@@ -1,6 +1,7 @@
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv";
 import type { JsonSchemaType } from "@modelcontextprotocol/sdk/validation/types.js";
+import { ProposalStore } from "@mstack/proposals";
 import { config } from "./commands/config.ts";
 import { explain } from "./commands/explain.ts";
 import { type HistoryOptions, history } from "./commands/history.ts";
@@ -9,6 +10,8 @@ import type { Runtime } from "./commands/runtime.ts";
 import { type ScanOptions, scan } from "./commands/scan.ts";
 import { type StatusOptions, status } from "./commands/status.ts";
 import { UsageError } from "./config.ts";
+import { stagePosition } from "./positions.ts";
+import { proposalResult } from "./proposal-view.ts";
 
 const readOnly = "Read-only. This tool never signs, trades, or holds keys.";
 const validator = new AjvJsonSchemaValidator();
@@ -40,6 +43,7 @@ function tool<T>(
 	properties: Record<string, JsonSchemaType>,
 	required: string[],
 	execute: (options: T, rt: Runtime) => Promise<unknown>,
+	staging = false,
 ) {
 	// Structural validation stays here; shared commands enforce all value rules,
 	// so CLI and MCP return the same domain and usage error messages.
@@ -52,12 +56,12 @@ function tool<T>(
 	const validate = validator.getValidator<T>(inputSchema);
 	const definition: Tool = {
 		name,
-		description: `${description} ${readOnly}`,
+		description: `${description} ${staging ? "Stages one local Proposal and stops. Never signs, submits, or holds keys. Requires configured owner, signer, and manual policy." : readOnly}`,
 		inputSchema,
 		annotations: {
-			readOnlyHint: true,
+			readOnlyHint: !staging,
 			destructiveHint: false,
-			idempotentHint: true,
+			idempotentHint: !staging,
 			openWorldHint: true,
 		},
 	};
@@ -73,6 +77,10 @@ function tool<T>(
 		},
 	};
 }
+
+const optionalString = (value: string | number | undefined) =>
+	value === undefined ? undefined : String(value);
+const taskId = text("Required owned task ID.");
 
 export const mcpTools = [
 	tool<ScanOptions>(
@@ -183,9 +191,195 @@ export const mcpTools = [
 	),
 	tool<{ key: string }>(
 		"config_get",
-		"Read a local setting: api_base, owner, default_size_usd, taker_fee_bps.<venue>, or builder_fee_tenths_bps. No setting is changed.",
+		"Read a local setting: api_base, owner, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps, signer, or policy. No setting is changed.",
 		{ key: text("Config key to read.") },
 		["key"],
 		({ key }, rt) => config({ action: "get", key }, rt),
+	),
+	tool<{
+		base: string;
+		long: string;
+		short: string;
+		sizeUsd: number;
+		protect?: number | "off";
+		assumeLeverage?: string;
+		autoClose?: boolean;
+		minApy?: number;
+		maxSpreadBps?: number;
+		sizeMismatch?: number;
+	}>(
+		"propose_open",
+		"Stage an open using native venue:market legs and fresh marks. Protection requires assumed leverage; it does not set venue leverage.",
+		{
+			base: text("Base ticker, for example BTC."),
+			long: text("Native long leg, for example hl:BTC or hl:xyz:NVDA."),
+			short: text(
+				"Native short leg, for example lighter:BTC or aster:USD1:BTC.",
+			),
+			sizeUsd: number(
+				"Required positive USD size per leg, supplied by the human.",
+			),
+			protect: {
+				anyOf: [{ type: "number" }, { const: "off" }],
+				description: "Protection percentage, or off (default).",
+			},
+			assumeLeverage: text(
+				"Required with protection: L or L,S, each >= 1. Assumed leverage, not verified on the venue.",
+			),
+			autoClose: boolean("Enable or disable auto-close."),
+			minApy: number(
+				"Nonnegative simple annualized funding APY threshold; default 0.",
+			),
+			maxSpreadBps: number("Positive entry spread cap in bps; default 50."),
+			sizeMismatch: number(
+				"Size mismatch threshold percentage, 0.5 through 100.",
+			),
+		},
+		["base", "long", "short", "sizeUsd"],
+		async (o, rt) =>
+			proposalResult(
+				await stagePosition(
+					"open",
+					[o.base],
+					{
+						long: o.long,
+						short: o.short,
+						size: String(o.sizeUsd),
+						protect: optionalString(o.protect),
+						"assume-leverage": o.assumeLeverage,
+						"auto-close":
+							o.autoClose === undefined
+								? undefined
+								: o.autoClose
+									? "on"
+									: "off",
+						"min-apy": optionalString(o.minApy),
+						"max-spread-bps": optionalString(o.maxSpreadBps),
+						"size-mismatch": optionalString(o.sizeMismatch),
+					},
+					rt,
+				),
+			),
+		true,
+	),
+	...(["close", "neutralize"] as const).map((command) =>
+		tool<{ taskId: string }>(
+			`propose_${command}`,
+			`Stage ${command} for one owned task.`,
+			{ taskId },
+			["taskId"],
+			async (o, rt) =>
+				proposalResult(await stagePosition(command, [o.taskId], {}, rt)),
+			true,
+		),
+	),
+	tool<{ taskId: string; long?: number; short?: number }>(
+		"propose_resize",
+		"Stage new base amounts for a running task, quantized toward its current sizes.",
+		{
+			taskId,
+			long: number("New long base amount; positive."),
+			short: number(
+				"New short base amount; positive. Supply at least one leg.",
+			),
+		},
+		["taskId"],
+		async (o, rt) =>
+			proposalResult(
+				await stagePosition(
+					"resize",
+					[o.taskId],
+					{ long: optionalString(o.long), short: optionalString(o.short) },
+					rt,
+				),
+			),
+		true,
+	),
+	tool<{ taskId: string; pct: number | "off" }>(
+		"propose_protect",
+		"Stage protection for a running task.",
+		{
+			taskId,
+			pct: {
+				anyOf: [{ type: "number" }, { const: "off" }],
+				description: "Protection percentage in (0, 100], or off.",
+			},
+		},
+		["taskId", "pct"],
+		async (o, rt) =>
+			proposalResult(
+				await stagePosition("protect", [o.taskId, String(o.pct)], {}, rt),
+			),
+		true,
+	),
+	tool<{ taskId: string; enabled: boolean; minApy?: number }>(
+		"propose_auto_close",
+		"Stage auto-close for a running task.",
+		{
+			taskId,
+			enabled: boolean("Enable or disable auto-close."),
+			minApy: number(
+				"Nonnegative simple annualized funding APY threshold; default 0.",
+			),
+		},
+		["taskId", "enabled"],
+		async (o, rt) =>
+			proposalResult(
+				await stagePosition(
+					"auto-close",
+					[o.taskId, o.enabled ? "on" : "off"],
+					{ "min-apy": optionalString(o.minApy) },
+					rt,
+				),
+			),
+		true,
+	),
+	tool<{ taskId: string; enabled: boolean; pct: number }>(
+		"propose_size_mismatch_close",
+		"Stage size mismatch auto-close for a running task.",
+		{
+			taskId,
+			enabled: boolean("Enable or disable size mismatch auto-close."),
+			pct: number(
+				"Required threshold percentage, 0.5 through 100, including when disabling.",
+			),
+		},
+		["taskId", "enabled", "pct"],
+		async (o, rt) =>
+			proposalResult(
+				await stagePosition(
+					"size-mismatch-close",
+					[o.taskId, o.enabled ? "on" : "off"],
+					{ pct: String(o.pct) },
+					rt,
+				),
+			),
+		true,
+	),
+	tool<Record<string, never>>(
+		"proposal_list",
+		"Read local Proposal views, including their stored preflight results. Does not refresh or authorize them.",
+		{},
+		[],
+		async (_o, rt) => ({
+			proposals: (await new ProposalStore(rt.home, rt.now).list()).map(
+				proposalResult,
+			),
+			message: "Nothing is signed or sent until a human runs `mob sign <id>`.",
+		}),
+	),
+	tool<{ id: string }>(
+		"proposal_get",
+		"Read one local Proposal view with its exact message, digest, expiry, body, and stored preflight. Does not refresh or authorize it.",
+		{
+			id: {
+				type: "string",
+				pattern: "^p-[1-9][0-9]*$",
+				description: "Proposal id.",
+			},
+		},
+		["id"],
+		async (o, rt) =>
+			proposalResult(await new ProposalStore(rt.home, rt.now).get(o.id)),
 	),
 ];

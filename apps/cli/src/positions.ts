@@ -16,17 +16,24 @@ import {
 	type WriteRoutes,
 } from "@mstack/mobius-client";
 import { classifyMarket } from "@mstack/opportunities";
-import { type JsonObject, ProposalStore } from "@mstack/proposals";
+import {
+	type JsonObject,
+	type Proposal,
+	ProposalStore,
+} from "@mstack/proposals";
 import { getAddress } from "viem";
 import pkg from "../package.json";
-import { base, selectedVenues, snapshot } from "./commands/runtime.ts";
+import {
+	base,
+	type Runtime,
+	selectedVenues,
+	snapshot,
+} from "./commands/runtime.ts";
 import { getConfig, numberFlag, readConfig, UsageError } from "./config.ts";
-import { showProposal } from "./p1.ts";
 import { type Checked, Checks, configChecks } from "./preflight/checks.ts";
 import { type ManageCommand, managePreflight } from "./preflight/manage.ts";
 import { openPreflight } from "./preflight/open.ts";
 import { executionVenues } from "./preflight/readiness.ts";
-import type { Runtime } from "./run.ts";
 
 function nativeLeg(value: string | undefined) {
 	const separator = value?.indexOf(":") ?? -1;
@@ -69,12 +76,12 @@ function percent(value: string, name: string, minimum: number) {
 	return n;
 }
 
-export async function positions(
+export async function stagePosition(
 	command: string,
 	args: string[],
 	values: Record<string, string | boolean | undefined>,
 	rt: Runtime,
-): Promise<void> {
+): Promise<Proposal> {
 	const text = (key: string) => values[key] as string | undefined;
 	const config = await readConfig(rt.home);
 	await configChecks(config, new Checks(rt.now));
@@ -275,6 +282,7 @@ export async function positions(
 		}
 		purpose = `${command} task ${args[0]}. Request is replayable inside the server's 300 s window (no nonce); this Proposal expires at 300 s and can be signed once.`;
 	}
+	rt.signal?.throwIfAborted();
 	const store = new ProposalStore(rt.home, rt.now);
 	const staged = await store.stage({
 		kind: "sign-text",
@@ -289,8 +297,5 @@ export async function positions(
 		checks: preflight.checks,
 		checkedAt: rt.now(),
 	}));
-	rt.out(showProposal(preview));
-	rt.out(
-		`Stopped before signing. To authorize, name ${preview.id} and run mob sign ${preview.id}.`,
-	);
+	return preview;
 }

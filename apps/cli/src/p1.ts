@@ -1,10 +1,5 @@
 import { MobiusClient, type WriteRoutes } from "@mstack/mobius-client";
-import {
-	type Json,
-	type Proposal,
-	ProposalStore,
-	runPreflight,
-} from "@mstack/proposals";
+import { type Json, ProposalStore, runPreflight } from "@mstack/proposals";
 import {
 	browserSigner,
 	createKeystore,
@@ -19,28 +14,9 @@ import { getAddress } from "viem";
 import pkg from "../package.json";
 import { readConfig, UsageError } from "./config.ts";
 import { CheckFailure, Checks, configChecks } from "./preflight/checks.ts";
+import { showProposal } from "./proposal-view.ts";
 import type { Runtime } from "./run.ts";
 
-export function showProposal(p: Proposal): string {
-	return [
-		p.id,
-		`Status: ${p.status}`,
-		`Purpose: ${p.purpose}`,
-		`Owner: ${p.owner}`,
-		`Route: POST ${p.submit.base}${p.submit.route}`,
-		`Expires: ${new Date(p.expiresAt).toISOString()}`,
-		"Message:",
-		p.signing.type === "text"
-			? p.signing.message
-			: JSON.stringify(p.signing.typedData, null, 2),
-		`Digest: ${p.digest}`,
-		`Stored body: ${JSON.stringify(p.submit.body)}`,
-		...(p.preflight ? [`Preflight: ${JSON.stringify(p.preflight)}`] : []),
-		...(p.answer !== undefined
-			? [`Server answer: ${JSON.stringify(p.answer)}`]
-			: []),
-	].join("\n");
-}
 export async function p1(
 	command: string,
 	args: string[],

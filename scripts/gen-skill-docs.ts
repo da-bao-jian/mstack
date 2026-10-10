@@ -20,13 +20,21 @@ export async function renderSkills(root = repo): Promise<Map<string, string>> {
 		if (!overlay || typeof overlay !== "object" || Array.isArray(overlay))
 			throw new Error(`Invalid ${host} overlay`);
 		const values = overlay as Record<string, unknown>;
-		for (const key of ["frontmatter", "askSize", "askOwner"])
+		for (const key of [
+			"frontmatter",
+			"askSize",
+			"askOwner",
+			"askOpen",
+			"askSign",
+		])
 			if (typeof values[key] !== "string")
 				throw new Error(`Missing ${host} ${key}`);
 		const replacements: Record<string, string> = {
 			FRONTMATTER: values.frontmatter as string,
 			ASK_SIZE: values.askSize as string,
 			ASK_OWNER: values.askOwner as string,
+			ASK_OPEN: values.askOpen as string,
+			ASK_SIGN: values.askSign as string,
 			PREAMBLE: `\`\`\`bash\n${preamble}\n\`\`\``,
 		};
 		for (const file of files) {
@@ -51,10 +59,11 @@ export async function renderSkills(root = repo): Promise<Map<string, string>> {
 }
 
 if (import.meta.main) {
-	for (const [file, body] of await renderSkills()) {
+	const outputs = await renderSkills();
+	for (const [file, body] of outputs) {
 		const target = resolve(repo, file);
 		await mkdir(resolve(target, ".."), { recursive: true });
 		await writeFile(target, body);
 	}
-	console.log("Generated 4 skills for Claude and Codex.");
+	console.log(`Generated ${outputs.size / 2} skills for Claude and Codex.`);
 }

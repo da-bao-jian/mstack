@@ -14,4 +14,4 @@ Run the preamble first. Use the resolved `$MOB` path in place of `mob`; shell-qu
 3. Summarize status, native venues/markets, sizes, entry prices, leverage and margin mode, protection, auto-close, close reason, error, and relevant timestamps in plain words. Label funding accrued as an **estimate**, not realized PnL. Do not infer a live liquidation distance from task metadata.
 4. Report the API base, fetch age, and task count from the footer. Include trim/resize counts when requested. If the task list is empty, say so. Surface request or schema errors; never replace them with an empty list.
 
-P0 is read-only. For requests to open, resize, protect, or close a position, say P1 adds those commands and point to https://app.mob.exchange.
+This skill only reads. For mutation requests, load `/mob-open`, `/mob-manage`, or `/mob-close` and follow its stop rule.

@@ -205,7 +205,7 @@
 	},
 	{
 		"name": "config_get",
-		"description": "Read a local setting: api_base, owner, default_size_usd, taker_fee_bps.<venue>, or builder_fee_tenths_bps. No setting is changed. Read-only. This tool never signs, trades, or holds keys.",
+		"description": "Read a local setting: api_base, owner, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps, signer, or policy. No setting is changed. Read-only. This tool never signs, trades, or holds keys.",
 		"inputSchema": {
 			"type": "object",
 			"properties": {
@@ -215,6 +215,269 @@
 				}
 			},
 			"required": ["key"],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": true,
+			"destructiveHint": false,
+			"idempotentHint": true,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "propose_open",
+		"description": "Stage an open using native venue:market legs and fresh marks. Protection requires assumed leverage; it does not set venue leverage. Stages one local Proposal and stops. Never signs, submits, or holds keys. Requires configured owner, signer, and manual policy.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {
+				"base": {
+					"type": "string",
+					"description": "Base ticker, for example BTC."
+				},
+				"long": {
+					"type": "string",
+					"description": "Native long leg, for example hl:BTC or hl:xyz:NVDA."
+				},
+				"short": {
+					"type": "string",
+					"description": "Native short leg, for example lighter:BTC or aster:USD1:BTC."
+				},
+				"sizeUsd": {
+					"type": "number",
+					"description": "Required positive USD size per leg, supplied by the human."
+				},
+				"protect": {
+					"anyOf": [
+						{
+							"type": "number"
+						},
+						{
+							"const": "off"
+						}
+					],
+					"description": "Protection percentage, or off (default)."
+				},
+				"assumeLeverage": {
+					"type": "string",
+					"description": "Required with protection: L or L,S, each >= 1. Assumed leverage, not verified on the venue."
+				},
+				"autoClose": {
+					"type": "boolean",
+					"description": "Enable or disable auto-close."
+				},
+				"minApy": {
+					"type": "number",
+					"description": "Nonnegative simple annualized funding APY threshold; default 0."
+				},
+				"maxSpreadBps": {
+					"type": "number",
+					"description": "Positive entry spread cap in bps; default 50."
+				},
+				"sizeMismatch": {
+					"type": "number",
+					"description": "Size mismatch threshold percentage, 0.5 through 100."
+				}
+			},
+			"required": ["base", "long", "short", "sizeUsd"],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": false,
+			"destructiveHint": false,
+			"idempotentHint": false,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "propose_close",
+		"description": "Stage close for one owned task. Stages one local Proposal and stops. Never signs, submits, or holds keys. Requires configured owner, signer, and manual policy.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {
+				"taskId": {
+					"type": "string",
+					"description": "Required owned task ID."
+				}
+			},
+			"required": ["taskId"],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": false,
+			"destructiveHint": false,
+			"idempotentHint": false,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "propose_neutralize",
+		"description": "Stage neutralize for one owned task. Stages one local Proposal and stops. Never signs, submits, or holds keys. Requires configured owner, signer, and manual policy.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {
+				"taskId": {
+					"type": "string",
+					"description": "Required owned task ID."
+				}
+			},
+			"required": ["taskId"],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": false,
+			"destructiveHint": false,
+			"idempotentHint": false,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "propose_resize",
+		"description": "Stage new base amounts for a running task, quantized toward its current sizes. Stages one local Proposal and stops. Never signs, submits, or holds keys. Requires configured owner, signer, and manual policy.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {
+				"taskId": {
+					"type": "string",
+					"description": "Required owned task ID."
+				},
+				"long": {
+					"type": "number",
+					"description": "New long base amount; positive."
+				},
+				"short": {
+					"type": "number",
+					"description": "New short base amount; positive. Supply at least one leg."
+				}
+			},
+			"required": ["taskId"],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": false,
+			"destructiveHint": false,
+			"idempotentHint": false,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "propose_protect",
+		"description": "Stage protection for a running task. Stages one local Proposal and stops. Never signs, submits, or holds keys. Requires configured owner, signer, and manual policy.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {
+				"taskId": {
+					"type": "string",
+					"description": "Required owned task ID."
+				},
+				"pct": {
+					"anyOf": [
+						{
+							"type": "number"
+						},
+						{
+							"const": "off"
+						}
+					],
+					"description": "Protection percentage in (0, 100], or off."
+				}
+			},
+			"required": ["taskId", "pct"],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": false,
+			"destructiveHint": false,
+			"idempotentHint": false,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "propose_auto_close",
+		"description": "Stage auto-close for a running task. Stages one local Proposal and stops. Never signs, submits, or holds keys. Requires configured owner, signer, and manual policy.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {
+				"taskId": {
+					"type": "string",
+					"description": "Required owned task ID."
+				},
+				"enabled": {
+					"type": "boolean",
+					"description": "Enable or disable auto-close."
+				},
+				"minApy": {
+					"type": "number",
+					"description": "Nonnegative simple annualized funding APY threshold; default 0."
+				}
+			},
+			"required": ["taskId", "enabled"],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": false,
+			"destructiveHint": false,
+			"idempotentHint": false,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "propose_size_mismatch_close",
+		"description": "Stage size mismatch auto-close for a running task. Stages one local Proposal and stops. Never signs, submits, or holds keys. Requires configured owner, signer, and manual policy.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {
+				"taskId": {
+					"type": "string",
+					"description": "Required owned task ID."
+				},
+				"enabled": {
+					"type": "boolean",
+					"description": "Enable or disable size mismatch auto-close."
+				},
+				"pct": {
+					"type": "number",
+					"description": "Required threshold percentage, 0.5 through 100, including when disabling."
+				}
+			},
+			"required": ["taskId", "enabled", "pct"],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": false,
+			"destructiveHint": false,
+			"idempotentHint": false,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "proposal_list",
+		"description": "Read local Proposal views, including their stored preflight results. Does not refresh or authorize them. Read-only. This tool never signs, trades, or holds keys.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {},
+			"required": [],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": true,
+			"destructiveHint": false,
+			"idempotentHint": true,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "proposal_get",
+		"description": "Read one local Proposal view with its exact message, digest, expiry, body, and stored preflight. Does not refresh or authorize it. Read-only. This tool never signs, trades, or holds keys.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string",
+					"pattern": "^p-[1-9][0-9]*$",
+					"description": "Proposal id."
+				}
+			},
+			"required": ["id"],
 			"additionalProperties": false
 		},
 		"annotations": {

@@ -43,7 +43,7 @@ test("writes carry exact body and client headers, with no retries on readiness f
 		},
 	};
 	const client = new MobiusClient({
-		version: "0.1.0",
+		version: "0.2.0",
 		limit: async () => {},
 		fetch: async (url, init) => {
 			count++;
@@ -51,9 +51,9 @@ test("writes carry exact body and client headers, with no retries on readiness f
 			expect(init?.redirect).toBe("error");
 			expect(init?.signal).toBeUndefined();
 			expect(new Headers(init?.headers).get("X-Mobius-Client")).toBe(
-				"mstack/0.1.0",
+				"mstack/0.2.0",
 			);
-			expect(new Headers(init?.headers).get("User-Agent")).toBe("mstack/0.1.0");
+			expect(new Headers(init?.headers).get("User-Agent")).toBe("mstack/0.2.0");
 			expect(JSON.parse(String(init?.body))).toEqual(body);
 			return Response.json(readiness, { status: 409 });
 		},
@@ -128,7 +128,7 @@ test("inlined management messages preserve exact upstream strings", () => {
 });
 test("malformed successful reads fail instead of returning an empty result", async () => {
 	const client = new MobiusClient({
-		version: "0.1.0",
+		version: "0.2.0",
 		limit: async () => {},
 		fetch: async () => Response.json({ bound: "true" }),
 	});

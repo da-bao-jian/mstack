@@ -31,7 +31,20 @@ if MOB_OWNER="$("$MOB" config get owner)"; then
 else
   printf 'OWNER: fail\n'
 fi
-printf 'POLICY: read-only (P0)\n'
+if MOB_POLICY=$("$MOB" config get policy); then
+  printf 'POLICY: %s\n' "$MOB_POLICY"
+else
+  printf 'POLICY: fail\n'
+fi
+if MOB_SIGNER=$("$MOB" config get signer); then
+  case "$MOB_SIGNER" in
+    keystore|browser) printf 'SIGNER: %s\n' "$MOB_SIGNER" ;;
+    '') printf 'SIGNER: unset\n' ;;
+    *) printf 'SIGNER: fail (unsupported backend: %s)\n' "$MOB_SIGNER" ;;
+  esac
+else
+  printf 'SIGNER: fail\n'
+fi
 mob_update_check() {
   MOB_BIN_DIR="$(cd "$(dirname "$MOB")" && pwd -P)" || return 1
   MOB_REPO="$(git -C "$MOB_BIN_DIR" rev-parse --show-toplevel 2>/dev/null)" || return 0

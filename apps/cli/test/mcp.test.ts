@@ -28,7 +28,7 @@ async function connect(
 	const { ctx, calls } = await fixtureContext();
 	const rt: Runtime = { fetch: ctx.fetch, now: ctx.now, home, ...overrides };
 	const server = createMcpServer(rt, options);
-	const client = new Client({ name: "mstack-test", version: "0.1.0" });
+	const client = new Client({ name: "mstack-test", version: "0.2.0" });
 	const [clientTransport, serverTransport] =
 		InMemoryTransport.createLinkedPair();
 	await server.connect(serverTransport);
@@ -53,7 +53,7 @@ function text(result: CallToolResult): string {
 	return first.text;
 }
 
-test("MCP tools/list pins names, read-only descriptions, and input schemas", async () => {
+test("MCP tools/list pins names, staging annotations, and input schemas", async () => {
 	const { client } = await connect();
 	const result = await client.listTools();
 	// An explicit snapshot path works for both direct and root-bridge test runs.
@@ -66,14 +66,25 @@ test("MCP tools/list pins names, read-only descriptions, and input schemas", asy
 		"task_list",
 		"task_get",
 		"config_get",
+		"propose_open",
+		"propose_close",
+		"propose_neutralize",
+		"propose_resize",
+		"propose_protect",
+		"propose_auto_close",
+		"propose_size_mismatch_close",
+		"proposal_list",
+		"proposal_get",
 	]);
 	for (const tool of result.tools) {
-		expect(
-			tool.description?.endsWith(
-				"Read-only. This tool never signs, trades, or holds keys.",
-			),
-		).toBe(true);
-		expect(tool.annotations?.readOnlyHint).toBe(true);
+		const staging = tool.name.startsWith("propose_");
+		expect(tool.description).toContain(
+			staging
+				? "Never signs, submits, or holds keys"
+				: "Read-only. This tool never signs, trades, or holds keys.",
+		);
+		expect(tool.annotations?.readOnlyHint).toBe(!staging);
+		expect(tool.annotations?.idempotentHint).toBe(!staging);
 		expect(tool.inputSchema.additionalProperties).toBe(false);
 	}
 });
@@ -309,9 +320,9 @@ test("task_get returns all publicTask fields with the configured owner and clien
 			expect(params.get("owner")).toBe(task.owner);
 			expect(params.get("taskId")).toBe("1842");
 			expect(new Headers(init?.headers).get("X-Mobius-Client")).toBe(
-				"mstack/0.1.0",
+				"mstack/0.2.0",
 			);
-			expect(new Headers(init?.headers).get("User-Agent")).toBe("mstack/0.1.0");
+			expect(new Headers(init?.headers).get("User-Agent")).toBe("mstack/0.2.0");
 			return Response.json(task);
 		},
 	});
@@ -428,4 +439,230 @@ test("global network remains disabled with the MCP SDK loaded", async () => {
 	expect(() =>
 		globalThis.fetch("https://funding.mob.exchange/api/client-ip"),
 	).toThrow("Network disabled in tests");
+});
+
+test("MCP stages all seven routes, returns exact stored views, and cannot sign or reject", async () => {
+	const { ProposalStore } = await import("@mstack/proposals");
+	const { metadataContext } = await import(
+		"../../../packages/funding/test/metadata-fixtures.ts"
+	);
+	const { readyCredentials } = await import(
+		"./fixtures/fake-funding-server.ts"
+	);
+	const ctx = await metadataContext();
+	const stagingHome = await mkdtemp(join(home, "propose-"));
+	const now = Date.now();
+	await setConfig("owner", task.owner, stagingHome);
+	await setConfig("signer", "browser", stagingHome);
+	await setConfig("api_base", "http://127.0.0.1:19341", stagingHome);
+	const requests: string[] = [];
+	const credentials = readyCredentials(task.owner, now);
+	const { call, rt } = await connect({
+		home: stagingHome,
+		now: () => now,
+		fetch: async (url, init) => {
+			if (!url.startsWith("http://127.0.0.1:19341"))
+				return ctx.fetch(url, init);
+			const u = new URL(url);
+			requests.push(`${init?.method} ${u.pathname}`);
+			expect(init?.method).toBe("GET");
+			if (u.pathname === "/api/arbitrage/task") return Response.json(task);
+			if (u.pathname === "/api/binding/hl/credential")
+				return Response.json(credentials.hl);
+			if (u.pathname === "/api/binding/lighter/credential")
+				return Response.json(credentials.lighter);
+			throw new Error(`Unexpected request: ${url}`);
+		},
+	});
+	const store = new ProposalStore(stagingHome, () => now);
+	const cases = [
+		[
+			"propose_open",
+			{
+				base: "BTC",
+				long: "hl:BTC",
+				short: "lighter:BTC",
+				sizeUsd: 1000,
+				protect: 8,
+				assumeLeverage: "3",
+				autoClose: false,
+				minApy: 2,
+				maxSpreadBps: 40,
+				sizeMismatch: 5,
+			},
+			"create",
+		],
+		["propose_close", { taskId: "1842" }, "close"],
+		["propose_resize", { taskId: "1842", long: 0.06, short: 0.06 }, "resize"],
+		["propose_neutralize", { taskId: "1842" }, "neutralize"],
+		["propose_protect", { taskId: "1842", pct: 6 }, "liq-protection"],
+		[
+			"propose_auto_close",
+			{ taskId: "1842", enabled: true, minApy: 10 },
+			"auto-close",
+		],
+		[
+			"propose_size_mismatch_close",
+			{ taskId: "1842", enabled: false, pct: 5 },
+			"size-mismatch-auto-close",
+		],
+	] as const;
+	for (const [name, args, route] of cases) {
+		const result = await call(name, args);
+		expect(result.isError).not.toBe(true);
+		const { proposal: view, message } = JSON.parse(text(result));
+		const stored = await store.get(view.id);
+		expect(view).toMatchObject({
+			id: stored.id,
+			purpose: stored.purpose,
+			owner: stored.owner,
+			status: "awaiting-signature",
+			digest: stored.digest,
+			signing: stored.signing,
+			submit: stored.submit,
+			expiresAt: now - (now % 1000) + 300_000,
+			preflight: stored.preflight,
+		});
+		expect(view.submit.route).toBe(`/api/arbitrage/${route}`);
+		expect(view).not.toHaveProperty("signature");
+		expect(stored.signatureAttemptedAt).toBeUndefined();
+		expect(stored.preflight?.ok).toBe(true);
+		expect(message).toBe(
+			`Nothing is signed or sent until a human runs \`mob sign ${stored.id}\`.`,
+		);
+		const before = await readFile(
+			join(stagingHome, "proposals", `${stored.id}.json`),
+			"utf8",
+		);
+		expect(
+			JSON.parse(text(await call("proposal_get", { id: stored.id }))),
+		).toEqual({ proposal: view, message });
+		expect(
+			await readFile(
+				join(stagingHome, "proposals", `${stored.id}.json`),
+				"utf8",
+			),
+		).toBe(before);
+	}
+	const opened = await store.get("p-1");
+	expect(opened.submit.body).toEqual({
+		longVenue: "hl",
+		longMarket: "BTC",
+		shortVenue: "lighter",
+		shortMarket: "BTC",
+		sizeUsd: 1000,
+		longPrice: 82794,
+		shortPrice: 82773.5,
+		minFundingApy: 2,
+		autoClose: false,
+		maxSpreadBps: 40,
+		liqProtectionPct: 8,
+		sizeMismatchPct: 5,
+		timestamp: Math.floor(now / 1000),
+		nonce: expect.any(String),
+	});
+	expect((await store.get("p-3")).submit.body).toEqual({
+		taskId: "1842",
+		timestamp: Math.floor(now / 1000),
+		longTargetBase: 0.06,
+		shortTargetBase: 0.06,
+	});
+	expect((await store.get("p-5")).submit.body).toEqual({
+		taskId: "1842",
+		timestamp: Math.floor(now / 1000),
+		liqProtectionPct: 6,
+	});
+	expect((await store.get("p-6")).submit.body).toEqual({
+		taskId: "1842",
+		timestamp: Math.floor(now / 1000),
+		autoClose: true,
+		minFundingApy: 10,
+	});
+	expect((await store.get("p-7")).submit.body).toEqual({
+		taskId: "1842",
+		timestamp: Math.floor(now / 1000),
+		enabled: false,
+		thresholdPct: 0,
+	});
+	const count = requests.length;
+	const listed = JSON.parse(text(await call("proposal_list")));
+	expect(listed.proposals).toHaveLength(7);
+	for (const item of listed.proposals)
+		expect(item).toEqual(
+			JSON.parse(text(await call("proposal_get", { id: item.proposal.id }))),
+		);
+	expect(requests).toHaveLength(count);
+	expect(
+		requests.some((r) => r.includes("rebind-check") || r.startsWith("POST")),
+	).toBe(false);
+	for (const name of [
+		"sign",
+		"proposal_sign",
+		"reject",
+		"proposal_reject",
+		"config_set",
+	])
+		expect((await call(name, { id: "p-1" })).isError).toBe(true);
+	await expect(
+		readFile(join(stagingHome, "proposals/p-1.signature-used")),
+	).rejects.toThrow();
+	// The shared CLI path builds the same manage intent without an MCP-specific builder.
+	const out: string[] = [];
+	expect(
+		await run(["protect", "1842", "6"], {
+			...rt,
+			out: (s) => out.push(s),
+			err: (s) => out.push(s),
+		}),
+	).toBe(0);
+	const cli = await store.get("p-8");
+	expect(cli.signing).toEqual((await store.get("p-5")).signing);
+	expect(cli.submit).toEqual((await store.get("p-5")).submit);
+	await setConfig("policy", "locked", stagingHome);
+	const locked = await call("propose_close", { taskId: "1842" });
+	expect(locked.isError).toBe(true);
+	expect(text(locked)).toContain("config.policy");
+	expect(await store.list()).toHaveLength(8);
+}, 20_000);
+
+test("proposal tools reject malformed input, missing config, missing ids and expired task state", async () => {
+	const fresh = await mkdtemp(join(home, "invalid-propose-"));
+	const { call, calls } = await connect({ home: fresh });
+	for (const [name, args] of [
+		["propose_open", { base: "BTC", long: "hl:BTC", short: "lighter:BTC" }],
+		[
+			"propose_open",
+			{
+				base: "BTC",
+				long: "hl:BTC",
+				short: "lighter:BTC",
+				sizeUsd: 1000,
+				yes: true,
+			},
+		],
+		["propose_resize", { taskId: "1842", long: "1" }],
+		["propose_protect", { taskId: "1842", pct: "on" }],
+		["propose_auto_close", { taskId: "1842", enabled: "on" }],
+		["propose_size_mismatch_close", { taskId: "1842", enabled: false }],
+		["proposal_get", { id: "../config" }],
+		["proposal_get", { id: "p-999" }],
+		["proposal_list", { reject: true }],
+		["propose_close", { taskId: "1842" }],
+	] as const)
+		expect((await call(name, args)).isError).toBe(true);
+	expect(JSON.parse(text(await call("proposal_list"))).proposals).toEqual([]);
+	expect(calls).toHaveLength(0);
+	await setConfig("owner", task.owner, fresh);
+	await setConfig("signer", "browser", fresh);
+	await setConfig("api_base", "http://127.0.0.1:19342", fresh);
+	const closed = await connect({
+		home: fresh,
+		fetch: async () => Response.json({ ...task, status: "closed" }),
+	});
+	const result = await closed.call("propose_close", { taskId: "1842" });
+	expect(result.isError).toBe(true);
+	expect(text(result)).toContain("task.status");
+	expect(
+		JSON.parse(text(await closed.call("proposal_list"))).proposals,
+	).toEqual([]);
 });

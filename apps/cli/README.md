@@ -48,17 +48,17 @@ Fetchers and offline fixtures live in `packages/funding/src/history/` and `packa
 
 `status` uses `--owner` or the saved `owner` config key. Without either, it exits 1 and names the missing key. Without `--task`, it reads the owner's task list. With a task ID, it reads that task. `--trims` and `--resizes` require `--task` and read every available log page. The output displays every field projected by the pinned upstream `publicTask`, including funding accrued labeled **estimate**, protection/mismatch controls, notices, close reason, error context, and timestamps. Its footer shows API base, fetch age, task count, and requested trim/resize counts.
 
-The API base defaults to `https://funding.mob.exchange`. `--api-base` overrides config for that request. Every Mobius request sends `X-Mobius-Client: mstack/0.1.0` and `User-Agent: mstack/0.1.0`. Non-2xx and malformed responses fail with HTTP status and a bounded body excerpt. JSON status output wraps tasks/logs with observation and source metadata. Reads by owner address are public. No populated task was verified live; tests use the explicitly hand-written public-task fixture.
+The API base defaults to `https://funding.mob.exchange`. `--api-base` overrides config for that request. Every Mobius request sends `X-Mobius-Client: mstack/0.2.0` and `User-Agent: mstack/0.2.0`. Non-2xx and malformed responses fail with HTTP status and a bounded body excerpt. JSON status output wraps tasks/logs with observation and source metadata. Reads by owner address are public. No populated task was verified live; tests use the explicitly hand-written public-task fixture.
 
 ## Config
 
 `config get|set <key> [value]` uses `~/.mob/config.json`, or `$MOB_HOME/config.json` when set. Writes replace the file atomically with mode 0600. Missing files use documented defaults; malformed files fail. `get` returns the effective value.
 
-Allowed keys are `api_base`, `owner`, `default_size_usd`, `taker_fee_bps.<venue>`, and `builder_fee_tenths_bps`. Owner must be a 20-byte `0x` address; getting an unset owner prints an empty line. The venue must be one of the seven supported identifiers. Fee values must be finite and nonnegative; the builder setting is an integer in tenths of a basis point. Size must be positive. Config contains no credentials.
+Allowed keys are `api_base`, `owner`, `default_size_usd`, `taker_fee_bps.<venue>`, `builder_fee_tenths_bps`, `signer`, and `policy`. Owner must be a 20-byte `0x` address; getting an unset owner prints an empty line. The venue must be one of the seven supported identifiers. Fee values must be finite and nonnegative; the builder setting is an integer in tenths of a basis point. Size must be positive. Config contains no credentials.
 
 ## MCP server
 
-`mob mcp` runs a read-only stdio server. See the root [client setup instructions](../../README.md#use-from-any-mcp-client). Stdout carries protocol messages only; there are no CLI tables or footers on the protocol stream.
+`mob mcp` runs a stdio server for public reads and local Proposal staging. See the root [client setup instructions](../../README.md#use-from-any-mcp-client). Stdout carries protocol messages only; there are no CLI tables or footers on the protocol stream.
 
 | Tool | Input | Result |
 |---|---|---|
@@ -70,7 +70,9 @@ Allowed keys are `api_base`, `owner`, `default_size_usd`, `taker_fee_bps.<venue>
 | `task_get` | taskId; optional owner, trims, resizes | Public task and requested logs |
 | `config_get` | key | Effective local config value |
 
-Defaults and validation match the CLI. Each tool returns one text content block: JSON for command objects, Markdown for explanations, or the config value. Missing owner errors name `mob config set owner`. There is no `config_set` tool. The server exposes no signing, trading, upgrade, or shell tool.
+Nine additional tools stage or inspect Proposals: `propose_open`, `propose_close`, `propose_resize`, `propose_neutralize`, `propose_protect`, `propose_auto_close`, `propose_size_mismatch_close`, `proposal_list`, and `proposal_get`. See the root [input table](../../README.md#use-from-any-mcp-client). Staging uses `src/positions.ts`, the same function as the CLI. It returns the Proposal view and "Nothing is signed or sent until a human runs `mob sign <id>`." No signature or mutation request is produced. Get/list return stored evidence without rerunning preflight. Propose tools are non-idempotent local writes; repeated calls create separate Proposals.
+
+Defaults and validation match the CLI. Each tool returns one text content block: JSON for command objects, Markdown for explanations, or the config value. Missing owner errors name `mob config set owner`. There is no sign, reject, config-set, upgrade, or shell tool.
 
 `funding_scan` uses the same bounded JSON shape as `mob scan --json`. Set `includeFull: true` to add every opportunity; it can exceed 3 MB. Both `top` and `topExec` are capped at 200. `funding_rates` adds an MCP-only requirement for `venue` or `market` and applies the filter to raw arrays as well as the view, so a market-only request does not carry every unrelated rate. Failures and unmatched markets remain visible. CLI rates behavior is unchanged.
 
@@ -92,7 +94,7 @@ Set `mob config set owner 0x…` and `mob config set signer keystore` or `browse
 
 `mob proposals` lists stored Proposals. `mob proposal show <id>` shows the stored message, digest, body, and endpoint. `mob preview <id>` reruns its preflight and stops. After the user names the id, `mob sign <id> [--with keystore|browser]` shows the same intent, asks the selected wallet for approval, signs once, and submits the stored body. `mob reject <id>` makes an unsigned Proposal terminal.
 
-Proposals expire after 300 seconds. A signed attempt cannot be retried, even after a server failure. Submission acknowledgement does not confirm execution. MCP remains read-only. See [Proposal storage](../../packages/proposals/README.md) and [keystores](../../packages/signers/README.md).
+Proposals expire after 300 seconds. A signed attempt cannot be retried, even after a server failure. Submission acknowledgement does not confirm execution. MCP can stage and inspect Proposals but cannot sign, submit, or reject them. See [Proposal storage](../../packages/proposals/README.md) and [keystores](../../packages/signers/README.md).
 
 Run `bun apps/cli/scripts/smoke-proposals.ts` from the repository root for a disposable-keystore transcript against a loopback fake server. It injects a test-only secret reader, verifies the signer and every request field, and removes its temporary home. It makes no live Mobius or venue requests.
 

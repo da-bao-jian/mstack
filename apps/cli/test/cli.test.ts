@@ -216,7 +216,7 @@ test.each(
 });
 
 test("version and help expose only delivered commands", async () => {
-	expect((await invoke(["--version"])).out).toBe("0.1.0");
+	expect((await invoke(["--version"])).out).toBe("0.2.0");
 	const result = await invoke(["--help"]);
 	for (const name of [
 		"scan",
@@ -330,8 +330,8 @@ test("status renders every publicTask fixture field and sends client headers", a
 	);
 	expect(result.out).not.toContain("snapshot age");
 	const headers = new Headers(requests[0].init?.headers);
-	expect(headers.get("X-Mobius-Client")).toBe("mstack/0.1.0");
-	expect(headers.get("User-Agent")).toBe("mstack/0.1.0");
+	expect(headers.get("X-Mobius-Client")).toBe("mstack/0.2.0");
+	expect(headers.get("User-Agent")).toBe("mstack/0.2.0");
 	expect(requests[0].url).toContain("taskId=1842");
 });
 

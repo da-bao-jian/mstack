@@ -6,7 +6,11 @@
 		"packages/proposals": { "project": ["src/**/*.ts", "test/**/*.ts"] },
 		"packages/signers": { "project": ["src/**/*.ts", "test/**/*.ts"] },
 		".": {
-			"entry": ["packages/*.test.ts", "scripts/setup.ts"],
+			"entry": [
+				"packages/*.test.ts",
+				"scripts/setup.ts",
+				"scripts/sign-guard.ts"
+			],
 			"project": ["packages/*.ts", "scripts/**/*.ts"]
 		},
 		"packages/funding": {

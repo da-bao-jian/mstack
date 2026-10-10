@@ -16,6 +16,7 @@ export interface Runtime {
 	fetch: Fetch;
 	now: () => number;
 	home: string;
+	signal?: AbortSignal;
 }
 
 const adapters = [
