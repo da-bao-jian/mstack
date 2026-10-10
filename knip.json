@@ -4,6 +4,9 @@
 		".": {
 			"entry": ["packages/*.test.ts"],
 			"project": ["packages/*.ts"]
+		},
+		"packages/funding": {
+			"project": ["src/**/*.ts", "test/**/*.ts", "scripts/**/*.ts"]
 		}
 	}
 }

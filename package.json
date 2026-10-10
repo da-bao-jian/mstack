@@ -17,7 +17,8 @@
 		"lint": "biome check . --error-on-warnings",
 		"test": "bun test",
 		"build": "bun run --workspaces --if-present build",
-		"deadcode": "knip"
+		"deadcode": "knip",
+		"live:smoke": "bun run --filter @mobstack/funding live:smoke"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.15",

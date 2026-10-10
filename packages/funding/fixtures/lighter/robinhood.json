@@ -1,0 +1,53 @@
+{
+	"code": 200,
+	"funding_rates": [
+		{
+			"market_id": 1,
+			"exchange": "binance",
+			"symbol": "BTC",
+			"rate": -1.998e-5
+		},
+		{
+			"market_id": 0,
+			"exchange": "binance",
+			"symbol": "ETH",
+			"rate": 3.463e-5
+		},
+		{
+			"market_id": 1,
+			"exchange": "bybit",
+			"symbol": "BTC",
+			"rate": -2.32e-5
+		},
+		{
+			"market_id": 0,
+			"exchange": "bybit",
+			"symbol": "ETH",
+			"rate": 3.423e-5
+		},
+		{
+			"market_id": 1,
+			"exchange": "hyperliquid",
+			"symbol": "BTC",
+			"rate": -3.44136e-5
+		},
+		{
+			"market_id": 0,
+			"exchange": "hyperliquid",
+			"symbol": "ETH",
+			"rate": 0.0001
+		},
+		{
+			"market_id": 1,
+			"exchange": "lighter",
+			"symbol": "BTC",
+			"rate": 0
+		},
+		{
+			"market_id": 0,
+			"exchange": "lighter",
+			"symbol": "ETH",
+			"rate": 9.599999999999999e-5
+		}
+	]
+}

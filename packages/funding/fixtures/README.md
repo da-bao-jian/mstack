@@ -1,0 +1,14 @@
+# Recorded venue responses
+
+These JSON files contain real public API responses recorded on 2026-10-10. Each endpoint was requested once during recording. `manifest.json` records the URL, method, POST body where needed, HTTP status, receipt time, and SHA-256 of the original full response. No credentials were used.
+
+Only market arrays were trimmed. Response envelopes and retained rows keep their original fields and values. Hyperliquid universe rows and asset contexts were trimmed together. The cap arrays remain complete.
+
+- Hyperliquid: `BTC`, `kPEPE`, delisted `CANTO`, two `xyz` markets including `xyz:NVDA`, and two `io` markets.
+- Lighter: BTC and ETH from both deployments, including every exchange discriminator.
+- Aster: four USDT/USD1 markets across 1h, 4h, and 8h intervals. Three out-of-scope rows (`AAPLUSD`, `ETHU`, `CDLFORM`) test the upstream scope filter.
+- Binance: 1h, 4h, and 8h rows, plus symbols absent from the interval override list and a zero next-funding timestamp.
+- Bybit: 1h and 8h perpetuals plus a dated future with empty funding fields.
+- OKX: BTC linear and inverse swaps and an ETH swap, with their per-instrument funding responses.
+
+`../test/expected.json` pins exact normalized rows independently of runtime parsing. Its observation timestamp is fixed by the test clock. Malformed and scheduling cases mutate copies of these recorded responses; they are not presented as live observations. Tests never refresh fixtures or use the network.

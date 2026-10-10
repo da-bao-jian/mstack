@@ -3,5 +3,15 @@
 	"vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
 	"files": { "includes": ["**", "!!reference", "!!**/dist"] },
 	"formatter": { "enabled": true, "indentStyle": "tab" },
-	"linter": { "enabled": true, "rules": { "preset": "recommended" } }
+	"linter": { "enabled": true, "rules": { "preset": "recommended" } },
+	"overrides": [
+		{
+			"includes": ["packages/funding/src/index.ts"],
+			"formatter": { "enabled": false }
+		},
+		{
+			"includes": ["packages/funding/src/index.test.ts"],
+			"assist": { "enabled": false }
+		}
+	]
 }

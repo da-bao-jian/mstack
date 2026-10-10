@@ -1,0 +1,160 @@
+[
+	{
+		"file": "hyperliquid/core-meta.json",
+		"url": "https://api.hyperliquid.xyz/info",
+		"method": "POST",
+		"body": {
+			"type": "metaAndAssetCtxs"
+		},
+		"observedAt": 1791635202856,
+		"status": 200,
+		"rawSha256": "2d4c61391d90b9ec64d0fdd4b94d6d4c60059fac5733fd55637c46e716f480fc"
+	},
+	{
+		"file": "hyperliquid/core-caps.json",
+		"url": "https://api.hyperliquid.xyz/info",
+		"method": "POST",
+		"body": {
+			"type": "perpsAtOpenInterestCap"
+		},
+		"observedAt": 1791635202497,
+		"status": 200,
+		"rawSha256": "cc6cad5f2412fc074c74d6857e342097cceb2ab615a37f438546cd62ccc2accd"
+	},
+	{
+		"file": "hyperliquid/xyz-meta.json",
+		"url": "https://api.hyperliquid.xyz/info",
+		"method": "POST",
+		"body": {
+			"type": "metaAndAssetCtxs",
+			"dex": "xyz"
+		},
+		"observedAt": 1791635202783,
+		"status": 200,
+		"rawSha256": "5401a5352b1157f33458b6061180b94f25b448aedc78a58a62bfd1cb708efdec"
+	},
+	{
+		"file": "hyperliquid/xyz-caps.json",
+		"url": "https://api.hyperliquid.xyz/info",
+		"method": "POST",
+		"body": {
+			"type": "perpsAtOpenInterestCap",
+			"dex": "xyz"
+		},
+		"observedAt": 1791635202496,
+		"status": 200,
+		"rawSha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+	},
+	{
+		"file": "hyperliquid/io-meta.json",
+		"url": "https://api.hyperliquid.xyz/info",
+		"method": "POST",
+		"body": {
+			"type": "metaAndAssetCtxs",
+			"dex": "io"
+		},
+		"observedAt": 1791635202498,
+		"status": 200,
+		"rawSha256": "287257553ac6f7c390b73a6fab23ba4651e2ae0b47519471e02e4bc7cf14a008"
+	},
+	{
+		"file": "hyperliquid/io-caps.json",
+		"url": "https://api.hyperliquid.xyz/info",
+		"method": "POST",
+		"body": {
+			"type": "perpsAtOpenInterestCap",
+			"dex": "io"
+		},
+		"observedAt": 1791635202497,
+		"status": 200,
+		"rawSha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+	},
+	{
+		"file": "lighter/robinhood.json",
+		"url": "https://api.rh.lighter.xyz/api/v1/funding-rates",
+		"method": "GET",
+		"observedAt": 1791635202694,
+		"status": 200,
+		"rawSha256": "e74b4297a5a5de9a97aa63ab215cbb68dcd1a1b2d46602b74bcec388af018745"
+	},
+	{
+		"file": "lighter/mainnet.json",
+		"url": "https://mainnet.zklighter.elliot.ai/api/v1/funding-rates",
+		"method": "GET",
+		"observedAt": 1791635202693,
+		"status": 200,
+		"rawSha256": "3fac7d7d4a564d87a0c13559e6365f3ddfab383ecceaf631a80962643900255f"
+	},
+	{
+		"file": "aster/premiumIndex.json",
+		"url": "https://fapi.asterdex.com/fapi/v3/premiumIndex",
+		"method": "GET",
+		"observedAt": 1791635202495,
+		"status": 200,
+		"rawSha256": "6e44c4a50cbd6b95ce2a77a59ab797340bfac523a40fb9212e76ad5487aba8c4"
+	},
+	{
+		"file": "aster/fundingInfo.json",
+		"url": "https://fapi.asterdex.com/fapi/v3/fundingInfo",
+		"method": "GET",
+		"observedAt": 1791635202494,
+		"status": 200,
+		"rawSha256": "396e53bb301d36ab382e910b2c94f0a79e881836e7ccafda7f60db7ea3a63a3c"
+	},
+	{
+		"file": "binance/premiumIndex.json",
+		"url": "https://fapi.binance.com/fapi/v1/premiumIndex",
+		"method": "GET",
+		"observedAt": 1791635202498,
+		"status": 200,
+		"rawSha256": "d0d3321d37d41a0044504fe47b1138517d6ae18956396cfd4c7176d2f1d5e2e3"
+	},
+	{
+		"file": "binance/fundingInfo.json",
+		"url": "https://fapi.binance.com/fapi/v1/fundingInfo",
+		"method": "GET",
+		"observedAt": 1791635202492,
+		"status": 200,
+		"rawSha256": "10d273d4dd42858ba5d174c4a705fc09b48dfe2d4d6160419688a0522e69916c"
+	},
+	{
+		"file": "bybit/tickers.json",
+		"url": "https://api.bybit.com/v5/market/tickers?category=linear",
+		"method": "GET",
+		"observedAt": 1791635202917,
+		"status": 200,
+		"rawSha256": "4057dba048dcebfd0043239784ae6efe0353de672f04a44739082c89f3b9e8ee"
+	},
+	{
+		"file": "okx/instruments.json",
+		"url": "https://www.okx.com/api/v5/public/instruments?instType=SWAP",
+		"method": "GET",
+		"observedAt": 1791635203097,
+		"status": 200,
+		"rawSha256": "ec1b2fb1efac134009e2d7305417f3bda4016d786d5e654cb3fe95e97b7fde33"
+	},
+	{
+		"file": "okx/BTC-USDT-SWAP.json",
+		"url": "https://www.okx.com/api/v5/public/funding-rate?instId=BTC-USDT-SWAP",
+		"method": "GET",
+		"observedAt": 1791635241932,
+		"status": 200,
+		"rawSha256": "1d7558c83232a921ae1345301189ffd5f3049459f07d76ecbe7a38debab18419"
+	},
+	{
+		"file": "okx/ETH-USDT-SWAP.json",
+		"url": "https://www.okx.com/api/v5/public/funding-rate?instId=ETH-USDT-SWAP",
+		"method": "GET",
+		"observedAt": 1791635242059,
+		"status": 200,
+		"rawSha256": "069fef6dba0b8785511b66f001208246e4579921ea3c2a4919a9bcc4176e552c"
+	},
+	{
+		"file": "okx/BTC-USD-SWAP.json",
+		"url": "https://www.okx.com/api/v5/public/funding-rate?instId=BTC-USD-SWAP",
+		"method": "GET",
+		"observedAt": 1791635242446,
+		"status": 200,
+		"rawSha256": "caa87af6be1bb23cbad2dd660c57472f66718929df5af75ec6a1fe868117563e"
+	}
+]

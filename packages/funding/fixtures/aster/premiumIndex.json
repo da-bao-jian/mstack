@@ -1,0 +1,72 @@
+[
+	{
+		"symbol": "DEXEUSDT",
+		"markPrice": "1.85295041",
+		"indexPrice": "1.85365714",
+		"estimatedSettlePrice": "1.85318645",
+		"lastFundingRate": "0.00005000",
+		"interestRate": "0.00010000",
+		"nextFundingTime": 1791648000000,
+		"time": 1791635201000
+	},
+	{
+		"symbol": "ARGUSUSDT",
+		"markPrice": "0.01089000",
+		"indexPrice": "0.01081070",
+		"estimatedSettlePrice": "0.01078019",
+		"lastFundingRate": "0.00001250",
+		"interestRate": "0.00010000",
+		"nextFundingTime": 1791637200000,
+		"time": 1791635201000
+	},
+	{
+		"symbol": "BTCUSD1",
+		"markPrice": "82795.20000000",
+		"indexPrice": "82841.13977857",
+		"estimatedSettlePrice": "82864.80562505",
+		"lastFundingRate": "-0.00006598",
+		"interestRate": "0.00010000",
+		"nextFundingTime": 1791648000000,
+		"time": 1791635201000
+	},
+	{
+		"symbol": "BTCUSDT",
+		"markPrice": "82798.90000000",
+		"indexPrice": "82838.64543478",
+		"estimatedSettlePrice": "82862.88053128",
+		"lastFundingRate": "0.00000751",
+		"interestRate": "0.00010000",
+		"nextFundingTime": 1791648000000,
+		"time": 1791635201000
+	},
+	{
+		"symbol": "AAPLUSD",
+		"markPrice": "336.49000000",
+		"indexPrice": "336.49000000",
+		"estimatedSettlePrice": "336.49000000",
+		"lastFundingRate": "0",
+		"interestRate": "0",
+		"nextFundingTime": 1791648000000,
+		"time": 1791635201000
+	},
+	{
+		"symbol": "ETHU",
+		"markPrice": "2494.19000000",
+		"indexPrice": "2495.15726967",
+		"estimatedSettlePrice": "2495.73526067",
+		"lastFundingRate": "-0.00001821",
+		"interestRate": "0.00010000",
+		"nextFundingTime": 1791648000000,
+		"time": 1791635201000
+	},
+	{
+		"symbol": "CDLFORM",
+		"markPrice": "0.00768717",
+		"indexPrice": "0.00768700",
+		"estimatedSettlePrice": "0.00770490",
+		"lastFundingRate": "0.00010000",
+		"interestRate": "0.00010000",
+		"nextFundingTime": 1791648000000,
+		"time": 1791635201000
+	}
+]

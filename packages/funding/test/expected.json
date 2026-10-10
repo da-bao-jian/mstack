@@ -1,0 +1,432 @@
+{
+	"hl": [
+		{
+			"venue": "hl",
+			"market": "BTC",
+			"ratePerInterval": -4.2779e-6,
+			"intervalHours": 1,
+			"annualizedPct": -3.7474404000000003,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple",
+			"markPrice": 82794.0,
+			"openInterestUsd": 3172029129.1991997,
+			"oiCapped": false
+		},
+		{
+			"venue": "hl",
+			"market": "kPEPE",
+			"ratePerInterval": 1.25e-5,
+			"intervalHours": 1,
+			"annualizedPct": 10.95,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple",
+			"markPrice": 0.004023,
+			"openInterestUsd": 27416927.990177996,
+			"oiCapped": false
+		},
+		{
+			"venue": "hl",
+			"market": "xyz:XYZ100",
+			"ratePerInterval": 6.25e-6,
+			"intervalHours": 1,
+			"annualizedPct": 5.475,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple",
+			"markPrice": 30926.0,
+			"openInterestUsd": 231788644.3292,
+			"oiCapped": false
+		},
+		{
+			"venue": "hl",
+			"market": "xyz:NVDA",
+			"ratePerInterval": 6.25e-6,
+			"intervalHours": 1,
+			"annualizedPct": 5.475,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple",
+			"markPrice": 230.22,
+			"openInterestUsd": 110086611.111,
+			"oiCapped": false
+		},
+		{
+			"venue": "hl",
+			"market": "io:OAI",
+			"ratePerInterval": 2.22313e-5,
+			"intervalHours": 1,
+			"annualizedPct": 19.4746188,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple",
+			"markPrice": 1696.7,
+			"openInterestUsd": 5577276.8644,
+			"oiCapped": false
+		},
+		{
+			"venue": "hl",
+			"market": "io:ANTH",
+			"ratePerInterval": 1.29213e-5,
+			"intervalHours": 1,
+			"annualizedPct": 11.319058799999999,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple",
+			"markPrice": 2089.9,
+			"openInterestUsd": 42493175.976399995,
+			"oiCapped": false
+		}
+	],
+	"lighter": [
+		{
+			"venue": "binance",
+			"market": "BTC",
+			"ratePerInterval": -1.998e-5,
+			"intervalHours": 8,
+			"annualizedPct": -2.18781,
+			"observedAt": 1791635200000,
+			"source": "lighter-mirror",
+			"annualizationMethod": "simple",
+			"sourceVenue": "lighter"
+		},
+		{
+			"venue": "binance",
+			"market": "ETH",
+			"ratePerInterval": 3.463e-5,
+			"intervalHours": 8,
+			"annualizedPct": 3.791985,
+			"observedAt": 1791635200000,
+			"source": "lighter-mirror",
+			"annualizationMethod": "simple",
+			"sourceVenue": "lighter"
+		},
+		{
+			"venue": "bybit",
+			"market": "BTC",
+			"ratePerInterval": -2.32e-5,
+			"intervalHours": 8,
+			"annualizedPct": -2.5404000000000004,
+			"observedAt": 1791635200000,
+			"source": "lighter-mirror",
+			"annualizationMethod": "simple",
+			"sourceVenue": "lighter"
+		},
+		{
+			"venue": "bybit",
+			"market": "ETH",
+			"ratePerInterval": 3.423e-5,
+			"intervalHours": 8,
+			"annualizedPct": 3.7481850000000003,
+			"observedAt": 1791635200000,
+			"source": "lighter-mirror",
+			"annualizationMethod": "simple",
+			"sourceVenue": "lighter"
+		},
+		{
+			"venue": "hl",
+			"market": "BTC",
+			"ratePerInterval": -3.44136e-5,
+			"intervalHours": 8,
+			"annualizedPct": -3.7682891999999995,
+			"observedAt": 1791635200000,
+			"source": "lighter-mirror",
+			"annualizationMethod": "simple",
+			"sourceVenue": "lighter"
+		},
+		{
+			"venue": "hl",
+			"market": "ETH",
+			"ratePerInterval": 0.0001,
+			"intervalHours": 8,
+			"annualizedPct": 10.95,
+			"observedAt": 1791635200000,
+			"source": "lighter-mirror",
+			"annualizationMethod": "simple",
+			"sourceVenue": "lighter"
+		},
+		{
+			"venue": "lighter",
+			"market": "BTC",
+			"ratePerInterval": 0,
+			"intervalHours": 8,
+			"annualizedPct": 0.0,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple"
+		},
+		{
+			"venue": "lighter",
+			"market": "ETH",
+			"ratePerInterval": 9.599999999999999e-5,
+			"intervalHours": 8,
+			"annualizedPct": 10.511999999999999,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple"
+		}
+	],
+	"lighter-mainnet": [
+		{
+			"venue": "binance",
+			"market": "BTC",
+			"ratePerInterval": -1.998e-5,
+			"intervalHours": 8,
+			"annualizedPct": -2.18781,
+			"observedAt": 1791635200000,
+			"source": "lighter-mirror",
+			"annualizationMethod": "simple",
+			"sourceVenue": "lighter-mainnet"
+		},
+		{
+			"venue": "binance",
+			"market": "ETH",
+			"ratePerInterval": 3.463e-5,
+			"intervalHours": 8,
+			"annualizedPct": 3.791985,
+			"observedAt": 1791635200000,
+			"source": "lighter-mirror",
+			"annualizationMethod": "simple",
+			"sourceVenue": "lighter-mainnet"
+		},
+		{
+			"venue": "bybit",
+			"market": "BTC",
+			"ratePerInterval": -2.32e-5,
+			"intervalHours": 8,
+			"annualizedPct": -2.5404000000000004,
+			"observedAt": 1791635200000,
+			"source": "lighter-mirror",
+			"annualizationMethod": "simple",
+			"sourceVenue": "lighter-mainnet"
+		},
+		{
+			"venue": "bybit",
+			"market": "ETH",
+			"ratePerInterval": 3.423e-5,
+			"intervalHours": 8,
+			"annualizedPct": 3.7481850000000003,
+			"observedAt": 1791635200000,
+			"source": "lighter-mirror",
+			"annualizationMethod": "simple",
+			"sourceVenue": "lighter-mainnet"
+		},
+		{
+			"venue": "hl",
+			"market": "BTC",
+			"ratePerInterval": -3.42704e-5,
+			"intervalHours": 8,
+			"annualizedPct": -3.7526088000000004,
+			"observedAt": 1791635200000,
+			"source": "lighter-mirror",
+			"annualizationMethod": "simple",
+			"sourceVenue": "lighter-mainnet"
+		},
+		{
+			"venue": "hl",
+			"market": "ETH",
+			"ratePerInterval": 0.0001,
+			"intervalHours": 8,
+			"annualizedPct": 10.95,
+			"observedAt": 1791635200000,
+			"source": "lighter-mirror",
+			"annualizationMethod": "simple",
+			"sourceVenue": "lighter-mainnet"
+		},
+		{
+			"venue": "lighter-mainnet",
+			"market": "BTC",
+			"ratePerInterval": -2.3999999999999997e-5,
+			"intervalHours": 8,
+			"annualizedPct": -2.6279999999999997,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple"
+		},
+		{
+			"venue": "lighter-mainnet",
+			"market": "ETH",
+			"ratePerInterval": 9.599999999999999e-5,
+			"intervalHours": 8,
+			"annualizedPct": 10.511999999999999,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple"
+		}
+	],
+	"aster": [
+		{
+			"venue": "aster",
+			"market": "DEXE",
+			"ratePerInterval": 5e-5,
+			"intervalHours": 4,
+			"annualizedPct": 10.95,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple",
+			"markPrice": 1.85295041,
+			"nextFundingAt": 1791648000000
+		},
+		{
+			"venue": "aster",
+			"market": "ARGUS",
+			"ratePerInterval": 1.25e-5,
+			"intervalHours": 1,
+			"annualizedPct": 10.95,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple",
+			"markPrice": 0.01089,
+			"nextFundingAt": 1791637200000
+		},
+		{
+			"venue": "aster",
+			"market": "USD1:BTC",
+			"ratePerInterval": -6.598e-5,
+			"intervalHours": 8,
+			"annualizedPct": -7.22481,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple",
+			"markPrice": 82795.2,
+			"nextFundingAt": 1791648000000
+		},
+		{
+			"venue": "aster",
+			"market": "BTC",
+			"ratePerInterval": 7.51e-6,
+			"intervalHours": 8,
+			"annualizedPct": 0.822345,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple",
+			"markPrice": 82798.9,
+			"nextFundingAt": 1791648000000
+		}
+	],
+	"binance": [
+		{
+			"venue": "binance",
+			"market": "DEXEUSDT",
+			"ratePerInterval": 5e-5,
+			"intervalHours": 4,
+			"annualizedPct": 10.95,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple",
+			"markPrice": 1.852,
+			"nextFundingAt": 1791648000000
+		},
+		{
+			"venue": "binance",
+			"market": "RAYUSDT",
+			"ratePerInterval": 0.0,
+			"intervalHours": 8,
+			"annualizedPct": 0.0,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple",
+			"markPrice": 2.38638691,
+			"nextFundingAt": 1791648000000
+		},
+		{
+			"venue": "binance",
+			"market": "LOKAUSDT",
+			"ratePerInterval": 0.0,
+			"intervalHours": 8,
+			"annualizedPct": 0.0,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple",
+			"markPrice": 0.15348159
+		},
+		{
+			"venue": "binance",
+			"market": "BTCUSDT",
+			"ratePerInterval": -1.998e-5,
+			"intervalHours": 8,
+			"annualizedPct": -2.18781,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple",
+			"markPrice": 82792.1,
+			"nextFundingAt": 1791648000000
+		},
+		{
+			"venue": "binance",
+			"market": "KAIAUSDT",
+			"ratePerInterval": -0.00135715,
+			"intervalHours": 1,
+			"annualizedPct": -1188.8634,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple",
+			"markPrice": 0.05523073,
+			"nextFundingAt": 1791637200000
+		}
+	],
+	"bybit": [
+		{
+			"venue": "bybit",
+			"market": "ARKUSDT",
+			"ratePerInterval": 1.25e-5,
+			"intervalHours": 1.0,
+			"annualizedPct": 10.95,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple",
+			"markPrice": 0.21813,
+			"nextFundingAt": 1791637200000,
+			"openInterestUsd": 2849358.9
+		},
+		{
+			"venue": "bybit",
+			"market": "BTCUSDT",
+			"ratePerInterval": -2.32e-5,
+			"intervalHours": 8.0,
+			"annualizedPct": -2.5404000000000004,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple",
+			"markPrice": 82792.7,
+			"nextFundingAt": 1791648000000,
+			"openInterestUsd": 4669422920.73
+		}
+	],
+	"okx": [
+		{
+			"venue": "okx",
+			"market": "BTC-USD-SWAP",
+			"ratePerInterval": 4.10122354465e-5,
+			"intervalHours": 8.0,
+			"annualizedPct": 4.49083978139175,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple",
+			"nextFundingAt": 1791648000000
+		},
+		{
+			"venue": "okx",
+			"market": "BTC-USDT-SWAP",
+			"ratePerInterval": 1.63784609531e-5,
+			"intervalHours": 8.0,
+			"annualizedPct": 1.7934414743644502,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple",
+			"nextFundingAt": 1791648000000
+		},
+		{
+			"venue": "okx",
+			"market": "ETH-USDT-SWAP",
+			"ratePerInterval": 3.24972502985e-5,
+			"intervalHours": 8.0,
+			"annualizedPct": 3.5584489076857504,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple",
+			"nextFundingAt": 1791648000000
+		}
+	]
+}
