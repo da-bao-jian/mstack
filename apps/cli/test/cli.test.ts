@@ -227,7 +227,19 @@ test("version and help expose only delivered commands", async () => {
 		"config",
 	])
 		expect(result.out).toContain(`mob ${name}`);
-	expect(result.out).not.toMatch(/mob (open|bind|close)/);
+	for (const name of [
+		"open",
+		"close",
+		"neutralize",
+		"resize",
+		"protect",
+		"auto-close",
+		"size-mismatch-close",
+	])
+		expect(result.out).toContain(`mob ${name}`);
+	expect(result.out).not.toMatch(/mob (bind|setup)/);
+	expect(result.out).not.toContain("--leverage");
+	expect(result.out).not.toContain("--margin");
 	expect(result.out).toContain("mob sign <id>");
 	expect(result.calls).toHaveLength(0);
 });

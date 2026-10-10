@@ -1,8 +1,8 @@
 # mstack
 
-An open-source funding-rate scanner and Mobius agent stack. The current P0 scope is read-only: no wallet, signing, or key handling.
+An open-source funding-rate scanner and Mobius agent stack, with public reads and explicit Proposal signing.
 
-Stored Proposals can be signed explicitly through `mob sign <id>`. See the [CLI commands](apps/cli/README.md). Mutation staging commands arrive in W10; MCP and the current skills remain read-only.
+`mob open` and the manage commands stage a Proposal, print its preview, and stop. Stored Proposals can be signed explicitly through `mob sign <id>`. See the [CLI commands](apps/cli/README.md). MCP and the current skills remain read-only.
 
 | Signer backend | Human approval | Can launch from an agent's shell? |
 |---|---|---|
@@ -64,9 +64,9 @@ import { rankOpportunities } from "@mstack/opportunities";
 const result = rankOpportunities(snapshot, { sizeUsd: 1_000 });
 ```
 
-See [funding](packages/funding/README.md) and [opportunities](packages/opportunities/README.md) for the APIs, assumptions, and fee defaults. `mob open` strings in ranked output are suggestions for the future execution phase; no current command executes them.
+See [funding](packages/funding/README.md) and [opportunities](packages/opportunities/README.md) for the APIs, assumptions, and fee defaults. The `mob open` commands in ranked output run local preflight and stage a Proposal. They stop before signing.
 
-## What it does today (P0, read-only)
+## Public reads
 
 The compiled `mob` binary supports `scan`, `rates`, `history`, `explain`, `status`, and `config`. It runs without Bun or `node_modules` installed. [CLI documentation](apps/cli/README.md) describes flags, output, exit codes, and config. The ten [knowledge topics](docs/knowledge/) are embedded at build time.
 

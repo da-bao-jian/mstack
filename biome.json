@@ -6,6 +6,14 @@
 	"linter": { "enabled": true, "rules": { "preset": "recommended" } },
 	"overrides": [
 		{
+			"includes": [
+				"packages/liquidation/src/**",
+				"apps/cli/src/preflight/resizePlan.ts"
+			],
+			"formatter": { "enabled": false },
+			"assist": { "enabled": false }
+		},
+		{
 			"includes": ["packages/funding/src/index.ts"],
 			"formatter": { "enabled": false }
 		},

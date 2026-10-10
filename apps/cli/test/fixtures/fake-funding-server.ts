@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { request } from "node:http";
-import type { Fetch, OpenBody } from "@mstack/mobius-client";
+import type { Fetch, OpenBody, PublicTask } from "@mstack/mobius-client";
 import { type Address, type Hex, hashMessage, recoverAddress } from "viem";
 import task from "./public-task.json";
 
@@ -135,6 +135,217 @@ export function fakeFundingServer(
 		base: `http://127.0.0.1:${server.port}`,
 		writes: () => writes,
 		errors,
+		stop: () => server.stop(true),
+	};
+}
+
+export function readyCredentials(owner: string, now = Date.now()) {
+	return {
+		hl: {
+			bound: true,
+			agentAddress: owner,
+			builderApproved: true,
+			builderAddress: owner,
+			isTestnet: false,
+		},
+		aster: {
+			bound: true,
+			agentAddress: owner,
+			builderApproved: true,
+			builderAddress: owner,
+			feeRate: "0.001",
+			signingChainId: 56,
+		},
+		lighter: {
+			bound: true,
+			publicKey: "fixture",
+			slot: 1,
+			accountIndex: 1,
+			chainId: 466324,
+			integratorApproved: true,
+			integratorIndex: 994,
+			integratorAddress: owner,
+			integratorApprovalExpiresAt: now + 172_800_000,
+		},
+		"lighter-mainnet": {
+			bound: true,
+			publicKey: "fixture",
+			slot: 1,
+			accountIndex: 1,
+			chainId: 304,
+			integratorApproved: true,
+			integratorIndex: 735705,
+			integratorAddress: owner,
+			integratorApprovalExpiresAt: now + 172_800_000,
+		},
+	};
+}
+
+// Ported from mobius@33ed2ece funding-server/src/server/routes/arbitrage.ts
+// Server-side wire strings kept independent of every client builder.
+function serverManageMessage(
+	route: string,
+	b: Record<string, unknown>,
+): string {
+	if (route.endsWith("/close"))
+		return `Close arbitrage task: ${b.taskId} timestamp=${b.timestamp}`;
+	if (route.endsWith("/neutralize"))
+		return `Neutralize arbitrage task: ${b.taskId} timestamp=${b.timestamp}`;
+	if (route.endsWith("/liq-protection"))
+		return `Set arbitrage liquidation protection: ${b.taskId} liqProtectionPct=${b.liqProtectionPct ?? "off"} timestamp=${b.timestamp}`;
+	if (route.endsWith("/auto-close"))
+		return `Set arbitrage auto-close: ${b.taskId} autoClose=${b.autoClose ? "on" : "off"} minFundingApy=${b.minFundingApy} timestamp=${b.timestamp}`;
+	if (route.endsWith("/size-mismatch-auto-close"))
+		return `Set size mismatch auto-close: ${b.taskId} enabled=${b.enabled ? "on" : "off"} thresholdPct=${b.enabled ? b.thresholdPct : 0} timestamp=${b.timestamp}`;
+	assert.ok(route.endsWith("/resize"));
+	const parts = [
+		"Resize arbitrage task:",
+		b.taskId,
+		`timestamp=${b.timestamp}`,
+	];
+	if (b.longTargetBase !== undefined)
+		parts.push(`longTarget=${b.longTargetBase}`);
+	if (b.shortTargetBase !== undefined)
+		parts.push(`shortTarget=${b.shortTargetBase}`);
+	if (b.disableSizeMismatchAutoClose === true)
+		parts.push("disableSizeMismatchAutoClose=on");
+	return parts.join(" ");
+}
+
+/** W10 fixture: each POST needs an explicit expected body and real EIP-191 recovery. */
+export function fakePositionServer(owner: Address, now = Date.now) {
+	const expected: { route: string; body: Record<string, unknown> }[] = [];
+	const errors: Error[] = [];
+	const writes: { route: string; recovered: string }[] = [];
+	const credentials: Record<string, unknown> = readyCredentials(owner, now());
+	const rebindBlocked = new Set<string>();
+	let current: PublicTask | undefined;
+	let readinessFailure: string | undefined;
+	const server = Bun.serve({
+		hostname: "127.0.0.1",
+		port: 0,
+		async fetch(req) {
+			try {
+				const url = new URL(req.url);
+				assert.equal(req.headers.get("X-Mobius-Client"), "mstack/0.1.0");
+				assert.equal(req.headers.get("User-Agent"), "mstack/0.1.0");
+				if (req.method === "GET") {
+					if (url.pathname === "/api/arbitrage/task") {
+						assert.equal(url.searchParams.get("owner"), owner);
+						return current && url.searchParams.get("taskId") === current.task_id
+							? Response.json(current)
+							: Response.json({ error: "Task not found." }, { status: 404 });
+					}
+					assert.equal(url.searchParams.get("ownerAddress"), owner);
+					if (url.pathname === "/api/binding/rebind-check")
+						return rebindBlocked.has(url.searchParams.get("venue") as string)
+							? Response.json(
+									{
+										error:
+											"A running strategy uses this venue. Close it before rebinding.",
+									},
+									{ status: 409 },
+								)
+							: Response.json({ allowed: true });
+					const routeVenue = url.pathname.match(
+						/^\/api\/binding\/(hl|aster|lighter)\/credential$/,
+					)?.[1];
+					assert.ok(routeVenue);
+					const venue =
+						routeVenue === "lighter"
+							? url.searchParams.get("venue")
+							: routeVenue;
+					assert.ok(venue && Object.hasOwn(credentials, venue));
+					return Response.json(credentials[venue]);
+				}
+				assert.equal(req.method, "POST");
+				const next = expected.shift();
+				assert.ok(next, "Unexpected POST");
+				assert.equal(url.pathname, next.route);
+				const body = (await req.json()) as Record<string, unknown> & {
+					signature: Hex;
+					timestamp: number;
+				};
+				assert.deepEqual(
+					Object.keys(body).sort(),
+					[...Object.keys(next.body), "signature"].sort(),
+				);
+				for (const key of Object.keys(next.body))
+					assert.deepEqual(body[key], next.body[key], `request body ${key}`);
+				assert.ok(Math.abs(now() / 1000 - body.timestamp) <= 300);
+				const message =
+					url.pathname === "/api/arbitrage/create"
+						? openTaskMessage(body as unknown as OpenBody)
+						: serverManageMessage(url.pathname, body);
+				const recovered = await recoverAddress({
+					hash: hashMessage(message),
+					signature: body.signature,
+				});
+				assert.equal(recovered.toLowerCase(), owner.toLowerCase());
+				writes.push({ route: url.pathname, recovered });
+				if (readinessFailure)
+					return new Response(readinessFailure, {
+						status: 409,
+						headers: { "content-type": "application/json" },
+					});
+				if (url.pathname === "/api/arbitrage/create") {
+					current = {
+						...task,
+						owner,
+						task_id: "fake-w10-1",
+						status: "running",
+						long_venue: String(body.longVenue),
+						short_venue: String(body.shortVenue),
+						long_market: String(body.longMarket),
+						short_market: String(body.shortMarket),
+						size_usd: Number(body.sizeUsd),
+						long_price: Number(body.longPrice),
+						short_price: Number(body.shortPrice),
+						long_size: Number(body.sizeUsd) / Number(body.longPrice),
+						short_size: Number(body.sizeUsd) / Number(body.shortPrice),
+					};
+					return Response.json({ taskId: current.task_id }, { status: 201 });
+				}
+				assert.ok(current);
+				assert.equal(body.taskId, current.task_id);
+				if (url.pathname.endsWith("/close")) {
+					assert.ok(!["closed", "failed"].includes(current.status));
+					current.status = "closed";
+				} else {
+					assert.equal(current.status, "running");
+					if (url.pathname.endsWith("/liq-protection"))
+						current.liq_protection_pct = body.liqProtectionPct as number | null;
+					if (url.pathname.endsWith("/resize")) {
+						if (body.longTargetBase !== undefined)
+							current.long_size = Number(body.longTargetBase);
+						if (body.shortTargetBase !== undefined)
+							current.short_size = Number(body.shortTargetBase);
+					}
+				}
+				return Response.json({ ok: true });
+			} catch (error) {
+				errors.push(error as Error);
+				return Response.json(
+					{ error: (error as Error).message },
+					{ status: 400 },
+				);
+			}
+		},
+	});
+	return {
+		base: `http://127.0.0.1:${server.port}`,
+		credentials,
+		rebindBlocked,
+		errors,
+		writes,
+		expect: (route: string, body: Record<string, unknown>) =>
+			expected.push({ route, body: structuredClone(body) }),
+		setTask: (value: PublicTask) => {
+			current = structuredClone(value);
+		},
+		setReadinessFailure: (raw: string) => {
+			readinessFailure = raw;
+		},
 		stop: () => server.stop(true),
 	};
 }

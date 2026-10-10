@@ -6,3 +6,6 @@ import "../apps/cli/test/upgrade.test.ts";
 import "../apps/cli/test/mcp.test.ts";
 import "../apps/cli/test/proposals.test.ts";
 import "../apps/cli/test/browser.test.ts";
+import "../apps/cli/test/preflight.test.ts";
+import "../apps/cli/test/resize-plan.test.ts";
+import "../apps/cli/test/positions.test.ts";

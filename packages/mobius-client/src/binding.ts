@@ -123,6 +123,7 @@ export interface LighterCredential {
 	accountIndex: number;
 	chainId: number;
 	integratorApproved: boolean;
+	integratorApprovalExpiresAt?: number;
 	integratorIndex: number | null;
 	integratorAddress: string | null;
 }

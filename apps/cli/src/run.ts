@@ -11,7 +11,7 @@ import {
 	exitFor,
 } from "./commands/runtime.ts";
 import { scan } from "./commands/scan.ts";
-import { status, statusApi } from "./commands/status.ts";
+import { readinessStatus, status, statusApi } from "./commands/status.ts";
 import { configHome, numberFlag, UsageError } from "./config.ts";
 import { footer, pct, renderScan, table } from "./render.ts";
 import { renderHistory } from "./render-history.ts";
@@ -36,6 +36,16 @@ Usage:
   mob preview <id>
   mob sign <id> [--with keystore|browser]
   mob reject <id>
+  mob open <BASE> --long venue:market --short venue:market --size USD
+           [--protect pct|off --assume-leverage L[,S]] [--auto-close on|off]
+           [--min-apy N] [--max-spread-bps N=50] [--size-mismatch pct]
+  mob close <task>
+  mob neutralize <task>
+  mob resize <task> [--long base] [--short base]
+  mob protect <task> <pct|off>
+  mob auto-close <task> on|off [--min-apy N]
+  mob size-mismatch-close <task> on|off --pct N
+  mob status --readiness [--owner 0x…] [--json]
   mob upgrade
   mob mcp
   mob --version
@@ -43,7 +53,8 @@ Usage:
 
 Venues: hl,lighter,lighter-mainnet,aster,binance,bybit,okx
 Config keys: api_base, owner, signer, policy, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps
-Keystore secrets are read only from /dev/tty. Preview stops before signing. Mutation staging commands arrive in W10.
+Keystore secrets are read only from /dev/tty. Mutation commands stage, preview, and stop before signing.
+Protection at open requires assumed leverage, not verified on the venue. Leverage and margin mode are never set by these commands.
 Browser signing can start from an agent's shell; the human approves in the wallet.
 Fee defaults are estimates. Annualized rates are simple, not compounded.
 Scan --json returns counts and bounded views. --json-full includes every opportunity and can exceed 3 MB.
@@ -57,6 +68,28 @@ const common = {
 	help: flag("boolean"),
 };
 const definitions: Record<string, ParseArgsConfig["options"]> = {
+	open: {
+		help: flag("boolean"),
+		long: flag("string"),
+		short: flag("string"),
+		size: flag("string"),
+		protect: flag("string"),
+		"assume-leverage": flag("string"),
+		"auto-close": flag("string"),
+		"min-apy": flag("string"),
+		"max-spread-bps": flag("string"),
+		"size-mismatch": flag("string"),
+	},
+	close: { help: flag("boolean") },
+	neutralize: { help: flag("boolean") },
+	resize: {
+		help: flag("boolean"),
+		long: flag("string"),
+		short: flag("string"),
+	},
+	protect: { help: flag("boolean") },
+	"auto-close": { help: flag("boolean"), "min-apy": flag("string") },
+	"size-mismatch-close": { help: flag("boolean"), pct: flag("string") },
 	keystore: { help: flag("boolean") },
 	proposals: { help: flag("boolean") },
 	proposal: { help: flag("boolean") },
@@ -82,6 +115,7 @@ const definitions: Record<string, ParseArgsConfig["options"]> = {
 	history: { ...common, days: flag("string"), venues: flag("string") },
 	explain: { help: flag("boolean"), simple: flag("boolean") },
 	status: {
+		readiness: flag("boolean"),
 		json: flag("boolean"),
 		help: flag("boolean"),
 		owner: flag("string"),
@@ -157,6 +191,21 @@ export async function run(
 		const strict = values.strict === true;
 		if (
 			[
+				"open",
+				"close",
+				"neutralize",
+				"resize",
+				"protect",
+				"auto-close",
+				"size-mismatch-close",
+			].includes(command)
+		) {
+			const { positions } = await import("./positions.ts");
+			await positions(command, positionals, values, rt);
+			return 0;
+		}
+		if (
+			[
 				"keystore",
 				"proposals",
 				"proposal",
@@ -219,6 +268,30 @@ export async function run(
 					: `${command} does not accept positional arguments`,
 			);
 		if (command === "status") {
+			if (values.readiness) {
+				if (values.task || values.trims || values.resizes)
+					throw new UsageError(
+						"--readiness cannot be combined with --task, --trims or --resizes",
+					);
+				const result = await readinessStatus(
+					{ owner: text("owner"), apiBase: text("api-base") },
+					rt,
+				);
+				rt.out(
+					json
+						? JSON.stringify(result, null, 2)
+						: table(
+								["venue", "ready", "issue", "check"],
+								result.map((r) => [
+									r.venue,
+									r.ready,
+									r.error ?? "ready",
+									r.check ?? "credential + rebind-check",
+								]),
+							),
+				);
+				return result.every((r) => r.ready) ? 0 : 1;
+			}
 			const result = await status(
 				{
 					owner: text("owner"),

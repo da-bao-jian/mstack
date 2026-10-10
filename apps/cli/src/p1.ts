@@ -18,9 +18,10 @@ import {
 import { getAddress } from "viem";
 import pkg from "../package.json";
 import { readConfig, UsageError } from "./config.ts";
+import { CheckFailure, Checks, configChecks } from "./preflight/checks.ts";
 import type { Runtime } from "./run.ts";
 
-function show(p: Proposal): string {
+export function showProposal(p: Proposal): string {
 	return [
 		p.id,
 		`Status: ${p.status}`,
@@ -71,18 +72,18 @@ export async function p1(
 	if (command === "proposal") {
 		if (args.length !== 2 || args[0] !== "show")
 			throw new UsageError("Usage: mob proposal show <id>");
-		rt.out(show(await store.get(args[1])));
+		rt.out(showProposal(await store.get(args[1])));
 		return;
 	}
 	if (args.length !== 1) throw new UsageError(`Usage: mob ${command} <id>`);
 	const id = args[0];
 	if (command === "reject") {
-		rt.out(show(await store.reject(id)));
+		rt.out(showProposal(await store.reject(id)));
 		return;
 	}
 	if (command === "preview") {
-		const result = await store.preview(id, (p) =>
-			runPreflight(
+		const result = await store.preview(id, async (p) => {
+			const result = await runPreflight(
 				p,
 				new MobiusClient({
 					base: p.submit.base,
@@ -90,9 +91,27 @@ export async function p1(
 					fetch: rt.fetch,
 				}),
 				rt.now,
-			),
-		);
-		rt.out(show(result));
+			);
+			if (
+				p.preflightPlan.checks.some(
+					(c) => c.route === "staged" && c.name.startsWith("config."),
+				)
+			) {
+				const checks = new Checks(rt.now);
+				try {
+					await configChecks(await readConfig(rt.home), checks, p.owner);
+				} catch (error) {
+					if (!(error instanceof CheckFailure)) throw error;
+				}
+				result.checks = result.checks.map(
+					(c) => checks.checks.find((fresh) => fresh.name === c.name) ?? c,
+				);
+				result.ok = result.checks.every((c) => c.ok);
+				result.checkedAt = rt.now();
+			}
+			return result;
+		});
+		rt.out(showProposal(result));
 		if (!result.preflight?.ok)
 			throw new Error("Preflight rejected the Proposal");
 		rt.out(
@@ -123,7 +142,7 @@ export async function p1(
 		const result = await store.sign(id, {
 			owner: getAddress(config.owner),
 			policy: config.policy ?? "manual",
-			display: (p) => rt.out(show(p)),
+			display: (p) => rt.out(showProposal(p)),
 			connect: async (proposal) => {
 				let signer: Signer;
 				if (backend === "browser") {

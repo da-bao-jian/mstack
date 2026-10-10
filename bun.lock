@@ -17,6 +17,7 @@
       "dependencies": {
         "@modelcontextprotocol/sdk": "1.32.1",
         "@mstack/funding": "workspace:*",
+        "@mstack/liquidation": "workspace:*",
         "@mstack/mobius-client": "workspace:*",
         "@mstack/opportunities": "workspace:*",
         "@mstack/proposals": "workspace:*",
@@ -26,6 +27,10 @@
     },
     "packages/funding": {
       "name": "@mstack/funding",
+      "version": "0.1.0",
+    },
+    "packages/liquidation": {
+      "name": "@mstack/liquidation",
       "version": "0.1.0",
     },
     "packages/mobius-client": {
@@ -93,6 +98,8 @@
     "@mstack/cli": ["@mstack/cli@workspace:apps/cli"],
 
     "@mstack/funding": ["@mstack/funding@workspace:packages/funding"],
+
+    "@mstack/liquidation": ["@mstack/liquidation@workspace:packages/liquidation"],
 
     "@mstack/mobius-client": ["@mstack/mobius-client@workspace:packages/mobius-client"],
 

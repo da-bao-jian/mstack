@@ -8,6 +8,11 @@ export async function runPreflight(
 ): Promise<PreflightResult> {
 	const checks: PreflightResult["checks"] = [];
 	for (const check of p.preflightPlan.checks) {
+		if (check.route === "staged") {
+			checks.push({ ...check, ok: true });
+			continue;
+		}
+		const label = check.name === undefined ? {} : { name: check.name };
 		try {
 			const answer = await client.read(check.route, check.params);
 			for (const assertion of check.assertions) {
@@ -23,15 +28,22 @@ export async function runPreflight(
 						);
 					value = (value as Record<string, unknown>)[field];
 				}
-				if (canonical(value) !== canonical(assertion.equals))
+				if (
+					"remainingMs" in assertion
+						? typeof value !== "number" ||
+							!Number.isFinite(value) ||
+							value <= now() + assertion.remainingMs
+						: canonical(value) !== canonical(assertion.equals)
+				)
 					throw new Error(
 						`Preflight assertion failed: ${assertion.path.join(".")}`,
 					);
 			}
-			checks.push({ route: check.route, ok: true });
+			checks.push({ route: check.route, ...label, ok: true });
 		} catch (error) {
 			checks.push({
 				route: check.route,
+				...label,
 				ok: false,
 				error: error instanceof Error ? error.message : String(error),
 			});

@@ -187,7 +187,7 @@ export class MobiusClient {
 		}
 		if (!response.ok) {
 			if (isVenueReadinessError(body))
-				throw new ApiError(JSON.stringify(body), response.status, body);
+				throw new ApiError(raw, response.status, body);
 			throw fail("request failed", body);
 		}
 		try {

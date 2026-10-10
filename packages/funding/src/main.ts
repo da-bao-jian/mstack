@@ -11,6 +11,7 @@ export {
 	type HistorySample,
 } from "./history/index.ts";
 export * from "./index.ts";
+export { fetchMarketMetadata, type MarketMetadata } from "./metadata/index.ts";
 export { fetchSnapshot, type SnapshotOptions } from "./snapshot.ts";
 export type {
 	Fetch,

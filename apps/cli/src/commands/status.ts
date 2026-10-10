@@ -1,4 +1,4 @@
-import { fetchStatus } from "@mstack/mobius-client";
+import { fetchStatus, MobiusClient } from "@mstack/mobius-client";
 import pkg from "../../package.json";
 import {
 	apiBase,
@@ -7,7 +7,29 @@ import {
 	readConfig,
 	UsageError,
 } from "../config.ts";
+import { bindingReadiness } from "../preflight/readiness.ts";
 import type { Runtime } from "./runtime.ts";
+
+export async function readinessStatus(
+	options: Pick<StatusOptions, "owner" | "apiBase">,
+	rt: Runtime,
+) {
+	const config = await readConfig(rt.home);
+	const owner = options.owner ?? config.owner;
+	if (!owner)
+		throw new UsageError(
+			"status --readiness requires --owner or config key owner",
+		);
+	return bindingReadiness(
+		ownerAddress(owner),
+		new MobiusClient({
+			base: apiBase(options.apiBase ?? String(getConfig(config, "api_base"))),
+			version: pkg.version,
+			fetch: rt.fetch,
+		}),
+		rt.now,
+	);
+}
 
 export interface StatusOptions {
 	owner?: string;

@@ -92,7 +92,7 @@ Set `mob config set owner 0x…` and `mob config set signer keystore` or `browse
 
 `mob proposals` lists stored Proposals. `mob proposal show <id>` shows the stored message, digest, body, and endpoint. `mob preview <id>` reruns its preflight and stops. After the user names the id, `mob sign <id> [--with keystore|browser]` shows the same intent, asks the selected wallet for approval, signs once, and submits the stored body. `mob reject <id>` makes an unsigned Proposal terminal.
 
-Proposals expire after 300 seconds. A signed attempt cannot be retried, even after a server failure. Submission acknowledgement does not confirm execution. W7 has no mutation staging commands; W10 adds those. MCP remains read-only. See [Proposal storage](../../packages/proposals/README.md) and [keystores](../../packages/signers/README.md).
+Proposals expire after 300 seconds. A signed attempt cannot be retried, even after a server failure. Submission acknowledgement does not confirm execution. MCP remains read-only. See [Proposal storage](../../packages/proposals/README.md) and [keystores](../../packages/signers/README.md).
 
 Run `bun apps/cli/scripts/smoke-proposals.ts` from the repository root for a disposable-keystore transcript against a loopback fake server. It injects a test-only secret reader, verifies the signer and every request field, and removes its temporary home. It makes no live Mobius or venue requests.
 
@@ -103,3 +103,32 @@ The browser backend works from an agent's shell without a secret or TTY. It prin
 The HTML is bundled into `mob` and loads no external resources. Its local server uses a fresh in-memory token and strict CSP, checks the POST Origin and signature recovery, and closes after one accepted signature, human rejection, or expiry. Invalid HTTP submissions do not consume the token. Closing the tab leaves the request waiting until expiry; use the page's Reject button to cancel immediately.
 
 Run `bun run smoke:browser` from the root for the fake wallet and fake funding-server transcript. No real browser, relay, venue, or Mobius write is used.
+
+## Open and manage
+
+Configure `owner`, `signer`, and manual policy first. Venues must already be bound; setup and binding commands are deferred.
+
+```sh
+mob status --readiness
+mob open BTC --long hl:BTC --short lighter:BTC --size 1000 --protect 8 --assume-leverage 3
+mob preview p-1
+# After the human authorizes this Proposal:
+mob sign p-1
+mob status --task TASK_ID
+mob resize TASK_ID --long 0.02 --short 0.02
+mob neutralize TASK_ID
+mob protect TASK_ID 6
+mob auto-close TASK_ID on --min-apy 10
+mob size-mismatch-close TASK_ID on --pct 5
+mob close TASK_ID
+```
+
+Each mutation command stages one Proposal, prints the exact message, digest, body, expiry, and named checks, then stops. A failed preflight stages nothing. `--long` and `--short` on `open` accept native `venue:market` names, including `hl:xyz:NVDA` and `aster:USD1:BTC`. `--size` is USD per leg. Quantized base amounts use the coarser venue lot. The default entry spread cap is 50 bps; `--max-spread-bps` must be positive. `--auto-close on|off`, `--min-apy N`, and `--size-mismatch pct` set the corresponding open fields. Funding APY is simple, not compounded.
+
+Open protection defaults to off. `--protect pct` requires `--assume-leverage L[,S]`: **assumed leverage, not verified on the venue**. This estimate assumes the position's own margin, excludes other account positions, and does not change leverage or margin mode. There is no `--leverage` or `--margin` flag. Protected Aster opens fail because exchangeInfo does not publish the required maintenance-margin ladder. Use `--protect off` to stage an unprotected open explicitly.
+
+Preview rechecks current config and stored credential/task assertions. Prices, quantities, metadata evidence, timestamp, and nonce stay fixed. Mainnet Lighter needs integrator approval with more than 24 hours left. The requested `rebind-check` also blocks opening another strategy on a venue already in use. The server remains the final gate and its readiness error is printed verbatim.
+
+Manage commands require a running task, except `close`, which accepts non-terminal tasks. Resize rounds toward the current size and refuses a tiny order or an uncloseable remainder. These six server routes have no nonce and are replayable inside their 300-second window. Each local Proposal expires after 300 seconds and can be signed once.
+
+`bun run smoke:open` runs the keystore → open → preview → sign → status → protect → close transcript against a loopback fake server. Tests and smoke use injected TTY readers and no live writes.

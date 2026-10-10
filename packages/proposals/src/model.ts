@@ -36,14 +36,28 @@ export type SigningPayload =
 export type ReadCheck = {
 	[R in keyof ReadRoutes]: {
 		route: R;
+		name?: string;
 		params: ReadRoutes[R]["params"];
-		assertions: { path: string[]; equals: Json }[];
+		assertions: ({ path: string[] } & (
+			| { equals: Json }
+			| { remainingMs: number }
+		))[];
 	};
 }[keyof ReadRoutes];
+/** Immutable evidence computed before staging; preview never refreshes its inputs. */
+export type PreflightCheck =
+	| ReadCheck
+	| { route: "staged"; name: string; detail: string };
 export interface PreflightResult {
 	ok: boolean;
 	checkedAt: number;
-	checks: { route: string; ok: boolean; error?: string }[];
+	checks: {
+		route: string;
+		name?: string;
+		detail?: string;
+		ok: boolean;
+		error?: string;
+	}[];
 }
 export interface ProposalInput {
 	kind: "sign-text" | "sign-typed" | "venue-submit";
@@ -56,7 +70,7 @@ export interface ProposalInput {
 		body: JsonObject;
 		signatureField: string;
 	};
-	preflightPlan: { checks: ReadCheck[] };
+	preflightPlan: { checks: PreflightCheck[] };
 }
 export interface Proposal extends ProposalInput {
 	version: 1;
@@ -180,6 +194,23 @@ export function validateInput(p: ProposalInput): void {
 		throw new Error("Proposal requires a stored preflight plan");
 	for (const check of p.preflightPlan.checks) {
 		if (
+			check.name !== undefined &&
+			(typeof check.name !== "string" ||
+				!check.name ||
+				/[\p{Cc}\p{Cf}]/u.test(check.name))
+		)
+			throw new Error("Invalid preflight check name");
+		if (check.route === "staged") {
+			if (
+				!check.name ||
+				typeof check.detail !== "string" ||
+				!check.detail ||
+				/[\p{Cc}\p{Cf}]/u.test(check.detail)
+			)
+				throw new Error("Invalid staged preflight evidence");
+			continue;
+		}
+		if (
 			!/^\/api\/(arbitrage\/(task|list|rates)|binding\/(rebind-check|(hl|aster|lighter)\/credential))$/.test(
 				check.route,
 			)
@@ -189,6 +220,8 @@ export function validateInput(p: ProposalInput): void {
 			!check.assertions.length ||
 			check.assertions.some(
 				(a) =>
+					("remainingMs" in a &&
+						(!Number.isSafeInteger(a.remainingMs) || a.remainingMs < 0)) ||
 					!a.path.length ||
 					a.path.some((key) =>
 						["__proto__", "constructor", "prototype"].includes(key),
@@ -233,6 +266,7 @@ export function validateProposal(p: Proposal): void {
 			p.preflight.checks.some(
 				(check, i) =>
 					check.route !== p.preflightPlan.checks[i].route ||
+					check.name !== p.preflightPlan.checks[i].name ||
 					typeof check.ok !== "boolean",
 			) ||
 			p.preflight.ok !== p.preflight.checks.every((check) => check.ok))
