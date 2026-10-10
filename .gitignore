@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.bun-build
+.codex-runs/
+reference/
+.env
+.env.*
+!.env.example
+.DS_Store
