@@ -1,0 +1,3 @@
+[test]
+# The upstream reference is read-only source material, not this workspace's tests.
+root = "./packages"
