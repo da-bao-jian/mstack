@@ -1,0 +1,17 @@
+{
+	"name": "mobstack",
+	"version": "0.1.0",
+	"description": "Read-only funding scans, explanations, and public Mobius task status.",
+	"author": { "name": "mobstack contributors" },
+	"license": "MIT",
+	"keywords": ["funding", "perpetuals", "mobius", "read-only"],
+	"skills": ["./skills/"],
+	"userConfig": {
+		"api_base": {
+			"type": "string",
+			"title": "Mobius API base",
+			"description": "Public Mobius API URL. Apply an override with mob config set api_base <URL>.",
+			"default": "https://funding.mob.exchange"
+		}
+	}
+}

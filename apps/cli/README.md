@@ -16,6 +16,8 @@ mob config get taker_fee_bps.hl
 
 Run `mob --help` or `mob --version` for local information. Unknown commands, flags, config keys, and invalid numeric inputs exit 1.
 
+`mob upgrade` is installation maintenance. It locates the checkout from the binary or the shipped shim, then runs `git pull --ff-only`, `bun install --frozen-lockfile`, and `bun run build`. Each failed step stops the upgrade. Without an origin remote (or for a standalone binary without a checkout), it prints `no remote configured`. No remote is created. Bun and Git are required to rebuild an installation with a remote.
+
 ## Scan and rates
 
 `scan` defaults to size USD 1,000 and 15 rows. It sorts qualifying executable pairs first, then other qualifying pairs, then annualized spread descending within each group. It selects the first pair per base after sorting. `--all-pairs` keeps alternatives; `--executable`, `--min-apy`, `--market`, and `--venues` filter before the top limit. `--min-apy` refers to simple annualization, despite the flag name. Venue filters select which adapters are called.

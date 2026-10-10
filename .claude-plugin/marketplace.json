@@ -1,0 +1,16 @@
+{
+	"name": "mobstack",
+	"owner": { "name": "mobstack contributors" },
+	"metadata": {
+		"description": "Mobstack P0 read-only skills",
+		"version": "0.1.0"
+	},
+	"plugins": [
+		{
+			"name": "mobstack",
+			"source": "./",
+			"description": "Read-only funding scans, explanations, and public task status.",
+			"version": "0.1.0"
+		}
+	]
+}

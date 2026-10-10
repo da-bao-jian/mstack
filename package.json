@@ -18,6 +18,8 @@
 		"test": "bun test packages apps",
 		"build": "bun run --workspaces --if-present build",
 		"deadcode": "knip",
+		"gen:skills": "bun scripts/gen-skill-docs.ts",
+		"live:skills": "bun scripts/live-skills.ts",
 		"live:smoke": "bun run --filter @mobstack/funding live:smoke"
 	},
 	"devDependencies": {

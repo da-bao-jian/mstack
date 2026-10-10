@@ -1,0 +1,5 @@
+{
+	"frontmatter": "",
+	"askSize": "If the user gave no size, ask: What USD size should I use: $1,000, $5,000, $25,000, or another amount? Wait for the answer before scanning.",
+	"askOwner": "If owner is unset, ask: What is your public 20-byte 0x owner address? Never ask for a key. Wait for the address, then save it with `mob config set owner <address>`."
+}

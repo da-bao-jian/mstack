@@ -29,6 +29,7 @@ import {
 import { explain } from "./knowledge.ts";
 import { footer, pct, renderScan, scanView, table } from "./render.ts";
 import { fetchStatus, renderStatus, statusFooter } from "./status.ts";
+import { installationRoot, upgrade } from "./upgrade.ts";
 
 const adapters = [
 	hyperliquid,
@@ -51,6 +52,7 @@ Usage:
   mob status [--owner 0x…] [--task ID] [--trims] [--resizes] [--api-base URL] [--json]
   mob config get <key>
   mob config set <key> <value>
+  mob upgrade
   mob --version
   mob --help
 
@@ -91,6 +93,7 @@ const definitions: Record<string, ParseArgsConfig["options"]> = {
 		"api-base": flag("string"),
 	},
 	config: { help: flag("boolean") },
+	upgrade: { help: flag("boolean") },
 };
 
 export interface Runtime {
@@ -324,6 +327,12 @@ export async function run(
 		const text = (name: string) => values[name] as string | undefined;
 		const json = values.json === true;
 		const strict = values.strict === true;
+		if (command === "upgrade") {
+			if (positionals.length)
+				throw new UsageError("upgrade does not accept positional arguments");
+			rt.out(await upgrade(await installationRoot()));
+			return 0;
+		}
 		if (command === "explain") {
 			if (positionals.length > 1)
 				throw new UsageError("explain accepts at most one topic");
