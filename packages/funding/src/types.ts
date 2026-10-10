@@ -7,6 +7,7 @@ export interface ObservedFundingRate extends Omit<FundingRate, "venue"> {
 	nextFundingAt?: number;
 	markPrice?: number;
 	openInterestUsd?: number;
+	volume24hUsd?: number;
 	oiCapped?: boolean;
 	source: "direct" | "hosted";
 	annualizationMethod: "simple";

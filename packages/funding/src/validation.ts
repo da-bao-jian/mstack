@@ -53,6 +53,14 @@ export function timestamp(value: unknown, label: string): number {
 	return result;
 }
 
+/** Absence stays unknown; present but malformed volume fails the adapter. */
+export function volume(
+	value: unknown,
+	label: string,
+): { volume24hUsd?: number } {
+	return value === undefined ? {} : { volume24hUsd: nonnegative(value, label) };
+}
+
 export function unique(values: string[], label: string): void {
 	if (new Set(values).size !== values.length)
 		throw new Error(`${label}: duplicate market`);
@@ -67,7 +75,12 @@ export function rate(
 	extras: Partial<
 		Pick<
 			ObservedFundingRate,
-			"nextFundingAt" | "markPrice" | "openInterestUsd" | "oiCapped" | "source"
+			| "nextFundingAt"
+			| "markPrice"
+			| "openInterestUsd"
+			| "volume24hUsd"
+			| "oiCapped"
+			| "source"
 		>
 	> = {},
 ): ObservedFundingRate {

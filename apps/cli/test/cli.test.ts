@@ -92,7 +92,10 @@ test("human scan includes costs, execution flags, and footer even when empty", a
 	expect(result.code).toBe(0);
 	for (const word of [
 		"break-even h",
-		"entry cost",
+		"entry (mark est.)",
+		"vol24h",
+		"OI (long/short)",
+		"thin hidden: 0",
 		"EXEC",
 		"flags",
 		"snapshot age:",
@@ -142,7 +145,9 @@ test.each(
 		["explain", "../PRD"],
 		["status", "--owner", "invalid"],
 		["status", "--owner", task.owner, "--trims"],
-		["config", "get", "owner"],
+		["config", "get", "unknown"],
+		["config", "set", "owner", "0x123"],
+		["scan", "--min-volume", "-1"],
 		["config", "set", "default_size_usd", "NaN"],
 		["config", "set", "api_base", "file:///tmp"],
 		["scan", "extra"],
@@ -154,7 +159,7 @@ test.each(
 });
 
 test("version and help expose only delivered commands", async () => {
-	expect((await invoke(["--version"])).out).toBe("0.0.0");
+	expect((await invoke(["--version"])).out).toBe("0.1.0");
 	const result = await invoke(["--help"]);
 	for (const name of [
 		"scan",
@@ -250,10 +255,13 @@ test("status renders every publicTask fixture field and sends client headers", a
 	expect(result.code).toBe(0);
 	for (const key of Object.keys(task)) expect(result.out).toContain(key);
 	expect(result.out).toContain("funding_usd (estimate)");
-	expect(result.out).toContain("source: hosted");
+	expect(result.out).toContain(
+		"api: https://funding.mob.exchange | fetched: 0.0s | tasks: 1",
+	);
+	expect(result.out).not.toContain("snapshot age");
 	const headers = new Headers(requests[0].init?.headers);
-	expect(headers.get("X-Mobius-Client")).toBe("mobstack/0.0.0");
-	expect(headers.get("User-Agent")).toBe("mobstack/0.0.0");
+	expect(headers.get("X-Mobius-Client")).toBe("mobstack/0.1.0");
+	expect(headers.get("User-Agent")).toBe("mobstack/0.1.0");
 	expect(requests[0].url).toContain("taskId=1842");
 });
 
@@ -337,4 +345,55 @@ test("status paginates trim and resize logs with owner and task", async () => {
 	const body = JSON.parse(result.out);
 	expect(body.trims).toHaveLength(1);
 	expect(body.resizes).toHaveLength(1);
+	expect(result.err).toContain("tasks: 1 | trims: 1 | resizes: 1");
+});
+
+test("thin rows are hidden and counted before top, and can be included", async () => {
+	const args = ["scan", "--min-volume", "1000000000000000", "--json"];
+	const hidden = await invoke(args);
+	const body = JSON.parse(hidden.out);
+	expect(body.view).toEqual([]);
+	expect(body.thinHidden).toBe(29);
+	expect(hidden.err).toContain("thin hidden: 29");
+	const included = await invoke([...args, "--include-thin"]);
+	expect(JSON.parse(included.out).view).toHaveLength(2);
+	expect(
+		JSON.parse(included.out).view.every((r: { flags: string[] }) =>
+			r.flags.includes("thin"),
+		),
+	).toBe(true);
+	expect(included.err).toContain("thin hidden: 0");
+});
+
+test("status defaults to the saved owner, permits an override, and names the unset key", async () => {
+	const isolated = await mkdtemp(join(tmpdir(), "mob-owner-test-"));
+	try {
+		const absent = await invoke(["status"], { home: isolated });
+		expect(absent.code).toBe(1);
+		expect(absent.err).toContain("config key owner");
+		expect(
+			(await invoke(["config", "get", "owner"], { home: isolated })).out,
+		).toBe("");
+		expect(
+			(await invoke(["config", "set", "owner", task.owner], { home: isolated }))
+				.code,
+		).toBe(0);
+		const override = "0x0000000000000000000000000000000000000001";
+		for (const owner of [task.owner, override]) {
+			const result = await invoke(
+				["status", ...(owner === override ? ["--owner", owner] : [])],
+				{
+					home: isolated,
+					fetch: async (url) => {
+						expect(new URL(url).searchParams.get("owner")).toBe(owner);
+						return Response.json([]);
+					},
+				},
+			);
+			expect(result.code).toBe(0);
+			expect(result.out).toContain("tasks: 0");
+		}
+	} finally {
+		await rm(isolated, { recursive: true, force: true });
+	}
 });

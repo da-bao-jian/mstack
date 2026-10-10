@@ -1,4 +1,4 @@
-import type { Fetch } from "../../../packages/funding/src/main.ts";
+import type { Fetch } from "@mobstack/funding";
 import { apiBase } from "./config.ts";
 import { clean, table } from "./render.ts";
 
@@ -214,6 +214,20 @@ export interface StatusResult {
 	observedAt: number;
 	source: "hosted";
 	annualizationMethod: "simple";
+}
+
+export function statusFooter(
+	result: StatusResult,
+	api: string,
+	now: number,
+): string {
+	return [
+		`api: ${clean(api)}`,
+		`fetched: ${Math.max(0, (now - result.observedAt) / 1000).toFixed(1)}s`,
+		`tasks: ${result.tasks.length}`,
+		...(result.trims ? [`trims: ${result.trims.length}`] : []),
+		...(result.resizes ? [`resizes: ${result.resizes.length}`] : []),
+	].join(" | ");
 }
 
 export async function fetchStatus(options: {

@@ -18,7 +18,9 @@ const snapshot = await fetchSnapshot(
 
 Every row carries `observedAt` in Unix milliseconds, `source`, and `annualizationMethod: "simple"`. Annualization is `ratePerInterval / intervalHours × 24 × 365 × 100`. Optional fields use milliseconds for `nextFundingAt` and USD for `markPrice` and `openInterestUsd`.
 
-Native market names remain intact: `kPEPE`, `xyz:NVDA`, `USD1:BTC`, `BTCUSDT`, and `BTC-USDT-SWAP`. Aster follows the upstream USDT/USD1 market scope. Binance and Bybit dated futures and delisted Hyperliquid markets do not emit funding rows. OKX makes three parallel requests: SWAP instruments, bulk funding (`instId=ANY`), and SWAP mark prices. Only instruments marked `live` emit rows. Missing funding or marks for a live instrument fails the adapter.
+Native market names remain intact: `kPEPE`, `xyz:NVDA`, `USD1:BTC`, `BTCUSDT`, and `BTC-USDT-SWAP`. Aster follows the upstream USDT/USD1 market scope. Binance and Bybit dated futures and delisted Hyperliquid markets do not emit funding rows. OKX makes four parallel requests: SWAP instruments, bulk funding (`instId=ANY`), SWAP mark prices, and SWAP tickers. Only instruments marked `live` emit rows. Missing funding or marks for a live instrument fails the adapter.
+
+Optional `volume24hUsd` is the bulk feed's 24-hour USD turnover: HL `dayNtlVlm`, Lighter `daily_quote_token_volume`, Bybit `turnover24h`, and Aster/Binance `ticker/24hr.quoteVolume`. OKX uses `volCcy24h × markPx` (base volume, not contract volume). Missing fields or ticker rows leave volume unknown; negative or malformed values fail the adapter. Aster and Binance fetch their bulk tickers alongside funding and marks.
 
 Lighter joins `funding-rates` with `orderBookDetails` by symbol. It preserves inactive listings, omits an explicitly zero mark, and rejects negative or malformed marks. When a mark exists, open interest in USD is the reported base open interest times that mark. Missing details for a funding symbol fail the adapter.
 

@@ -181,7 +181,7 @@ test("timeout reaches HTTP fetch and no old snapshot is reused", async () => {
 				);
 			}),
 	});
-	expect(aborted).toBe(2);
+	expect(aborted).toBe(3);
 	expect(second.rates).toEqual([]);
 	expect(second.listed).toEqual([]);
 	expect(second.failed[0]?.venue).toBe("aster");

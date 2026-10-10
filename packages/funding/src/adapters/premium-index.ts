@@ -12,6 +12,7 @@ import {
 	string,
 	timestamp,
 	unique,
+	volume,
 } from "../validation.ts";
 
 export async function premiumIndexRates(
@@ -19,10 +20,18 @@ export async function premiumIndexRates(
 	venue: "aster" | "binance",
 	baseUrl: string,
 ): Promise<ObservedFundingRate[]> {
-	const [marks, info] = await Promise.all([
+	const [marks, info, tickers] = await Promise.all([
 		json(ctx, `${baseUrl}/premiumIndex`),
 		json(ctx, `${baseUrl}/fundingInfo`),
+		json(ctx, `${baseUrl}/ticker/24hr`),
 	]);
+	const volumes = new Map<string, { volume24hUsd?: number }>();
+	for (const value of array(tickers, "24hr tickers")) {
+		const entry = object(value, "24hr ticker");
+		const symbol = string(entry.symbol, "symbol");
+		if (volumes.has(symbol)) throw new Error(`Duplicate ticker ${symbol}`);
+		volumes.set(symbol, volume(entry.quoteVolume, `${symbol} quoteVolume`));
+	}
 	const intervals = new Map<string, number>();
 	for (const value of array(info, "fundingInfo")) {
 		const entry = object(value, "fundingInfo row");
@@ -66,6 +75,7 @@ export async function premiumIndexRates(
 		return [
 			rate(ctx, venue, market, ratePerInterval, intervalHours, {
 				markPrice,
+				...volumes.get(symbol),
 				...(nextFundingAt === 0 ? {} : { nextFundingAt }),
 			}),
 		];

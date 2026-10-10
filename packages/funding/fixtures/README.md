@@ -15,3 +15,5 @@ Only market arrays were trimmed. Response envelopes and retained rows keep their
 `../test/expected.json` pins exact normalized rows independently of runtime parsing. Its observation timestamp is fixed by the test clock. Malformed and scheduling cases mutate copies of these recorded responses; they are not presented as live observations. Tests never refresh fixtures or use the network.
 
 W3 adds five `history.json` recordings, each trimmed to five consecutive BTC settlements. `history-manifest.json` records their requests and original response hashes. History tests slice these rows into pages; interval-transition, pagination-size, and native-market cases explicitly mutate copies. No test calls a live API.
+
+W3.1 adds `volume.json` recordings for Aster/Binance bulk 24-hour tickers and OKX SWAP tickers. Each endpoint was called once and trimmed to symbols retained in the existing fixtures. Listings absent from the newer volume capture retain unknown volume. HL, Bybit, and Lighter volume comes from their original recordings.

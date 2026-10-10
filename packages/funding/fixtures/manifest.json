@@ -164,5 +164,29 @@
 		"status": 200,
 		"observedAt": 1791637234721,
 		"rawSha256": "96fa89c00950d0a7893488d3963d15c3b314b418b2244c11ca816deee391797f"
+	},
+	{
+		"file": "aster/volume.json",
+		"url": "https://fapi.asterdex.com/fapi/v3/ticker/24hr",
+		"method": "GET",
+		"status": 200,
+		"observedAt": 1791638889321,
+		"rawSha256": "df2618b29f0ecc693fac0dd57bc6cd15cb6177f39a9a7a9a46e6d5c125d7d2a1"
+	},
+	{
+		"file": "binance/volume.json",
+		"url": "https://fapi.binance.com/fapi/v1/ticker/24hr",
+		"method": "GET",
+		"status": 200,
+		"observedAt": 1791638889713,
+		"rawSha256": "bac0f8180d1a31beeca4c65ce7a2b9ad004b4163e362c8a5a78198dbb0852e5a"
+	},
+	{
+		"file": "okx/volume.json",
+		"url": "https://www.okx.com/api/v5/market/tickers?instType=SWAP",
+		"method": "GET",
+		"status": 200,
+		"observedAt": 1791638889997,
+		"rawSha256": "54f58a38632a7ef0a3fff28359a35a84e48498cbc795f3f4add1e3a74414182a"
 	}
 ]

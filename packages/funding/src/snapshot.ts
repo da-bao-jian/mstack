@@ -6,7 +6,7 @@ import type {
 	VenueAdapter,
 	VenueFailure,
 } from "./types.ts";
-import { errorMessage, string, timestamp } from "./validation.ts";
+import { errorMessage, nonnegative, string, timestamp } from "./validation.ts";
 
 export interface SnapshotOptions {
 	timeoutMs: number;
@@ -32,6 +32,8 @@ function validateRows(rows: ObservedFundingRate[]): void {
 			throw new Error(`${row.venue}:${row.market}: invalid funding math`);
 		}
 		timestamp(row.observedAt, "observedAt");
+		if (row.volume24hUsd !== undefined)
+			nonnegative(row.volume24hUsd, "volume24hUsd");
 		if (
 			row.annualizationMethod !== "simple" ||
 			!["direct", "hosted"].includes(row.source)

@@ -1,16 +1,23 @@
 import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { DEFAULT_TAKER_FEE_BPS } from "../../../packages/opportunities/src/index.ts";
+import { DEFAULT_TAKER_FEE_BPS } from "@mobstack/opportunities";
 
 export interface Config {
 	api_base?: string;
+	owner?: string;
 	default_size_usd?: number;
 	taker_fee_bps?: Record<string, number>;
 	builder_fee_tenths_bps?: number;
 }
 
 export class UsageError extends Error {}
+
+export function ownerAddress(value: string): string {
+	if (!/^0x[0-9a-fA-F]{40}$/.test(value))
+		throw new UsageError("owner must be a 20-byte 0x address");
+	return value;
+}
 
 export function apiBase(value: string): string {
 	let url: URL;
@@ -53,7 +60,14 @@ export function numberFlag(
 }
 
 function knownKey(key: string): void {
-	if (["api_base", "default_size_usd", "builder_fee_tenths_bps"].includes(key))
+	if (
+		[
+			"api_base",
+			"owner",
+			"default_size_usd",
+			"builder_fee_tenths_bps",
+		].includes(key)
+	)
 		return;
 	if (
 		key.startsWith("taker_fee_bps.") &&
@@ -66,6 +80,7 @@ function knownKey(key: string): void {
 function parsedValue(key: string, value: string | number): string | number {
 	knownKey(key);
 	if (key === "api_base") return apiBase(String(value));
+	if (key === "owner") return ownerAddress(String(value));
 	const result = numberFlag(value, key, 0, key === "builder_fee_tenths_bps");
 	if (key === "default_size_usd" && result === 0)
 		throw new UsageError("default_size_usd must be positive");
@@ -97,7 +112,10 @@ export async function readConfig(home = configHome()): Promise<Config> {
 				parsedValue(`taker_fee_bps.${venue}`, fee);
 			}
 		} else {
-			if (typeof item !== (key === "api_base" ? "string" : "number"))
+			if (
+				typeof item !==
+				(["api_base", "owner"].includes(key) ? "string" : "number")
+			)
 				throw new Error(`Invalid config value for ${key}`);
 			parsedValue(key, item as string | number);
 		}
@@ -107,6 +125,7 @@ export async function readConfig(home = configHome()): Promise<Config> {
 
 export function getConfig(config: Config, key: string): string | number {
 	knownKey(key);
+	if (key === "owner") return config.owner ?? "";
 	if (key === "api_base")
 		return config.api_base ?? "https://funding.mob.exchange";
 	if (key === "default_size_usd") return config.default_size_usd ?? 1000;

@@ -13,15 +13,19 @@
     },
     "apps/cli": {
       "name": "@mobstack/cli",
-      "version": "0.0.0",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mobstack/funding": "workspace:*",
+        "@mobstack/opportunities": "workspace:*",
+      },
     },
     "packages/funding": {
       "name": "@mobstack/funding",
-      "version": "0.0.0",
+      "version": "0.1.0",
     },
     "packages/opportunities": {
       "name": "@mobstack/opportunities",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@mobstack/funding": "workspace:*",
       },

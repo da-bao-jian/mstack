@@ -251,13 +251,14 @@ test.each([
 );
 
 describe("OKX", () => {
-	test("uses three bulk requests and excludes funding outside the live SWAP list", async () => {
+	test("uses four bulk requests and excludes funding outside the live SWAP list", async () => {
 		const { ctx, calls } = await fixtureContext();
 		expect(await okx.fetchRates(ctx)).toEqual(expected.okx);
 		expect(calls.map((call) => call.url)).toEqual([
 			"https://www.okx.com/api/v5/public/instruments?instType=SWAP",
 			"https://www.okx.com/api/v5/public/funding-rate?instId=ANY",
 			"https://www.okx.com/api/v5/public/mark-price?instType=SWAP",
+			"https://www.okx.com/api/v5/market/tickers?instType=SWAP",
 		]);
 	});
 

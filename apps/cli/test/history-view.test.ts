@@ -53,13 +53,13 @@ test("view priority precedes per-base selection and all-pairs retains alternativ
 	];
 	const options = { top: 15, allPairs: false, executable: false };
 	expect(
-		scanView(result, options).map((r) => [r.base, r.spreadAnnualizedPct]),
+		scanView(result, options).view.map((r) => [r.base, r.spreadAnnualizedPct]),
 	).toEqual([
 		["BTC", 1],
 		["ETH", 200],
 	]);
 	expect(
-		scanView(result, { ...options, allPairs: true }).map(
+		scanView(result, { ...options, allPairs: true }).view.map(
 			(r) => r.spreadAnnualizedPct,
 		),
 	).toEqual([1, 200, 100, 1000]);

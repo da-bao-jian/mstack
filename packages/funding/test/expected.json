@@ -3,20 +3,21 @@
 		{
 			"venue": "hl",
 			"market": "BTC",
-			"ratePerInterval": -4.2779e-6,
+			"ratePerInterval": -0.0000042779,
 			"intervalHours": 1,
 			"annualizedPct": -3.7474404000000003,
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
-			"markPrice": 82794.0,
+			"markPrice": 82794,
 			"openInterestUsd": 3172029129.1991997,
-			"oiCapped": false
+			"oiCapped": false,
+			"volume24hUsd": 1042637459.5157708
 		},
 		{
 			"venue": "hl",
 			"market": "kPEPE",
-			"ratePerInterval": 1.25e-5,
+			"ratePerInterval": 0.0000125,
 			"intervalHours": 1,
 			"annualizedPct": 10.95,
 			"observedAt": 1791635200000,
@@ -24,25 +25,27 @@
 			"annualizationMethod": "simple",
 			"markPrice": 0.004023,
 			"openInterestUsd": 27416927.990177996,
-			"oiCapped": false
+			"oiCapped": false,
+			"volume24hUsd": 2596409.5854920004
 		},
 		{
 			"venue": "hl",
 			"market": "xyz:XYZ100",
-			"ratePerInterval": 6.25e-6,
+			"ratePerInterval": 0.00000625,
 			"intervalHours": 1,
 			"annualizedPct": 5.475,
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
-			"markPrice": 30926.0,
+			"markPrice": 30926,
 			"openInterestUsd": 231788644.3292,
-			"oiCapped": false
+			"oiCapped": false,
+			"volume24hUsd": 153179000.67690003
 		},
 		{
 			"venue": "hl",
 			"market": "xyz:NVDA",
-			"ratePerInterval": 6.25e-6,
+			"ratePerInterval": 0.00000625,
 			"intervalHours": 1,
 			"annualizedPct": 5.475,
 			"observedAt": 1791635200000,
@@ -50,12 +53,13 @@
 			"annualizationMethod": "simple",
 			"markPrice": 230.22,
 			"openInterestUsd": 110086611.111,
-			"oiCapped": false
+			"oiCapped": false,
+			"volume24hUsd": 51597089.289390035
 		},
 		{
 			"venue": "hl",
 			"market": "io:OAI",
-			"ratePerInterval": 2.22313e-5,
+			"ratePerInterval": 0.0000222313,
 			"intervalHours": 1,
 			"annualizedPct": 19.4746188,
 			"observedAt": 1791635200000,
@@ -63,12 +67,13 @@
 			"annualizationMethod": "simple",
 			"markPrice": 1696.7,
 			"openInterestUsd": 5577276.8644,
-			"oiCapped": false
+			"oiCapped": false,
+			"volume24hUsd": 3318076.924600001
 		},
 		{
 			"venue": "hl",
 			"market": "io:ANTH",
-			"ratePerInterval": 1.29213e-5,
+			"ratePerInterval": 0.0000129213,
 			"intervalHours": 1,
 			"annualizedPct": 11.319058799999999,
 			"observedAt": 1791635200000,
@@ -76,7 +81,8 @@
 			"annualizationMethod": "simple",
 			"markPrice": 2089.9,
 			"openInterestUsd": 42493175.976399995,
-			"oiCapped": false
+			"oiCapped": false,
+			"volume24hUsd": 8068554.409000002
 		}
 	],
 	"lighter": [
@@ -85,121 +91,130 @@
 			"market": "BTC",
 			"ratePerInterval": 0,
 			"intervalHours": 8,
-			"annualizedPct": 0.0,
+			"annualizedPct": 0,
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"markPrice": 82773.5,
-			"openInterestUsd": 16794490.690825
+			"openInterestUsd": 16794490.690825,
+			"volume24hUsd": 64887549.405673
 		},
 		{
 			"venue": "lighter",
 			"market": "ETH",
-			"ratePerInterval": 9.599999999999999e-5,
+			"ratePerInterval": 0.00009599999999999999,
 			"intervalHours": 8,
 			"annualizedPct": 10.511999999999999,
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"markPrice": 2495.4,
-			"openInterestUsd": 22488215.4072
+			"openInterestUsd": 22488215.4072,
+			"volume24hUsd": 29548502.088755
 		}
 	],
 	"lighter-mainnet": [
 		{
 			"venue": "lighter-mainnet",
 			"market": "BTC",
-			"ratePerInterval": -2.3999999999999997e-5,
+			"ratePerInterval": -0.000023999999999999997,
 			"intervalHours": 8,
 			"annualizedPct": -2.6279999999999997,
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"markPrice": 82779.4,
-			"openInterestUsd": 160783190.19048
+			"openInterestUsd": 160783190.19048,
+			"volume24hUsd": 588697355.655874
 		},
 		{
 			"venue": "lighter-mainnet",
 			"market": "ETH",
-			"ratePerInterval": 9.599999999999999e-5,
+			"ratePerInterval": 0.00009599999999999999,
 			"intervalHours": 8,
 			"annualizedPct": 10.511999999999999,
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"markPrice": 2495.56,
-			"openInterestUsd": 89848785.90314
+			"openInterestUsd": 89848785.90314,
+			"volume24hUsd": 199297821.35358
 		}
 	],
 	"aster": [
 		{
 			"venue": "aster",
 			"market": "DEXE",
-			"ratePerInterval": 5e-5,
+			"ratePerInterval": 0.00005,
 			"intervalHours": 4,
 			"annualizedPct": 10.95,
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"markPrice": 1.85295041,
-			"nextFundingAt": 1791648000000
+			"nextFundingAt": 1791648000000,
+			"volume24hUsd": 39196.99
 		},
 		{
 			"venue": "aster",
 			"market": "ARGUS",
-			"ratePerInterval": 1.25e-5,
+			"ratePerInterval": 0.0000125,
 			"intervalHours": 1,
 			"annualizedPct": 10.95,
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"markPrice": 0.01089,
-			"nextFundingAt": 1791637200000
+			"nextFundingAt": 1791637200000,
+			"volume24hUsd": 5910.5
 		},
 		{
 			"venue": "aster",
 			"market": "USD1:BTC",
-			"ratePerInterval": -6.598e-5,
+			"ratePerInterval": -0.00006598,
 			"intervalHours": 8,
 			"annualizedPct": -7.22481,
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"markPrice": 82795.2,
-			"nextFundingAt": 1791648000000
+			"nextFundingAt": 1791648000000,
+			"volume24hUsd": 1618052.76
 		},
 		{
 			"venue": "aster",
 			"market": "BTC",
-			"ratePerInterval": 7.51e-6,
+			"ratePerInterval": 0.00000751,
 			"intervalHours": 8,
 			"annualizedPct": 0.822345,
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"markPrice": 82798.9,
-			"nextFundingAt": 1791648000000
+			"nextFundingAt": 1791648000000,
+			"volume24hUsd": 193914551.69
 		}
 	],
 	"binance": [
 		{
 			"venue": "binance",
 			"market": "DEXEUSDT",
-			"ratePerInterval": 5e-5,
+			"ratePerInterval": 0.00005,
 			"intervalHours": 4,
 			"annualizedPct": 10.95,
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"markPrice": 1.852,
-			"nextFundingAt": 1791648000000
+			"nextFundingAt": 1791648000000,
+			"volume24hUsd": 4430833.71163
 		},
 		{
 			"venue": "binance",
 			"market": "RAYUSDT",
-			"ratePerInterval": 0.0,
+			"ratePerInterval": 0,
 			"intervalHours": 8,
-			"annualizedPct": 0.0,
+			"annualizedPct": 0,
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
@@ -209,9 +224,9 @@
 		{
 			"venue": "binance",
 			"market": "LOKAUSDT",
-			"ratePerInterval": 0.0,
+			"ratePerInterval": 0,
 			"intervalHours": 8,
-			"annualizedPct": 0.0,
+			"annualizedPct": 0,
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
@@ -220,14 +235,15 @@
 		{
 			"venue": "binance",
 			"market": "BTCUSDT",
-			"ratePerInterval": -1.998e-5,
+			"ratePerInterval": -0.00001998,
 			"intervalHours": 8,
 			"annualizedPct": -2.18781,
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"markPrice": 82792.1,
-			"nextFundingAt": 1791648000000
+			"nextFundingAt": 1791648000000,
+			"volume24hUsd": 5226716210.38
 		},
 		{
 			"venue": "binance",
@@ -239,85 +255,92 @@
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"markPrice": 0.05523073,
-			"nextFundingAt": 1791637200000
+			"nextFundingAt": 1791637200000,
+			"volume24hUsd": 360614594.01301
 		}
 	],
 	"bybit": [
 		{
 			"venue": "bybit",
 			"market": "ARKUSDT",
-			"ratePerInterval": 1.25e-5,
-			"intervalHours": 1.0,
+			"ratePerInterval": 0.0000125,
+			"intervalHours": 1,
 			"annualizedPct": 10.95,
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"markPrice": 0.21813,
 			"nextFundingAt": 1791637200000,
-			"openInterestUsd": 2849358.9
+			"openInterestUsd": 2849358.9,
+			"volume24hUsd": 2559755.8733
 		},
 		{
 			"venue": "bybit",
 			"market": "BTCUSDT",
-			"ratePerInterval": -2.32e-5,
-			"intervalHours": 8.0,
+			"ratePerInterval": -0.0000232,
+			"intervalHours": 8,
 			"annualizedPct": -2.5404000000000004,
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"markPrice": 82792.7,
 			"nextFundingAt": 1791648000000,
-			"openInterestUsd": 4669422920.73
+			"openInterestUsd": 4669422920.73,
+			"volume24hUsd": 2167214251.9178
 		}
 	],
 	"okx": [
 		{
 			"venue": "okx",
 			"market": "BTC-USDT-SWAP",
-			"ratePerInterval": 1.79033628747e-5,
-			"intervalHours": 8.0,
+			"ratePerInterval": 0.0000179033628747,
+			"intervalHours": 8,
 			"annualizedPct": 1.9604182347796497,
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"nextFundingAt": 1791648000000,
-			"markPrice": 82779.3
+			"markPrice": 82779.3,
+			"volume24hUsd": 2732375152.71567
 		},
 		{
 			"venue": "okx",
 			"market": "BTC-USD-SWAP",
-			"ratePerInterval": 4.15499929123e-5,
-			"intervalHours": 8.0,
+			"ratePerInterval": 0.0000415499929123,
+			"intervalHours": 8,
 			"annualizedPct": 4.54972422389685,
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"nextFundingAt": 1791648000000,
-			"markPrice": 82710.6
+			"markPrice": 82710.6,
+			"volume24hUsd": 178495727.72136003
 		},
 		{
 			"venue": "okx",
 			"market": "ETH-USDT-SWAP",
-			"ratePerInterval": 3.20355519038e-5,
-			"intervalHours": 8.0,
+			"ratePerInterval": 0.0000320355519038,
+			"intervalHours": 8,
 			"annualizedPct": 3.5078929334661,
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"nextFundingAt": 1791648000000,
-			"markPrice": 2495.36
+			"markPrice": 2495.36,
+			"volume24hUsd": 2184330875.95968
 		},
 		{
 			"venue": "okx",
 			"market": "CHIP-USDT-SWAP",
-			"ratePerInterval": 5e-5,
-			"intervalHours": 4.0,
+			"ratePerInterval": 0.00005,
+			"intervalHours": 4,
 			"annualizedPct": 10.95,
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"nextFundingAt": 1791648000000,
-			"markPrice": 0.0521
+			"markPrice": 0.0521,
+			"volume24hUsd": 4875695.14
 		}
 	]
 }

@@ -1,8 +1,5 @@
-import type { Snapshot } from "../../../packages/funding/src/main.ts";
-import type {
-	Opportunity,
-	RankedOpportunities,
-} from "../../../packages/opportunities/src/index.ts";
+import type { Snapshot } from "@mobstack/funding";
+import type { Opportunity, RankedOpportunities } from "@mobstack/opportunities";
 
 export function clean(value: unknown): string {
 	const text =
@@ -47,18 +44,23 @@ export interface ViewOptions {
 	allPairs: boolean;
 	executable: boolean;
 	minApy?: number;
+	includeThin?: boolean;
 }
 
 export function scanView(
 	result: RankedOpportunities,
 	options: ViewOptions,
-): Opportunity[] {
-	const rows = result.opportunities.filter(
+): { view: Opportunity[]; thinHidden: number } {
+	const candidates = result.opportunities.filter(
 		(r) =>
 			(!options.market || r.base === options.market) &&
 			(!options.executable || r.executable) &&
 			(options.minApy === undefined || r.spreadAnnualizedPct >= options.minApy),
 	);
+	const rows = candidates.filter(
+		(r) => options.includeThin || !r.flags.includes("thin"),
+	);
+	const thinHidden = candidates.length - rows.length;
 	const priority = (r: Opportunity) =>
 		r.qualifies ? (r.executable ? 2 : 1) : 0;
 	rows.sort(
@@ -67,7 +69,7 @@ export function scanView(
 			b.spreadAnnualizedPct - a.spreadAnnualizedPct,
 	);
 	const seen = new Set<string>();
-	return rows
+	const view = rows
 		.filter((r) => {
 			if (options.allPairs) return true;
 			if (seen.has(r.base)) return false;
@@ -75,6 +77,18 @@ export function scanView(
 			return true;
 		})
 		.slice(0, options.top);
+	return { view, thinHidden };
+}
+
+function usd(value: number | undefined): string {
+	if (value === undefined) return "—";
+	for (const [scale, suffix] of [
+		[1e9, "B"],
+		[1e6, "M"],
+		[1e3, "K"],
+	] as const)
+		if (value >= scale) return `$${(value / scale).toFixed(1)}${suffix}`;
+	return `$${value.toFixed(0)}`;
 }
 
 export function renderScan(view: Opportunity[]): string {
@@ -85,7 +99,9 @@ export function renderScan(view: Opportunity[]): string {
 			"short",
 			"spread/yr",
 			"fees",
-			"entry cost",
+			"entry (mark est.)",
+			"vol24h (long/short)",
+			"OI (long/short)",
 			"break-even h",
 			"EXEC",
 			"flags",
@@ -97,6 +113,8 @@ export function renderScan(view: Opportunity[]): string {
 			pct(r.spreadAnnualizedPct, 2),
 			pct(r.roundTripFeePct + r.builderFeePct),
 			pct(r.entryCostPct),
+			`${usd(r.long.volume24hUsd)}/${usd(r.short.volume24hUsd)}`,
+			`${usd(r.long.openInterestUsd)}/${usd(r.short.openInterestUsd)}`,
 			r.breakEvenHours?.toFixed(2),
 			r.executable ? "EXEC" : "—",
 			r.flags.join(",") || "—",

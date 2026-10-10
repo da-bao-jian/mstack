@@ -16,6 +16,7 @@ import {
 	rate,
 	string,
 	unique,
+	volume,
 } from "../validation.ts";
 
 async function fetchDex(
@@ -71,6 +72,7 @@ async function fetchDex(
 			rate(ctx, "hl", market, numeric(data.funding, `${market} funding`), 1, {
 				markPrice,
 				openInterestUsd,
+				...volume(data.dayNtlVlm, `${market} dayNtlVlm`),
 				oiCapped: caps.has(market),
 			}),
 		];

@@ -2,6 +2,7 @@ import { json } from "../http.ts";
 import type { ObservedFundingRate, VenueAdapter } from "../types.ts";
 import {
 	array,
+	nonnegative,
 	numeric,
 	object,
 	positive,
@@ -22,14 +23,37 @@ export function createOkxAdapter(): VenueAdapter {
 		venue: "okx",
 		tier: "C",
 		async fetchRates(ctx) {
-			const [rawInstruments, rawFunding, rawMarks] = await Promise.all([
-				json(
-					ctx,
-					"https://www.okx.com/api/v5/public/instruments?instType=SWAP",
-				),
-				json(ctx, "https://www.okx.com/api/v5/public/funding-rate?instId=ANY"),
-				json(ctx, "https://www.okx.com/api/v5/public/mark-price?instType=SWAP"),
-			]);
+			const [rawInstruments, rawFunding, rawMarks, rawTickers] =
+				await Promise.all([
+					json(
+						ctx,
+						"https://www.okx.com/api/v5/public/instruments?instType=SWAP",
+					),
+					json(
+						ctx,
+						"https://www.okx.com/api/v5/public/funding-rate?instId=ANY",
+					),
+					json(
+						ctx,
+						"https://www.okx.com/api/v5/public/mark-price?instType=SWAP",
+					),
+					json(ctx, "https://www.okx.com/api/v5/market/tickers?instType=SWAP"),
+				]);
+			const volumes = new Map<string, number | undefined>();
+			for (const value of data(rawTickers)) {
+				const entry = object(value, "OKX ticker");
+				const market = string(entry.instId, "instId");
+				if (entry.instType !== "SWAP")
+					throw new Error(`${market}: expected SWAP ticker`);
+				if (volumes.has(market))
+					throw new Error(`Duplicate OKX ticker ${market}`);
+				volumes.set(
+					market,
+					entry.volCcy24h === undefined
+						? undefined
+						: nonnegative(entry.volCcy24h, `${market} volCcy24h`),
+				);
+			}
 			const marks = new Map<string, number>();
 			for (const value of data(rawMarks)) {
 				const entry = object(value, "OKX mark price");
@@ -89,7 +113,18 @@ export function createOkxAdapter(): VenueAdapter {
 						market,
 						numeric(entry.fundingRate, `${market} fundingRate`),
 						intervalHours,
-						{ nextFundingAt: fundingTime, markPrice },
+						{
+							nextFundingAt: fundingTime,
+							markPrice,
+							...(volumes.get(market) === undefined
+								? {}
+								: {
+										volume24hUsd: nonnegative(
+											(volumes.get(market) as number) * markPrice,
+											`${market} volume24hUsd`,
+										),
+									}),
+						},
 					),
 				);
 			}

@@ -29,6 +29,8 @@ Fees are estimates. Override them for the user's actual account tier and venue t
 
 `executableVenues` defaults to `["hl", "lighter", "lighter-mainnet", "aster"]`. `quoteClasses` defaults to `["usd-stable"]`. Include `"coin"` explicitly to compare coin-margined OKX swaps. Empty filter arrays are allowed and select nothing.
 
+`minVolume24hUsd` defaults to $1,000,000 on each leg. A leg below this threshold, or with unknown volume, adds `thin` and forces `qualifies: false`. Execution support is unaffected. Setting the threshold to zero accepts measured zero volume; unknown volume stays thin.
+
 ## Market identity
 
 | Venue | Native market examples | Matching base and multiplier |

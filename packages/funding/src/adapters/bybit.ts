@@ -10,6 +10,7 @@ import {
 	string,
 	timestamp,
 	unique,
+	volume,
 } from "../validation.ts";
 
 export const bybit: VenueAdapter = {
@@ -40,6 +41,7 @@ export const bybit: VenueAdapter = {
 					numeric(entry.fundingRate, `${market} fundingRate`),
 					positive(entry.fundingIntervalHour, `${market} fundingIntervalHour`),
 					{
+						...volume(entry.turnover24h, `${market} turnover24h`),
 						nextFundingAt: timestamp(
 							entry.nextFundingTime,
 							`${market} nextFundingTime`,

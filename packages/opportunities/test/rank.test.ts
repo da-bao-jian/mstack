@@ -31,6 +31,7 @@ function rate(
 		source: "direct",
 		annualizationMethod: "simple",
 		markPrice: 100,
+		volume24hUsd: 1_000_000,
 		...extras,
 	};
 }
@@ -307,6 +308,8 @@ test.each([
 	{ builderFeeTenthsBps: 1.5 },
 	{ breakEvenHours: -1 },
 	{ breakEvenHours: Number.POSITIVE_INFINITY },
+	{ minVolume24hUsd: -1 },
+	{ minVolume24hUsd: Number.NaN },
 ])("rejects invalid options %j", (options) => {
 	expect(() => rank([], options)).toThrow();
 });
@@ -316,6 +319,8 @@ test.each([
 	{ intervalHours: 0 },
 	{ markPrice: 0 },
 	{ markPrice: Number.NaN },
+	{ volume24hUsd: -1 },
+	{ volume24hUsd: Number.NaN },
 ])("rejects malformed financial inputs %j", (extras) => {
 	expect(() =>
 		rank([rate("hl", "BTC", 0, 1, extras), rate("aster", "BTC", 0.0001)]),
@@ -349,3 +354,20 @@ test("empty input returns an empty ranking with metadata", () => {
 		unmatched: [],
 	});
 });
+
+test.each([undefined, 0, 999_999, 1_000_000])(
+	"per-leg liquidity gate at %s keeps execution independent",
+	(volume24hUsd) => {
+		for (const index of [0, 1]) {
+			const rows = [rate("hl", "BTC", 0), rate("lighter", "BTC", 0.0008, 8)];
+			rows[index].volume24hUsd = volume24hUsd;
+			const row = rank(rows).opportunities[0];
+			expect(row.flags.includes("thin")).toBe(volume24hUsd !== 1_000_000);
+			expect(row.qualifies).toBe(volume24hUsd === 1_000_000);
+			expect(row.executable).toBe(true);
+			expect(
+				rank(rows, { minVolume24hUsd: 0 }).opportunities[0].qualifies,
+			).toBe(volume24hUsd !== undefined);
+		}
+	},
+);

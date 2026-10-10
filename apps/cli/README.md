@@ -1,6 +1,6 @@
 # mob CLI
 
-Build with `bun run build` at the root, then run `apps/cli/dist/mob`. The compiled binary includes the funding and ranking libraries and all ten knowledge files. It can run from any directory without Bun, source files, or `node_modules`. This package adds no runtime dependencies. It uses `node:util` `parseArgs` and a small table renderer.
+Build with `bun run build` at the root, then run `apps/cli/dist/mob`. The compiled binary includes the funding and ranking workspace packages and all ten knowledge files. It can run from any directory without Bun, source files, or `node_modules`. There are no external runtime dependencies. It uses `node:util` `parseArgs` and a small table renderer.
 
 ```sh
 mob scan --size 5000 --top 5
@@ -22,6 +22,8 @@ Run `mob --help` or `mob --version` for local information. Unknown commands, fla
 
 Columns show native long/short listings, annualized spread, round-trip taker plus builder fees, signed mark entry cost, break-even hours, execution eligibility, and flags. An unmeasured entry cost is `—`. Execution eligibility does not promise order depth or a profitable fill. Fee defaults are estimates; override them for actual account terms.
 
+`--min-volume N` defaults to $1,000,000 per leg. Unknown or lower volume adds `thin` and prevents qualification. Thin rows are hidden unless `--include-thin` is set. The footer and JSON `thinHidden` count hidden pairs after market/execution/spread filters, before per-base selection and the top limit. The table labels entry cost `entry (mark est.)` and shows long/short 24-hour volume and available open interest in compact USD units.
+
 `rates` returns raw snapshot observations with per-hour and annualized rates. `--venue` selects its adapter; `--market` filters on the classified base. Neither command changes venue-native names.
 
 Human data output always ends with snapshot age, source, simple annualization, failed venues with errors, and unmatched count. With `--json`, stdout contains one JSON document and the same human footer goes to stderr. Scan JSON is the full `RankedOpportunities` plus a filtered `view`; filters do not delete its full opportunity list. Rates JSON retains the raw snapshot and adds `unmatched` and a `view` with `ratePerHour`.
@@ -38,15 +40,15 @@ Fetchers and offline fixtures live in `packages/funding/src/history/` and `packa
 
 `explain` lists topics with no argument. Each topic has Simple and Precise sections; `--simple` prints the plain paragraph only. The Markdown files under `docs/knowledge/` are imported as text and embedded at build time. Rebuild to include edits. Unknown topics exit 1 and list valid topics.
 
-`status` requires a public owner address. Without `--task`, it reads the owner's task list. With a task ID, it reads that task. `--trims` and `--resizes` require `--task` and read every available log page. The output displays every field projected by the pinned upstream `publicTask`, including funding accrued labeled **estimate**, protection/mismatch controls, notices, close reason, error context, and timestamps.
+`status` uses `--owner` or the saved `owner` config key. Without either, it exits 1 and names the missing key. Without `--task`, it reads the owner's task list. With a task ID, it reads that task. `--trims` and `--resizes` require `--task` and read every available log page. The output displays every field projected by the pinned upstream `publicTask`, including funding accrued labeled **estimate**, protection/mismatch controls, notices, close reason, error context, and timestamps. Its footer shows API base, fetch age, task count, and requested trim/resize counts.
 
-The API base defaults to `https://funding.mob.exchange`. `--api-base` overrides config for that request. Every Mobius request sends `X-Mobius-Client: mobstack/0.0.0` and `User-Agent: mobstack/0.0.0`. Non-2xx and malformed responses fail with HTTP status and a bounded body excerpt. JSON status output wraps tasks/logs with observation and source metadata. Reads by owner address are public. No populated task was verified live; tests use the explicitly hand-written public-task fixture.
+The API base defaults to `https://funding.mob.exchange`. `--api-base` overrides config for that request. Every Mobius request sends `X-Mobius-Client: mobstack/0.1.0` and `User-Agent: mobstack/0.1.0`. Non-2xx and malformed responses fail with HTTP status and a bounded body excerpt. JSON status output wraps tasks/logs with observation and source metadata. Reads by owner address are public. No populated task was verified live; tests use the explicitly hand-written public-task fixture.
 
 ## Config
 
 `config get|set <key> [value]` uses `~/.mob/config.json`, or `$MOB_HOME/config.json` when set. Writes replace the file atomically with mode 0600. Missing files use documented defaults; malformed files fail. `get` returns the effective value.
 
-Allowed keys are `api_base`, `default_size_usd`, `taker_fee_bps.<venue>`, and `builder_fee_tenths_bps`. The venue must be one of the seven supported identifiers. Fee values must be finite and nonnegative; the builder setting is an integer in tenths of a basis point. Size must be positive. Config contains no credentials.
+Allowed keys are `api_base`, `owner`, `default_size_usd`, `taker_fee_bps.<venue>`, and `builder_fee_tenths_bps`. Owner must be a 20-byte `0x` address; getting an unset owner prints an empty line. The venue must be one of the seven supported identifiers. Fee values must be finite and nonnegative; the builder setting is an integer in tenths of a basis point. Size must be positive. Config contains no credentials.
 
 ## Verification
 

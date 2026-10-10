@@ -7,6 +7,8 @@ export interface RankOptions {
 	takerFeeBps?: Readonly<Record<string, number>>;
 	builderFeeTenthsBps?: number;
 	breakEvenHours?: number;
+	/** Minimum known 24h USD volume on each leg; default $1,000,000. */
+	minVolume24hUsd?: number;
 	executableVenues?: readonly string[];
 	quoteClasses?: readonly QuoteClass[];
 }
@@ -30,7 +32,7 @@ export interface Opportunity {
 	breakEvenHours: number | null;
 	qualifies: boolean;
 	executable: boolean;
-	flags: ("hl-oi-capped" | "coin-margined" | "cross-deployment")[];
+	flags: ("hl-oi-capped" | "coin-margined" | "cross-deployment" | "thin")[];
 	mobOpen?: string;
 	observedAt: number;
 	source: Snapshot["source"];

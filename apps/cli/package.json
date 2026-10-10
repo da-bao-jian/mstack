@@ -1,9 +1,13 @@
 {
 	"name": "@mobstack/cli",
-	"version": "0.0.0",
+	"version": "0.1.0",
 	"private": true,
 	"type": "module",
 	"license": "MIT",
+	"dependencies": {
+		"@mobstack/funding": "workspace:*",
+		"@mobstack/opportunities": "workspace:*"
+	},
 	"scripts": {
 		"check": "tsc --build",
 		"lint": "biome check . --error-on-warnings",

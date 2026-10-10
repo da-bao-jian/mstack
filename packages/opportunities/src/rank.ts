@@ -65,6 +65,8 @@ function validateRow(row: ObservedFundingRate): void {
 		throw new Error("markPrice must be positive");
 	if (row.oiCapped !== undefined && typeof row.oiCapped !== "boolean")
 		throw new Error("oiCapped must be boolean");
+	if (row.volume24hUsd !== undefined)
+		nonnegative(row.volume24hUsd, "volume24hUsd");
 }
 
 function entryCost(
@@ -107,6 +109,10 @@ export function rankOpportunities(
 		options.executableVenues ?? ["hl", "lighter", "lighter-mainnet", "aster"],
 	);
 	const quoteClasses = new Set(options.quoteClasses ?? ["usd-stable"]);
+	const minVolume = nonnegative(
+		options.minVolume24hUsd ?? 1_000_000,
+		"minVolume24hUsd",
+	);
 	for (const quote of quoteClasses)
 		if (quote !== "usd-stable" && quote !== "coin")
 			throw new Error(`Unknown quote class ${quote}`);
@@ -183,6 +189,11 @@ export function rankOpportunities(
 					spreadRate1hPct,
 				);
 				const flags: Opportunity["flags"] = [];
+				const thin = [long, short].some(
+					(leg) =>
+						leg.volume24hUsd === undefined || leg.volume24hUsd < minVolume,
+				);
+				if (thin) flags.push("thin");
 				if (
 					[long.venue, short.venue].every(
 						(venue) => venue === "lighter" || venue === "lighter-mainnet",
@@ -208,7 +219,8 @@ export function rankOpportunities(
 					entryCostPct,
 					entryCostBasis: entryCostPct === null ? "unmeasured" : "mark",
 					breakEvenHours,
-					qualifies: breakEvenHours !== null && breakEvenHours <= maximumHours,
+					qualifies:
+						!thin && breakEvenHours !== null && breakEvenHours <= maximumHours,
 					executable,
 					flags,
 					...(executable

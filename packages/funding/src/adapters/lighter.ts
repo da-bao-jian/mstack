@@ -8,6 +8,7 @@ import {
 	rate,
 	string,
 	unique,
+	volume,
 } from "../validation.ts";
 
 function deployment(
@@ -29,7 +30,7 @@ function deployment(
 				throw new Error(`Lighter error code ${books.code}`);
 			const marks = new Map<
 				string,
-				{ markPrice?: number; openInterestUsd?: number }
+				{ markPrice?: number; openInterestUsd?: number; volume24hUsd?: number }
 			>();
 			for (const value of array(
 				books.order_book_details,
@@ -45,9 +46,12 @@ function deployment(
 					`${symbol} open_interest`,
 				);
 				// Inactive markets still quote. Only an explicit zero mark is unmeasured.
-				marks.set(
-					symbol,
-					markPrice === 0
+				marks.set(symbol, {
+					...volume(
+						entry.daily_quote_token_volume,
+						`${symbol} daily_quote_token_volume`,
+					),
+					...(markPrice === 0
 						? {}
 						: {
 								markPrice,
@@ -55,8 +59,8 @@ function deployment(
 									openInterest * markPrice,
 									`${symbol} openInterestUsd`,
 								),
-							},
-				);
+							}),
+				});
 			}
 			const rows = array(body.funding_rates, "funding_rates").flatMap(
 				(value) => {

@@ -13,24 +13,22 @@ import {
 	okx,
 	type Snapshot,
 	type VenueAdapter,
-} from "../../../packages/funding/src/main.ts";
-import {
-	classifyMarket,
-	rankOpportunities,
-} from "../../../packages/opportunities/src/index.ts";
+} from "@mobstack/funding";
+import { classifyMarket, rankOpportunities } from "@mobstack/opportunities";
 import pkg from "../package.json";
 import {
 	apiBase,
 	configHome,
 	getConfig,
 	numberFlag,
+	ownerAddress,
 	readConfig,
 	setConfig,
 	UsageError,
 } from "./config.ts";
 import { explain } from "./knowledge.ts";
 import { footer, pct, renderScan, scanView, table } from "./render.ts";
-import { fetchStatus, renderStatus } from "./status.ts";
+import { fetchStatus, renderStatus, statusFooter } from "./status.ts";
 
 const adapters = [
 	hyperliquid,
@@ -46,17 +44,18 @@ const help = `mob ${pkg.version} — public funding and Mobius task reads
 Usage:
   mob scan [--size N=1000] [--market BASE] [--venues a,b] [--top N=15]
            [--all-pairs] [--executable] [--min-apy PCT] [--strict] [--json]
+           [--min-volume N=1000000] [--include-thin]
   mob rates [--venue V] [--market BASE] [--strict] [--json]
   mob history <BASE> [--days N=7] [--venues a,b] [--strict] [--json]
   mob explain [topic] [--simple]
-  mob status --owner 0x… [--task ID] [--trims] [--resizes] [--api-base URL] [--json]
+  mob status [--owner 0x…] [--task ID] [--trims] [--resizes] [--api-base URL] [--json]
   mob config get <key>
   mob config set <key> <value>
   mob --version
   mob --help
 
 Venues: hl,lighter,lighter-mainnet,aster,binance,bybit,okx
-Config keys: api_base, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps
+Config keys: api_base, owner, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps
 Fee defaults are estimates. Annualized rates are simple, not compounded.
 Exit: 0 success, 1 usage/request error, 2 no venue rates, 3 partial failure with --strict.`;
 
@@ -76,6 +75,8 @@ const definitions: Record<string, ParseArgsConfig["options"]> = {
 		"all-pairs": flag("boolean"),
 		executable: flag("boolean"),
 		"min-apy": flag("string"),
+		"min-volume": flag("string"),
+		"include-thin": flag("boolean"),
 	},
 	rates: { ...common, venue: flag("string"), market: flag("string") },
 	history: { ...common, days: flag("string"), venues: flag("string") },
@@ -355,11 +356,15 @@ export async function run(
 			);
 		const config = await readConfig(rt.home);
 		if (command === "status") {
-			const owner = text("owner");
-			if (!owner || !/^0x[0-9a-fA-F]{40}$/.test(owner))
+			const configuredOwner = text("owner") ?? config.owner;
+			if (!configuredOwner)
 				throw new UsageError(
-					"status requires --owner with a 20-byte 0x address",
+					"status requires --owner or config key owner (mob config set owner 0x…)",
 				);
+			const owner = ownerAddress(configuredOwner);
+			const statusApi = apiBase(
+				text("api-base") ?? String(getConfig(config, "api_base")),
+			);
 			const task = text("task");
 			if (task !== undefined && task.trim() === "")
 				throw new UsageError("task must be nonempty");
@@ -370,9 +375,7 @@ export async function run(
 				task,
 				trims: values.trims === true,
 				resizes: values.resizes === true,
-				apiBase: apiBase(
-					text("api-base") ?? String(getConfig(config, "api_base")),
-				),
+				apiBase: statusApi,
 				version: pkg.version,
 				fetch: rt.fetch,
 				now: rt.now,
@@ -381,7 +384,7 @@ export async function run(
 				rt,
 				result,
 				renderStatus(result),
-				footer({ ...result, failed: [] }, 0, rt.now()),
+				statusFooter(result, statusApi, rt.now()),
 				json,
 			);
 			return 0;
@@ -399,6 +402,11 @@ export async function run(
 			Number.MIN_VALUE,
 		);
 		const top = numberFlag(text("top") ?? "15", "top", 1, true);
+		const minVolume = numberFlag(
+			text("min-volume") ?? "1000000",
+			"min-volume",
+			0,
+		);
 		const minApy =
 			text("min-apy") === undefined
 				? undefined
@@ -411,23 +419,25 @@ export async function run(
 		if (command === "scan") {
 			const result = rankOpportunities(snapshot, {
 				sizeUsd: size,
+				minVolume24hUsd: minVolume,
 				takerFeeBps: config.taker_fee_bps,
 				builderFeeTenthsBps: Number(
 					getConfig(config, "builder_fee_tenths_bps"),
 				),
 			});
-			const view = scanView(result, {
+			const { view, thinHidden } = scanView(result, {
 				market,
 				top,
 				allPairs: values["all-pairs"] === true,
 				executable: values.executable === true,
 				minApy,
+				includeThin: values["include-thin"] === true,
 			});
 			display(
 				rt,
-				{ ...result, view },
+				{ ...result, view, thinHidden },
 				renderScan(view),
-				footer(snapshot, result.unmatched.length, rt.now()),
+				`${footer(snapshot, result.unmatched.length, rt.now())} | thin hidden: ${thinHidden}`,
 				json,
 			);
 		} else if (command === "rates") {
