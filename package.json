@@ -13,6 +13,8 @@
 		"apps/*"
 	],
 	"scripts": {
+		"smoke:walletconnect": "bun run --filter @mstack/cli smoke:walletconnect",
+		"smoke:walletconnect:mock": "bun run --filter @mstack/cli smoke:walletconnect:mock",
 		"smoke:browser": "bun run --filter @mstack/cli smoke:browser",
 		"check": "tsc --build",
 		"lint": "biome check . --error-on-warnings",

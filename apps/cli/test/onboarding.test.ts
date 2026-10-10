@@ -6,6 +6,7 @@ import { ProposalStore } from "@mstack/proposals";
 import { listKeystores } from "@mstack/signers";
 import { privateKeyToAccount } from "viem/accounts";
 import { fakeBrowserWallet } from "../../../packages/signers/test/fake-browser-wallet.ts";
+import { fakeWalletConnect } from "../../../packages/signers/test/fake-walletconnect-client.ts";
 import {
 	getConfig,
 	parsedValue,
@@ -367,3 +368,33 @@ test("existing builder-only repair does not silently replace the venue key", asy
 		await h.close();
 	}
 });
+
+test("HL WalletConnect binding pins the configured signing chain without opening a browser", async () => {
+	const h = await harness();
+	try {
+		await setConfig("signer", "walletconnect", h.home);
+		await setConfig("walletconnect_project_id", "c".repeat(32), h.home);
+		h.rt.openUrl = async () => {
+			throw new Error("Unexpected browser fallback");
+		};
+		h.rt.walletConnectClientFactory = fakeWalletConnect(wallet).factory;
+		expect(await h.invoke(["bind", "hl"])).toBe(0);
+		await h.sign("p-1");
+		expect(await h.invoke(["bind", "hl"])).toBe(0);
+		const proposal = await h.store.get("p-2");
+		if (proposal.signing.type !== "typed")
+			throw new Error("Expected HL typed data");
+		expect(proposal.signing.typedData.domain?.chainId).toBe(42161);
+		const fake = fakeWalletConnect(wallet, 42161);
+		h.rt.walletConnectClientFactory = fake.factory;
+		await h.sign("p-2");
+		expect(fake.calls.requests[0].chainId).toBe("eip155:42161");
+		expect(h.server.errors).toEqual([]);
+		expect((await h.store.list()).map((p) => p.status)).toEqual([
+			"submitted",
+			"submitted",
+		]);
+	} finally {
+		await h.close();
+	}
+}, 20_000);

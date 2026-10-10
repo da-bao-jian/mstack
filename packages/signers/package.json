@@ -8,12 +8,17 @@
 		".": "./src/index.ts"
 	},
 	"dependencies": {
+		"@walletconnect/sign-client": "2.25.0",
+		"qrcode-terminal": "0.12.0",
 		"viem": "2.57.4"
+	},
+	"devDependencies": {
+		"@types/qrcode-terminal": "0.12.2"
 	},
 	"scripts": {
 		"check": "tsc --build",
 		"lint": "biome check . --error-on-warnings",
 		"test": "bun test",
-		"build": "bun build src/index.ts --target=bun --outdir=dist"
+		"build": "bun build src/index.ts src/walletconnect-worker.ts --target=bun --outdir=dist"
 	}
 }

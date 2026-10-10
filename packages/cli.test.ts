@@ -11,3 +11,4 @@ import "../apps/cli/test/resize-plan.test.ts";
 import "../apps/cli/test/positions.test.ts";
 
 import "../apps/cli/test/onboarding.test.ts";
+import "../apps/cli/test/walletconnect.test.ts";

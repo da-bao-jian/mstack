@@ -15,3 +15,6 @@ export {
 } from "./keystore.ts";
 export { openUrl } from "./open-url.ts";
 export { readSecretFromTty, type SecretReader } from "./tty.ts";
+export { walletConnectSigner } from "./walletconnect.ts";
+export type { WalletConnectFactory } from "./walletconnect-client.ts";
+export { pairingQr } from "./walletconnect-qr.ts";

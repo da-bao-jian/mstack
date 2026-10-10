@@ -54,7 +54,7 @@ The API base defaults to `https://funding.mob.exchange`. `--api-base` overrides 
 
 `config get|set <key> [value]` uses `~/.mob/config.json`, or `$MOB_HOME/config.json` when set. Writes replace the file atomically with mode 0600. Missing files use documented defaults; malformed files fail. `get` returns the effective value.
 
-Allowed keys are `api_base`, `owner`, `default_size_usd`, `taker_fee_bps.<venue>`, `builder_fee_tenths_bps`, `signer`, `policy`, `auth_base`, `legal_chain_id`, and `hl_signature_chain_id`. Owner must be a 20-byte `0x` address; getting an unset owner prints an empty line. The venue must be one of the seven supported identifiers. Fee values must be finite and nonnegative; the builder setting is an integer in tenths of a basis point. Size must be positive. Config contains no credentials.
+Allowed keys are `api_base`, `owner`, `default_size_usd`, `taker_fee_bps.<venue>`, `builder_fee_tenths_bps`, `signer`, `policy`, `walletconnect_project_id`, `auth_base`, `legal_chain_id`, and `hl_signature_chain_id`. Owner must be a 20-byte `0x` address; getting an unset owner prints an empty line. The WalletConnect project ID is public application configuration, has no default, and must be a 32-character hexadecimal Reown project ID. The venue must be one of the seven supported identifiers. Fee values must be finite and nonnegative; the builder setting is an integer in tenths of a basis point. Size must be positive. Config contains no credentials.
 
 ## MCP server
 
@@ -90,9 +90,9 @@ After building, `MOB_LIVE=1 bun run --filter @mstack/cli live:smoke` runs the co
 
 `mob keystore create | import | list` manages local encrypted keys. Create and import ask for a passphrase twice through `/dev/tty`. Import also reads the private key through that terminal. Secrets have no flags or environment settings.
 
-Set `mob config set owner 0x…` and `mob config set signer keystore` or `browser`. Policy defaults to `manual`; `mob config set policy locked` blocks signing. WalletConnect arrives in W8b.
+Set `mob config set owner 0x…` and `mob config set signer keystore`, `browser`, or `walletconnect`. Policy defaults to `manual`; `mob config set policy locked` blocks signing. WalletConnect also requires `walletconnect_project_id`.
 
-`mob proposals` lists stored Proposals. `mob proposal show <id>` shows the stored message, digest, body, and endpoint. `mob preview <id>` reruns its preflight and stops. After the user names the id, `mob sign <id> [--with keystore|browser]` shows the same intent, asks the selected wallet for approval, signs once, and submits the stored body. `mob reject <id>` makes an unsigned Proposal terminal.
+`mob proposals` lists stored Proposals. `mob proposal show <id>` shows the stored message, digest, body, and endpoint. `mob preview <id>` reruns its preflight and stops. After the user names the id, `mob sign <id> [--with keystore|browser|walletconnect]` shows the same intent, asks the selected wallet for approval, signs once, and submits the stored body. `mob reject <id>` makes an unsigned Proposal terminal.
 
 Proposals expire after 300 seconds. A signed attempt cannot be retried, even after a server failure. Submission acknowledgement does not confirm execution. MCP can stage and inspect Proposals but cannot sign, submit, or reject them. See [Proposal storage](../../packages/proposals/README.md) and [keystores](../../packages/signers/README.md).
 
@@ -144,3 +144,15 @@ Preview rechecks current config and stored credential/task assertions. Prices, q
 Manage commands require a running task, except `close`, which accepts non-terminal tasks. Resize rounds toward the current size and refuses a tiny order or an uncloseable remainder. These six server routes have no nonce and are replayable inside their 300-second window. Each local Proposal expires after 300 seconds and can be signed once.
 
 `bun run smoke:open` runs the keystore → open → preview → sign → status → protect → close transcript against a loopback fake server. Tests and smoke use injected TTY readers and no live writes.
+
+## WalletConnect signer
+
+Create a project at [Reown Cloud](https://cloud.reown.com) and copy its project ID. Save it with `mob config set walletconnect_project_id <project-id>`. The key has no default and is required when selecting `walletconnect`, including with `--with walletconnect`. The current `mob setup` menu still offers browser and keystore; select WalletConnect afterwards through config or the sign override.
+
+The CLI prints a pairing URI and terminal QR. Scan it with a WalletConnect v2 mobile wallet and select the stored Proposal's owner. Review the exact message shown in the terminal before approving it in the wallet. A session with another owner, an unsupported method or chain, or a signature that does not recover the owner is refused. The CLI requests only the signing method needed for that Proposal. It sends no transaction request.
+
+A typed-data domain's chain ID pins the session and request chain. Unpinned text and typed-data requests use the Ethereum mainnet namespace (`eip155:1`); this does not add a chain to an EIP-191 message or modify typed data. `chainId()` reports the selected session namespace. HL binding with WalletConnect pins `hl_signature_chain_id` (default `0xa4b1`, Arbitrum); a WalletConnect namespace does not report an independent current wallet chain. Session changes or disconnection cancel the interaction. Expiry aborts the pairing or pending signature; a late approval cannot revive it. Requests are never retried.
+
+The backend uses `@walletconnect/sign-client` 2.25.0 and `qrcode-terminal` 0.12.0. Relay communication is required for this backend. SDK telemetry and logging are disabled. Pairing state and protocol keys stay in memory, with a separate storage namespace for each interaction. The relay connection and heartbeat are closed at the end. The SDK runs in a short-lived worker, which is terminated after cleanup to discard pending protocol timers.
+
+`bun run smoke:walletconnect:mock` uses a mocked sign-client and a real loopback fake funding-server. It does not contact a relay. With your owner and project ID configured, `MOB_LIVE=1 bun run smoke:walletconnect` prints a real pairing URI and waits up to 60 seconds for a mobile wallet to sign a harmless test message. It makes no Mobius or venue submission. Without `MOB_LIVE=1`, the live script refuses before contacting a relay.

@@ -8,8 +8,11 @@ An open-source funding-rate scanner and Mobius agent stack, with public reads an
 |---|---|---|
 | `keystore` | Passphrase through a human terminal (`/dev/tty`) | No; requires that terminal |
 | `browser` | Review the local page and approve in the wallet extension | Yes |
+| `walletconnect` | Scan the terminal QR and approve in a mobile wallet | Yes |
 
 Run `mob setup` to save your public owner, signer and policy, or select `mob sign <id> --with browser`. The browser bridge serves one Proposal on a random loopback port and closes after signing, rejection, or expiry. It creates no daemon or token file. Compare the page's digest with the terminal before approval.
+
+The current setup menu offers browser and keystore. For WalletConnect, create a project at [Reown Cloud](https://cloud.reown.com), then run `mob config set walletconnect_project_id <project-id>` and `mob config set signer walletconnect`. There is no default project ID. `mob sign <id> --with walletconnect` also selects this backend. Pairing uses the WalletConnect relay; SDK telemetry is disabled. Each Proposal gets a fresh session kept in memory, with owner and signature recovery checks and the same expiry deadline.
 
 ## 30-second install
 
@@ -142,7 +145,7 @@ Run `mob bind <venue>` again after each approved step. Every invocation selects 
 
 **A Lighter key can withdraw to your own address, not trade-only.** It can also trade, cancel, adjust leverage and isolated margin, and approve integrators. Third-party transfers require your L1 signature. The key has no expiry. The Mobius server creates and holds the encrypted venue key.
 
-For HL browser staging, a connection-only page first reads your current wallet chain. It requests no signature. The staged Proposal then pins that chain. Keystore HL uses public config `hl_signature_chain_id`, default `0xa4b1` (Arbitrum). Aster pins chain 56. Approval plans include status polling and any builder finalization; answers remain recorded if completion fails or expires. Existing standalone builder-only repairs fail explicitly without replacing a key.
+For HL browser staging, a connection-only page first reads your current wallet chain. It requests no signature. The staged Proposal then pins that chain. Keystore and WalletConnect HL use public config `hl_signature_chain_id`, default `0xa4b1` (Arbitrum). Aster pins chain 56. Approval plans include status polling and any builder finalization; answers remain recorded if completion fails or expires. Existing standalone builder-only repairs fail explicitly without replacing a key.
 
 Use `mob status --readiness` to inspect each venue and its separate “rebind allowed” column. `mob setup` configures the CLI; the repository's `./setup` script installs skills and the binary. `bun run smoke:bind` exercises setup and all binding deployments against local fake servers, with no live writes.
 
@@ -164,9 +167,15 @@ The Claude Code plugin's Bash hook checks literal `mob sign <id>` calls against 
 
 `mob upgrade` runs `git pull --ff-only`, a frozen dependency install, and a rebuild when the installation has an `origin` remote. With no remote, it prints `no remote configured`. It never creates a remote. Skill preambles only check for updates, at most once an hour per checkout, and print changed commit hashes. They do not install updates.
 
-The preamble prints the configured `POLICY: manual|locked` and `SIGNER: keystore|browser|unset`, and probes `/api/client-ip` with a ten-second timeout. Failed health, config, or update checks are reports and do not block the skill; failed updates print `UPGRADE_CHECK: fail`. Only `MOB_MISSING` stops it. Commands still report their own data/config errors normally.
+The preamble prints the configured `POLICY: manual|locked` and `SIGNER: keystore|browser|walletconnect|unset`, and probes `/api/client-ip` with a ten-second timeout. Failed health, config, or update checks are reports and do not block the skill; failed updates print `UPGRADE_CHECK: fail`. Only `MOB_MISSING` stops it. Commands still report their own data/config errors normally.
 
 Edit `skills-src/*.md.tmpl`, `hosts/{claude,codex}/overlay.json`, and `scripts/skill-preamble.sh`; run `bun run gen:skills`. Commit both `skills/` and `skills-codex/` outputs. CI regenerates them and rejects a diff. Run `MOB_LIVE=1 bun run live:skills` for the temporary-home setup, preamble, and plugin-validation smoke checks.
+
+## Dependency notices
+
+Portions © 2025 Reown, Inc. All Rights Reserved
+
+WalletConnect SignClient, Core, Types and Utils 2.25.0 ship the [WalletConnect Community License](docs/licenses/walletconnect-2.25.0.md). The repository's MIT license covers mstack's own code. See the [W8b dependency notes](docs/reports/W8.md#w8b--walletconnect) for the pinned dependency review.
 
 ## Custody
 

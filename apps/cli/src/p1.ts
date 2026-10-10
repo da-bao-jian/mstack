@@ -5,10 +5,12 @@ import {
 	createKeystore,
 	importKeystore,
 	listKeystores,
+	pairingQr,
 	readSecretFromTty,
 	type SecretReader,
 	type Signer,
 	unlockKeystore,
+	walletConnectSigner,
 } from "@mstack/signers";
 import { getAddress } from "viem";
 import pkg from "../package.json";
@@ -100,8 +102,16 @@ export async function p1(
 	const backend = values.with ?? config.signer;
 	if (!backend)
 		throw new UsageError("Set signer with mob config set signer keystore");
-	if (backend !== "keystore" && backend !== "browser")
+	if (
+		backend !== "keystore" &&
+		backend !== "browser" &&
+		backend !== "walletconnect"
+	)
 		throw new UsageError(`${backend} signer is not available in this build`);
+	if (backend === "walletconnect" && !config.walletconnect_project_id)
+		throw new UsageError(
+			"Set walletconnect_project_id with mob config set walletconnect_project_id <Reown project ID>",
+		);
 	if (!config.owner)
 		throw new UsageError("Set owner with mob config set owner 0x…");
 	let close: (() => Promise<void>) | undefined;
@@ -131,6 +141,18 @@ export async function p1(
 					});
 					close = () => browser.close();
 					signer = browser;
+				} else if (backend === "walletconnect") {
+					const wallet = walletConnectSigner(proposal, {
+						projectId: config.walletconnect_project_id as string,
+						now: rt.now,
+						createClient: rt.walletConnectClientFactory,
+						onPairing: (uri) =>
+							rt.out(
+								`Scan with your WalletConnect wallet:\n${pairingQr(uri)}\n${uri}\nApprove only the owner and message shown above. Expires: ${new Date(proposal.expiresAt).toISOString()}`,
+							),
+					});
+					close = () => wallet.close();
+					signer = wallet;
 				} else
 					signer = await unlockKeystore(rt.home, config.owner as string, read);
 				return {

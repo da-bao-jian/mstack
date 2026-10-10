@@ -1,5 +1,5 @@
 import { type ParseArgsConfig, parseArgs } from "node:util";
-import type { SecretReader } from "@mstack/signers";
+import type { SecretReader, WalletConnectFactory } from "@mstack/signers";
 import pkg from "../package.json";
 import { config } from "./commands/config.ts";
 import { explain } from "./commands/explain.ts";
@@ -36,7 +36,7 @@ Usage:
   mob proposals
   mob proposal show <id>
   mob preview <id>
-  mob sign <id> [--with keystore|browser]
+  mob sign <id> [--with keystore|browser|walletconnect]
   mob reject <id>
   mob open <BASE> --long venue:market --short venue:market --size USD
            [--protect pct|off --assume-leverage L[,S]] [--auto-close on|off]
@@ -54,11 +54,12 @@ Usage:
   mob --help
 
 Venues: hl,lighter,lighter-mainnet,aster,binance,bybit,okx
-Config keys: api_base, auth_base, legal_chain_id, hl_signature_chain_id, owner, signer, policy, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps
+Config keys: api_base, auth_base, legal_chain_id, hl_signature_chain_id, owner, signer, policy, walletconnect_project_id, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps
 Keystore secrets are read only from /dev/tty. Mutation commands stage, preview, and stop before signing.
 MCP tools stage Proposals; no sign, reject, or config-set tool is exposed.
 Protection at open requires assumed leverage, not verified on the venue. Leverage and margin mode are never set by these commands.
-Browser signing can start from an agent's shell; the human approves in the wallet.
+Browser and WalletConnect signing can start from an agent's shell; the human approves in the wallet.
+WalletConnect requires walletconnect_project_id from cloud.reown.com; there is no default.
 Fee defaults are estimates. Annualized rates are simple, not compounded.
 Scan --json returns counts and bounded views. --json-full includes every opportunity and can exceed 3 MB.
 Scan --top and --top-exec are capped at 200 each.
@@ -138,6 +139,7 @@ export interface Runtime extends CommandRuntime {
 	prompt?: (question: string, defaultValue: string) => Promise<string>;
 	readSecret?: SecretReader;
 	openUrl?: (url: string) => Promise<void>;
+	walletConnectClientFactory?: WalletConnectFactory;
 	out: (text: string) => void;
 	err: (text: string) => void;
 }

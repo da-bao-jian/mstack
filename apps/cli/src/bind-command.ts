@@ -77,7 +77,8 @@ async function funded(owner: Address, rt: Runtime) {
 }
 async function hlChain(owner: Address, rt: Runtime) {
 	const config = await readConfig(rt.home);
-	if (config.signer === "keystore")
+	// WalletConnect authorizes an explicit chain namespace, not a current-chain query.
+	if (config.signer === "keystore" || config.signer === "walletconnect")
 		return Number(getConfig(config, "hl_signature_chain_id"));
 	const signing = {
 		type: "text" as const,

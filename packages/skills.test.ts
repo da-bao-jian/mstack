@@ -293,7 +293,7 @@ test("mutation skills confine signing to the explicit rule and never initiate se
 	}
 });
 
-test.each(["keystore", "browser"])(
+test.each(["keystore", "browser", "walletconnect"])(
 	"preamble prints configured policy and %s signer",
 	async (signer) => {
 		const { home, path } = await preambleHome();

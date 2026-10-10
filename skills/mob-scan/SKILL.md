@@ -39,7 +39,7 @@ else
 fi
 if MOB_SIGNER=$("$MOB" config get signer); then
   case "$MOB_SIGNER" in
-    keystore|browser) printf 'SIGNER: %s\n' "$MOB_SIGNER" ;;
+    keystore|browser|walletconnect) printf 'SIGNER: %s\n' "$MOB_SIGNER" ;;
     '') printf 'SIGNER: unset\n' ;;
     *) printf 'SIGNER: fail (unsupported backend: %s)\n' "$MOB_SIGNER" ;;
   esac

@@ -104,10 +104,16 @@ export async function configChecks(
 	});
 	await checks.fact("config.signer", () => {
 		requireValue(
-			config.signer === "keystore" || config.signer === "browser",
-			"Configure an available signer: keystore or browser",
+			["keystore", "browser", "walletconnect"].includes(config.signer ?? ""),
+			"Configure an available signer: keystore, browser or walletconnect",
 		);
-		return config.signer;
+		if (config.signer === "walletconnect")
+			requireValue(
+				config.walletconnect_project_id &&
+					/^[a-f0-9]{32}$/i.test(config.walletconnect_project_id),
+				"Set walletconnect_project_id to your Reown project ID",
+			);
+		return config.signer as string;
 	});
 	await checks.fact("config.policy", () => {
 		requireValue(

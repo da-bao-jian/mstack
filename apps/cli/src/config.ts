@@ -5,6 +5,7 @@ import { DEFAULT_TAKER_FEE_BPS } from "@mstack/opportunities";
 
 export interface Config {
 	signer?: "keystore" | "browser" | "walletconnect";
+	walletconnect_project_id?: string;
 	policy?: "locked" | "manual";
 	api_base?: string;
 	auth_base?: string;
@@ -68,6 +69,7 @@ function knownKey(key: string): void {
 	if (
 		[
 			"signer",
+			"walletconnect_project_id",
 			"policy",
 			"api_base",
 			"auth_base",
@@ -92,6 +94,13 @@ export function parsedValue(
 	value: string | number,
 ): string | number {
 	knownKey(key);
+	if (key === "walletconnect_project_id") {
+		if (typeof value !== "string" || !/^[a-f0-9]{32}$/i.test(value))
+			throw new UsageError(
+				"walletconnect_project_id must be a 32-character hexadecimal Reown project ID",
+			);
+		return value;
+	}
 	if (key === "signer" || key === "policy") {
 		const allowed =
 			key === "signer"
@@ -155,6 +164,7 @@ export async function readConfig(home = configHome()): Promise<Config> {
 					"owner",
 					"signer",
 					"policy",
+					"walletconnect_project_id",
 				].includes(key)
 					? "string"
 					: "number")
@@ -175,6 +185,8 @@ export function getConfig(config: Config, key: string): string | number {
 		return config.hl_signature_chain_id ?? "0xa4b1";
 	if (key === "policy") return config.policy ?? "manual";
 	if (key === "signer") return config.signer ?? "";
+	if (key === "walletconnect_project_id")
+		return config.walletconnect_project_id ?? "";
 	if (key === "owner") return config.owner ?? "";
 	if (key === "api_base")
 		return config.api_base ?? "https://funding.mob.exchange";

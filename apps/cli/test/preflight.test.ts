@@ -145,6 +145,20 @@ test("open preflight records every named rule and rechecks the read plan", async
 		).ok,
 	).toBe(false);
 });
+test("open preflight accepts WalletConnect only with its public project ID", async () => {
+	const p = input();
+	p.config.signer = "walletconnect";
+	p.config.walletconnect_project_id = "c".repeat(32);
+	const result = await openPreflight(p, reads(), () => now);
+	expect(result.ok).toBe(true);
+	expect(
+		result.checks.find((check) => check.name === "config.signer"),
+	).toMatchObject({ ok: true, detail: "walletconnect" });
+	delete p.config.walletconnect_project_id;
+	const missing = await openPreflight(p, reads(), () => now);
+	expect(missing.ok).toBe(false);
+	expect(missing.checks.at(-1)?.error).toContain("walletconnect_project_id");
+});
 test.each([
 	[
 		"config.owner",
