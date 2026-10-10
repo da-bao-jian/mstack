@@ -28,7 +28,7 @@ async function connect(
 	const { ctx, calls } = await fixtureContext();
 	const rt: Runtime = { fetch: ctx.fetch, now: ctx.now, home, ...overrides };
 	const server = createMcpServer(rt, options);
-	const client = new Client({ name: "mobstack-test", version: "0.1.0" });
+	const client = new Client({ name: "mstack-test", version: "0.1.0" });
 	const [clientTransport, serverTransport] =
 		InMemoryTransport.createLinkedPair();
 	await server.connect(serverTransport);
@@ -309,11 +309,9 @@ test("task_get returns all publicTask fields with the configured owner and clien
 			expect(params.get("owner")).toBe(task.owner);
 			expect(params.get("taskId")).toBe("1842");
 			expect(new Headers(init?.headers).get("X-Mobius-Client")).toBe(
-				"mobstack/0.1.0",
+				"mstack/0.1.0",
 			);
-			expect(new Headers(init?.headers).get("User-Agent")).toBe(
-				"mobstack/0.1.0",
-			);
+			expect(new Headers(init?.headers).get("User-Agent")).toBe("mstack/0.1.0");
 			return Response.json(task);
 		},
 	});

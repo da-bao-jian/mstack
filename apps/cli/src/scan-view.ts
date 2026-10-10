@@ -1,4 +1,4 @@
-import type { Opportunity, RankedOpportunities } from "@mobstack/opportunities";
+import type { Opportunity, RankedOpportunities } from "@mstack/opportunities";
 
 export interface ViewOptions {
 	market?: string;

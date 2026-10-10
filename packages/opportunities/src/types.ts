@@ -1,4 +1,4 @@
-import type { ObservedFundingRate, Snapshot } from "@mobstack/funding";
+import type { ObservedFundingRate, Snapshot } from "@mstack/funding";
 import type { MarketClassification, QuoteClass } from "./classify.ts";
 
 export interface RankOptions {

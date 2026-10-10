@@ -2,7 +2,7 @@ import {
 	HOURS_PER_YEAR,
 	type ObservedFundingRate,
 	type Snapshot,
-} from "@mobstack/funding";
+} from "@mstack/funding";
 import { classifyMarket } from "./classify.ts";
 import type {
 	Opportunity,

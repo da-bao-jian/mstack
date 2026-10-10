@@ -5,7 +5,7 @@
 - **Fable (coordinator, PM, QA):** assigns packages, reviews each delivery against the acceptance criteria, and sends back a fix list. Codex does not self-assign the next package.
 
 ## What this is
-`docs/PRD.md` is the spec. Read §0, §3, §4, §5, §6.1, §7 and §11 before touching code. The product is an open-source funding-rate scanner and Mobius agent stack: `mob` CLI, `mob mcp`, skills, Claude Code plugin. Working names (`mobstack`, `mob`, `/mob-*`) are placeholders; keep them consistent and easy to rename.
+`docs/PRD.md` is the spec. Read §0, §3, §4, §5, §6.1, §7 and §11 before touching code. The project is `mstack`, an open-source funding-rate scanner and Mobius agent stack: `mob` CLI, `mob mcp`, skills, Claude Code plugin. Keep names consistent and easy to rename; the PRD retains its original placeholders.
 
 ## Hard rules
 1. **Fail fast. No unrequested fallbacks.** Malformed venue data throws inside that adapter. A failed venue is reported in `failed[]`, never silently empty, never filled with a stale number. No `try { … } catch { return [] }`.
@@ -16,7 +16,7 @@
 6. **Tests use recorded fixtures, never the network.** Record real responses once into `fixtures/<venue>/`. Live checks live behind `MOB_LIVE=1` and are not part of `bun test`.
 7. **Every package has `check`, `lint`, `test`.** Root `bun run check` (tsc, strict), `bun run lint` (Biome, zero warnings), `bun test`, `bun run deadcode` (knip) must be green before you report done.
 8. **No telemetry, no analytics, no network calls except to the venue and Mobius API hosts named in the PRD.**
-9. **Commit per work package** with a conventional-commit message on `main`. Do not push. Do not create remotes.
+9. Commit per work package on `main` with a conventional-commit message. Do not push and do not change remotes; Fable pushes after review.
 10. **Do not edit `reference/` or `docs/PRD.md`.** If the PRD is wrong or ambiguous, write the question in your report; do not guess silently.
 
 ## Stack

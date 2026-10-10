@@ -1,13 +1,13 @@
 {
-	"name": "mobstack",
-	"owner": { "name": "mobstack contributors" },
+	"name": "mstack",
+	"owner": { "name": "mstack contributors" },
 	"metadata": {
-		"description": "Mobstack P0 read-only skills",
+		"description": "mstack P0 read-only skills",
 		"version": "0.1.0"
 	},
 	"plugins": [
 		{
-			"name": "mobstack",
+			"name": "mstack",
 			"source": "./",
 			"description": "Read-only funding scans, explanations, and public task status.",
 			"version": "0.1.0"

@@ -1,5 +1,5 @@
-import { type FundingHistory, fetchFundingHistory } from "@mobstack/funding";
-import { classifyMarket } from "@mobstack/opportunities";
+import { type FundingHistory, fetchFundingHistory } from "@mstack/funding";
+import { classifyMarket } from "@mstack/opportunities";
 import { numberFlag, readConfig, UsageError } from "../config.ts";
 import {
 	base,

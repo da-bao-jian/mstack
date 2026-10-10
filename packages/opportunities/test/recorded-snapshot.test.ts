@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { Snapshot } from "@mobstack/funding";
+import type { Snapshot } from "@mstack/funding";
 import recordedRows from "../../funding/test/expected.json";
 import { rankOpportunities } from "../src/index.ts";
 

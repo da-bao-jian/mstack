@@ -1,5 +1,5 @@
 {
-	"name": "@mobstack/opportunities",
+	"name": "@mstack/opportunities",
 	"version": "0.1.0",
 	"private": true,
 	"type": "module",
@@ -8,7 +8,7 @@
 		".": "./src/index.ts"
 	},
 	"dependencies": {
-		"@mobstack/funding": "workspace:*"
+		"@mstack/funding": "workspace:*"
 	},
 	"scripts": {
 		"check": "tsc --build",

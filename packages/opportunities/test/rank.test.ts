@@ -3,7 +3,7 @@ import {
 	annualizePeriodicFundingPct,
 	type ObservedFundingRate,
 	type Snapshot,
-} from "@mobstack/funding";
+} from "@mstack/funding";
 import {
 	calculateBreakEvenHours,
 	type RankOptions,

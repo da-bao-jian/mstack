@@ -317,8 +317,8 @@ test("status renders every publicTask fixture field and sends client headers", a
 	);
 	expect(result.out).not.toContain("snapshot age");
 	const headers = new Headers(requests[0].init?.headers);
-	expect(headers.get("X-Mobius-Client")).toBe("mobstack/0.1.0");
-	expect(headers.get("User-Agent")).toBe("mobstack/0.1.0");
+	expect(headers.get("X-Mobius-Client")).toBe("mstack/0.1.0");
+	expect(headers.get("User-Agent")).toBe("mstack/0.1.0");
 	expect(requests[0].url).toContain("taskId=1842");
 });
 

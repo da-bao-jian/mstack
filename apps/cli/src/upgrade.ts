@@ -17,7 +17,7 @@ async function execute(args: string[], cwd: string) {
 }
 
 export async function installationRoot(
-	start = process.env.MOBSTACK_ROOT ?? dirname(process.execPath),
+	start = process.env.MSTACK_ROOT ?? dirname(process.execPath),
 ): Promise<string | null> {
 	let current = await realpath(start);
 	while (true) {
@@ -25,7 +25,7 @@ export async function installationRoot(
 			const manifest = JSON.parse(
 				await readFile(join(current, ".claude-plugin/plugin.json"), "utf8"),
 			);
-			if (manifest.name === "mobstack") {
+			if (manifest.name === "mstack") {
 				try {
 					await lstat(join(current, ".git"));
 				} catch (error) {
@@ -62,5 +62,5 @@ export async function upgrade(
 	await run(["git", "pull", "--ff-only"]);
 	await run(["bun", "install", "--frozen-lockfile"]);
 	await run(["bun", "run", "build"]);
-	return "Updated mobstack and rebuilt the binary. Run mob --version for the installed version.";
+	return "Updated mstack and rebuilt the binary. Run mob --version for the installed version.";
 }

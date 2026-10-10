@@ -1,5 +1,5 @@
-import type { Snapshot } from "@mobstack/funding";
-import type { Opportunity } from "@mobstack/opportunities";
+import type { Snapshot } from "@mstack/funding";
+import type { Opportunity } from "@mstack/opportunities";
 
 export function clean(value: unknown): string {
 	const text =

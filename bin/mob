@@ -1,14 +1,14 @@
 #!/bin/sh
 set -eu
 MOB_BIN_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
-MOBSTACK_ROOT=$(CDPATH= cd -- "$MOB_BIN_DIR/.." && pwd -P)
-export MOBSTACK_ROOT
-if [ -x "$MOBSTACK_ROOT/apps/cli/dist/mob" ]; then
-  exec "$MOBSTACK_ROOT/apps/cli/dist/mob" "$@"
+MSTACK_ROOT=$(CDPATH= cd -- "$MOB_BIN_DIR/.." && pwd -P)
+export MSTACK_ROOT
+if [ -x "$MSTACK_ROOT/apps/cli/dist/mob" ]; then
+  exec "$MSTACK_ROOT/apps/cli/dist/mob" "$@"
 fi
 if command -v bun >/dev/null 2>&1; then
-  (cd "$MOBSTACK_ROOT" && bun install --frozen-lockfile >&2 && bun run build >&2)
-  exec "$MOBSTACK_ROOT/apps/cli/dist/mob" "$@"
+  (cd "$MSTACK_ROOT" && bun install --frozen-lockfile >&2 && bun run build >&2)
+  exec "$MSTACK_ROOT/apps/cli/dist/mob" "$@"
 fi
-printf '%s\n' 'mob binary is missing. Install Bun >= 1.3, then run ./setup --host claude or ./setup --host codex from the mobstack checkout.' >&2
+printf '%s\n' 'mob binary is missing. Install Bun >= 1.3, then run ./setup --host claude or ./setup --host codex from the mstack checkout.' >&2
 exit 1

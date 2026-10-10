@@ -1,4 +1,4 @@
-import { classifyMarket } from "@mobstack/opportunities";
+import { classifyMarket } from "@mstack/opportunities";
 import { readConfig } from "../config.ts";
 import {
 	base,

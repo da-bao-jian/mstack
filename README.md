@@ -1,37 +1,37 @@
-# mobstack
+# mstack
 
 An open-source funding-rate scanner and Mobius agent stack. The current P0 scope is read-only: no wallet, signing, or key handling.
 
 ## 30-second install
 
-Install Bun 1.3 or newer first. The intended repository, `lu-bann/mobstack`, is **not published yet**. These clone commands become available when it is published; today, run setup from this checkout.
+Install Bun 1.3 or newer first. The repository is private; cloning and marketplace installation require GitHub access.
 
 ```sh
-git clone https://github.com/lu-bann/mobstack.git
-cd mobstack
+git clone https://github.com/da-bao-jian/mstack.git ~/.claude/skills/mstack
+cd ~/.claude/skills/mstack
 ./setup --host codex
-export PATH="$HOME/.codex/skills/mobstack/bin:$PATH"
+export PATH="$HOME/.codex/skills/mstack/bin:$PATH"
 mob scan --size 1000 --top 5
 mob explain funding --simple
 ```
 
-For Claude Code, use `./setup --host claude` and add `$HOME/.claude/skills/mobstack/bin` to PATH instead. Setup builds the binary and prints a paragraph to paste into AGENTS.md or CLAUDE.md. Start with `/mob` in either host.
+For Claude Code, clone outside its skill directory (for example, into `~/dev/mstack`), use `./setup --host claude`, and add `$HOME/.claude/skills/mstack/bin` to PATH. Setup builds the binary and prints a paragraph to paste into AGENTS.md or CLAUDE.md. Start with `/mob` in either host.
 
-The Claude Code plugin path works against this local checkout:
-
-```text
-/plugin marketplace add /absolute/path/to/mobstack
-/plugin install mobstack
-```
-
-After publication, the intended marketplace path is:
+Install the Claude Code plugin from GitHub:
 
 ```text
-/plugin marketplace add lu-bann/mobstack
-/plugin install mobstack
+/plugin marketplace add da-bao-jian/mstack
+/plugin install mstack
 ```
 
-On Claude Code versions supporting one-step marketplace installation, use `/plugin install mobstack --marketplace lu-bann/mobstack` after publication. The plugin ships the same four Claude skills. Its preamble adds the plugin's `bin/` shim to PATH; with Bun installed, the shim builds the binary on first use. Build logs go to stderr. API settings are read from `mob config`; apply a custom plugin `api_base` choice with `mob config set api_base <URL>`.
+For a local checkout, use its absolute path instead:
+
+```text
+/plugin marketplace add /absolute/path/to/mstack
+/plugin install mstack
+```
+
+On Claude Code versions supporting one-step marketplace installation, use `/plugin install mstack --marketplace da-bao-jian/mstack`. The plugin ships the same four Claude skills. Its preamble adds the plugin's `bin/` shim to PATH; with Bun installed, the shim builds the binary on first use. Build logs go to stderr. API settings are read from `mob config`; apply a custom plugin `api_base` choice with `mob config set api_base <URL>`.
 
 For development, install Bun 1.3 or newer, then run:
 
@@ -47,10 +47,10 @@ Funding annualization is simple, not compounded: `ratePerInterval / intervalHour
 
 ## Funding and opportunity libraries
 
-`@mobstack/funding` provides public venue adapters and fresh snapshots. `@mobstack/opportunities` ranks positive funding spreads, estimates round-trip fees and mark-based entry cost, and reports break-even hours. Fee defaults are estimates that callers should override. Native market names remain on every leg; unmatched symbols are listed explicitly.
+`@mstack/funding` provides public venue adapters and fresh snapshots. `@mstack/opportunities` ranks positive funding spreads, estimates round-trip fees and mark-based entry cost, and reports break-even hours. Fee defaults are estimates that callers should override. Native market names remain on every leg; unmatched symbols are listed explicitly.
 
 ```ts
-import { rankOpportunities } from "@mobstack/opportunities";
+import { rankOpportunities } from "@mstack/opportunities";
 
 const result = rankOpportunities(snapshot, { sizeUsd: 1_000 });
 ```
@@ -79,7 +79,7 @@ Scans show Executable on Mobius (top five) and Best anywhere (top ten), each sor
 For a separate Claude Code registration, with `mob` on PATH:
 
 ```sh
-claude mcp add mobstack -- mob mcp
+claude mcp add mstack -- mob mcp
 ```
 
 For Cursor, Claude Desktop, or Windsurf, add this to the client's MCP server settings. Replace the command with the absolute path to the compiled binary or installed shim; GUI clients may not inherit your shell's PATH.
@@ -87,8 +87,8 @@ For Cursor, Claude Desktop, or Windsurf, add this to the client's MCP server set
 ```json
 {
   "mcpServers": {
-    "mobstack": {
-      "command": "/absolute/path/to/mobstack/bin/mob",
+    "mstack": {
+      "command": "/absolute/path/to/mstack/bin/mob",
       "args": ["mcp"]
     }
   }

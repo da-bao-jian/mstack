@@ -1,8 +1,8 @@
 {
-	"name": "mobstack",
+	"name": "mstack",
 	"version": "0.1.0",
 	"description": "Read-only funding scans, explanations, and public Mobius task status.",
-	"author": { "name": "mobstack contributors" },
+	"author": { "name": "mstack contributors" },
 	"license": "MIT",
 	"keywords": ["funding", "perpetuals", "mobius", "read-only"],
 	"skills": ["./skills/"],

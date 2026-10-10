@@ -1,4 +1,4 @@
-import type { Fetch } from "@mobstack/funding";
+import type { Fetch } from "@mstack/funding";
 import { apiBase } from "./config.ts";
 import { clean, table } from "./render.ts";
 
@@ -131,8 +131,8 @@ async function request<T>(
 		redirect: "error",
 		signal: AbortSignal.timeout(30_000),
 		headers: {
-			"X-Mobius-Client": `mobstack/${version}`,
-			"User-Agent": `mobstack/${version}`,
+			"X-Mobius-Client": `mstack/${version}`,
+			"User-Agent": `mstack/${version}`,
 			accept: "application/json",
 		},
 	});

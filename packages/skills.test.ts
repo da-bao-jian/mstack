@@ -42,7 +42,7 @@ async function command(
 			HOME: home,
 			MOB_HOME: join(home, ".mob"),
 			CLAUDE_PLUGIN_ROOT: "",
-			MOBSTACK_ROOT: "",
+			MSTACK_ROOT: "",
 			PATH: path ?? process.env.PATH,
 			...extra,
 		},
@@ -86,7 +86,7 @@ test("generator is deterministic and committed output matches both host overlays
 	for (const [file, body] of outputs) {
 		expect(await readFile(join(root, file), "utf8")).toBe(body);
 		const frontmatter = body.split("---")[1];
-		expect(frontmatter).toMatch(/description: .*\(mobstack\)/);
+		expect(frontmatter).toMatch(/description: .*\(mstack\)/);
 		if (file.startsWith("skills-codex")) {
 			expect(
 				frontmatter
@@ -127,8 +127,8 @@ test.each([...outputs.keys()])(
 		expect(calls).toHaveLength(1);
 		expect(calls[0]).toContain("-m 10");
 		expect(calls[0]).toContain("-o /dev/null");
-		expect(calls[0]).toContain("X-Mobius-Client: mobstack/0.1.0");
-		expect(calls[0]).toContain("-A mobstack/0.1.0");
+		expect(calls[0]).toContain("X-Mobius-Client: mstack/0.1.0");
+		expect(calls[0]).toContain("-A mstack/0.1.0");
 		expect(calls[0]).toContain("https://funding.mob.exchange/api/client-ip");
 	},
 );
@@ -156,7 +156,7 @@ test.each(["claude", "codex"])(
 	"preamble resolves the %s install when mob is absent from PATH",
 	async (host) => {
 		const { home, bin, path } = await preambleHome();
-		const target = join(home, `.${host}/skills/mobstack/bin/mob`);
+		const target = join(home, `.${host}/skills/mstack/bin/mob`);
 		await mkdir(dirname(target), { recursive: true });
 		await copyFile(join(bin, "mob"), target);
 		await chmod(target, 0o755);
@@ -295,11 +295,11 @@ test("setup installs host outputs once and uninstalls only links it made", async
 		expect(await readlink(join(home, ".codex/skills", name))).toBe(
 			join(root, "skills-codex", name),
 		);
-	expect(await readlink(join(home, ".codex/skills/mobstack/bin"))).toBe(
+	expect(await readlink(join(home, ".codex/skills/mstack/bin"))).toBe(
 		join(root, "bin"),
 	);
 	const ledger = JSON.parse(
-		await readFile(join(home, ".mob/mobstack-install-codex.json"), "utf8"),
+		await readFile(join(home, ".mob/mstack-install-codex.json"), "utf8"),
 	);
 	expect(ledger.links).toHaveLength(5);
 	const changed = join(home, ".codex/skills/mob-status");
@@ -308,7 +308,7 @@ test("setup installs host outputs once and uninstalls only links it made", async
 	await setup(["--host", "codex", "--uninstall", "-q"], options);
 	expect(builds).toBe(2);
 	expect(await readFile(changed, "utf8")).toBe("user replacement");
-	await expect(lstat(join(home, ".codex/skills/mobstack"))).rejects.toThrow();
+	await expect(lstat(join(home, ".codex/skills/mstack"))).rejects.toThrow();
 	await expect(lstat(join(home, ".codex/skills/mob"))).rejects.toThrow();
 	await setup(["--host", "codex", "--uninstall", "-q"], options);
 });
@@ -316,7 +316,7 @@ test("setup installs host outputs once and uninstalls only links it made", async
 test("uninstall preserves nonempty and pre-existing directories", async () => {
 	for (const existing of [false, true]) {
 		const home = await mkdtemp(join(temporary, "directories-"));
-		const runtime = join(home, ".claude/skills/mobstack");
+		const runtime = join(home, ".claude/skills/mstack");
 		if (existing) await mkdir(runtime, { recursive: true });
 		const options = { root, home, build: async () => {}, out: () => {} };
 		await setup(["--host", "claude"], options);

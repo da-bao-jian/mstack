@@ -70,7 +70,7 @@ export function createMcpServer(
 	// The low-level SDK API accepts JSON Schema directly and lets domain errors
 	// use the same command boundary as the CLI, without a second schema library.
 	const server = new Server(
-		{ name: "mobstack", version: pkg.version },
+		{ name: "mstack", version: pkg.version },
 		{
 			capabilities: { tools: {} },
 			instructions:

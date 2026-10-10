@@ -1,6 +1,6 @@
 # Build plan — P0 "Scan" (PRD §12)
 
-Goal: a new user installs mobstack and gets a ranked, fee-adjusted funding answer across venues in under a minute with no wallet. Read-only. No signing.
+Goal: a new user installs mstack and gets a ranked, fee-adjusted funding answer across venues in under a minute with no wallet. Read-only. No signing.
 
 Each package below is assigned by Fable one at a time. Acceptance is checked by Fable before the next package starts.
 
@@ -8,7 +8,7 @@ Each package below is assigned by Fable one at a time. Acceptance is checked by 
 Build: Bun workspace (`packages/*`, `apps/*`), root scripts `check` / `lint` / `test` / `build` / `deadcode`, Biome config, strict `tsconfig.base.json`, knip config, `LICENSE` (MIT), `README.md` containing the custody statement from PRD §6.8 verbatim plus the 30-second install placeholder, `.github/workflows/ci.yml` (bun install → check → lint → test → deadcode), `docs/` kept.
 Accept: `bun install && bun run check && bun run lint && bun test && bun run deadcode` all green on the empty workspace; CI file validates; one commit `chore: scaffold workspace`.
 
-## W1 — `packages/funding` (`@mobstack/funding`)
+## W1 — `packages/funding` (`@mstack/funding`)
 Build:
 - Port `reference/upstream/packages/funding-rates/src/index.ts` and its test verbatim (header comment, same exports).
 - `VenueAdapter { venue: string; tier: "A" | "B" | "C"; fetchRates(ctx): Promise<FundingRate[]> }` plus per-row extras (`observedAt`, `nextFundingAt?`, `markPrice?`, `openInterestUsd?`, `oiCapped?`).
@@ -18,7 +18,7 @@ Build:
 - `bun run live:smoke` (guarded by `MOB_LIVE=1`) prints row counts per venue.
 Accept: all root scripts green; ≥ 6 adapters with fixture tests; smoke output pasted in `docs/reports/W1.md`; commit `feat(funding): venue adapters and snapshot`.
 
-## W2 — `packages/opportunities` (`@mobstack/opportunities`)
+## W2 — `packages/opportunities` (`@mstack/opportunities`)
 Build: port the pure math from `reference/upstream/tg-monitor/src/monitoring/scanner.ts` (`normalizeFundingRatePerHour`, `fundingEntryPriceSpreadCost`, `hyperliquidPerpTakerFeeScale`, `hyperliquidEffectiveTakerFeeBps`, `builderFeeMultiplierForPair`, break-even logic) as pure functions with upstream tests as fixtures. Cross-venue matching by normalized base ticker. `rankOpportunities(snapshot, { sizeUsd, fees, builderFeeTenthsBps, breakEvenHours, executableVenues })` → rows with spread/yr, round-trip fees (builder ×2 on the HL leg when paired with Lighter), break-even hours, `executable`, and the exact `mob open …` string for Tier A pairs. P0 has no order books: entry price-spread cost uses marks and is flagged `entryCost: "unmeasured"`; keep the book-VWAP interface for later.
 Accept: hand-computed test values; root scripts green; commit `feat(opportunities): fee-adjusted ranking`.
 
@@ -33,6 +33,10 @@ Accept: `claude plugin validate .` passes; `./setup --host codex` installs under
 ## W5 — `apps/mcp` (`mob mcp`)
 Build: stdio MCP server with tools `funding_scan`, `funding_history`, `explain`, `task_list`, `task_get` over the same library; tool descriptions state that no tool signs anything. Register in the plugin's `.mcp.json`.
 Accept: MCP inspector lists five tools and `funding_scan` returns rows; root scripts green; commit `feat(mcp): read-only server`.
+
+## W6 — Project rename to `mstack`
+Build: rename the root project, workspace scope to `@mstack/*`, plugin/marketplace and MCP names, client headers, setup paths, generated skills, and current documentation. Document `https://github.com/da-bao-jian/mstack.git` and the GitHub plugin install path. Keep the `mob` binary, `/mob*` skills, `~/.mob`, `MOB_HOME`, `MOB_LIVE`, config keys, and `mob:` errors unchanged. Preserve the PRD, reports W0–W5, and prompts as the historical record.
+Accept: regenerate the lockfile and skills; all root gates, build, plugin validation, and temporary-home Codex setup/preamble/uninstall pass. Audit old-name references and report them in `docs/reports/W6.md`. One commit on `main`: `chore: rename project to mstack`. Fable pushes after review.
 
 ## QA protocol (Fable)
 After each report: run the root scripts, read the diff against the acceptance list and `AGENTS.md`, run the live smoke once, and reply with APPROVED or a numbered fix list. Codex resumes the same session for fixes.

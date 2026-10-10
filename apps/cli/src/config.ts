@@ -1,7 +1,7 @@
 import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { DEFAULT_TAKER_FEE_BPS } from "@mobstack/opportunities";
+import { DEFAULT_TAKER_FEE_BPS } from "@mstack/opportunities";
 
 export interface Config {
 	api_base?: string;

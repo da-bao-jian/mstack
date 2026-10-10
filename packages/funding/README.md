@@ -1,4 +1,4 @@
-# @mobstack/funding
+# @mstack/funding
 
 Read-only venue adapters and fresh funding snapshots. This package has no runtime dependencies.
 
@@ -6,7 +6,7 @@ Read-only venue adapters and fresh funding snapshots. This package has no runtim
 import {
   aster, binance, bybit, fetchSnapshot, hyperliquid,
   lighter, lighterMainnet, okx,
-} from "@mobstack/funding";
+} from "@mstack/funding";
 
 const snapshot = await fetchSnapshot(
   [hyperliquid, lighter, lighterMainnet, aster, binance, bybit, okx],

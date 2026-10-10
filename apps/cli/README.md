@@ -48,7 +48,7 @@ Fetchers and offline fixtures live in `packages/funding/src/history/` and `packa
 
 `status` uses `--owner` or the saved `owner` config key. Without either, it exits 1 and names the missing key. Without `--task`, it reads the owner's task list. With a task ID, it reads that task. `--trims` and `--resizes` require `--task` and read every available log page. The output displays every field projected by the pinned upstream `publicTask`, including funding accrued labeled **estimate**, protection/mismatch controls, notices, close reason, error context, and timestamps. Its footer shows API base, fetch age, task count, and requested trim/resize counts.
 
-The API base defaults to `https://funding.mob.exchange`. `--api-base` overrides config for that request. Every Mobius request sends `X-Mobius-Client: mobstack/0.1.0` and `User-Agent: mobstack/0.1.0`. Non-2xx and malformed responses fail with HTTP status and a bounded body excerpt. JSON status output wraps tasks/logs with observation and source metadata. Reads by owner address are public. No populated task was verified live; tests use the explicitly hand-written public-task fixture.
+The API base defaults to `https://funding.mob.exchange`. `--api-base` overrides config for that request. Every Mobius request sends `X-Mobius-Client: mstack/0.1.0` and `User-Agent: mstack/0.1.0`. Non-2xx and malformed responses fail with HTTP status and a bounded body excerpt. JSON status output wraps tasks/logs with observation and source metadata. Reads by owner address are public. No populated task was verified live; tests use the explicitly hand-written public-task fixture.
 
 ## Config
 
@@ -80,6 +80,6 @@ All tools share a 60-second deadline that aborts outstanding network requests. S
 
 Run `bun run check`, `bun run lint`, and `bun test` here. At the root, `bun run test` runs `bun test packages apps` with the network-blocking preload. Bun 1.3.8 has one test root and does not implement the newer path-ignore setting, so `packages/cli.test.ts` imports the CLI tests while keeping `reference/` outside test discovery. Bare root `bun test` runs the same suite.
 
-After building, `MOB_LIVE=1 bun run --filter @mobstack/cli live:smoke` runs the compiled binary for the six assigned smoke commands. It uses an empty temporary config directory and prints command output and wall time. The JSON scan is summarized to keep logs small. The status check uses only the assigned dummy address.
+After building, `MOB_LIVE=1 bun run --filter @mstack/cli live:smoke` runs the compiled binary for the six assigned smoke commands. It uses an empty temporary config directory and prints command output and wall time. The JSON scan is summarized to keep logs small. The status check uses only the assigned dummy address.
 
 `MOB_LIVE=1 bun run live:mcp` at the root spawns the compiled server through the SDK stdio client. It lists tools, requests a scan, and reads the simple funding explanation. Unit tests use `InMemoryTransport`, recorded venue fixtures, and the hand-written publicTask fixture with the network guard enabled.

@@ -1,9 +1,9 @@
-# @mobstack/opportunities
+# @mstack/opportunities
 
 Pure funding opportunity classification and ranking. This package reads a funding snapshot and makes no network requests.
 
 ```ts
-import { rankOpportunities } from "@mobstack/opportunities";
+import { rankOpportunities } from "@mstack/opportunities";
 
 const result = rankOpportunities(snapshot, { sizeUsd: 1_000 });
 // result.opportunities: positive-carry pairs, sorted by netApyPct (null last)
@@ -79,4 +79,4 @@ The five functions in `src/upstream.ts` are copied verbatim from `mobius@33ed2ec
 
 HIP-3 fee-scale and referral helpers are exported unchanged. Ranking uses the supplied per-venue fee estimates; the funding snapshot does not supply fee-scale or referral inputs. Break-even follows the W2 assignment's explicit percentage model and null semantics.
 
-The only runtime dependency is the local `@mobstack/funding` workspace, for canonical types and constants. No order books, WebSockets, Telegram, signing, or key handling are included. Run `bun run check`, `bun run lint`, and `bun test` in this package for offline checks.
+The only runtime dependency is the local `@mstack/funding` workspace, for canonical types and constants. No order books, WebSockets, Telegram, signing, or key handling are included. Run `bun run check`, `bun run lint`, and `bun test` in this package for offline checks.

@@ -24,7 +24,7 @@ const transport = new StdioClientTransport({
 	stderr: "pipe",
 });
 const client = new Client({
-	name: "mobstack-live-smoke",
+	name: "mstack-live-smoke",
 	version: pkg.version,
 });
 let stderr = "";

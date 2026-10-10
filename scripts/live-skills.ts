@@ -45,7 +45,7 @@ try {
 		"mob-scan",
 		"mob-explain",
 		"mob-status",
-		"mobstack/bin",
+		"mstack/bin",
 	]) {
 		const path = join(home, ".codex/skills", name);
 		console.log(`~/.codex/skills/${name} -> ${await readlink(path)}`);

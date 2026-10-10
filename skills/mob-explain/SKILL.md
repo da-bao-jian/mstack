@@ -1,6 +1,6 @@
 ---
 name: mob-explain
-description: Explain funding, basis, fees, and Mobius protection from the bundled knowledge base. Use for "how", "why", "what is", "like I'm 13", or "I don't get it". (mobstack)
+description: Explain funding, basis, fees, and Mobius protection from the bundled knowledge base. Use for "how", "why", "what is", "like I'm 13", or "I don't get it". (mstack)
 allowed-tools: [Bash, Read, AskUserQuestion]
 ---
 
@@ -12,17 +12,17 @@ if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
 fi
 if command -v mob >/dev/null 2>&1; then
   MOB="$(command -v mob)"
-elif [ -x "$HOME/.claude/skills/mobstack/bin/mob" ]; then
-  MOB="$HOME/.claude/skills/mobstack/bin/mob"
-elif [ -x "$HOME/.codex/skills/mobstack/bin/mob" ]; then
-  MOB="$HOME/.codex/skills/mobstack/bin/mob"
+elif [ -x "$HOME/.claude/skills/mstack/bin/mob" ]; then
+  MOB="$HOME/.claude/skills/mstack/bin/mob"
+elif [ -x "$HOME/.codex/skills/mstack/bin/mob" ]; then
+  MOB="$HOME/.codex/skills/mstack/bin/mob"
 else
-  printf '%s\n' 'MOB_MISSING' 'Install: cd <mobstack-checkout> && ./setup --host auto (Bun >= 1.3 required)'
+  printf '%s\n' 'MOB_MISSING' 'Install: cd <mstack-checkout> && ./setup --host auto (Bun >= 1.3 required)'
   exit 1
 fi
 if MOB_VERSION="$("$MOB" --version)"; then printf 'MOB_VERSION: %s\n' "$MOB_VERSION"; else printf 'MOB_VERSION: fail\n'; fi
 if API_BASE="$("$MOB" config get api_base)"; then printf 'API_BASE: %s\n' "$API_BASE"; else API_BASE=''; printf 'API_BASE: fail\n'; fi
-if [ -n "$API_BASE" ] && MOB_HTTP="$(curl -m 10 -s -o /dev/null -w '%{http_code}' -H "X-Mobius-Client: mobstack/$MOB_VERSION" -A "mobstack/$MOB_VERSION" "$API_BASE/api/client-ip")"; then
+if [ -n "$API_BASE" ] && MOB_HTTP="$(curl -m 10 -s -o /dev/null -w '%{http_code}' -H "X-Mobius-Client: mstack/$MOB_VERSION" -A "mstack/$MOB_VERSION" "$API_BASE/api/client-ip")"; then
   case "$MOB_HTTP" in 2[0-9][0-9]) printf 'API_REACHABLE: ok\n' ;; *) printf 'API_REACHABLE: fail\n' ;; esac
 else
   printf 'API_REACHABLE: fail\n'

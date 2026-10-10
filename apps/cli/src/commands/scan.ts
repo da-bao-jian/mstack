@@ -1,4 +1,4 @@
-import { rankOpportunities } from "@mobstack/opportunities";
+import { rankOpportunities } from "@mstack/opportunities";
 import { getConfig, numberFlag, readConfig, UsageError } from "../config.ts";
 import { scanView } from "../scan-view.ts";
 import {

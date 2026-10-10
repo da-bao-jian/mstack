@@ -29,7 +29,7 @@ test("a plugin cache without Git metadata has no upgrade remote", async () => {
 		await mkdir(join(root, ".claude-plugin"));
 		await writeFile(
 			join(root, ".claude-plugin/plugin.json"),
-			JSON.stringify({ name: "mobstack" }),
+			JSON.stringify({ name: "mstack" }),
 		);
 		expect(await installationRoot(root)).toBeNull();
 	} finally {

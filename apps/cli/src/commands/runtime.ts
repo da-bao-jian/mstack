@@ -9,7 +9,7 @@ import {
 	lighterMainnet,
 	okx,
 	type Snapshot,
-} from "@mobstack/funding";
+} from "@mstack/funding";
 import { UsageError } from "../config.ts";
 
 export interface Runtime {
