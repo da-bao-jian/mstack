@@ -6,7 +6,7 @@
 | Owner | Harry |
 | Scope | An open-source skill pack, CLI and MCP server so any AI agent can scan funding rates across perp DEXs and CEXs and open, manage and close Mobius delta-neutral positions. The user's keys never leave their wallet. |
 | Depends on | funding-server (PRD 011 venues, Delta-Neutral worker), referral service, incentives engine (PRD 012), tg-monitor |
-| Working name | `mobstack` (repo), `mob` (CLI binary), `/mob-*` (skills). Names are placeholders. |
+| Name | `mstack` (repo `da-bao-jian/mstack`), `mob` (CLI binary), `/mob-*` (skills). Decided 2026-10-10; earlier drafts said `mobstack`. |
 
 ## 0. TL;DR
 
@@ -340,7 +340,7 @@ Pre-checks the skill runs before any signature: HL refuses agent approval from a
 
 ### 6.8 Custody statement (goes in the README, verbatim)
 
-- **Your wallet key never leaves your wallet.** mobstack signs through your browser wallet, WalletConnect, Ledger, or a keystore only you can unlock. Nothing in the agent, the MCP server or the skills can sign for you.
+- **Your wallet key never leaves your wallet.** mstack signs through your browser wallet, WalletConnect, Ledger, or a keystore only you can unlock. Nothing in the agent, the MCP server or the skills can sign for you.
 - **Your funds stay in your own venue accounts.** Mobius never holds, routes or custodies funds. The Mobius worker places and closes orders with venue keys that cannot withdraw (Hyperliquid, Aster) or can withdraw only to your own address (Lighter). You can revoke every key at the venue at any time.
 - **What Mobius does hold:** the encrypted venue trading keys it minted during binding, so its worker can run liquidation protection and auto-close for you around the clock; your task history; and, if you grant one, a scoped session grant (not the key).
 - **Everything the agent reads is public** by wallet address on the Mobius API. Anyone who knows your address can see your tasks.
