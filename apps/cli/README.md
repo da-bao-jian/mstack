@@ -127,7 +127,7 @@ Each mutation command stages one Proposal, prints the exact message, digest, bod
 
 Open protection defaults to off. `--protect pct` requires `--assume-leverage L[,S]`: **assumed leverage, not verified on the venue**. This estimate assumes the position's own margin, excludes other account positions, and does not change leverage or margin mode. There is no `--leverage` or `--margin` flag. Protected Aster opens fail because exchangeInfo does not publish the required maintenance-margin ladder. Use `--protect off` to stage an unprotected open explicitly.
 
-Preview rechecks current config and stored credential/task assertions. Prices, quantities, metadata evidence, timestamp, and nonce stay fixed. Mainnet Lighter needs integrator approval with more than 24 hours left. The requested `rebind-check` also blocks opening another strategy on a venue already in use. The server remains the final gate and its readiness error is printed verbatim.
+Preview rechecks current config and stored credential/task assertions. Prices, quantities, metadata evidence, timestamp, and nonce stay fixed. Mainnet Lighter needs integrator approval with more than 24 hours left. `status --readiness` reports key replacement permission in a separate “rebind allowed” column. That check does not block opening a position. The server remains the final gate and its readiness error is printed verbatim.
 
 Manage commands require a running task, except `close`, which accepts non-terminal tasks. Resize rounds toward the current size and refuses a tiny order or an uncloseable remainder. These six server routes have no nonce and are replayable inside their 300-second window. Each local Proposal expires after 300 seconds and can be signed once.
 

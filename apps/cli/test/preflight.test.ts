@@ -50,6 +50,8 @@ function reads(
 	options: {
 		credentials?: Record<string, unknown>;
 		rebind?: boolean;
+		rebindStatus?: number;
+		requests?: string[];
 		task?: unknown;
 		missingTask?: boolean;
 		metadata?: MarketMetadata;
@@ -66,12 +68,21 @@ function reads(
 		limit: async () => {},
 		fetch: async (url) => {
 			const u = new URL(url);
+			options.requests?.push(u.pathname);
 			if (u.pathname.endsWith("/task"))
 				return options.missingTask
 					? Response.json({ error: "Task not found" }, { status: 404 })
 					: Response.json(options.task ?? publicTask);
 			if (u.pathname.endsWith("rebind-check"))
-				return Response.json({ allowed: options.rebind ?? true });
+				return Response.json(
+					options.rebind === false
+						? { error: "Active task uses venue" }
+						: { allowed: true },
+					{
+						status:
+							options.rebindStatus ?? (options.rebind === false ? 409 : 200),
+					},
+				);
 			const venue = u.pathname.includes("/lighter/")
 				? (u.searchParams.get("venue") as keyof typeof credentials)
 				: u.pathname.includes("/aster/")
@@ -108,9 +119,7 @@ test("open preflight records every named rule and rechecks the read plan", async
 		"config.signer",
 		"config.policy",
 		"readiness.hl",
-		"rebind-check.hl",
 		"readiness.lighter-mainnet",
-		"rebind-check.lighter-mainnet",
 		"open-interest",
 		"marks",
 		"metadata.long",
@@ -245,7 +254,7 @@ test.each([
 	expect(result.checks.at(-1)?.error).toBeTruthy();
 });
 test.each(["hl", "aster", "lighter", "lighter-mainnet"] as const)(
-	"%s readiness pass, unbound and rebind failure",
+	"%s readiness passes even when rebind is blocked, and fails when unbound",
 	async (venue) => {
 		const p = input();
 		p.long = row(venue);
@@ -257,11 +266,22 @@ test.each(["hl", "aster", "lighter", "lighter-mainnet"] as const)(
 			() => now,
 		);
 		expect(unbound.checks.at(-1)?.error).toContain("not_bound");
+		const requests: string[] = [];
+		const blocked = reads({ rebind: false, requests });
+		const result = await openPreflight(p, blocked, () => now);
+		expect(result.ok).toBe(true);
 		expect(
-			(await openPreflight(p, reads({ rebind: false }), () => now)).checks.at(
-				-1,
-			)?.name,
-		).toBe(`rebind-check.${venue}`);
+			(
+				await runPreflight(
+					{ preflightPlan: { checks: result.plan } } as Proposal,
+					blocked.client,
+					() => now,
+				)
+			).ok,
+		).toBe(true);
+		expect(requests.some((route) => route.endsWith("rebind-check"))).toBe(
+			false,
+		);
 	},
 );
 test.each(["hl", "aster"] as const)(
@@ -365,10 +385,13 @@ test("coarser lot applies to both legs; spread equality is accepted", async () =
 		0.015,
 	);
 });
-test("status readiness uses the same credential and rebind failures", async () => {
+test("status separates credential readiness from rebind permission", async () => {
 	const result = await bindingReadiness(
 		owner,
-		reads({ credentials: { aster: { bound: false, issue: "key_invalid" } } }),
+		reads({
+			credentials: { aster: { bound: false, issue: "key_invalid" } },
+			rebind: false,
+		}),
 		() => now,
 	);
 	expect(result.find((r) => r.venue === "aster")).toMatchObject({
@@ -376,6 +399,7 @@ test("status readiness uses the same credential and rebind failures", async () =
 		error: "aster: key_invalid",
 	});
 	expect(result.filter((r) => r.ready)).toHaveLength(3);
+	expect(result.every((r) => r.rebindAllowed === false)).toBe(true);
 });
 
 test.each([
@@ -475,4 +499,20 @@ test("resize rounds toward current and rejects no-op, tiny order and uncloseable
 			)
 		).ok,
 	).toBe(false);
+});
+
+test("status reports unavailable rebind checks without changing credential readiness", async () => {
+	const result = await bindingReadiness(
+		owner,
+		reads({ rebindStatus: 503 }),
+		() => now,
+	);
+	expect(
+		result.every(
+			(r) =>
+				r.ready && r.rebindAllowed === null && r.rebindError?.includes("503"),
+		),
+	).toBe(true);
+	const allowed = await bindingReadiness(owner, reads(), () => now);
+	expect(allowed.every((r) => r.ready && r.rebindAllowed === true)).toBe(true);
 });

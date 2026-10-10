@@ -1,7 +1,8 @@
-import type {
-	ArbitrageVenue,
-	ArbitrageVenueReadinessItem,
-	ReadRoutes,
+import {
+	ApiError,
+	type ArbitrageVenue,
+	type ArbitrageVenueReadinessItem,
+	type ReadRoutes,
 } from "@mstack/mobius-client";
 import type { ReadCheck } from "@mstack/proposals";
 import { Checks, type Reader } from "./checks.ts";
@@ -86,15 +87,6 @@ export async function checkReadiness(
 			{ path: ["integratorApprovalExpiresAt"], remainingMs: 86_400_000 },
 		);
 	checks.recordRead({ route, name, params, assertions });
-	await checks.read(
-		{
-			route: "/api/binding/rebind-check",
-			name: `rebind-check.${venue}`,
-			params: { ownerAddress: owner, venue },
-			assertions: [{ path: ["allowed"], equals: true }],
-		},
-		reader,
-	);
 }
 
 export async function bindingReadiness(
@@ -105,9 +97,22 @@ export async function bindingReadiness(
 	return Promise.all(
 		executionVenues.map(async (venue) => {
 			const checks = new Checks(now);
+			let rebindAllowed: boolean | null;
+			let rebindError: string | undefined;
+			try {
+				await reader.read("/api/binding/rebind-check", {
+					ownerAddress: owner,
+					venue,
+				});
+				rebindAllowed = true;
+			} catch (error) {
+				rebindAllowed =
+					error instanceof ApiError && error.status === 409 ? false : null;
+				rebindError = error instanceof Error ? error.message : String(error);
+			}
 			try {
 				await checkReadiness(venue, owner, reader, checks);
-				return { venue, ready: true };
+				return { venue, ready: true, rebindAllowed, rebindError };
 			} catch {
 				const error = checks.checks.at(-1)?.error;
 				const issue =
@@ -122,6 +127,8 @@ export async function bindingReadiness(
 				return {
 					venue,
 					ready: false,
+					rebindAllowed,
+					rebindError,
 					issue,
 					error,
 					check: checks.checks.at(-1)?.name,

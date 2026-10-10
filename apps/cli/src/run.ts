@@ -281,12 +281,13 @@ export async function run(
 					json
 						? JSON.stringify(result, null, 2)
 						: table(
-								["venue", "ready", "issue", "check"],
+								["venue", "ready", "issue", "rebind allowed", "rebind detail"],
 								result.map((r) => [
 									r.venue,
 									r.ready,
 									r.error ?? "ready",
-									r.check ?? "credential + rebind-check",
+									r.rebindAllowed ?? "unknown",
+									r.rebindError ?? "allowed",
 								]),
 							),
 				);

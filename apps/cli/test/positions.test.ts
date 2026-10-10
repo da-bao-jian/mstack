@@ -181,6 +181,15 @@ test("CLI failures stage nothing; readiness error is verbatim; snapshot is never
 			agentAddress: owner,
 			builderApproved: true,
 		};
+		server.rebindBlocked.add("hl");
+		expect(await invoke(["status", "--readiness"])).toBe(0);
+		expect(lines.join("\n")).toContain("rebind allowed");
+		expect(await invoke(["status", "--readiness", "--json"])).toBe(0);
+		expect(
+			JSON.parse(lines.at(-1) ?? "[]").find(
+				(r: { venue: string }) => r.venue === "hl",
+			),
+		).toMatchObject({ ready: true, rebindAllowed: false });
 		expect(await invoke(open)).toBe(0);
 		const p = await store.get("p-1");
 		expect(p.submit.body.longPrice).toBe(82794);
