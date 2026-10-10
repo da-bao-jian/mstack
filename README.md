@@ -18,6 +18,18 @@ bun run deadcode
 
 Funding annualization is simple, not compounded: `ratePerInterval / intervalHours × 24 × 365 × 100`.
 
+## Funding and opportunity libraries
+
+`@mobstack/funding` provides public venue adapters and fresh snapshots. `@mobstack/opportunities` ranks positive funding spreads, estimates round-trip fees and mark-based entry cost, and reports break-even hours. Fee defaults are estimates that callers should override. Native market names remain on every leg; unmatched symbols are listed explicitly.
+
+```ts
+import { rankOpportunities } from "@mobstack/opportunities";
+
+const result = rankOpportunities(snapshot, { sizeUsd: 1_000 });
+```
+
+See [funding](packages/funding/README.md) and [opportunities](packages/opportunities/README.md) for the APIs, assumptions, and fee defaults. `mob open` strings in ranked output are suggestions for a later CLI package; these libraries do not execute them.
+
 ## Custody
 
 This statement describes the full planned product. P0 contains only public reads.

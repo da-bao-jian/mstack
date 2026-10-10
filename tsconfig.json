@@ -1,5 +1,9 @@
 {
 	"extends": "./tsconfig.base.json",
-	"include": ["packages/**/*.ts", "apps/**/*.ts", "scripts/**/*.ts"],
-	"exclude": ["node_modules", "dist", "reference", "**/dist"]
+	"files": [],
+	"references": [
+		{ "path": "./tsconfig.tools.json" },
+		{ "path": "./packages/funding" },
+		{ "path": "./packages/opportunities" }
+	]
 }

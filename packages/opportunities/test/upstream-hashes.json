@@ -1,0 +1,7 @@
+{
+	"normalizeFundingRatePerHour": "b82c96830b4fa2d75b2e8c86a54a818298a5ede0ad909a216a0e25aef6e3486d",
+	"fundingEntryPriceSpreadCost": "5e786c7defc3190f52a244bcb28c70240353e7962c5773503fe1378185db95f3",
+	"hyperliquidPerpTakerFeeScale": "1bf26d120457451f963a81454c9bed2c7de7f1f67e7ebfb5ac7cafdecd74dd3e",
+	"hyperliquidEffectiveTakerFeeBps": "f7e7a8ce0b9a36213cdc136a4f0b3bceabf1e318ced61bcb6dd27e3a3d8daa20",
+	"builderFeeMultiplierForPair": "ee3374cbf4566e9a270656da8afcea076315a158decc90b76bc9dd251b524ce3"
+}

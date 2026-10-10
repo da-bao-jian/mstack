@@ -13,7 +13,7 @@
 		"apps/*"
 	],
 	"scripts": {
-		"check": "tsc --noEmit",
+		"check": "tsc --build",
 		"lint": "biome check . --error-on-warnings",
 		"test": "bun test",
 		"build": "bun run --workspaces --if-present build",

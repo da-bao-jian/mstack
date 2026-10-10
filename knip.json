@@ -7,6 +7,9 @@
 		},
 		"packages/funding": {
 			"project": ["src/**/*.ts", "test/**/*.ts", "scripts/**/*.ts"]
+		},
+		"packages/opportunities": {
+			"project": ["src/**/*.ts", "test/**/*.ts"]
 		}
 	}
 }
