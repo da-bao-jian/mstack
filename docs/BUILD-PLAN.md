@@ -40,3 +40,43 @@ Accept: regenerate the lockfile and skills; all root gates, build, plugin valida
 
 ## QA protocol (Fable)
 After each report: run the root scripts, read the diff against the acceptance list and `AGENTS.md`, run the live smoke once, and reply with APPROVED or a numbered fix list. Codex resumes the same session for fixes.
+
+---
+
+# Build plan — P1 "Open" (PRD §12), client-side only
+
+Decision 2026-10-10: the Mobius funding-server cannot change for now. P1 is built entirely in this repo against the routes that exist today (PRD §5). Substitutes for the PRD §10 server items:
+
+| PRD §10 item | Substitute in mstack |
+|---|---|
+| #1 preview route | Client-side preflight: venue readiness from `GET /api/binding/<venue>/credential` and `rebind-check`, HL open-interest caps, floors and quantization from venue metadata (mirroring the frontend's `resizePlan.ts`), the protection gate from the ported liquidation math, entry spread vs `maxSpreadBps` from live marks. The server's own `create` validation remains the final gate and its `readiness` error body is rendered verbatim. |
+| #2 server-applied leverage | Hyperliquid only: the owner's wallet signs `updateLeverage` directly (a `venue-submit` Proposal) before the open. Lighter and Aster leverage/margin mode cannot be set without a venue key, so the CLI reads what is keyless, warns, and **never includes `longLeverage` / `shortLeverage` / `*MarginMode` segments in the signed message unless it verified them on the venue**. The server would otherwise store metadata the worker could plan trims against. |
+| #3 client logging | The `X-Mobius-Client: mstack/<version>` header is already sent. Nothing else. |
+| #4 rate limits | The client self-limits to at most 2 requests/s per host to Mobius. |
+| #5 legal acceptance | Existing auth-server routes: `GET /legal/terms`, `GET /legal/acceptance?wallet=`, `POST /legal/acceptance` with the EIP-712 `AcceptLegalTerms` from `reference/upstream/frontend/src/lib/legal.ts`, domain `{ name: "Mobius Legal", version: "1", chainId: <legal_chain_id config, default 97> }`. |
+| #12 Lighter tier check | The tier is not readable keylessly. The integrator approval is attempted once through the existing route; a refusal is reported as the venue's answer and never retried. |
+
+Signing rules (PRD §6.1) apply unchanged: the agent never signs; `mob sign <id>` is the only entrypoint; stage → preflight → stop → the user names the id.
+
+## W7 — Proposals, policy, signer core, Mobius write client
+- `packages/mobius-client` (`@mstack/mobius-client`): a typed client for every funding-server route in PRD §5.2 (reads move here from `apps/cli/src/status.ts`; the CLI keeps rendering). Message builders ported byte-exact from `reference/upstream/frontend/src/features/delta-neutral/lib/{openTaskMessage,resizeTaskMessage,liqProtectionMessage,sizeMismatchAutoCloseMessage}.ts` with their upstream tests, plus the inlined close / neutralize / auto-close messages from `ManageView.tsx` (lines ~883, ~1003, ~1025). Request bodies mirror `reference/upstream/frontend/src/features/binding/api.ts` (lines 489–735) and `OpenForm.tsx` (lines 1287–1373): `nonce = crypto.randomUUID()`, `timestamp` in unix seconds, `longPrice`/`shortPrice` = the venue marks at staging, `minFundingApy` always present in the message (default 0), optional segments only when set, numbers formatted with JS `String(n)`. Readiness errors parsed like `isVenueReadinessError`. Rate limiting as above.
+- `packages/proposals` (`@mstack/proposals`): the Proposal model of PRD §6.2. Store `~/.mob/proposals/<id>.json` (0600), ids `p-<n>` from a counter file, kinds `sign-text | sign-typed | venue-submit`, statuses `staged → previewed → awaiting-signature → signed → submitted → confirmed | rejected | failed | expired`, `expiresAt = createdAt + 300 s`, `digest` = keccak256 of the exact message bytes (text) or the EIP-712 hash (typed). A Proposal carries its `submit` plan (route + body builder from the signature) and its `preflight` result. One signature per Proposal, ever.
+- `packages/signers` (`@mstack/signers`): `Signer { address(): Promise<Address>; signMessage(args): Promise<Hex>; signTypedData(args): Promise<Hex> }`, viem-shaped so Hyperliquid's SDK can wrap it later. Backend `keystore`: `~/.mob/keystore/<address>.json`, scrypt + AES-256-GCM in the shape of `reference/upstream/packages/kms/src/kek.ts`, passphrase read from `/dev/tty` only (never stdin, argv or env), so an agent without a TTY cannot unlock it. `mob keystore create | import | list` (import reads the key from the TTY). Browser and WalletConnect arrive in W8 behind the same interface.
+- Policy in config: `signer` (`keystore | browser | walletconnect`), `policy` (`locked | manual`, default `manual`), `owner` must equal the signer's address at sign time.
+- CLI: `mob proposals`, `mob proposal show <id>`, `mob preview <id>` (re-runs the stored preflight), `mob sign <id> [--with …]` (refuses `locked`, expired, owner mismatch; prints purpose, route, message, digest; signs; submits; records the server answer), `mob reject <id>`. No `--yes`. No mutation commands yet (W10).
+- Tests: a fake funding-server (`Bun.serve`) that recovers the signer and checks the exact body; a throwaway keystore key under a temp `MOB_HOME`; byte-exact message tests; expiry; one-signature-only; policy refusals. The TTY passphrase read is injected in tests.
+
+## W8 — Browser bridge and WalletConnect signers
+- `browser`: localhost daemon (random port, token file 0600, one-time token per Proposal), a single-file page bundled into the binary (EIP-6963 wallet discovery, `personal_sign`, `eth_signTypedData_v4`, `wallet_switchEthereumChain` when the Proposal pins a chain), the page shows purpose, exact message, digest and the expected owner; the daemon rejects a signature whose recovered address ≠ owner. `mob sign` with `browser` works from an agent's shell because the human clicks in the wallet.
+- `walletconnect`: pairing URI as a terminal QR; same checks.
+- Tests: a scripted fake wallet (viem account) drives the daemon's HTTP API; expiry; wrong-signer rejection.
+
+## W9 — `mob setup` and `mob bind`
+- `mob setup`: owner, signer backend, policy, `legal_chain_id`, `auth_base` (default `https://auth.mob.exchange`), legal acceptance (skip when `GET /legal/acceptance` says accepted; `LegalStaleVersionError` handling), telemetry stays off.
+- `mob bind hl | aster | lighter | lighter-mainnet`: the ceremonies of PRD §6.7 on the existing routes, re-entrant (reads `credential`/`status` and stages only the next needed step, one Proposal per signature). Hyperliquid through `@nktkas/hyperliquid` over the Signer (`approveAgent` name `mobius-bot valid_until <ms>`, `approveBuilderFee` with the server's builder and `0.1%`); pre-check that the wallet has deposited (keyless `clearinghouseState`). Aster: port `reference/upstream/packages/aster-client/src/signing.ts` (dynamic EIP-712 types on chain 56) and POST `/fapi/v3/approveAgent`. Lighter: send `chainId` explicitly (304 mainnet, 466324 Robinhood), `personal_sign` the server's `messageToSign`, POST `sendTx` type 8 with `L1Sig`, poll; mainnet integrator approval attempted once. The Lighter key's withdraw-to-owner capability is stated before the signature.
+
+## W10 — Open and manage
+- `mob open <BASE> --long v:market --short v:market --size usd [--leverage L[,S]] [--margin cross|isolated] [--protect pct|off] [--auto-close on|off --min-apy N] [--max-spread-bps N (default 50)] [--size-mismatch pct]`: preflight as in the table above, HL `updateLeverage` as an owner-signed step when `--leverage` names the HL leg, warnings for the other venues, then one `sign-text` Proposal with the full message and the preflight summary. `mob close | resize | neutralize | protect | auto-close | size-mismatch-close <task>` each stage one Proposal. `mob status --readiness` shows per-venue binding readiness. Port the liquidation math into `@mstack/liquidation` from `reference/upstream/packages/liquidation/src/`.
+
+## W11 — Skills, MCP, docs
+- Skills `/mob-setup`, `/mob-bind`, `/mob-open`, `/mob-manage`, `/mob-close` per PRD §7.2–7.3; the router's P1 refusal sentence is replaced by the stop-and-ask rules. MCP tools `propose_open`, `propose_resize`, `propose_neutralize`, `propose_protect`, `propose_auto_close`, `propose_close`, `propose_bind_step` return a Proposal id and the `mob sign <id>` instruction; there is no signing tool. Static skill test: no skill runs `mob sign` without the user's latest message naming the id. A plugin `PreToolUse` hook that refuses a `mob sign` whose id is absent from the last user turn. README custody statement unchanged; version 0.2.0.
