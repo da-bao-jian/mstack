@@ -53,6 +53,18 @@ function rank(
 	return rankOpportunities(snapshot(rates), { sizeUsd: 1000, ...overrides });
 }
 
+test("cross-deployment Lighter pairs remain executable and carry a display flag", () => {
+	const [row] = rank([
+		rate("lighter", "1000PEPE", 0.0001),
+		rate("lighter-mainnet", "1000PEPE", 0.0002),
+	]).opportunities;
+	expect(row.flags).toEqual(["cross-deployment"]);
+	expect(row.executable).toBe(true);
+	expect(row.mobOpen).toBe(
+		"mob open PEPE --long lighter:1000PEPE --short lighter-mainnet:1000PEPE --size 1000",
+	);
+});
+
 test.each(["lighter", "lighter-mainnet"])(
 	"HL/%s doubles the builder fee in either direction",
 	(venue) => {

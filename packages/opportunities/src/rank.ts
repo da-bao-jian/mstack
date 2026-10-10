@@ -183,6 +183,12 @@ export function rankOpportunities(
 					spreadRate1hPct,
 				);
 				const flags: Opportunity["flags"] = [];
+				if (
+					[long.venue, short.venue].every(
+						(venue) => venue === "lighter" || venue === "lighter-mainnet",
+					)
+				)
+					flags.push("cross-deployment");
 				if (hlLeg?.oiCapped) flags.push("hl-oi-capped");
 				if (long.quoteClass === "coin" || short.quoteClass === "coin")
 					flags.push("coin-margined");

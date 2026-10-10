@@ -45,6 +45,8 @@ Fees are estimates. Override them for the user's actual account tier and venue t
 
 Every leg retains its native market, rate, mark, and observation metadata. Contract multipliers affect the mark price used for comparison, not the funding rate. Different HIP-3 listings remain distinct. Pairs must use different venues; multiple listings of the same base on one venue can each pair with another venue.
 
+All venues recognize numeric unit prefixes consisting of `1` followed by zeros and a letter: `10000SATS` becomes SATS ×10000. HL's `k` plus uppercase rule remains ×1000. Base tickers support Unicode letters and digits. Binance also recognizes USD1 quotes; `ETHBTC` and `ETHU` remain unmatched. A pair between the two Lighter deployments carries `cross-deployment` and remains executable.
+
 ## Calculations and output
 
 Hourly funding is `ratePerInterval / intervalHours`. The long leg has the lower hourly rate. Equal rates produce no opportunity. `spreadRate1hPct` is the short-minus-long hourly difference ×100. `spreadAnnualizedPct` is that hourly percentage ×8760, simple and not compounded.

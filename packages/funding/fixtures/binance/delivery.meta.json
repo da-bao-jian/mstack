@@ -1,0 +1,8 @@
+{
+	"file": "binance/delivery.json",
+	"url": "https://fapi.binance.com/fapi/v1/premiumIndex",
+	"method": "GET",
+	"status": 200,
+	"observedAt": 1791637235094,
+	"rawSha256": "eca4f17b848da22f1faec15b0bf6dde139305e9101e5adbc25c6f63cf6af39a6"
+}

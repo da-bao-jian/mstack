@@ -6,6 +6,7 @@ Only market arrays were trimmed. Response envelopes and retained rows keep their
 
 - Hyperliquid: `BTC`, `kPEPE`, delisted `CANTO`, two `xyz` markets including `xyz:NVDA`, and two `io` markets.
 - Lighter: BTC and ETH from both deployments, including every exchange discriminator.
+- W2.1 adds matching Lighter order-book details and OKX mark prices. Mainnet details also retain real inactive MAGS and zero-mark MKR rows. Neither had a funding row at capture time; labeled test mutations exercise their joins. Robinhood had no inactive or zero-mark listing. Binance `delivery.json` retains two real dated contracts; its adjacent metadata records the capture.
 - Aster: four USDT/USD1 markets across 1h, 4h, and 8h intervals. Three out-of-scope rows (`AAPLUSD`, `ETHU`, `CDLFORM`) test the upstream scope filter.
 - Binance: 1h, 4h, and 8h rows, plus symbols absent from the interval override list and a zero next-funding timestamp.
 - Bybit: 1h and 8h perpetuals plus a dated future with empty funding fields.

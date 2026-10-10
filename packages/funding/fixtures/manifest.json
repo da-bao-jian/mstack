@@ -140,5 +140,29 @@
 		"observedAt": 1791636184372,
 		"status": 200,
 		"rawSha256": "9319394f927d9eb48429a4bec2e405dcb73da4a7b4fb7df9b2153dd5b6cd2a35"
+	},
+	{
+		"file": "lighter/robinhood-details.json",
+		"url": "https://api.rh.lighter.xyz/api/v1/orderBookDetails",
+		"method": "GET",
+		"status": 200,
+		"observedAt": 1791637234649,
+		"rawSha256": "6f8fad57c7fbfc591ada8f56ce163e3eaccbc88d2ef5a905ed48ca7ea469aab0"
+	},
+	{
+		"file": "lighter/mainnet-details.json",
+		"url": "https://mainnet.zklighter.elliot.ai/api/v1/orderBookDetails",
+		"method": "GET",
+		"status": 200,
+		"observedAt": 1791637234937,
+		"rawSha256": "69b15bb0fa93d528f25e786bf555753830951b0b295c21883a0c871931079fd9"
+	},
+	{
+		"file": "okx/marks.json",
+		"url": "https://www.okx.com/api/v5/public/mark-price?instType=SWAP",
+		"method": "GET",
+		"status": 200,
+		"observedAt": 1791637234721,
+		"rawSha256": "96fa89c00950d0a7893488d3963d15c3b314b418b2244c11ca816deee391797f"
 	}
 ]

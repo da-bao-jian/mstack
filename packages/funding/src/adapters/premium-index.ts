@@ -37,6 +37,8 @@ export async function premiumIndexRates(
 	const rows = array(marks, "premiumIndex").flatMap((value) => {
 		const entry = object(value, "premiumIndex row");
 		const symbol = string(entry.symbol, "symbol");
+		// Binance's dated delivery contracts are outside the perpetual scope.
+		if (venue === "binance" && /^[\p{L}\p{N}]+_\d{6}$/u.test(symbol)) return [];
 		const ratePerInterval = numeric(
 			entry.lastFundingRate,
 			`${symbol} lastFundingRate`,

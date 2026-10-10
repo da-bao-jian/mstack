@@ -88,7 +88,9 @@
 			"annualizedPct": 0.0,
 			"observedAt": 1791635200000,
 			"source": "direct",
-			"annualizationMethod": "simple"
+			"annualizationMethod": "simple",
+			"markPrice": 82773.5,
+			"openInterestUsd": 16794490.690825
 		},
 		{
 			"venue": "lighter",
@@ -98,7 +100,9 @@
 			"annualizedPct": 10.511999999999999,
 			"observedAt": 1791635200000,
 			"source": "direct",
-			"annualizationMethod": "simple"
+			"annualizationMethod": "simple",
+			"markPrice": 2495.4,
+			"openInterestUsd": 22488215.4072
 		}
 	],
 	"lighter-mainnet": [
@@ -110,7 +114,9 @@
 			"annualizedPct": -2.6279999999999997,
 			"observedAt": 1791635200000,
 			"source": "direct",
-			"annualizationMethod": "simple"
+			"annualizationMethod": "simple",
+			"markPrice": 82779.4,
+			"openInterestUsd": 160783190.19048
 		},
 		{
 			"venue": "lighter-mainnet",
@@ -120,7 +126,9 @@
 			"annualizedPct": 10.511999999999999,
 			"observedAt": 1791635200000,
 			"source": "direct",
-			"annualizationMethod": "simple"
+			"annualizationMethod": "simple",
+			"markPrice": 2495.56,
+			"openInterestUsd": 89848785.90314
 		}
 	],
 	"aster": [
@@ -272,7 +280,8 @@
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
-			"nextFundingAt": 1791648000000
+			"nextFundingAt": 1791648000000,
+			"markPrice": 82779.3
 		},
 		{
 			"venue": "okx",
@@ -283,7 +292,8 @@
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
-			"nextFundingAt": 1791648000000
+			"nextFundingAt": 1791648000000,
+			"markPrice": 82710.6
 		},
 		{
 			"venue": "okx",
@@ -294,7 +304,8 @@
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
-			"nextFundingAt": 1791648000000
+			"nextFundingAt": 1791648000000,
+			"markPrice": 2495.36
 		},
 		{
 			"venue": "okx",
@@ -305,7 +316,8 @@
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
-			"nextFundingAt": 1791648000000
+			"nextFundingAt": 1791648000000,
+			"markPrice": 0.0521
 		}
 	]
 }

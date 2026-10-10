@@ -18,7 +18,9 @@ const snapshot = await fetchSnapshot(
 
 Every row carries `observedAt` in Unix milliseconds, `source`, and `annualizationMethod: "simple"`. Annualization is `ratePerInterval / intervalHours × 24 × 365 × 100`. Optional fields use milliseconds for `nextFundingAt` and USD for `markPrice` and `openInterestUsd`.
 
-Native market names remain intact: `kPEPE`, `xyz:NVDA`, `USD1:BTC`, `BTCUSDT`, and `BTC-USDT-SWAP`. Aster follows the upstream USDT/USD1 market scope. Bybit dated futures and delisted Hyperliquid markets do not emit funding rows. OKX makes two requests: SWAP instruments and bulk funding (`instId=ANY`). Only instruments marked `live` emit rows. Missing funding for a live instrument fails the adapter.
+Native market names remain intact: `kPEPE`, `xyz:NVDA`, `USD1:BTC`, `BTCUSDT`, and `BTC-USDT-SWAP`. Aster follows the upstream USDT/USD1 market scope. Binance and Bybit dated futures and delisted Hyperliquid markets do not emit funding rows. OKX makes three parallel requests: SWAP instruments, bulk funding (`instId=ANY`), and SWAP mark prices. Only instruments marked `live` emit rows. Missing funding or marks for a live instrument fails the adapter.
+
+Lighter joins `funding-rates` with `orderBookDetails` by symbol. It preserves inactive listings, omits an explicitly zero mark, and rejects negative or malformed marks. When a mark exists, open interest in USD is the reported base open interest times that mark. Missing details for a funding symbol fail the adapter.
 
 Both Lighter deployments validate every feed row, including its exchange name, and emit only their own `exchange === "lighter"` rows. Competitor mirror rows are excluded because they use Lighter's symbol namespace and lower precision. Binance, Bybit, and Hyperliquid come from their direct adapters. `source` is `"direct" | "hosted"`; `listed` contains unique native `venue:market` keys.
 

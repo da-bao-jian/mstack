@@ -15,12 +15,11 @@ export function classifyMarket(
 	let base: string;
 	let quoteClass: QuoteClass = "usd-stable";
 	let contractMultiplier = 1;
-	const ticker = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+	const ticker = /^[\p{L}\p{N}][\p{L}\p{N}._-]*$/u;
 	switch (venue) {
 		case "hl": {
-			const match = /^(?:[a-z][a-z0-9]*:)?([A-Za-z0-9][A-Za-z0-9._-]*)$/.exec(
-				market,
-			);
+			const match =
+				/^(?:[a-z][a-z0-9]*:)?([\p{L}\p{N}][\p{L}\p{N}._-]*)$/u.exec(market);
 			if (!match) return null;
 			base = match[1];
 			if (/^k[A-Z][A-Z0-9]*$/.test(base)) {
@@ -44,19 +43,15 @@ export function classifyMarket(
 		case "bybit": {
 			const match = (
 				venue === "binance"
-					? /^([A-Z0-9]+)(?:USDT|USDC)$/
-					: /^([A-Z0-9]+)(?:USDT|PERP)$/
+					? /^([\p{L}\p{N}]+)(?:USDT|USDC|USD1)$/u
+					: /^([\p{L}\p{N}]+)(?:USDT|PERP)$/u
 			).exec(market);
 			if (!match) return null;
 			base = match[1];
-			if (/^1000[A-Z][A-Z0-9]*$/.test(base)) {
-				base = base.slice(4);
-				contractMultiplier = 1000;
-			}
 			break;
 		}
 		case "okx": {
-			const match = /^([A-Z0-9]+)-(USDT|USDC|USD)-SWAP$/.exec(market);
+			const match = /^([\p{L}\p{N}]+)-(USDT|USDC|USD)-SWAP$/u.exec(market);
 			if (!match) return null;
 			base = match[1];
 			quoteClass = match[2] === "USD" ? "coin" : "usd-stable";
@@ -64,6 +59,12 @@ export function classifyMarket(
 		}
 		default:
 			return null;
+	}
+	const multiplier = /^(10+)(\p{L}[\p{L}\p{N}._-]*)$/u.exec(base);
+	if (multiplier) {
+		contractMultiplier *= Number(multiplier[1]);
+		if (!Number.isSafeInteger(contractMultiplier)) return null;
+		base = multiplier[2];
 	}
 	return { base, quoteClass, contractMultiplier };
 }

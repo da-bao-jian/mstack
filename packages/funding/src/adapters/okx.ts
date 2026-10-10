@@ -22,13 +22,23 @@ export function createOkxAdapter(): VenueAdapter {
 		venue: "okx",
 		tier: "C",
 		async fetchRates(ctx) {
-			const [rawInstruments, rawFunding] = await Promise.all([
+			const [rawInstruments, rawFunding, rawMarks] = await Promise.all([
 				json(
 					ctx,
 					"https://www.okx.com/api/v5/public/instruments?instType=SWAP",
 				),
 				json(ctx, "https://www.okx.com/api/v5/public/funding-rate?instId=ANY"),
+				json(ctx, "https://www.okx.com/api/v5/public/mark-price?instType=SWAP"),
 			]);
+			const marks = new Map<string, number>();
+			for (const value of data(rawMarks)) {
+				const entry = object(value, "OKX mark price");
+				const market = string(entry.instId, "instId");
+				if (entry.instType !== "SWAP")
+					throw new Error(`${market}: expected SWAP mark`);
+				if (marks.has(market)) throw new Error(`Duplicate OKX mark ${market}`);
+				marks.set(market, positive(entry.markPx, `${market} markPx`));
+			}
 			const instruments = data(rawInstruments).map((value) => {
 				const entry = object(value, "OKX instrument");
 				const market = string(entry.instId, "instId");
@@ -54,6 +64,9 @@ export function createOkxAdapter(): VenueAdapter {
 					throw new Error(`OKX funding: duplicate ${market}`);
 				seen.add(market);
 				if (!live.has(market)) continue;
+				const markPrice = marks.get(market);
+				if (markPrice === undefined)
+					throw new Error(`${market}: missing live mark row`);
 				if (entry.instType !== "SWAP")
 					throw new Error(`${market}: expected SWAP funding`);
 				const fundingTime = timestamp(
@@ -76,7 +89,7 @@ export function createOkxAdapter(): VenueAdapter {
 						market,
 						numeric(entry.fundingRate, `${market} fundingRate`),
 						intervalHours,
-						{ nextFundingAt: fundingTime },
+						{ nextFundingAt: fundingTime, markPrice },
 					),
 				);
 			}

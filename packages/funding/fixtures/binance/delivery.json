@@ -1,0 +1,22 @@
+[
+	{
+		"symbol": "BTCUSDT_270326",
+		"markPrice": "84756.50797826",
+		"indexPrice": "82816.14456522",
+		"estimatedSettlePrice": "82833.47506256",
+		"lastFundingRate": "0.00000000",
+		"interestRate": "0.00000000",
+		"nextFundingTime": 0,
+		"time": 1791637233000
+	},
+	{
+		"symbol": "ETHUSDT_261225",
+		"markPrice": "2518.29728682",
+		"indexPrice": "2496.61581395",
+		"estimatedSettlePrice": "2497.02777261",
+		"lastFundingRate": "0.00000000",
+		"interestRate": "0.00000000",
+		"nextFundingTime": 0,
+		"time": 1791637233000
+	}
+]

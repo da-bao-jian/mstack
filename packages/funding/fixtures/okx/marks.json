@@ -1,0 +1,30 @@
+{
+	"code": "0",
+	"data": [
+		{
+			"instId": "CHIP-USDT-SWAP",
+			"instType": "SWAP",
+			"markPx": "0.0521",
+			"ts": "1791637234749"
+		},
+		{
+			"instId": "BTC-USD-SWAP",
+			"instType": "SWAP",
+			"markPx": "82710.6",
+			"ts": "1791637234749"
+		},
+		{
+			"instId": "BTC-USDT-SWAP",
+			"instType": "SWAP",
+			"markPx": "82779.3",
+			"ts": "1791637234749"
+		},
+		{
+			"instId": "ETH-USDT-SWAP",
+			"instType": "SWAP",
+			"markPx": "2495.36",
+			"ts": "1791637234749"
+		}
+	],
+	"msg": ""
+}
