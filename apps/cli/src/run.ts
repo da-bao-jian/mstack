@@ -34,7 +34,7 @@ Usage:
   mob proposals
   mob proposal show <id>
   mob preview <id>
-  mob sign <id> [--with keystore]
+  mob sign <id> [--with keystore|browser]
   mob reject <id>
   mob upgrade
   mob mcp
@@ -44,6 +44,7 @@ Usage:
 Venues: hl,lighter,lighter-mainnet,aster,binance,bybit,okx
 Config keys: api_base, owner, signer, policy, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps
 Keystore secrets are read only from /dev/tty. Preview stops before signing. Mutation staging commands arrive in W10.
+Browser signing can start from an agent's shell; the human approves in the wallet.
 Fee defaults are estimates. Annualized rates are simple, not compounded.
 Scan --json returns counts and bounded views. --json-full includes every opportunity and can exceed 3 MB.
 Scan --top and --top-exec are capped at 200 each.
@@ -96,6 +97,7 @@ const definitions: Record<string, ParseArgsConfig["options"]> = {
 
 export interface Runtime extends CommandRuntime {
 	readSecret?: SecretReader;
+	openUrl?: (url: string) => Promise<void>;
 	out: (text: string) => void;
 	err: (text: string) => void;
 }

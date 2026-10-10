@@ -6,11 +6,13 @@ import {
 	runPreflight,
 } from "@mstack/proposals";
 import {
+	browserSigner,
 	createKeystore,
 	importKeystore,
 	listKeystores,
 	readSecretFromTty,
 	type SecretReader,
+	type Signer,
 	unlockKeystore,
 } from "@mstack/signers";
 import { getAddress } from "viem";
@@ -102,45 +104,74 @@ export async function p1(
 	const backend = values.with ?? config.signer;
 	if (!backend)
 		throw new UsageError("Set signer with mob config set signer keystore");
-	if (backend !== "keystore")
-		throw new UsageError(`${backend} signer is not available in W7`);
+	if (backend !== "keystore" && backend !== "browser")
+		throw new UsageError(`${backend} signer is not available in this build`);
 	if (!config.owner)
 		throw new UsageError("Set owner with mob config set owner 0x…");
-	const result = await store.sign(id, {
-		owner: getAddress(config.owner),
-		policy: config.policy ?? "manual",
-		display: (p) => rt.out(show(p)),
-		connect: async () => {
-			const signer = await unlockKeystore(
-				rt.home,
-				config.owner as string,
-				read,
+	let close: (() => Promise<void>) | undefined;
+	const checkConfig = async () => {
+		const latest = await readConfig(rt.home);
+		if (
+			(latest.policy ?? "manual") !== "manual" ||
+			latest.owner?.toLowerCase() !== config.owner?.toLowerCase()
+		)
+			throw new Error(
+				"Owner or policy changed while waiting for wallet; sign was cancelled",
 			);
-			const latest = await readConfig(rt.home);
-			if (
-				(latest.policy ?? "manual") !== "manual" ||
-				latest.owner?.toLowerCase() !== config.owner?.toLowerCase()
-			)
-				throw new Error(
-					"Owner or policy changed while unlocking; sign was cancelled",
-				);
-			return signer;
-		},
-		submit: async (p, body) => {
-			if (rt.now() >= p.expiresAt)
-				throw new Error("Proposal expired before submission");
-			return (await new MobiusClient({
-				base: p.submit.base,
-				version: pkg.version,
-				fetch: rt.fetch,
-			}).write(
-				p.submit.route,
-				body as WriteRoutes[keyof WriteRoutes]["body"],
-				AbortSignal.timeout(p.expiresAt - rt.now()),
-			)) as Json;
-		},
-	});
-	rt.out(
-		`${result.id}: ${result.status}\nServer answer: ${JSON.stringify(result.answer)}\nSubmission is acknowledged; execution is not confirmed.`,
-	);
+	};
+	try {
+		const result = await store.sign(id, {
+			owner: getAddress(config.owner),
+			policy: config.policy ?? "manual",
+			display: (p) => rt.out(show(p)),
+			connect: async (proposal) => {
+				let signer: Signer;
+				if (backend === "browser") {
+					const browser = browserSigner(proposal, {
+						openUrl: rt.openUrl,
+						now: rt.now,
+						onUrl: (url) =>
+							rt.out(`Open this URL in your wallet browser: ${url}`),
+					});
+					close = () => browser.close();
+					signer = browser;
+				} else
+					signer = await unlockKeystore(rt.home, config.owner as string, read);
+				return {
+					async address() {
+						const address = await signer.address();
+						await checkConfig();
+						return address;
+					},
+					async signMessage(args) {
+						await checkConfig();
+						return signer.signMessage(args);
+					},
+					async signTypedData(args) {
+						await checkConfig();
+						return signer.signTypedData(args);
+					},
+				};
+			},
+			submit: async (p, body) => {
+				await checkConfig();
+				if (rt.now() >= p.expiresAt)
+					throw new Error("Proposal expired before submission");
+				return (await new MobiusClient({
+					base: p.submit.base,
+					version: pkg.version,
+					fetch: rt.fetch,
+				}).write(
+					p.submit.route,
+					body as WriteRoutes[keyof WriteRoutes]["body"],
+					AbortSignal.timeout(p.expiresAt - rt.now()),
+				)) as Json;
+			},
+		});
+		rt.out(
+			`${result.id}: ${result.status}\nServer answer: ${JSON.stringify(result.answer)}\nSubmission is acknowledged; execution is not confirmed.`,
+		);
+	} finally {
+		await close?.();
+	}
 }

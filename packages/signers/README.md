@@ -1,6 +1,6 @@
 # @mstack/signers
 
-The `Signer` interface exposes `address()`, viem-shaped `signMessage({ message })`, and `signTypedData(typedData)`. The W7 backend is a local encrypted keystore. Browser and WalletConnect backends belong to W8.
+The `Signer` interface exposes `address()`, viem-shaped `signMessage({ message })`, `signTypedData(typedData)`, and optional `chainId()`. Available backends are the local encrypted keystore and the one-shot browser bridge. WalletConnect is deferred to W8b.
 
 `createKeystore`, `importKeystore`, and `unlockKeystore` read secrets from `/dev/tty` without echo. They never read stdin, environment secrets, or command arguments. Tests may inject the `SecretReader` function. `listKeystores` shows addresses without unlocking keys.
 
@@ -8,4 +8,8 @@ Files live at `<home>/keystore/<lowercase-address>.json`, mode 0600. Each uses a
 
 The vendored KMS source contains the encrypted-blob interface, not its scrypt implementation. This is a new local passphrase envelope, not an import format for Mobius server credentials. Keys are generated and signatures produced by viem. The backend has no transaction-signing method. Decrypted buffers are cleared after use; JavaScript strings and viem account state cannot be guaranteed to erase immediately.
 
-Run `bun run check`, `bun run lint`, and `bun test`.
+`browserSigner(view, { openUrl, onUrl, now })` uses an immutable public Proposal view. The CLI supplies the stored Proposal and opens the local page through an injectable system-browser launcher. The page reports its connected account and current chain; `address()` and `chainId()` await that handshake. Signing remains disabled until the CLI invokes the signing method after writing its permanent used marker.
+
+The bridge binds to `127.0.0.1` on a random port. Tokens remain in memory, every API request requires the token, and every POST requires the exact local Origin. A strict nonce CSP protects the bundled HTML. Accepted signatures must recover the expected owner and arrive before expiry. Call `close()` in a `finally` block to clean up a cancelled interaction; success, rejection, and expiry also close the server. No persistent daemon or token file is created.
+
+Run `bun run check`, `bun run lint`, and `bun test`. The root `bun run smoke:browser` runs a disposable fake wallet through the HTTP bridge and verifies the resulting stored-body submission against a fake funding-server.

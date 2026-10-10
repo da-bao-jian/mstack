@@ -5,3 +5,4 @@ import "../apps/cli/test/history-view.test.ts";
 import "../apps/cli/test/upgrade.test.ts";
 import "../apps/cli/test/mcp.test.ts";
 import "../apps/cli/test/proposals.test.ts";
+import "../apps/cli/test/browser.test.ts";

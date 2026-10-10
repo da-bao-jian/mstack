@@ -177,7 +177,7 @@ export class ProposalStore {
 		options: {
 			policy: "locked" | "manual";
 			owner: Address;
-			connect: () => Promise<Signer>;
+			connect: (proposal: Proposal) => Promise<Signer>;
 			display: (p: Proposal) => void;
 			submit: (p: Proposal, body: JsonObject) => Promise<Json>;
 		},
@@ -192,7 +192,7 @@ export class ProposalStore {
 			if (p.status !== "awaiting-signature" || !p.preflight?.ok)
 				throw new Error("Run mob preview before signing");
 			options.display(structuredClone(p));
-			const signer = await options.connect();
+			const signer = await options.connect(structuredClone(p));
 			if (getAddress(await signer.address()) !== getAddress(options.owner))
 				throw new Error("Owner does not match signer address");
 			await this.editable(p); // The TTY may have waited past expiry.

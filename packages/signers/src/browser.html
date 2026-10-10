@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mstack — Review Proposal</title>
+<style nonce="_MSTACK_NONCE_">
+  body { max-width: 54rem; margin: 3rem auto; padding: 0 1.2rem; font: 17px/1.5 system-ui, sans-serif; color: #18242d; background: #f6f7f5; }
+  h1 { font-size: 1.8rem; } pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 1rem; background: #fff; border: 1px solid #ccd4d6; }
+  .address, #digest { overflow-wrap: anywhere; font-family: monospace; }
+  .error { color: #b01823; } button, select { padding: .6rem; margin: .3rem .3rem .3rem 0; font: inherit; }
+  button:disabled { opacity: .5; } #sign { background: #163e31; color: white; border: 1px solid #163e31; }
+</style>
+</head>
+<body>
+<h1>Review Proposal <span id="id"></span></h1>
+<p id="purpose"></p>
+<p>Expected owner: <span class="address" id="owner"></span></p>
+<p>Selected account: <span class="address" id="account">Not connected</span></p>
+<p id="countdown" role="status"></p>
+<h2>Exact message</h2><pre id="message"></pre>
+<h2>Digest</h2><pre id="digest"></pre>
+<p>compare this digest with your terminal</p>
+<label for="wallet">Wallet</label> <select id="wallet"></select>
+<button type="button" id="connect">Connect wallet</button>
+<button type="button" id="sign" disabled>Sign this Proposal</button>
+<button type="button" id="reject">Reject Proposal</button>
+<p id="status" role="status"></p>
+<script nonce="_MSTACK_NONCE_">
+"use strict";
+const el = id => document.getElementById(id);
+const token = new URL(location.href).searchParams.get("t");
+const wallets = [];
+let proposal, provider, address, chainId, ready = false, busy = false, done = false;
+const api = async (path, body) => {
+  const response = await fetch(`${path}?t=${encodeURIComponent(token)}`, body === undefined ? {} : {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || "Bridge request failed");
+  return result;
+};
+const status = (text, error = false) => { el("status").textContent = text; el("status").className = error ? "error" : ""; };
+const matches = () => address && proposal && address.toLowerCase() === proposal.owner.toLowerCase();
+const pinned = () => proposal?.signing.type === "typed" ? proposal.signing.typedData.domain?.chainId : undefined;
+function refresh() {
+  const expired = proposal && Date.now() >= proposal.expiresAt;
+  el("account").textContent = address || "Not connected";
+  el("account").className = address && !matches() ? "address error" : "address";
+  el("sign").disabled = done || busy || expired || !ready || !matches() || (pinned() !== undefined && Number(pinned()) !== chainId);
+  el("connect").disabled = done || busy || expired;
+  if (proposal) el("countdown").textContent = expired ? "Proposal expired" : `Expires in ${Math.max(0, Math.ceil((proposal.expiresAt - Date.now()) / 1000))} seconds`;
+  if (expired) { done = true; el("reject").disabled = true; }
+}
+function addWallet(name, candidate) {
+  if (!candidate?.request || wallets.some(wallet => wallet.provider === candidate)) return;
+  wallets.push({ name, provider: candidate });
+  const option = document.createElement("option");
+  option.value = String(wallets.length - 1); option.textContent = name;
+  el("wallet").append(option);
+}
+window.addEventListener("eip6963:announceProvider", event => {
+  if (typeof event.detail?.info?.name === "string") addWallet(event.detail.info.name, event.detail.provider);
+});
+window.dispatchEvent(new Event("eip6963:requestProvider"));
+setTimeout(() => { if (!wallets.length && window.ethereum) addWallet("Browser wallet", window.ethereum); }, 300);
+async function reportAccount() {
+  refresh();
+  if (!matches()) { status("Selected account does not match the expected owner.", true); return; }
+  await api("/api/account", { address, chainId });
+}
+el("connect").onclick = async () => {
+  busy = true; refresh();
+  try {
+    const selected = wallets[Number(el("wallet").value)]?.provider;
+    if (!selected) throw new Error("No wallet found. Enable a wallet extension and reload.");
+    provider = selected;
+    const accounts = await provider.request({ method: "eth_requestAccounts" });
+    address = accounts[0];
+    chainId = Number(await provider.request({ method: "eth_chainId" }));
+    refresh();
+    if (!matches()) { status("Selected account does not match the expected owner.", true); return; }
+    if (pinned() !== undefined && chainId !== Number(pinned())) {
+      await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: `0x${Number(pinned()).toString(16)}` }] });
+      chainId = Number(await provider.request({ method: "eth_chainId" }));
+      if (chainId !== Number(pinned())) throw new Error("Wallet did not switch to the Proposal chain.");
+    }
+    await reportAccount();
+    provider.on?.("accountsChanged", accounts => { if (provider !== selected) return; address = accounts[0]; void reportAccount().catch(error => status(error.message, true)); });
+    provider.on?.("chainChanged", chain => { if (provider !== selected) return; chainId = Number(chain); void reportAccount().catch(error => status(error.message, true)); });
+    status("Connected. Review the message and digest before signing.");
+  } catch (error) { status(error.message, true); }
+  finally { busy = false; refresh(); }
+};
+el("wallet").onchange = () => { provider = undefined; address = undefined; chainId = undefined; refresh(); };
+el("sign").onclick = async () => {
+  if (el("sign").disabled) return;
+  busy = true; refresh();
+  try {
+    const current = await provider.request({ method: "eth_accounts" });
+    address = current[0];
+    chainId = Number(await provider.request({ method: "eth_chainId" }));
+    if (!matches()) throw new Error("Selected account does not match the expected owner.");
+    if (pinned() !== undefined && chainId !== Number(pinned())) throw new Error("Wallet chain changed. Connect again to switch to the Proposal chain.");
+    await reportAccount();
+    if (Date.now() >= proposal.expiresAt) throw new Error("Proposal expired");
+    const signing = proposal.signing;
+    const messageHex = signing.type === "text" ? `0x${Array.from(new TextEncoder().encode(signing.message), byte => byte.toString(16).padStart(2, "0")).join("")}` : undefined;
+    const signature = await provider.request(signing.type === "text"
+      ? { method: "personal_sign", params: [messageHex, address] }
+      : { method: "eth_signTypedData_v4", params: [address, JSON.stringify(signing.typedData)] });
+    await api("/api/signature", { address, signature });
+    done = true; status("Signature accepted. Return to your terminal for the submission result.");
+    el("reject").disabled = true;
+  } catch (error) {
+    status(error.message, true);
+    if (error.code === 4001) { done = true; await api("/api/reject", {}).catch(() => {}); }
+  } finally { busy = false; refresh(); }
+};
+el("reject").onclick = async () => {
+  done = true; refresh();
+  try { await api("/api/reject", {}); status("Proposal rejected."); }
+  catch (error) { status(error.message, true); }
+  el("reject").disabled = true;
+};
+async function poll() {
+  if (done) return;
+  try {
+    const view = await api("/api/proposal");
+    if (!proposal) {
+      proposal = view;
+      for (const key of ["id", "purpose", "owner", "digest"]) el(key).textContent = view[key];
+      el("message").textContent = view.signing.type === "text" ? view.signing.message : JSON.stringify(view.signing.typedData, null, 2);
+    }
+    ready = view.ready; refresh();
+  } catch (error) { if (!done && !busy) { done = true; status(error.message, true); refresh(); } }
+  if (!done) setTimeout(poll, 350);
+}
+setInterval(refresh, 200);
+void poll();
+</script>
+</body>
+</html>

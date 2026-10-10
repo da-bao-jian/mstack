@@ -88,10 +88,18 @@ After building, `MOB_LIVE=1 bun run --filter @mstack/cli live:smoke` runs the co
 
 `mob keystore create | import | list` manages local encrypted keys. Create and import ask for a passphrase twice through `/dev/tty`. Import also reads the private key through that terminal. Secrets have no flags or environment settings.
 
-Set `mob config set owner 0x…` and `mob config set signer keystore`. Policy defaults to `manual`; `mob config set policy locked` blocks signing. Browser and WalletConnect are recognized config values but are unavailable until W8.
+Set `mob config set owner 0x…` and `mob config set signer keystore` or `browser`. Policy defaults to `manual`; `mob config set policy locked` blocks signing. WalletConnect arrives in W8b.
 
-`mob proposals` lists stored Proposals. `mob proposal show <id>` shows the stored message, digest, body, and endpoint. `mob preview <id>` reruns its preflight and stops. After the user names the id, `mob sign <id> [--with keystore]` shows the same intent, unlocks through the TTY, signs once, and submits the stored body. `mob reject <id>` makes an unsigned Proposal terminal.
+`mob proposals` lists stored Proposals. `mob proposal show <id>` shows the stored message, digest, body, and endpoint. `mob preview <id>` reruns its preflight and stops. After the user names the id, `mob sign <id> [--with keystore|browser]` shows the same intent, asks the selected wallet for approval, signs once, and submits the stored body. `mob reject <id>` makes an unsigned Proposal terminal.
 
 Proposals expire after 300 seconds. A signed attempt cannot be retried, even after a server failure. Submission acknowledgement does not confirm execution. W7 has no mutation staging commands; W10 adds those. MCP remains read-only. See [Proposal storage](../../packages/proposals/README.md) and [keystores](../../packages/signers/README.md).
 
 Run `bun apps/cli/scripts/smoke-proposals.ts` from the repository root for a disposable-keystore transcript against a loopback fake server. It injects a test-only secret reader, verifies the signer and every request field, and removes its temporary home. It makes no live Mobius or venue requests.
+
+## Browser signer
+
+The browser backend works from an agent's shell without a secret or TTY. It prints a loopback URL and opens the system browser. Select an EIP-6963 wallet (or the browser's legacy injected wallet), connect the expected owner, compare the digest with the terminal, and approve the exact message. A different account disables signing. A pinned typed-data chain must be selected in the wallet; a refused switch is shown and no chain is added.
+
+The HTML is bundled into `mob` and loads no external resources. Its local server uses a fresh in-memory token and strict CSP, checks the POST Origin and signature recovery, and closes after one accepted signature, human rejection, or expiry. Invalid HTTP submissions do not consume the token. Closing the tab leaves the request waiting until expiry; use the page's Reject button to cancel immediately.
+
+Run `bun run smoke:browser` from the root for the fake wallet and fake funding-server transcript. No real browser, relay, venue, or Mobius write is used.

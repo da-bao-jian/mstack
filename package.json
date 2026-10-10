@@ -13,6 +13,7 @@
 		"apps/*"
 	],
 	"scripts": {
+		"smoke:browser": "bun run --filter @mstack/cli smoke:browser",
 		"check": "tsc --build",
 		"lint": "biome check . --error-on-warnings",
 		"test": "bun test packages apps",

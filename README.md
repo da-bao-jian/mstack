@@ -2,7 +2,14 @@
 
 An open-source funding-rate scanner and Mobius agent stack. The current P0 scope is read-only: no wallet, signing, or key handling.
 
-W7 adds encrypted local keystores and explicit signing of stored Proposals through `mob sign <id>`. See the [W7 CLI commands](apps/cli/README.md). Mutation staging commands arrive in W10; MCP and the current skills remain read-only.
+Stored Proposals can be signed explicitly through `mob sign <id>`. See the [CLI commands](apps/cli/README.md). Mutation staging commands arrive in W10; MCP and the current skills remain read-only.
+
+| Signer backend | Human approval | Can launch from an agent's shell? |
+|---|---|---|
+| `keystore` | Passphrase through a human terminal (`/dev/tty`) | No; requires that terminal |
+| `browser` | Review the local page and approve in the wallet extension | Yes |
+
+Set `mob config set owner 0x…` and `mob config set signer browser`, or select `mob sign <id> --with browser`. The browser bridge serves one Proposal on a random loopback port and closes after signing, rejection, or expiry. It creates no daemon or token file. Compare the page's digest with the terminal before approval.
 
 ## 30-second install
 
