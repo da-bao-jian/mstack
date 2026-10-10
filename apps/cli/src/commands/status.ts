@@ -1,3 +1,4 @@
+import { fetchStatus } from "@mstack/mobius-client";
 import pkg from "../../package.json";
 import {
 	apiBase,
@@ -6,7 +7,6 @@ import {
 	readConfig,
 	UsageError,
 } from "../config.ts";
-import { fetchStatus } from "../status.ts";
 import type { Runtime } from "./runtime.ts";
 
 export interface StatusOptions {

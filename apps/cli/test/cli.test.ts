@@ -227,7 +227,8 @@ test("version and help expose only delivered commands", async () => {
 		"config",
 	])
 		expect(result.out).toContain(`mob ${name}`);
-	expect(result.out).not.toMatch(/mob (open|sign|bind|close)/);
+	expect(result.out).not.toMatch(/mob (open|bind|close)/);
+	expect(result.out).toContain("mob sign <id>");
 	expect(result.calls).toHaveLength(0);
 });
 

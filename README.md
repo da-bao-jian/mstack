@@ -2,6 +2,8 @@
 
 An open-source funding-rate scanner and Mobius agent stack. The current P0 scope is read-only: no wallet, signing, or key handling.
 
+W7 adds encrypted local keystores and explicit signing of stored Proposals through `mob sign <id>`. See the [W7 CLI commands](apps/cli/README.md). Mutation staging commands arrive in W10; MCP and the current skills remain read-only.
+
 ## 30-second install
 
 Install Bun 1.3 or newer first. The repository is private; cloning and marketplace installation require GitHub access.

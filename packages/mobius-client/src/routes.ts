@@ -1,0 +1,32 @@
+import type { ReadRoutes, WriteRoutes } from "./types.ts";
+export const readRoutes: { [R in keyof ReadRoutes]: true } = {
+	"/api/arbitrage/list": true,
+	"/api/arbitrage/task": true,
+	"/api/arbitrage/liq-trims": true,
+	"/api/arbitrage/resizes": true,
+	"/api/arbitrage/alert-dismissals": true,
+	"/api/arbitrage/rates": true,
+	"/api/binding/hl/credential": true,
+	"/api/binding/aster/credential": true,
+	"/api/binding/lighter/credential": true,
+	"/api/binding/hl/status": true,
+	"/api/binding/aster/status": true,
+	"/api/binding/lighter/status": true,
+	"/api/binding/rebind-check": true,
+};
+export const writeRoutes: { [R in keyof WriteRoutes]: true } = {
+	"/api/arbitrage/create": true,
+	"/api/arbitrage/close": true,
+	"/api/arbitrage/neutralize": true,
+	"/api/arbitrage/resize": true,
+	"/api/arbitrage/auto-close": true,
+	"/api/arbitrage/liq-protection": true,
+	"/api/arbitrage/size-mismatch-auto-close": true,
+	"/api/arbitrage/alert-dismiss": true,
+	"/api/binding/hl/prepare": true,
+	"/api/binding/aster/prepare": true,
+	"/api/binding/lighter/prepare": true,
+	"/api/binding/lighter/integrator-approve": true,
+	"/api/binding/hl/builder-finalize": true,
+	"/api/binding/aster/builder-finalize": true,
+};

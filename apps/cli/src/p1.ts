@@ -1,0 +1,146 @@
+import { MobiusClient, type WriteRoutes } from "@mstack/mobius-client";
+import {
+	type Json,
+	type Proposal,
+	ProposalStore,
+	runPreflight,
+} from "@mstack/proposals";
+import {
+	createKeystore,
+	importKeystore,
+	listKeystores,
+	readSecretFromTty,
+	type SecretReader,
+	unlockKeystore,
+} from "@mstack/signers";
+import { getAddress } from "viem";
+import pkg from "../package.json";
+import { readConfig, UsageError } from "./config.ts";
+import type { Runtime } from "./run.ts";
+
+function show(p: Proposal): string {
+	return [
+		p.id,
+		`Status: ${p.status}`,
+		`Purpose: ${p.purpose}`,
+		`Owner: ${p.owner}`,
+		`Route: POST ${p.submit.base}${p.submit.route}`,
+		`Expires: ${new Date(p.expiresAt).toISOString()}`,
+		"Message:",
+		p.signing.type === "text"
+			? p.signing.message
+			: JSON.stringify(p.signing.typedData, null, 2),
+		`Digest: ${p.digest}`,
+		`Stored body: ${JSON.stringify(p.submit.body)}`,
+		...(p.preflight ? [`Preflight: ${JSON.stringify(p.preflight)}`] : []),
+		...(p.answer !== undefined
+			? [`Server answer: ${JSON.stringify(p.answer)}`]
+			: []),
+	].join("\n");
+}
+export async function p1(
+	command: string,
+	args: string[],
+	values: Record<string, string | boolean | undefined>,
+	rt: Runtime,
+	read: SecretReader = readSecretFromTty,
+): Promise<void> {
+	const store = new ProposalStore(rt.home, rt.now);
+	if (command === "keystore") {
+		if (args.length !== 1 || !["create", "import", "list"].includes(args[0]))
+			throw new UsageError("Usage: mob keystore create | import | list");
+		if (args[0] === "list")
+			rt.out((await listKeystores(rt.home)).join("\n") || "No keystores.");
+		else
+			rt.out(
+				`Keystore: ${await (args[0] === "create" ? createKeystore(rt.home, read) : importKeystore(rt.home, read))}`,
+			);
+		return;
+	}
+	if (command === "proposals") {
+		if (args.length) throw new UsageError("Usage: mob proposals");
+		const proposals = await store.list();
+		rt.out(
+			proposals.map((p) => `${p.id}\t${p.status}\t${p.purpose}`).join("\n") ||
+				"No proposals.",
+		);
+		return;
+	}
+	if (command === "proposal") {
+		if (args.length !== 2 || args[0] !== "show")
+			throw new UsageError("Usage: mob proposal show <id>");
+		rt.out(show(await store.get(args[1])));
+		return;
+	}
+	if (args.length !== 1) throw new UsageError(`Usage: mob ${command} <id>`);
+	const id = args[0];
+	if (command === "reject") {
+		rt.out(show(await store.reject(id)));
+		return;
+	}
+	if (command === "preview") {
+		const result = await store.preview(id, (p) =>
+			runPreflight(
+				p,
+				new MobiusClient({
+					base: p.submit.base,
+					version: pkg.version,
+					fetch: rt.fetch,
+				}),
+				rt.now,
+			),
+		);
+		rt.out(show(result));
+		if (!result.preflight?.ok)
+			throw new Error("Preflight rejected the Proposal");
+		rt.out(
+			`Stopped before signing. To authorize this Proposal, name ${id} and run mob sign ${id}.`,
+		);
+		return;
+	}
+	const config = await readConfig(rt.home);
+	const backend = values.with ?? config.signer;
+	if (!backend)
+		throw new UsageError("Set signer with mob config set signer keystore");
+	if (backend !== "keystore")
+		throw new UsageError(`${backend} signer is not available in W7`);
+	if (!config.owner)
+		throw new UsageError("Set owner with mob config set owner 0x…");
+	const result = await store.sign(id, {
+		owner: getAddress(config.owner),
+		policy: config.policy ?? "manual",
+		display: (p) => rt.out(show(p)),
+		connect: async () => {
+			const signer = await unlockKeystore(
+				rt.home,
+				config.owner as string,
+				read,
+			);
+			const latest = await readConfig(rt.home);
+			if (
+				(latest.policy ?? "manual") !== "manual" ||
+				latest.owner?.toLowerCase() !== config.owner?.toLowerCase()
+			)
+				throw new Error(
+					"Owner or policy changed while unlocking; sign was cancelled",
+				);
+			return signer;
+		},
+		submit: async (p, body) => {
+			if (rt.now() >= p.expiresAt)
+				throw new Error("Proposal expired before submission");
+			return (await new MobiusClient({
+				base: p.submit.base,
+				version: pkg.version,
+				fetch: rt.fetch,
+			}).write(
+				p.submit.route,
+				body as WriteRoutes[keyof WriteRoutes]["body"],
+				AbortSignal.timeout(p.expiresAt - rt.now()),
+			)) as Json;
+		},
+	});
+	rt.out(
+		`${result.id}: ${result.status}\nServer answer: ${JSON.stringify(result.answer)}\nSubmission is acknowledged; execution is not confirmed.`,
+	);
+}

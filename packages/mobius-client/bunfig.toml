@@ -1,0 +1,2 @@
+[test]
+preload = ["../funding/test/no-network.ts"]

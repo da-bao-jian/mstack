@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { DEFAULT_TAKER_FEE_BPS } from "@mstack/opportunities";
 
 export interface Config {
+	signer?: "keystore" | "browser" | "walletconnect";
+	policy?: "locked" | "manual";
 	api_base?: string;
 	owner?: string;
 	default_size_usd?: number;
@@ -62,6 +64,8 @@ export function numberFlag(
 function knownKey(key: string): void {
 	if (
 		[
+			"signer",
+			"policy",
 			"api_base",
 			"owner",
 			"default_size_usd",
@@ -79,6 +83,15 @@ function knownKey(key: string): void {
 
 function parsedValue(key: string, value: string | number): string | number {
 	knownKey(key);
+	if (key === "signer" || key === "policy") {
+		const allowed =
+			key === "signer"
+				? ["keystore", "browser", "walletconnect"]
+				: ["locked", "manual"];
+		if (!allowed.includes(String(value)))
+			throw new UsageError(`Invalid ${key}: expected ${allowed.join(" | ")}`);
+		return String(value);
+	}
 	if (key === "api_base") return apiBase(String(value));
 	if (key === "owner") return ownerAddress(String(value));
 	const result = numberFlag(value, key, 0, key === "builder_fee_tenths_bps");
@@ -114,7 +127,9 @@ export async function readConfig(home = configHome()): Promise<Config> {
 		} else {
 			if (
 				typeof item !==
-				(["api_base", "owner"].includes(key) ? "string" : "number")
+				(["api_base", "owner", "signer", "policy"].includes(key)
+					? "string"
+					: "number")
 			)
 				throw new Error(`Invalid config value for ${key}`);
 			parsedValue(key, item as string | number);
@@ -125,6 +140,8 @@ export async function readConfig(home = configHome()): Promise<Config> {
 
 export function getConfig(config: Config, key: string): string | number {
 	knownKey(key);
+	if (key === "policy") return config.policy ?? "manual";
+	if (key === "signer") return config.signer ?? "";
 	if (key === "owner") return config.owner ?? "";
 	if (key === "api_base")
 		return config.api_base ?? "https://funding.mob.exchange";

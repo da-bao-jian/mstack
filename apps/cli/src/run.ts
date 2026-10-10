@@ -1,4 +1,5 @@
 import { type ParseArgsConfig, parseArgs } from "node:util";
+import type { SecretReader } from "@mstack/signers";
 import pkg from "../package.json";
 import { config } from "./commands/config.ts";
 import { explain } from "./commands/explain.ts";
@@ -17,7 +18,7 @@ import { renderHistory } from "./render-history.ts";
 import { renderStatus, statusFooter } from "./status.ts";
 import { installationRoot, upgrade } from "./upgrade.ts";
 
-const help = `mob ${pkg.version} — public funding and Mobius task reads
+const help = `mob ${pkg.version} — funding reads and explicit Proposal signing
 
 Usage:
   mob scan [--size N=1000] [--market BASE] [--venues a,b] [--top N=10]
@@ -29,13 +30,20 @@ Usage:
   mob status [--owner 0x…] [--task ID] [--trims] [--resizes] [--api-base URL] [--json]
   mob config get <key>
   mob config set <key> <value>
+  mob keystore create | import | list
+  mob proposals
+  mob proposal show <id>
+  mob preview <id>
+  mob sign <id> [--with keystore]
+  mob reject <id>
   mob upgrade
   mob mcp
   mob --version
   mob --help
 
 Venues: hl,lighter,lighter-mainnet,aster,binance,bybit,okx
-Config keys: api_base, owner, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps
+Config keys: api_base, owner, signer, policy, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps
+Keystore secrets are read only from /dev/tty. Preview stops before signing. Mutation staging commands arrive in W10.
 Fee defaults are estimates. Annualized rates are simple, not compounded.
 Scan --json returns counts and bounded views. --json-full includes every opportunity and can exceed 3 MB.
 Scan --top and --top-exec are capped at 200 each.
@@ -48,6 +56,12 @@ const common = {
 	help: flag("boolean"),
 };
 const definitions: Record<string, ParseArgsConfig["options"]> = {
+	keystore: { help: flag("boolean") },
+	proposals: { help: flag("boolean") },
+	proposal: { help: flag("boolean") },
+	preview: { help: flag("boolean") },
+	sign: { help: flag("boolean"), with: flag("string") },
+	reject: { help: flag("boolean") },
 	scan: {
 		...common,
 		"json-full": flag("boolean"),
@@ -81,6 +95,7 @@ const definitions: Record<string, ParseArgsConfig["options"]> = {
 };
 
 export interface Runtime extends CommandRuntime {
+	readSecret?: SecretReader;
 	out: (text: string) => void;
 	err: (text: string) => void;
 }
@@ -138,6 +153,20 @@ export async function run(
 				: numberFlag(text(name) as string, name, minimum, integer);
 		const json = values.json === true || values["json-full"] === true;
 		const strict = values.strict === true;
+		if (
+			[
+				"keystore",
+				"proposals",
+				"proposal",
+				"preview",
+				"sign",
+				"reject",
+			].includes(command)
+		) {
+			const { p1 } = await import("./p1.ts");
+			await p1(command, positionals, values, rt, rt.readSecret);
+			return 0;
+		}
 		if (command === "mcp") {
 			if (positionals.length)
 				throw new UsageError("mcp does not accept positional arguments");

@@ -396,8 +396,13 @@ test("invalid tool arguments fail before reading a venue", async () => {
 
 test("the tool deadline aborts stalled requests and is returned as a tool error", async () => {
 	let aborted = false;
+	// An independent host gives this request the first rate-limit slot.
+	const deadlineHome = await mkdtemp(join(tmpdir(), "mob-deadline-test-"));
+	cleanup.push(() => rm(deadlineHome, { recursive: true, force: true }));
+	await setConfig("api_base", "https://deadline.invalid", deadlineHome);
 	const { call, rt } = await connect(
 		{
+			home: deadlineHome,
 			fetch: async (_url, init) =>
 				new Promise<Response>((_resolve, reject) => {
 					init?.signal?.addEventListener(

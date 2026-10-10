@@ -1,6 +1,6 @@
 # mob CLI
 
-Build with `bun run build` at the root, then run `apps/cli/dist/mob`. The compiled binary includes the funding and ranking workspace packages and all ten knowledge files. It can run from any directory without Bun, source files, or `node_modules`. Its only external direct runtime dependency is `@modelcontextprotocol/sdk`, pinned to `1.32.1` for the MCP protocol and transports. The CLI uses `node:util` `parseArgs` and a small table renderer.
+Build with `bun run build` at the root, then run `apps/cli/dist/mob`. The compiled binary includes the workspace packages and all ten knowledge files. It can run from any directory without Bun, source files, or `node_modules`. External runtime dependencies are `@modelcontextprotocol/sdk` 1.32.1 for MCP and `viem` 2.57.4 for address and signing primitives. The CLI uses `node:util` `parseArgs` and a small table renderer.
 
 ```sh
 mob scan --size 5000 --top 5
@@ -83,3 +83,15 @@ Run `bun run check`, `bun run lint`, and `bun test` here. At the root, `bun run 
 After building, `MOB_LIVE=1 bun run --filter @mstack/cli live:smoke` runs the compiled binary for the six assigned smoke commands. It uses an empty temporary config directory and prints command output and wall time. The JSON scan is summarized to keep logs small. The status check uses only the assigned dummy address.
 
 `MOB_LIVE=1 bun run live:mcp` at the root spawns the compiled server through the SDK stdio client. It lists tools, requests a scan, and reads the simple funding explanation. Unit tests use `InMemoryTransport`, recorded venue fixtures, and the hand-written publicTask fixture with the network guard enabled.
+
+## W7 Proposal and keystore commands
+
+`mob keystore create | import | list` manages local encrypted keys. Create and import ask for a passphrase twice through `/dev/tty`. Import also reads the private key through that terminal. Secrets have no flags or environment settings.
+
+Set `mob config set owner 0x…` and `mob config set signer keystore`. Policy defaults to `manual`; `mob config set policy locked` blocks signing. Browser and WalletConnect are recognized config values but are unavailable until W8.
+
+`mob proposals` lists stored Proposals. `mob proposal show <id>` shows the stored message, digest, body, and endpoint. `mob preview <id>` reruns its preflight and stops. After the user names the id, `mob sign <id> [--with keystore]` shows the same intent, unlocks through the TTY, signs once, and submits the stored body. `mob reject <id>` makes an unsigned Proposal terminal.
+
+Proposals expire after 300 seconds. A signed attempt cannot be retried, even after a server failure. Submission acknowledgement does not confirm execution. W7 has no mutation staging commands; W10 adds those. MCP remains read-only. See [Proposal storage](../../packages/proposals/README.md) and [keystores](../../packages/signers/README.md).
+
+Run `bun apps/cli/scripts/smoke-proposals.ts` from the repository root for a disposable-keystore transcript against a loopback fake server. It injects a test-only secret reader, verifies the signer and every request field, and removes its temporary home. It makes no live Mobius or venue requests.

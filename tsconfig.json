@@ -2,6 +2,9 @@
 	"extends": "./tsconfig.base.json",
 	"files": [],
 	"references": [
+		{ "path": "./packages/mobius-client" },
+		{ "path": "./packages/proposals" },
+		{ "path": "./packages/signers" },
 		{ "path": "./tsconfig.tools.json" },
 		{ "path": "./packages/funding" },
 		{ "path": "./packages/opportunities" },

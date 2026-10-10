@@ -5,11 +5,16 @@
 	"type": "module",
 	"license": "MIT",
 	"dependencies": {
+		"@mstack/mobius-client": "workspace:*",
+		"@mstack/proposals": "workspace:*",
+		"@mstack/signers": "workspace:*",
+		"viem": "2.57.4",
 		"@mstack/funding": "workspace:*",
 		"@mstack/opportunities": "workspace:*",
 		"@modelcontextprotocol/sdk": "1.32.1"
 	},
 	"scripts": {
+		"smoke:proposals": "bun scripts/smoke-proposals.ts",
 		"check": "tsc --build",
 		"lint": "biome check . --error-on-warnings",
 		"test": "bun test",
