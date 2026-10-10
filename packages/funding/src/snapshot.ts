@@ -34,7 +34,7 @@ function validateRows(rows: ObservedFundingRate[]): void {
 		timestamp(row.observedAt, "observedAt");
 		if (
 			row.annualizationMethod !== "simple" ||
-			!["direct", "hosted", "lighter-mirror"].includes(row.source)
+			!["direct", "hosted"].includes(row.source)
 		) {
 			throw new Error(
 				`${row.venue}:${row.market}: invalid source or annualization method`,

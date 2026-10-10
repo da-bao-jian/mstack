@@ -129,32 +129,16 @@
 		"file": "okx/instruments.json",
 		"url": "https://www.okx.com/api/v5/public/instruments?instType=SWAP",
 		"method": "GET",
-		"observedAt": 1791635203097,
+		"observedAt": 1791636184223,
 		"status": 200,
-		"rawSha256": "ec1b2fb1efac134009e2d7305417f3bda4016d786d5e654cb3fe95e97b7fde33"
+		"rawSha256": "c2adcc450647f3122c9134c314b3b393f3b98c01ab11e3b4bbef4b0bfc1db5ef"
 	},
 	{
-		"file": "okx/BTC-USDT-SWAP.json",
-		"url": "https://www.okx.com/api/v5/public/funding-rate?instId=BTC-USDT-SWAP",
+		"file": "okx/funding.json",
+		"url": "https://www.okx.com/api/v5/public/funding-rate?instId=ANY",
 		"method": "GET",
-		"observedAt": 1791635241932,
+		"observedAt": 1791636184372,
 		"status": 200,
-		"rawSha256": "1d7558c83232a921ae1345301189ffd5f3049459f07d76ecbe7a38debab18419"
-	},
-	{
-		"file": "okx/ETH-USDT-SWAP.json",
-		"url": "https://www.okx.com/api/v5/public/funding-rate?instId=ETH-USDT-SWAP",
-		"method": "GET",
-		"observedAt": 1791635242059,
-		"status": 200,
-		"rawSha256": "069fef6dba0b8785511b66f001208246e4579921ea3c2a4919a9bcc4176e552c"
-	},
-	{
-		"file": "okx/BTC-USD-SWAP.json",
-		"url": "https://www.okx.com/api/v5/public/funding-rate?instId=BTC-USD-SWAP",
-		"method": "GET",
-		"observedAt": 1791635242446,
-		"status": 200,
-		"rawSha256": "caa87af6be1bb23cbad2dd660c57472f66718929df5af75ec6a1fe868117563e"
+		"rawSha256": "9319394f927d9eb48429a4bec2e405dcb73da4a7b4fb7df9b2153dd5b6cd2a35"
 	}
 ]

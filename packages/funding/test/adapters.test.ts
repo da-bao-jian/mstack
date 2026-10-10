@@ -3,7 +3,6 @@ import {
 	aster,
 	binance,
 	bybit,
-	createOkxAdapter,
 	hyperliquid,
 	lighter,
 	lighterMainnet,
@@ -44,7 +43,7 @@ const cases = [
 	},
 	{
 		adapter: okx,
-		file: "okx/BTC-USDT-SWAP.json",
+		file: "okx/funding.json",
 		path: ["data", 0, "fundingRate"],
 	},
 ];
@@ -252,48 +251,41 @@ test.each([
 );
 
 describe("OKX", () => {
-	test("bounds requests and preserves instrument order when responses finish out of order", async () => {
-		const { ctx } = await fixtureContext();
-		let active = 0;
-		let peak = 0;
-		const fetch = ctx.fetch;
-		ctx.fetch = async (url, init) => {
-			if (!url.includes("funding-rate?")) return fetch(url, init);
-			active++;
-			peak = Math.max(peak, active);
-			await Bun.sleep(url.includes("BTC-USD-SWAP") ? 10 : 1);
-			try {
-				return await fetch(url, init);
-			} finally {
-				active--;
-			}
-		};
-		expect(await createOkxAdapter({ concurrency: 2 }).fetchRates(ctx)).toEqual(
-			expected.okx,
-		);
-		expect(peak).toBe(2);
+	test("uses two bulk requests and excludes funding outside the live SWAP list", async () => {
+		const { ctx, calls } = await fixtureContext();
+		expect(await okx.fetchRates(ctx)).toEqual(expected.okx);
+		expect(calls.map((call) => call.url)).toEqual([
+			"https://www.okx.com/api/v5/public/instruments?instType=SWAP",
+			"https://www.okx.com/api/v5/public/funding-rate?instId=ANY",
+		]);
 	});
 
-	test("does not hardcode 8h if published settlement times change", async () => {
-		const file = "okx/BTC-USDT-SWAP.json";
-		const { ctx } = await fixtureContext({
-			[file]: await changed(
-				file,
-				["data", 0, "nextFundingTime"],
-				"1791651600000",
+	test("excludes a suspended instrument even when bulk funding includes it", async () => {
+		const suspended = await Bun.file(
+			new URL(
+				"../fixtures/okx/instruments-suspended.derived.json",
+				import.meta.url,
 			),
-		});
-		const row = (await okx.fetchRates(ctx)).find(
-			(row) => row.market === "BTC-USDT-SWAP",
+		).json();
+		const { ctx } = await fixtureContext({ "okx/instruments.json": suspended });
+		expect(await okx.fetchRates(ctx)).toEqual(
+			expected.okx.filter((row) => row.market !== "ETH-USDT-SWAP"),
 		);
-		expect(row?.intervalHours).toBe(1);
-		expect(row?.annualizedPct).toBe(14.347531794915602);
+	});
+
+	test("uses the recorded four-hour interval", async () => {
+		const { ctx } = await fixtureContext();
+		const row = (await okx.fetchRates(ctx)).find(
+			(row) => row.market === "CHIP-USDT-SWAP",
+		);
+		expect(row?.intervalHours).toBe(4);
+		expect(row?.annualizedPct).toBe(10.95);
 	});
 
 	test.each(["instId", "nextFundingTime"])(
 		"rejects mismatched or malformed %s",
 		async (field) => {
-			const file = "okx/BTC-USDT-SWAP.json";
+			const file = "okx/funding.json";
 			const { ctx } = await fixtureContext({
 				[file]: await changed(file, ["data", 0, field], "wrong"),
 			});
@@ -301,10 +293,12 @@ describe("OKX", () => {
 		},
 	);
 
-	test.each([0, -1, 1.5, 17, Number.NaN])(
-		"rejects invalid concurrency %s",
-		(concurrency) => {
-			expect(() => createOkxAdapter({ concurrency })).toThrow("concurrency");
-		},
-	);
+	test("fails when a live instrument has no funding row", async () => {
+		const { ctx } = await fixtureContext({
+			"okx/funding.json": { code: "0", data: [] },
+		});
+		await expect(okx.fetchRates(ctx)).rejects.toThrow(
+			"missing live funding row",
+		);
+	});
 });

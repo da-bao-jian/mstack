@@ -15,33 +15,22 @@ function deployment(
 				"Lighter response",
 			);
 			if (body.code !== 200) throw new Error(`Lighter error code ${body.code}`);
-			const rows = array(body.funding_rates, "funding_rates").map((value) => {
-				const entry = object(value, "Lighter row");
-				const exchange = string(entry.exchange, "exchange");
-				if (
-					!["lighter", "binance", "bybit", "hyperliquid"].includes(exchange)
-				) {
-					throw new Error(`Unknown Lighter exchange ${exchange}`);
-				}
-				const target =
-					exchange === "lighter"
-						? venue
-						: exchange === "hyperliquid"
-							? "hl"
-							: exchange;
-				const market = string(entry.symbol, "symbol");
-				// This endpoint normalizes all exchanges to an eight-hour rate.
-				return rate(
-					ctx,
-					target,
-					market,
-					numeric(entry.rate, `${market} rate`),
-					8,
-					exchange === "lighter"
-						? {}
-						: { source: "lighter-mirror", sourceVenue: venue },
-				);
-			});
+			const rows = array(body.funding_rates, "funding_rates").flatMap(
+				(value) => {
+					const entry = object(value, "Lighter row");
+					const exchange = string(entry.exchange, "exchange");
+					if (
+						!["lighter", "binance", "bybit", "hyperliquid"].includes(exchange)
+					) {
+						throw new Error(`Unknown Lighter exchange ${exchange}`);
+					}
+					const market = string(entry.symbol, "symbol");
+					const funding = numeric(entry.rate, `${market} rate`);
+					// Validate every feed row, but only emit this deployment's own rates.
+					if (exchange !== "lighter") return [];
+					return [rate(ctx, venue, market, funding, 8)];
+				},
+			);
 			unique(
 				rows.map((row) => `${row.venue}:${row.market}`),
 				"Lighter rates",

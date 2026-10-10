@@ -55,7 +55,8 @@ test("snapshot includes all sources, native listed names, and exact observation 
 		snapshot.rates
 			.filter((row) => row.venue === "hl" && row.market === "BTC")
 			.map((row) => row.source),
-	).toEqual(["direct", "lighter-mirror", "lighter-mirror"]);
+	).toEqual(["direct"]);
+	expect(snapshot.listed).toHaveLength(snapshot.rates.length);
 });
 
 test("a malformed row removes the whole adapter, leaving other venues intact", async () => {
@@ -94,7 +95,7 @@ test("reports a builder failure in failed[] while preserving healthy dex rows", 
 	expect(snapshot.failed[0]?.error).toContain("dex xyz:");
 });
 
-test("a failed direct venue stays failed when a Lighter mirror is available", async () => {
+test("a failed direct venue has no rows supplied by Lighter", async () => {
 	const { ctx } = await fixtureContext({
 		"binance/premiumIndex.json": new Response("blocked", { status: 451 }),
 	});
@@ -105,11 +106,7 @@ test("a failed direct venue stays failed when a Lighter mirror is available", as
 	});
 	expect(snapshot.failed[0]?.venue).toBe("binance");
 	expect(snapshot.rates).toEqual(expected.lighter);
-	expect(
-		snapshot.rates
-			.filter((row) => row.venue === "binance")
-			.every((row) => row.source === "lighter-mirror"),
-	).toBe(true);
+	expect(snapshot.rates.some((row) => row.venue === "binance")).toBe(false);
 });
 
 test("a stalled builder times out independently and keeps core and other builder rows", async () => {

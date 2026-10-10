@@ -81,72 +81,6 @@
 	],
 	"lighter": [
 		{
-			"venue": "binance",
-			"market": "BTC",
-			"ratePerInterval": -1.998e-5,
-			"intervalHours": 8,
-			"annualizedPct": -2.18781,
-			"observedAt": 1791635200000,
-			"source": "lighter-mirror",
-			"annualizationMethod": "simple",
-			"sourceVenue": "lighter"
-		},
-		{
-			"venue": "binance",
-			"market": "ETH",
-			"ratePerInterval": 3.463e-5,
-			"intervalHours": 8,
-			"annualizedPct": 3.791985,
-			"observedAt": 1791635200000,
-			"source": "lighter-mirror",
-			"annualizationMethod": "simple",
-			"sourceVenue": "lighter"
-		},
-		{
-			"venue": "bybit",
-			"market": "BTC",
-			"ratePerInterval": -2.32e-5,
-			"intervalHours": 8,
-			"annualizedPct": -2.5404000000000004,
-			"observedAt": 1791635200000,
-			"source": "lighter-mirror",
-			"annualizationMethod": "simple",
-			"sourceVenue": "lighter"
-		},
-		{
-			"venue": "bybit",
-			"market": "ETH",
-			"ratePerInterval": 3.423e-5,
-			"intervalHours": 8,
-			"annualizedPct": 3.7481850000000003,
-			"observedAt": 1791635200000,
-			"source": "lighter-mirror",
-			"annualizationMethod": "simple",
-			"sourceVenue": "lighter"
-		},
-		{
-			"venue": "hl",
-			"market": "BTC",
-			"ratePerInterval": -3.44136e-5,
-			"intervalHours": 8,
-			"annualizedPct": -3.7682891999999995,
-			"observedAt": 1791635200000,
-			"source": "lighter-mirror",
-			"annualizationMethod": "simple",
-			"sourceVenue": "lighter"
-		},
-		{
-			"venue": "hl",
-			"market": "ETH",
-			"ratePerInterval": 0.0001,
-			"intervalHours": 8,
-			"annualizedPct": 10.95,
-			"observedAt": 1791635200000,
-			"source": "lighter-mirror",
-			"annualizationMethod": "simple",
-			"sourceVenue": "lighter"
-		},
-		{
 			"venue": "lighter",
 			"market": "BTC",
 			"ratePerInterval": 0,
@@ -168,72 +102,6 @@
 		}
 	],
 	"lighter-mainnet": [
-		{
-			"venue": "binance",
-			"market": "BTC",
-			"ratePerInterval": -1.998e-5,
-			"intervalHours": 8,
-			"annualizedPct": -2.18781,
-			"observedAt": 1791635200000,
-			"source": "lighter-mirror",
-			"annualizationMethod": "simple",
-			"sourceVenue": "lighter-mainnet"
-		},
-		{
-			"venue": "binance",
-			"market": "ETH",
-			"ratePerInterval": 3.463e-5,
-			"intervalHours": 8,
-			"annualizedPct": 3.791985,
-			"observedAt": 1791635200000,
-			"source": "lighter-mirror",
-			"annualizationMethod": "simple",
-			"sourceVenue": "lighter-mainnet"
-		},
-		{
-			"venue": "bybit",
-			"market": "BTC",
-			"ratePerInterval": -2.32e-5,
-			"intervalHours": 8,
-			"annualizedPct": -2.5404000000000004,
-			"observedAt": 1791635200000,
-			"source": "lighter-mirror",
-			"annualizationMethod": "simple",
-			"sourceVenue": "lighter-mainnet"
-		},
-		{
-			"venue": "bybit",
-			"market": "ETH",
-			"ratePerInterval": 3.423e-5,
-			"intervalHours": 8,
-			"annualizedPct": 3.7481850000000003,
-			"observedAt": 1791635200000,
-			"source": "lighter-mirror",
-			"annualizationMethod": "simple",
-			"sourceVenue": "lighter-mainnet"
-		},
-		{
-			"venue": "hl",
-			"market": "BTC",
-			"ratePerInterval": -3.42704e-5,
-			"intervalHours": 8,
-			"annualizedPct": -3.7526088000000004,
-			"observedAt": 1791635200000,
-			"source": "lighter-mirror",
-			"annualizationMethod": "simple",
-			"sourceVenue": "lighter-mainnet"
-		},
-		{
-			"venue": "hl",
-			"market": "ETH",
-			"ratePerInterval": 0.0001,
-			"intervalHours": 8,
-			"annualizedPct": 10.95,
-			"observedAt": 1791635200000,
-			"source": "lighter-mirror",
-			"annualizationMethod": "simple",
-			"sourceVenue": "lighter-mainnet"
-		},
 		{
 			"venue": "lighter-mainnet",
 			"market": "BTC",
@@ -397,10 +265,10 @@
 	"okx": [
 		{
 			"venue": "okx",
-			"market": "BTC-USD-SWAP",
-			"ratePerInterval": 4.10122354465e-5,
+			"market": "BTC-USDT-SWAP",
+			"ratePerInterval": 1.79033628747e-5,
 			"intervalHours": 8.0,
-			"annualizedPct": 4.49083978139175,
+			"annualizedPct": 1.9604182347796497,
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
@@ -408,10 +276,10 @@
 		},
 		{
 			"venue": "okx",
-			"market": "BTC-USDT-SWAP",
-			"ratePerInterval": 1.63784609531e-5,
+			"market": "BTC-USD-SWAP",
+			"ratePerInterval": 4.15499929123e-5,
 			"intervalHours": 8.0,
-			"annualizedPct": 1.7934414743644502,
+			"annualizedPct": 4.54972422389685,
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
@@ -420,9 +288,20 @@
 		{
 			"venue": "okx",
 			"market": "ETH-USDT-SWAP",
-			"ratePerInterval": 3.24972502985e-5,
+			"ratePerInterval": 3.20355519038e-5,
 			"intervalHours": 8.0,
-			"annualizedPct": 3.5584489076857504,
+			"annualizedPct": 3.5078929334661,
+			"observedAt": 1791635200000,
+			"source": "direct",
+			"annualizationMethod": "simple",
+			"nextFundingAt": 1791648000000
+		},
+		{
+			"venue": "okx",
+			"market": "CHIP-USDT-SWAP",
+			"ratePerInterval": 5e-5,
+			"intervalHours": 4.0,
+			"annualizedPct": 10.95,
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",

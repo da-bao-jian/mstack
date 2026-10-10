@@ -8,9 +8,7 @@ export interface ObservedFundingRate extends Omit<FundingRate, "venue"> {
 	markPrice?: number;
 	openInterestUsd?: number;
 	oiCapped?: boolean;
-	source: "direct" | "hosted" | "lighter-mirror";
-	/** Identifies which Lighter deployment supplied a mirror row. */
-	sourceVenue?: "lighter" | "lighter-mainnet";
+	source: "direct" | "hosted";
 	annualizationMethod: "simple";
 }
 
@@ -40,9 +38,9 @@ export interface VenueAdapter {
 export interface Snapshot {
 	observedAt: number;
 	rates: ObservedFundingRate[];
-	/** Unique venue:native-market keys; multiple sources may share a key. */
+	/** Unique venue:native-market keys. */
 	listed: string[];
 	failed: VenueFailure[];
-	source: "direct";
+	source: "direct" | "hosted";
 	annualizationMethod: "simple";
 }

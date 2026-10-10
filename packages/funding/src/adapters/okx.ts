@@ -17,85 +17,74 @@ function data(value: unknown): unknown[] {
 	return array(body.data, "OKX data");
 }
 
-/** Each worker has at most one HTTP request in flight. No retries. */
-export function createOkxAdapter({
-	concurrency = 4,
-}: {
-	concurrency?: number;
-} = {}): VenueAdapter {
-	if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 16) {
-		throw new Error("OKX concurrency must be an integer between 1 and 16");
-	}
+export function createOkxAdapter(): VenueAdapter {
 	return {
 		venue: "okx",
 		tier: "C",
 		async fetchRates(ctx) {
-			const instruments = data(
-				await json(
+			const [rawInstruments, rawFunding] = await Promise.all([
+				json(
 					ctx,
 					"https://www.okx.com/api/v5/public/instruments?instType=SWAP",
 				),
-			).flatMap((value) => {
+				json(ctx, "https://www.okx.com/api/v5/public/funding-rate?instId=ANY"),
+			]);
+			const instruments = data(rawInstruments).map((value) => {
 				const entry = object(value, "OKX instrument");
 				const market = string(entry.instId, "instId");
 				if (entry.instType !== "SWAP")
 					throw new Error(`${market}: expected SWAP`);
-				const state = string(entry.state, `${market} state`);
-				return state === "live" ? [market] : [];
+				return { market, state: string(entry.state, `${market} state`) };
 			});
-			unique(instruments, "OKX instruments");
-			const rows: ObservedFundingRate[] = new Array(instruments.length);
-			let next = 0;
-			let failed = false;
-			await Promise.all(
-				Array.from(
-					{ length: Math.min(concurrency, instruments.length) },
-					async () => {
-						while (!failed && next < instruments.length) {
-							ctx.signal.throwIfAborted();
-							const index = next++;
-							const market = instruments[index];
-							try {
-								const entries = data(
-									await json(
-										ctx,
-										`https://www.okx.com/api/v5/public/funding-rate?instId=${encodeURIComponent(market)}`,
-									),
-								);
-								if (entries.length !== 1)
-									throw new Error(`${market}: expected one funding row`);
-								const entry = object(entries[0], "OKX funding rate");
-								if (entry.instId !== market)
-									throw new Error(`${market}: mismatched funding instrument`);
-								const fundingTime = timestamp(
-									entry.fundingTime,
-									`${market} fundingTime`,
-								);
-								const nextFundingTime = timestamp(
-									entry.nextFundingTime,
-									`${market} nextFundingTime`,
-								);
-								const intervalHours = positive(
-									(nextFundingTime - fundingTime) / 3_600_000,
-									`${market} intervalHours`,
-								);
-								rows[index] = rate(
-									ctx,
-									"okx",
-									market,
-									numeric(entry.fundingRate, `${market} fundingRate`),
-									intervalHours,
-									{ nextFundingAt: fundingTime },
-								);
-							} catch (error) {
-								failed = true;
-								throw error;
-							}
-						}
-					},
-				),
+			unique(
+				instruments.map((entry) => entry.market),
+				"OKX instruments",
 			);
-			return rows;
+			const live = new Set(
+				instruments
+					.filter((entry) => entry.state === "live")
+					.map((entry) => entry.market),
+			);
+			const rates = new Map<string, ObservedFundingRate>();
+			const seen = new Set<string>();
+			for (const value of data(rawFunding)) {
+				const entry = object(value, "OKX funding rate");
+				const market = string(entry.instId, "instId");
+				if (seen.has(market))
+					throw new Error(`OKX funding: duplicate ${market}`);
+				seen.add(market);
+				if (!live.has(market)) continue;
+				if (entry.instType !== "SWAP")
+					throw new Error(`${market}: expected SWAP funding`);
+				const fundingTime = timestamp(
+					entry.fundingTime,
+					`${market} fundingTime`,
+				);
+				const nextFundingTime = timestamp(
+					entry.nextFundingTime,
+					`${market} nextFundingTime`,
+				);
+				const intervalHours = positive(
+					(nextFundingTime - fundingTime) / 3_600_000,
+					`${market} intervalHours`,
+				);
+				rates.set(
+					market,
+					rate(
+						ctx,
+						"okx",
+						market,
+						numeric(entry.fundingRate, `${market} fundingRate`),
+						intervalHours,
+						{ nextFundingAt: fundingTime },
+					),
+				);
+			}
+			return [...live].map((market) => {
+				const row = rates.get(market);
+				if (!row) throw new Error(`${market}: missing live funding row`);
+				return row;
+			});
 		},
 	};
 }

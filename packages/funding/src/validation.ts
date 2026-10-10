@@ -67,12 +67,7 @@ export function rate(
 	extras: Partial<
 		Pick<
 			ObservedFundingRate,
-			| "nextFundingAt"
-			| "markPrice"
-			| "openInterestUsd"
-			| "oiCapped"
-			| "source"
-			| "sourceVenue"
+			"nextFundingAt" | "markPrice" | "openInterestUsd" | "oiCapped" | "source"
 		>
 	> = {},
 ): ObservedFundingRate {

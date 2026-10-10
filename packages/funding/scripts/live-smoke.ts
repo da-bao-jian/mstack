@@ -23,7 +23,7 @@ console.log(
 );
 const counts = new Map<string, number>();
 for (const row of snapshot.rates) {
-	const key = `${row.venue} source=${row.source}${row.sourceVenue ? ` via=${row.sourceVenue}` : ""}`;
+	const key = `${row.venue} source=${row.source}`;
 	counts.set(key, (counts.get(key) ?? 0) + 1);
 }
 for (const [key, count] of counts) console.log(`${key} rows=${count}`);
