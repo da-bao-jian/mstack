@@ -1,5 +1,5 @@
 import { rankOpportunities } from "@mobstack/opportunities";
-import { getConfig, numberFlag, readConfig } from "../config.ts";
+import { getConfig, numberFlag, readConfig, UsageError } from "../config.ts";
 import { scanView } from "../scan-view.ts";
 import {
 	base,
@@ -21,6 +21,12 @@ export interface ScanOptions {
 	minVolume24hUsd?: number;
 	includeThin?: boolean;
 	holdDays?: number;
+	includeFull?: boolean;
+}
+
+function viewLimit(value: number, name: string): number {
+	if (value > 200) throw new UsageError(`${name} is capped at 200`);
+	return numberFlag(value, name, 1, true);
 }
 
 export async function scan(options: ScanOptions, rt: Runtime) {
@@ -32,8 +38,8 @@ export async function scan(options: ScanOptions, rt: Runtime) {
 		"size",
 		Number.MIN_VALUE,
 	);
-	const top = numberFlag(options.top ?? 10, "top", 1, true);
-	const topExec = numberFlag(options.topExec ?? 5, "top-exec", 1, true);
+	const top = viewLimit(options.top ?? 10, "top");
+	const topExec = viewLimit(options.topExec ?? 5, "top-exec");
 	const holdDays = numberFlag(
 		options.holdDays ?? 7,
 		"hold-days",
@@ -65,5 +71,25 @@ export async function scan(options: ScanOptions, rt: Runtime) {
 		minApy,
 		includeThin: options.includeThin === true,
 	});
-	return withRateCount({ ...result, view, thinHidden }, input.rates.length);
+	return withRateCount(
+		{
+			holdDays: result.holdDays,
+			observedAt: result.observedAt,
+			source: result.source,
+			annualizationMethod: result.annualizationMethod,
+			counts: {
+				rates: input.rates.length,
+				opportunities: result.opportunities.length,
+				qualifying: result.opportunities.filter((row) => row.qualifies).length,
+				executable: result.opportunities.filter((row) => row.executable).length,
+				thinHidden,
+				unmatched: result.unmatched.length,
+			},
+			failed: result.failed,
+			unmatched: result.unmatched,
+			view,
+			...(options.includeFull ? { opportunities: result.opportunities } : {}),
+		},
+		input.rates.length,
+	);
 }

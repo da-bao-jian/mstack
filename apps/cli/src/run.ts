@@ -21,7 +21,7 @@ const help = `mob ${pkg.version} — public funding and Mobius task reads
 
 Usage:
   mob scan [--size N=1000] [--market BASE] [--venues a,b] [--top N=10]
-           [--all-pairs] [--executable] [--min-apy PCT] [--strict] [--json]
+           [--all-pairs] [--executable] [--min-apy PCT] [--strict] [--json | --json-full]
            [--min-volume N=1000000] [--include-thin] [--hold-days N=7] [--top-exec N=5]
   mob rates [--venue V] [--market BASE] [--strict] [--json]
   mob history <BASE> [--days N=7] [--venues a,b] [--strict] [--json]
@@ -37,6 +37,8 @@ Usage:
 Venues: hl,lighter,lighter-mainnet,aster,binance,bybit,okx
 Config keys: api_base, owner, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps
 Fee defaults are estimates. Annualized rates are simple, not compounded.
+Scan --json returns counts and bounded views. --json-full includes every opportunity and can exceed 3 MB.
+Scan --top and --top-exec are capped at 200 each.
 Exit: 0 success, 1 usage/request error, 2 no venue rates, 3 partial failure with --strict.`;
 
 const flag = (type: "string" | "boolean") => ({ type });
@@ -48,6 +50,7 @@ const common = {
 const definitions: Record<string, ParseArgsConfig["options"]> = {
 	scan: {
 		...common,
+		"json-full": flag("boolean"),
 		size: flag("string"),
 		market: flag("string"),
 		venues: flag("string"),
@@ -133,7 +136,7 @@ export async function run(
 			text(name) === undefined
 				? undefined
 				: numberFlag(text(name) as string, name, minimum, integer);
-		const json = values.json === true;
+		const json = values.json === true || values["json-full"] === true;
 		const strict = values.strict === true;
 		if (command === "mcp") {
 			if (positionals.length)
@@ -210,14 +213,15 @@ export async function run(
 					sizeUsd: number("size", Number.MIN_VALUE),
 					market: text("market"),
 					venues: text("venues")?.split(","),
-					top: number("top", 1, true),
-					topExec: number("top-exec", 1, true),
+					top: number("top", 1),
+					topExec: number("top-exec", 1),
 					holdDays: number("hold-days", Number.MIN_VALUE),
 					minVolume24hUsd: number("min-volume", 0),
 					minApy: number("min-apy", -Number.MAX_VALUE),
 					allPairs: values["all-pairs"] === true,
 					executable: values.executable === true,
 					includeThin: values["include-thin"] === true,
+					includeFull: values["json-full"] === true,
 				},
 				rt,
 			);
@@ -225,7 +229,7 @@ export async function run(
 				rt,
 				result,
 				renderScan(result.view, values.executable === true, result.holdDays),
-				`${footer(result, result.unmatched.length, rt.now())} | thin hidden: ${result.thinHidden}`,
+				`${footer(result, result.unmatched.length, rt.now())} | thin hidden: ${result.counts.thinHidden}`,
 				json,
 			);
 			return exitFor(result, strict);

@@ -20,17 +20,19 @@ Run `mob --help` or `mob --version` for local information. Unknown commands, fla
 
 ## Scan and rates
 
-`scan` defaults to size USD 1,000 and a seven-day hold (`--hold-days`). It shows two sections: Executable on Mobius (five rows, `--top-exec`) and Best anywhere (ten rows, `--top`). Each section sorts by estimated net APY descending, null last, and independently picks the first pair per base. `--all-pairs` keeps alternatives in both. `--executable` shows only the first section, using `--top`. `--min-apy` continues to filter the gross simple annualized spread; `--market` filters both sections. `--venues` selects which adapters are called.
+`scan` defaults to size USD 1,000 and a seven-day hold (`--hold-days`). It shows two sections: Executable on Mobius (five rows, `--top-exec`) and Best anywhere (ten rows, `--top`). Both limits must be integers from 1 to 200; larger values are usage errors, including with full JSON output. Each section sorts by estimated net APY descending, null last, and independently picks the first pair per base. `--all-pairs` keeps alternatives in both. `--executable` shows only the first section, using `--top`. `--min-apy` continues to filter the gross simple annualized spread; `--market` filters both sections. `--venues` selects which adapters are called.
 
 Net APY subtracts `(taker + builder + max(mark entry cost, 0)) × 365 / holdDays` from the gross annualized spread. Negative mark entry cost never counts as a gain. Break-even retains the signed upstream calculation. This is a simple annualized estimate for a fixed hold, not compounding or a promise that rates persist. The first section omits EXEC; the second includes it.
 
 Columns show native long/short listings, annualized spread, round-trip taker plus builder fees, signed mark entry cost, break-even hours, execution eligibility, and flags. An unmeasured entry cost is `—`. Execution eligibility does not promise order depth or a profitable fill. Fee defaults are estimates; override them for actual account terms.
 
-`--min-volume N` defaults to $1,000,000 per leg. Unknown or lower volume adds `thin` and prevents qualification. Thin rows are hidden unless `--include-thin` is set. The footer and JSON `thinHidden` count hidden pairs after market/execution/spread filters, before per-base selection and the top limit. The table labels entry cost `entry (mark est.)` and shows long/short 24-hour volume and available open interest in compact USD units.
+`--min-volume N` defaults to $1,000,000 per leg. Unknown or lower volume adds `thin` and prevents qualification. Thin rows are hidden unless `--include-thin` is set. The footer and JSON `counts.thinHidden` count hidden pairs after market/execution/spread filters, before per-base selection and the top limit. The table labels entry cost `entry (mark est.)` and shows long/short 24-hour volume and available open interest in compact USD units.
 
 `rates` returns raw snapshot observations with per-hour and annualized rates. `--venue` selects its adapter; `--market` filters on the classified base. Neither command changes venue-native names.
 
-Funding output ends with snapshot age, source, simple annualization, failed venues with errors, and unmatched count. With `--json`, stdout contains one JSON document and the same human footer goes to stderr. Scan JSON is the full `RankedOpportunities` plus `view: { executable: [...], anywhere: [...] }` and `thinHidden`; filters do not delete its full opportunity list. Rates JSON retains the raw snapshot and adds `unmatched` and a `view` with `ratePerHour`.
+Funding output ends with snapshot age, source, simple annualization, failed venues with errors, and unmatched count. With `--json`, stdout contains one JSON document and the same human footer goes to stderr. Scan JSON defaults to `{ holdDays, observedAt, source, annualizationMethod, counts, failed, unmatched, view: { executable: [...], anywhere: [...] } }`, without an `opportunities` array. Counts are `rates`, `opportunities`, `qualifying`, `executable`, `thinHidden`, and `unmatched`. The totals cover the fetched snapshot and full ranking; only `thinHidden` depends on view filters. View filters and limits do not change the other totals.
+
+`mob scan --json-full` implies JSON output and adds the full `opportunities` array to that shape. It can exceed 3 MB; use the bounded default for agents. The same top limits still apply to its views. CLI rates JSON stays unchanged: it retains the raw snapshot and adds `unmatched` and a filtered `view` with `ratePerHour`.
 
 Exit codes: 0 success; 1 usage, config, or request error; 2 no venue returned any rates; 3 any snapshot/history failure with `--strict`. No-rate exit 2 takes precedence over strict partial-failure exit 3. An empty filtered view with a healthy snapshot exits 0. Partial failures remain visible with or without strict mode.
 
@@ -60,8 +62,8 @@ Allowed keys are `api_base`, `owner`, `default_size_usd`, `taker_fee_bps.<venue>
 
 | Tool | Input | Result |
 |---|---|---|
-| `funding_scan` | Optional sizeUsd, market, venues, topExec, top, allPairs, executable, minApy, minVolume24hUsd, includeThin, holdDays | Full ranked result, two views, thinHidden |
-| `funding_rates` | Optional venue, market | Raw snapshot and filtered view |
+| `funding_scan` | Optional sizeUsd, market, venues, topExec, top, allPairs, executable, minApy, minVolume24hUsd, includeThin, holdDays, includeFull | Bounded counts and views; full opportunities only with includeFull |
+| `funding_rates` | At least one of venue or market | Filtered raw rates, listings, and view; snapshot metadata |
 | `funding_history` | base; optional days, venues | Settled history, coverage, best average spread, failures |
 | `explain` | Optional topic, simple | Bundled Markdown or topic list |
 | `task_list` | Optional owner | Public tasks |
@@ -69,6 +71,8 @@ Allowed keys are `api_base`, `owner`, `default_size_usd`, `taker_fee_bps.<venue>
 | `config_get` | key | Effective local config value |
 
 Defaults and validation match the CLI. Each tool returns one text content block: JSON for command objects, Markdown for explanations, or the config value. Missing owner errors name `mob config set owner`. There is no `config_set` tool. The server exposes no signing, trading, upgrade, or shell tool.
+
+`funding_scan` uses the same bounded JSON shape as `mob scan --json`. Set `includeFull: true` to add every opportunity; it can exceed 3 MB. Both `top` and `topExec` are capped at 200. `funding_rates` adds an MCP-only requirement for `venue` or `market` and applies the filter to raw arrays as well as the view, so a market-only request does not carry every unrelated rate. Failures and unmatched markets remain visible. CLI rates behavior is unchanged.
 
 All tools share a 60-second deadline that aborts outstanding network requests. Snapshots keep the same 30-second timeout as the CLI. Domain errors have the same `mob:` messages and `isError: true`. Partial venue failures remain in the returned JSON so clients can inspect usable data. The six modules under `src/commands/` accept typed options and an injected fetch, clock, and config home; CLI rendering and MCP transport wrap these same command functions.
 

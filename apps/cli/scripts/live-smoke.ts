@@ -35,10 +35,8 @@ try {
 			console.log(
 				JSON.stringify(
 					{
-						opportunities: data.opportunities.length,
-						qualifying: data.opportunities.filter(
-							(r: { qualifies: boolean }) => r.qualifies,
-						).length,
+						counts: data.counts,
+						payloadBytes: Buffer.byteLength(stdout),
 						view: {
 							executable: data.view.executable.length,
 							anywhere: data.view.anywhere.length,

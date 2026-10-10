@@ -98,8 +98,8 @@ test.each([
 	},
 	{
 		tool: "funding_rates",
-		args: { venue: "hl", market: "BTC" },
-		cli: ["rates", "--venue", "hl", "--market", "BTC", "--json"],
+		args: { venue: "hl" },
+		cli: ["rates", "--venue", "hl", "--json"],
 	},
 ])(
 	"$tool returns the same fixture JSON as the CLI",
@@ -116,13 +116,108 @@ test.each([
 		expect(body.failed).toEqual([]);
 		expect(body.annualizationMethod).toBe("simple");
 		if (tool === "funding_scan") {
-			expect(body.opportunities).toHaveLength(29);
+			expect(body).not.toHaveProperty("opportunities");
+			expect(Buffer.byteLength(text(result))).toBeLessThan(100_000);
+			expect(Buffer.byteLength(out[0])).toBeLessThan(100_000);
+			expect(body.counts.opportunities).toBe(29);
 			expect(body.view.anywhere).toHaveLength(2);
 			expect(body.view.executable).toHaveLength(1);
 			expect(body.holdDays).toBe(30);
 		} else expect(body.view[0].market).toBe("BTC");
 	},
 );
+
+test("funding_scan defaults stay under 100 KB and includeFull explicitly adds the full array", async () => {
+	const { call, rt } = await connect();
+	const defaultResult = await call("funding_scan");
+	expect(defaultResult.isError).not.toBe(true);
+	const bounded = JSON.parse(text(defaultResult));
+	expect(bounded).not.toHaveProperty("opportunities");
+	expect(Buffer.byteLength(text(defaultResult))).toBeLessThan(100_000);
+	const out: string[] = [];
+	expect(
+		await run(["scan", "--json"], {
+			...rt,
+			out: (s) => out.push(s),
+			err: () => {},
+		}),
+	).toBe(0);
+	expect(JSON.parse(out[0])).toEqual(bounded);
+	expect(Buffer.byteLength(out[0])).toBeLessThan(100_000);
+	const full = await call("funding_scan", { includeFull: true });
+	expect(full.isError).not.toBe(true);
+	const { opportunities, ...summary } = JSON.parse(text(full));
+	expect(opportunities).toHaveLength(29);
+	expect(summary).toEqual(bounded);
+	const fullOut: string[] = [];
+	expect(
+		await run(["scan", "--json-full"], {
+			...rt,
+			out: (s) => fullOut.push(s),
+			err: () => {},
+		}),
+	).toBe(0);
+	expect(JSON.parse(fullOut[0])).toEqual(JSON.parse(text(full)));
+});
+
+test.each(["top", "topExec"])(
+	"funding_scan caps %s at 200 even with includeFull",
+	async (key) => {
+		const { call, calls } = await connect();
+		for (const value of [201, 1e30]) {
+			const result = await call("funding_scan", {
+				[key]: value,
+				includeFull: true,
+			});
+			expect(result.isError).toBe(true);
+			expect(text(result)).toContain("capped at 200");
+		}
+		expect(calls).toHaveLength(0);
+		expect((await call("funding_scan", { [key]: 200 })).isError).not.toBe(true);
+	},
+);
+
+test("funding_rates requires venue or market and market-only requests bound every raw array", async () => {
+	const { call, calls, rt } = await connect();
+	const missing = await call("funding_rates");
+	expect(missing.isError).toBe(true);
+	expect(text(missing)).toBe(
+		"mob: funding_rates requires at least one of venue or market",
+	);
+	expect(calls).toHaveLength(0);
+	const result = await call("funding_rates", { market: "BTC" });
+	expect(result.isError).not.toBe(true);
+	const body = JSON.parse(text(result));
+	expect(body.view.length).toBeGreaterThan(0);
+	expect(body.rates).toHaveLength(body.view.length);
+	expect(body.listed).toEqual(
+		body.view.map(
+			(r: { venue: string; market: string }) => `${r.venue}:${r.market}`,
+		),
+	);
+	const out: string[] = [];
+	expect(
+		await run(["rates", "--market", "BTC", "--json"], {
+			...rt,
+			out: (s) => out.push(s),
+			err: () => {},
+		}),
+	).toBe(0);
+	const cli = JSON.parse(out[0]);
+	expect(cli.view).toEqual(body.view);
+	expect(cli.rates.length).toBeGreaterThan(body.rates.length);
+	expect(cli.failed).toEqual(body.failed);
+	expect(cli.unmatched).toEqual(body.unmatched);
+	const unfiltered: string[] = [];
+	expect(
+		await run(["rates", "--json"], {
+			...rt,
+			out: (s) => unfiltered.push(s),
+			err: () => {},
+		}),
+	).toBe(0);
+	expect(JSON.parse(unfiltered[0]).rates).toEqual(cli.rates);
+});
 
 test("explain returns bundled markdown, topic list, and a tool error for an unknown topic", async () => {
 	const { call, calls } = await connect();
@@ -192,7 +287,7 @@ test("partial venue failures remain visible alongside usable rates", async () =>
 				? Promise.resolve(new Response("unavailable", { status: 503 }))
 				: ctx.fetch(url, init),
 	});
-	const result = await call("funding_rates");
+	const result = await call("funding_rates", { market: "BTC" });
 	expect(result.isError).not.toBe(true);
 	const body = JSON.parse(text(result));
 	expect(body.rates.length).toBeGreaterThan(0);

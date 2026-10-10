@@ -52,14 +52,18 @@ try {
 	const scanResult = await call("funding_scan", { sizeUsd: 1000, top: 3 });
 	const data = JSON.parse(scanResult.text) as Awaited<ReturnType<typeof scan>>;
 	console.log(
-		`Full result: ${data.opportunities.length} opportunities, ${data.opportunities.filter((r) => r.qualifies).length} qualifying; ${scanResult.text.length} JSON characters. Views rendered below.`,
+		`Bounded result: ${data.counts.rates} rates, ${data.counts.opportunities} opportunities, ${data.counts.qualifying} qualifying; ${scanResult.text.length} JSON characters, ${Buffer.byteLength(scanResult.text)} UTF-8 bytes. Views rendered below.`,
 	);
 	console.log(renderScan(data.view, false, data.holdDays));
 	console.log(
-		`${footer(data, data.unmatched.length, Date.now())} | thin hidden: ${data.thinHidden}`,
+		`${footer(data, data.unmatched.length, Date.now())} | thin hidden: ${data.counts.thinHidden}`,
 	);
 	console.log(`isError=false wall=${scanResult.wall}s\n`);
-	if (!data.opportunities.length || data.failed.length)
+	if (Object.hasOwn(data, "opportunities"))
+		throw new Error("Default scan leaked the full opportunities array");
+	if (Buffer.byteLength(scanResult.text) >= 100_000)
+		throw new Error("Default scan payload exceeds 100 KB");
+	if (!data.counts.opportunities || data.failed.length)
 		throw new Error("Live scan is empty or returned venue failures");
 	const explanation = await call("explain", { topic: "funding", simple: true });
 	console.log(explanation.text);

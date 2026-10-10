@@ -77,16 +77,18 @@ function tool<T>(
 export const mcpTools = [
 	tool<ScanOptions>(
 		"funding_scan",
-		"Rank current funding with estimated net APY for a hold period. Returns the full ranked result plus executable/anywhere views, failures, unmatched and hidden-thin counts. Annualization is simple, not compounded.",
+		"Rank current funding with estimated net APY for a hold period. Returns bounded executable/anywhere views, counts, failures and unmatched markets. Annualization is simple, not compounded.",
 		{
 			sizeUsd: number(
 				"Positive USD size. Defaults to default_size_usd config or 1000.",
 			),
 			market: text("Normalized base ticker; omit to scan all markets."),
 			venues,
-			topExec: number("Positive integer limit for executable view; default 5."),
+			topExec: number(
+				"Positive integer limit for executable view; default 5, cap 200.",
+			),
 			top: number(
-				"Positive integer limit for anywhere view, or executable-only view; default 10.",
+				"Positive integer limit for anywhere view, or executable-only view; default 10, cap 200.",
 			),
 			allPairs: boolean(
 				"Include every pair instead of the best per base in each view.",
@@ -104,19 +106,38 @@ export const mcpTools = [
 			holdDays: number(
 				"Positive hold horizon in days for fee amortization; default 7.",
 			),
+			includeFull: boolean(
+				"Include the full opportunities array; can exceed 3 MB. Default false keeps only counts and bounded views.",
+			),
 		},
 		[],
 		scan,
 	),
 	tool<RatesOptions>(
 		"funding_rates",
-		"Read current native-market funding observations with hourly and simple annualized rates and snapshot metadata.",
+		"Read filtered native-market funding observations with hourly and simple annualized rates and snapshot metadata. At least one of venue or market is required; raw rates and listings follow the same filter as the view.",
 		{
 			venue: text("Venue ID; omit for all venues."),
 			market: text("Normalized base ticker; omit for all markets."),
 		},
 		[],
-		rates,
+		async (options, rt) => {
+			if (options.venue === undefined && options.market === undefined)
+				throw new UsageError(
+					"funding_rates requires at least one of venue or market",
+				);
+			const result = await rates(options, rt);
+			const keys = new Set(
+				result.view.map((row) => `${row.venue}:${row.market}`),
+			);
+			return {
+				...result,
+				rates: result.rates.filter((row) =>
+					keys.has(`${row.venue}:${row.market}`),
+				),
+				listed: result.listed.filter((key) => keys.has(key)),
+			};
+		},
 	),
 	tool<HistoryOptions>(
 		"funding_history",

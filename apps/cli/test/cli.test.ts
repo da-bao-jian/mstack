@@ -26,7 +26,7 @@ async function invoke(args: string[], overrides: Partial<Runtime> = {}) {
 	return { code, out: out.join("\n"), err: err.join("\n"), calls };
 }
 
-test("scan JSON preserves all ranked rows and selects a distinct-base view", async () => {
+test("scan JSON contains bounded views and counts without all ranked rows", async () => {
 	const result = await invoke([
 		"scan",
 		"--json",
@@ -37,7 +37,19 @@ test("scan JSON preserves all ranked rows and selects a distinct-base view", asy
 	]);
 	expect(result.code).toBe(0);
 	const body = JSON.parse(result.out);
-	expect(body.opportunities).toHaveLength(29);
+	expect(body).not.toHaveProperty("opportunities");
+	expect(Buffer.byteLength(result.out)).toBeLessThan(100_000);
+	expect(Object.keys(body).sort()).toEqual([
+		"annualizationMethod",
+		"counts",
+		"failed",
+		"holdDays",
+		"observedAt",
+		"source",
+		"unmatched",
+		"view",
+	]);
+	expect(body.counts.opportunities).toBe(29);
 	expect(body.view.anywhere).toHaveLength(2);
 	expect(
 		new Set(body.view.anywhere.map((r: { base: string }) => r.base)).size,
@@ -46,11 +58,45 @@ test("scan JSON preserves all ranked rows and selects a distinct-base view", asy
 		body.view.executable.every((r: { executable: boolean }) => r.executable),
 	).toBe(true);
 	expect(
-		body.opportunities.every((r: { sizeUsd: number }) => r.sizeUsd === 5000),
+		[...body.view.anywhere, ...body.view.executable].every(
+			(r: { sizeUsd: number }) => r.sizeUsd === 5000,
+		),
 	).toBe(true);
 	expect(result.err).toContain("annualized = simple, not compounded");
 	expect(result.err).toContain("unmatched: 0");
 });
+
+test("scan json-full opts into all opportunities and retains the bounded counts and views", async () => {
+	const bounded = await invoke(["scan", "--json", "--top", "1"]);
+	const full = await invoke(["scan", "--json-full", "--top", "1"]);
+	expect(full.code).toBe(0);
+	const { opportunities, ...body } = JSON.parse(full.out);
+	expect(opportunities).toHaveLength(29);
+	expect(body).toEqual(JSON.parse(bounded.out));
+	expect(body.counts.qualifying).toBe(
+		opportunities.filter((r: { qualifies: boolean }) => r.qualifies).length,
+	);
+	expect(body.counts.executable).toBe(
+		opportunities.filter((r: { executable: boolean }) => r.executable).length,
+	);
+	expect(body.counts.unmatched).toBe(body.unmatched.length);
+	const raw = JSON.parse((await invoke(["rates", "--json"])).out);
+	expect(body.counts.rates).toBe(raw.rates.length);
+	expect(full.err).toBe(bounded.err);
+});
+
+test.each(["--top", "--top-exec"])(
+	"scan caps %s at 200 before any fetch, including full JSON",
+	async (flag) => {
+		for (const value of ["201", "1e30"]) {
+			const result = await invoke(["scan", "--json-full", flag, value]);
+			expect(result.code).toBe(1);
+			expect(result.err).toContain(`${flag.slice(2)} is capped at 200`);
+			expect(result.calls).toHaveLength(0);
+		}
+		expect((await invoke(["scan", "--json", flag, "200"])).code).toBe(0);
+	},
+);
 
 test("scan filters venues, base, execution, and annualized spread before top", async () => {
 	const result = await invoke([
@@ -364,7 +410,7 @@ test("thin rows are hidden and counted before top, and can be included", async (
 	const hidden = await invoke(args);
 	const body = JSON.parse(hidden.out);
 	expect(body.view).toEqual({ executable: [], anywhere: [] });
-	expect(body.thinHidden).toBe(29);
+	expect(body.counts.thinHidden).toBe(29);
 	expect(hidden.err).toContain("thin hidden: 29");
 	const included = await invoke([...args, "--include-thin"]);
 	expect(JSON.parse(included.out).view.anywhere).toHaveLength(2);

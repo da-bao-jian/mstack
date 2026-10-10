@@ -1,7 +1,7 @@
 [
 	{
 		"name": "funding_scan",
-		"description": "Rank current funding with estimated net APY for a hold period. Returns the full ranked result plus executable/anywhere views, failures, unmatched and hidden-thin counts. Annualization is simple, not compounded. Read-only. This tool never signs, trades, or holds keys.",
+		"description": "Rank current funding with estimated net APY for a hold period. Returns bounded executable/anywhere views, counts, failures and unmatched markets. Annualization is simple, not compounded. Read-only. This tool never signs, trades, or holds keys.",
 		"inputSchema": {
 			"type": "object",
 			"properties": {
@@ -22,11 +22,11 @@
 				},
 				"topExec": {
 					"type": "number",
-					"description": "Positive integer limit for executable view; default 5."
+					"description": "Positive integer limit for executable view; default 5, cap 200."
 				},
 				"top": {
 					"type": "number",
-					"description": "Positive integer limit for anywhere view, or executable-only view; default 10."
+					"description": "Positive integer limit for anywhere view, or executable-only view; default 10, cap 200."
 				},
 				"allPairs": {
 					"type": "boolean",
@@ -51,6 +51,10 @@
 				"holdDays": {
 					"type": "number",
 					"description": "Positive hold horizon in days for fee amortization; default 7."
+				},
+				"includeFull": {
+					"type": "boolean",
+					"description": "Include the full opportunities array; can exceed 3 MB. Default false keeps only counts and bounded views."
 				}
 			},
 			"required": [],
@@ -65,7 +69,7 @@
 	},
 	{
 		"name": "funding_rates",
-		"description": "Read current native-market funding observations with hourly and simple annualized rates and snapshot metadata. Read-only. This tool never signs, trades, or holds keys.",
+		"description": "Read filtered native-market funding observations with hourly and simple annualized rates and snapshot metadata. At least one of venue or market is required; raw rates and listings follow the same filter as the view. Read-only. This tool never signs, trades, or holds keys.",
 		"inputSchema": {
 			"type": "object",
 			"properties": {
