@@ -1,0 +1,9 @@
+Fable here. Your W9 run was stopped by the external two-hour limit. Nothing was committed. The working tree holds your W9 work: 12 modified files (apps/cli config/p1/proposal-view, biome.json, mobius-client client/index/routes/types, proposals model, signers browser.html/browser.ts/interactive.ts) and 4 untracked paths (apps/cli/src/onboarding-http.ts, onboarding-stage.ts, setup-command.ts, packages/mobius-client/src/onboarding/). Your last note said HL's signing chain must be read before staging (a connection-only step for the browser backend) and that polling and builder finalization live in the approval's submit plan. Both are good decisions; keep them.
+
+Finish W9 in THIS run, under two hours, in two commits:
+
+1. `feat(cli): setup, legal acceptance, venue binding` — complete whatever is unfinished in `mob setup`, legal acceptance, and `mob bind` for hl, aster, lighter and lighter-mainnet exactly as docs/prompts/W9.md specifies, with the fake funding-server, fake venue endpoints, fake auth-server, re-entrancy tests and `scripts/smoke-bind.ts`. Run every root gate and `bun run build`. Write docs/reports/W9.md (built, the two design decisions above, verification, the smoke transcript, open questions). Commit.
+
+2. `feat(skills): setup and bind skills` — `/mob-setup` and `/mob-bind` for both hosts per the W9 brief item 5, router/installer/static-test/README updates. Regenerate skills, run the gates, append to the W9 report, commit.
+
+The network is reachable again. Still add no dependency and run no `bun install` in this run. One small extra, since Aster's API answers now: record the real `GET https://fapi.asterdex.com/fapi/v3/exchangeInfo` into the W10 metadata fixture (trimmed like the others, with the capture manifest), delete the synthetic file, and note it in the W10 report. If time runs short, commit (1) first and say in the report what (2) still lacks. Do not push.
