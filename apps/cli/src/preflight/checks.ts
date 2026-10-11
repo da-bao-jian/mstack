@@ -5,7 +5,7 @@ import type {
 	ReadCheck,
 } from "@mstack/proposals";
 import { canonical } from "@mstack/proposals";
-import type { Config } from "../config.ts";
+import { type Config, SETUP_FIRST } from "../config.ts";
 
 export type Reader = Pick<MobiusClient, "read">;
 export interface Checked extends PreflightResult {
@@ -93,7 +93,7 @@ export async function configChecks(
 	await checks.fact("config.owner", () => {
 		requireValue(
 			config.owner && /^0x[0-9a-fA-F]{40}$/.test(config.owner),
-			"Set owner with mob config set owner 0x…",
+			SETUP_FIRST,
 		);
 		requireValue(
 			!expectedOwner ||
@@ -105,7 +105,7 @@ export async function configChecks(
 	await checks.fact("config.signer", () => {
 		requireValue(
 			["keystore", "browser", "walletconnect"].includes(config.signer ?? ""),
-			"Configure an available signer: keystore, browser or walletconnect",
+			SETUP_FIRST,
 		);
 		if (config.signer === "walletconnect")
 			requireValue(

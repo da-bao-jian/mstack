@@ -2,15 +2,22 @@ import { pairingQr, walletConnectSigner } from "@mstack/signers";
 import { getAddress, keccak256, stringToHex } from "viem";
 import { readConfig } from "../src/config.ts";
 
-if (process.env.MOB_LIVE !== "1")
-	throw new Error(
+const config = await readConfig();
+if (!config.owner || !config.walletconnect_project_id) {
+	const missing = (["owner", "walletconnect_project_id"] as const).filter(
+		(key) => !config[key],
+	);
+	console.error(
+		`Missing config: ${missing.join(", ")}. Set with mob config before the live smoke.`,
+	);
+	process.exit(1);
+}
+if (process.env.MOB_LIVE !== "1") {
+	console.error(
 		"Live WalletConnect smoke requires MOB_LIVE=1 and a mobile wallet. No relay contacted.",
 	);
-const config = await readConfig();
-if (!config.owner || !config.walletconnect_project_id)
-	throw new Error(
-		"Set owner and walletconnect_project_id with mob config before the live smoke.",
-	);
+	process.exit(1);
+}
 const message = `mstack WalletConnect connection test: owner=${config.owner} nonce=${crypto.randomUUID()}. This is a test message, not a trade.`;
 const view = {
 	id: "p-1",

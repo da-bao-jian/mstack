@@ -13,10 +13,10 @@ import {
 } from "@mstack/signers";
 import { getAddress } from "viem";
 import pkg from "../package.json";
-import { readConfig, UsageError } from "./config.ts";
+import { readConfig, SETUP_FIRST, UsageError } from "./config.ts";
 import { submitPlan } from "./onboarding-http.ts";
 import { CheckFailure, Checks, configChecks } from "./preflight/checks.ts";
-import { showProposal } from "./proposal-view.ts";
+import { proposalTiming, proposalView, showProposal } from "./proposal-view.ts";
 import type { Runtime } from "./run.ts";
 import { walletWait } from "./wallet-wait.ts";
 
@@ -27,7 +27,11 @@ export async function p1(
 	rt: Runtime,
 	read: SecretReader = readSecretFromTty,
 ): Promise<void> {
-	const store = new ProposalStore(rt.home, rt.now);
+	const store = new ProposalStore(rt.home, rt.now, rt.err);
+	const show = (p: Awaited<ReturnType<ProposalStore["get"]>>) =>
+		values.json
+			? JSON.stringify(proposalView(p), null, 2)
+			: showProposal(p, rt.now(), rt);
 	if (command === "keystore") {
 		if (args.length !== 1 || !["create", "import", "list"].includes(args[0]))
 			throw new UsageError("Usage: mob keystore create | import | list");
@@ -42,22 +46,30 @@ export async function p1(
 	if (command === "proposals") {
 		if (args.length) throw new UsageError("Usage: mob proposals");
 		const proposals = await store.list();
+		if (values.json) {
+			rt.out(JSON.stringify(proposals.map(proposalView), null, 2));
+			return;
+		}
 		rt.out(
-			proposals.map((p) => `${p.id}\t${p.status}\t${p.purpose}`).join("\n") ||
-				"No proposals.",
+			proposals
+				.map(
+					(p) =>
+						`${p.id}\t${p.status}\t${proposalTiming(p, rt.now())}\t${p.purpose}`,
+				)
+				.join("\n") || "No proposals.",
 		);
 		return;
 	}
 	if (command === "proposal") {
 		if (args.length !== 2 || args[0] !== "show")
 			throw new UsageError("Usage: mob proposal show <id>");
-		rt.out(showProposal(await store.get(args[1])));
+		rt.out(show(await store.get(args[1])));
 		return;
 	}
 	if (args.length !== 1) throw new UsageError(`Usage: mob ${command} <id>`);
 	const id = args[0];
 	if (command === "reject") {
-		rt.out(showProposal(await store.reject(id)));
+		rt.out(show(await store.reject(id)));
 		return;
 	}
 	if (command === "preview") {
@@ -90,18 +102,21 @@ export async function p1(
 			}
 			return result;
 		});
-		rt.out(showProposal(result));
+		rt.out(show(result));
 		if (!result.preflight?.ok)
 			throw new Error("Preflight rejected the Proposal");
-		rt.out(
-			`Stopped before signing. To authorize this Proposal, name ${id} and run mob sign ${id}.`,
-		);
+		if (!values.json)
+			rt.out(
+				`Stopped before signing. To authorize this Proposal, name ${id} and run mob sign ${id}.`,
+			);
 		return;
 	}
+	const proposal = await store.assertSignable(id);
 	const config = await readConfig(rt.home);
+	if ((config.policy ?? "manual") !== "manual")
+		throw new UsageError("Wallet policy is locked");
 	const backend = values.with ?? config.signer;
-	if (!backend)
-		throw new UsageError("Set signer with mob config set signer keystore");
+	if (!backend) throw new UsageError(SETUP_FIRST);
 	if (
 		backend !== "keystore" &&
 		backend !== "browser" &&
@@ -112,10 +127,18 @@ export async function p1(
 		throw new UsageError(
 			"Set walletconnect_project_id with mob config set walletconnect_project_id <Reown project ID>",
 		);
-	if (!config.owner)
-		throw new UsageError("Set owner with mob config set owner 0x…");
+	if (!config.owner) throw new UsageError(SETUP_FIRST);
 	let close: (() => Promise<void>) | undefined;
 	let waiting: ReturnType<typeof walletWait> | undefined;
+	const cancellation = new AbortController();
+	const cancel = () => {
+		cancellation.abort(new Error("Signing cancelled"));
+		waiting?.stop();
+	};
+	process.on("SIGINT", cancel);
+	process.on("SIGTERM", cancel);
+	rt.signal?.addEventListener("abort", cancel, { once: true });
+	if (rt.signal?.aborted) cancel();
 	const checkConfig = async () => {
 		const latest = await readConfig(rt.home);
 		if (
@@ -128,12 +151,15 @@ export async function p1(
 	};
 	try {
 		const result = await store.sign(id, {
+			signal: cancellation.signal,
 			owner: getAddress(config.owner),
 			policy: config.policy ?? "manual",
 			display: (p) => {
-				if (backend === "keystore" || rt.stdoutIsTTY) rt.out(showProposal(p));
+				if (backend === "keystore" || rt.stdoutIsTTY)
+					rt.out(showProposal(p, rt.now(), rt));
 			},
 			connect: async (proposal) => {
+				cancellation.signal.throwIfAborted();
 				waiting = walletWait(rt, proposal.expiresAt);
 				let signer: Signer;
 				if (backend === "browser") {
@@ -154,7 +180,11 @@ export async function p1(
 					close = () => wallet.close();
 					signer = wallet;
 				} else
-					signer = await unlockKeystore(rt.home, config.owner as string, read);
+					signer = await unlockKeystore(
+						rt.home,
+						config.owner as string,
+						(prompt) => read(prompt, cancellation.signal),
+					);
 				return {
 					async address() {
 						const address = await signer.address();
@@ -163,10 +193,12 @@ export async function p1(
 					},
 					async signMessage(args) {
 						await checkConfig();
+						cancellation.signal.throwIfAborted();
 						return signer.signMessage(args);
 					},
 					async signTypedData(args) {
 						await checkConfig();
+						cancellation.signal.throwIfAborted();
 						return signer.signTypedData(args);
 					},
 				};
@@ -174,6 +206,7 @@ export async function p1(
 			submit: async (p, body) => {
 				waiting?.stop();
 				await checkConfig();
+				cancellation.signal.throwIfAborted();
 				if (rt.now() >= p.expiresAt)
 					throw new Error("Proposal expired before submission");
 				return submitPlan(p, body, rt);
@@ -184,6 +217,25 @@ export async function p1(
 		);
 	} catch (error) {
 		waiting?.stop();
+		if (error instanceof Error && error.message === "TTY input cancelled")
+			cancel();
+		if (cancellation.signal.aborted) {
+			await close?.();
+			const saved = await store.get(id);
+			if (!saved.signature) {
+				rt.out(
+					`Cancelled. ${id} is still awaiting signature until ${new Date(proposal.expiresAt).toISOString()}.`,
+				);
+				if (saved.status === "interrupted")
+					rt.out(
+						`The signing attempt was interrupted. Run mob reject ${id}, then stage a fresh Proposal.`,
+					);
+			} else
+				rt.out(
+					`Cancelled. ${id} is ${saved.status}; run mob status to check the result.`,
+				);
+			return;
+		}
 		if (
 			error instanceof ApiError &&
 			error.status === 409 &&
@@ -197,6 +249,9 @@ export async function p1(
 		}
 		throw error;
 	} finally {
+		process.off("SIGINT", cancel);
+		process.off("SIGTERM", cancel);
+		rt.signal?.removeEventListener("abort", cancel);
 		waiting?.stop();
 		await close?.();
 	}

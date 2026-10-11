@@ -48,6 +48,10 @@
 					"type": "boolean",
 					"description": "Include below-threshold or unknown-volume pairs in the views."
 				},
+				"includeCrossDeployment": {
+					"type": "boolean",
+					"description": "Include Lighter cross-deployment pairs in the executable view; default false."
+				},
 				"holdDays": {
 					"type": "number",
 					"description": "Positive hold horizon in days for fee amortization; default 7."

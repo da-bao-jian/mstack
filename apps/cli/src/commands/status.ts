@@ -5,6 +5,7 @@ import {
 	getConfig,
 	ownerAddress,
 	readConfig,
+	SETUP_FIRST,
 	UsageError,
 } from "../config.ts";
 import { bindingReadiness } from "../preflight/readiness.ts";
@@ -16,10 +17,7 @@ export async function readinessStatus(
 ) {
 	const config = await readConfig(rt.home);
 	const owner = options.owner ?? config.owner;
-	if (!owner)
-		throw new UsageError(
-			"status --readiness requires --owner or config key owner",
-		);
+	if (!owner) throw new UsageError(SETUP_FIRST);
 	return bindingReadiness(
 		ownerAddress(owner),
 		new MobiusClient({
@@ -47,10 +45,7 @@ export function statusApi(result: Awaited<ReturnType<typeof status>>): string {
 export async function status(options: StatusOptions, rt: Runtime) {
 	const config = await readConfig(rt.home);
 	const configuredOwner = options.owner ?? config.owner;
-	if (!configuredOwner)
-		throw new UsageError(
-			"status requires --owner or config key owner (mob config set owner 0x…)",
-		);
+	if (!configuredOwner) throw new UsageError(SETUP_FIRST);
 	const owner = ownerAddress(configuredOwner);
 	const endpoint = apiBase(
 		options.apiBase ?? String(getConfig(config, "api_base")),

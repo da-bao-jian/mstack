@@ -12,6 +12,7 @@ import {
 	homeVenues,
 	type Reading,
 } from "./home-data.ts";
+import { reachabilityLabel } from "./reachability.ts";
 import type { Runtime } from "./run.ts";
 
 export interface HomeOptions {
@@ -27,7 +28,7 @@ function readText<T>(
 	reading: Reading<T>,
 	format: (value: T) => string,
 ): string {
-	return reading.state === "ok" && reading.value !== undefined
+	return ["ok", "slow"].includes(reading.state) && reading.value !== undefined
 		? format(reading.value)
 		: reading.state;
 }
@@ -102,9 +103,12 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 	const rows: [string, string][] = [
 		[
 			"API",
-			`${data.api.host}  ${readText(data.api, ({ latencyMs }) => `ok · ${latencyMs} ms`)}`,
+			`${data.api.host}  ${readText(data.api, ({ latencyMs }) => reachabilityLabel(latencyMs))}`,
 		],
-		["Auth", `${data.auth.host}  ${readText(data.auth, () => "ok")}`],
+		[
+			"Auth",
+			`${data.auth.host}  ${readText(data.auth, ({ latencyMs }) => reachabilityLabel(latencyMs))}`,
+		],
 		[
 			"Owner",
 			data.owner
@@ -160,9 +164,16 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 					return `${left}${" ".repeat(size - Bun.stringWidth(left) + 3)}${info[i] ?? ""}`.trimEnd();
 				});
 	rt.out(
-		[...lines, "", renderPalette({ mode }), "", `Next  ${data.next}`].join(
-			"\n",
-		),
+		[
+			...lines,
+			...(data.api.state === "slow" || data.api.state === "unreachable"
+				? [`API ${data.api.state}; venue reads are unaffected`]
+				: []),
+			"",
+			renderPalette({ mode }),
+			"",
+			`Next  ${data.next}`,
+		].join("\n"),
 	);
 }
 
@@ -196,12 +207,12 @@ export async function doctor(json: boolean, rt: Runtime): Promise<number> {
 	) {
 		add(
 			name,
-			reading.state === "ok" && reading.value !== undefined
+			["ok", "slow"].includes(reading.state) && reading.value !== undefined
 				? passes(reading.value)
 				: reading.state === "not checked"
 					? null
 					: false,
-			reading.state === "ok" && reading.value !== undefined
+			["ok", "slow"].includes(reading.state) && reading.value !== undefined
 				? detail(reading.value)
 				: `${reading.state}${reading.error ? `: ${reading.error}` : ""}`,
 			critical,
@@ -237,7 +248,7 @@ export async function doctor(json: boolean, rt: Runtime): Promise<number> {
 		"API",
 		data.api,
 		() => true,
-		({ latencyMs }) => `${data.api.host} ok · ${latencyMs} ms`,
+		({ latencyMs }) => `${data.api.host} ${reachabilityLabel(latencyMs)}`,
 	);
 	network(
 		"Auth",

@@ -1,5 +1,6 @@
 import type { Snapshot } from "@mstack/funding";
 import type { Opportunity } from "@mstack/opportunities";
+import { number, paint, type Terminal, usd } from "./format.ts";
 
 export function clean(value: unknown): string {
 	const text =
@@ -7,7 +8,9 @@ export function clean(value: unknown): string {
 			? "—"
 			: typeof value === "object"
 				? JSON.stringify(value)
-				: String(value);
+				: typeof value === "number"
+					? number(value, Number.isInteger(value) ? 0 : 4)
+					: String(value);
 	return text.replace(/[\p{Cc}\p{Cf}]/gu, " ");
 }
 
@@ -27,7 +30,7 @@ export function table(headers: string[], rows: unknown[][]): string {
 }
 
 export function pct(value: number | null, digits = 4): string {
-	return value === null ? "—" : `${value.toFixed(digits)}%`;
+	return value === null ? "—" : `${number(value, digits)}%`;
 }
 
 export function footer(
@@ -39,17 +42,6 @@ export function footer(
 }
 
 export { scanView } from "./scan-view.ts";
-
-function usd(value: number | undefined): string {
-	if (value === undefined) return "—";
-	for (const [scale, suffix] of [
-		[1e9, "B"],
-		[1e6, "M"],
-		[1e3, "K"],
-	] as const)
-		if (value >= scale) return `$${(value / scale).toFixed(1)}${suffix}`;
-	return `$${value.toFixed(0)}`;
-}
 
 function scanTable(view: Opportunity[], executable: boolean): string {
 	return table(
@@ -88,13 +80,17 @@ export function renderScan(
 	view: { executable: Opportunity[]; anywhere: Opportunity[] },
 	executableOnly = false,
 	holdDays = 7,
+	terminal: Terminal = {},
 ): string {
 	return [
 		`Net APY estimate: ${holdDays}-day hold; annualized = simple, not compounded`,
-		"Executable on Mobius",
+		paint("Executable on Mobius", "sky", terminal),
 		scanTable(view.executable, true),
 		...(executableOnly
 			? []
-			: ["\nBest anywhere", scanTable(view.anywhere, false)]),
+			: [
+					paint("\nBest anywhere", "sky", terminal),
+					scanTable(view.anywhere, false),
+				]),
 	].join("\n");
 }

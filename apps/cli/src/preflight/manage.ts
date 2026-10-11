@@ -153,7 +153,11 @@ export async function managePreflight(
 					quantized.longTargetBase = plan.legs.long?.targetBase;
 				if (targets.short !== undefined)
 					quantized.shortTargetBase = plan.legs.short?.targetBase;
-				return `Quantized toward current: ${JSON.stringify(quantized)}; net base=${plan.netDeltaBase}; size-mismatch auto-close remains unchanged`;
+				return `Quantized toward current: ${Object.entries(quantized)
+					.map(([key, value]) => `${key}=${value}`)
+					.join(
+						", ",
+					)}; net base=${plan.netDeltaBase}; size-mismatch auto-close remains unchanged`;
 			});
 			// A preview must refuse if the position sizes used by the resize have changed.
 			checks.recordRead({

@@ -1,10 +1,36 @@
-import { expect, test } from "bun:test";
-import { readFile } from "node:fs/promises";
+import { afterAll, expect, test } from "bun:test";
+import { copyFile, mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 const root = resolve(import.meta.dir, "..");
+const installed = await mkdtemp(join(tmpdir(), "mstack-binary-guard-"));
+afterAll(() => rm(installed, { recursive: true, force: true }));
+await mkdir(join(installed, "bin"));
+const binary = join(installed, "bin/mob");
+const build = Bun.spawn(
+	[
+		process.execPath,
+		"build",
+		"--compile",
+		join(root, "apps/cli/src/main.ts"),
+		join(root, "packages/signers/src/walletconnect-worker.ts"),
+		"--entry-naming",
+		"[name].[ext]",
+		"--outfile",
+		binary,
+	],
+	{ stdout: "ignore", stderr: "pipe" },
+);
+if (await build.exited)
+	throw new Error(await new Response(build.stderr).text());
+await copyFile(
+	join(root, "scripts/sign-guard.sh"),
+	join(installed, "sign-guard.sh"),
+);
 async function hook(command: string, fixture?: string, raw?: string) {
-	const proc = Bun.spawn(["bash", join(root, "scripts/sign-guard.sh")], {
+	const proc = Bun.spawn([binary, "hook", "sign-guard"], {
+		env: { PATH: "/nonexistent" },
 		stdin: new Blob([
 			raw ??
 				JSON.stringify({
@@ -98,7 +124,7 @@ test("plugin registers the Bash guard with exec and plugin-root paths", async ()
 				{
 					type: "command",
 					// biome-ignore lint/suspicious/noTemplateCurlyInString: Literal plugin shell variable.
-					command: 'exec bash "${CLAUDE_PLUGIN_ROOT}/scripts/sign-guard.sh"',
+					command: 'exec "${CLAUDE_PLUGIN_ROOT}/bin/mob" hook sign-guard',
 					timeout: 10,
 				},
 			],
@@ -106,13 +132,21 @@ test("plugin registers the Bash guard with exec and plugin-root paths", async ()
 	]);
 });
 
-test("missing Bun fails closed with exit 2", async () => {
-	const proc = Bun.spawn(["/bin/bash", join(root, "scripts/sign-guard.sh")], {
-		env: { PATH: "/nonexistent" },
-		stdin: new Blob(["{}"]),
+test("thin shell wrapper works in a binary-only install without Bun", async () => {
+	const proc = Bun.spawn(["/bin/bash", join(installed, "sign-guard.sh")], {
+		env: { PATH: "/nonexistent", CLAUDE_PLUGIN_ROOT: installed },
+		stdin: new Blob([
+			JSON.stringify({
+				tool_input: { command: "mob sign p-1" },
+				transcript_path: join(
+					root,
+					"packages/fixtures/sign-guard/allowed.jsonl",
+				),
+			}),
+		]),
 		stdout: "pipe",
 		stderr: "pipe",
 	});
-	expect(await proc.exited).toBe(2);
-	expect(await new Response(proc.stderr).text()).toContain("Bun is required");
+	expect(await proc.exited).toBe(0);
+	expect(await new Response(proc.stderr).text()).toBe("");
 });

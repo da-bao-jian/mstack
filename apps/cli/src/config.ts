@@ -223,3 +223,5 @@ export async function setConfig(
 	await rename(temporary, join(home, "config.json"));
 	return parsed;
 }
+export const SETUP_FIRST =
+	"Run `mob setup` first (about two minutes). It sets your wallet address, how you sign, and accepts the terms.";

@@ -52,20 +52,30 @@ export async function stageLegal(rt: Runtime, fresh = false) {
 				throw new Error(`Invalid legal ${key}`);
 		}
 		if (!fresh) {
-			const existing = (await new ProposalStore(rt.home, rt.now).list())
-				.reverse()
-				.find(
-					(p) =>
-						p.owner === owner &&
-						p.submit.base === base &&
-						p.submit.route === "/legal/acceptance" &&
-						p.status === "awaiting-signature" &&
-						p.expiresAt > rt.now() &&
-						p.signing.type === "typed" &&
-						p.signing.typedData.domain?.chainId ===
-							Number(getConfig(config, "legal_chain_id")) &&
-						JSON.stringify(p.signing.typedData.message) ===
-							JSON.stringify({ ...p.signing.typedData.message, ...terms }),
+			const history = await new ProposalStore(rt.home, rt.now, rt.err).list();
+			const existing = history.findLast(
+				(p) =>
+					p.owner === owner &&
+					p.submit.base === base &&
+					p.submit.route === "/legal/acceptance" &&
+					p.status === "awaiting-signature" &&
+					p.expiresAt > rt.now() &&
+					p.signing.type === "typed" &&
+					p.signing.typedData.domain?.chainId ===
+						Number(getConfig(config, "legal_chain_id")) &&
+					JSON.stringify(p.signing.typedData.message) ===
+						JSON.stringify({ ...p.signing.typedData.message, ...terms }),
+			);
+			const expired = history.findLast(
+				(p) =>
+					p.owner === owner &&
+					p.submit.base === base &&
+					p.submit.route === "/legal/acceptance" &&
+					["expired", "interrupted"].includes(p.status),
+			);
+			if (!existing && expired)
+				rt.out(
+					`${expired.id} is ${expired.status}; staging a fresh legal Proposal.`,
 				);
 			if (existing) {
 				printStaged(existing, rt);
@@ -112,7 +122,7 @@ export async function stageLegal(rt: Runtime, fresh = false) {
 						{
 							route: "staged",
 							name: "legal.terms",
-							detail: JSON.stringify(terms),
+							detail: `Terms ${terms.termsVersion}: ${terms.termsUrl}; privacy ${terms.privacyVersion}: ${terms.privacyUrl}`,
 						},
 					],
 				},

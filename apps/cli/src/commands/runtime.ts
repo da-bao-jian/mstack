@@ -10,7 +10,7 @@ import {
 	okx,
 	type Snapshot,
 } from "@mstack/funding";
-import { UsageError } from "../config.ts";
+import { SETUP_FIRST, UsageError } from "../config.ts";
 
 export interface Runtime {
 	fetch: Fetch;
@@ -31,6 +31,8 @@ const adapters = [
 const SNAPSHOT_TIMEOUT_MS = 30_000;
 
 export function commandError(error: unknown): string {
+	if (error instanceof Error && error.message.endsWith(SETUP_FIRST))
+		return SETUP_FIRST;
 	return `mob: ${error instanceof Error ? error.message : String(error)}`;
 }
 

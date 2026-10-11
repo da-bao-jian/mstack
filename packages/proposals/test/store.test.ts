@@ -167,6 +167,8 @@ test.each(["sign-text", "sign-typed", "venue-submit"] as const)(
 		expect(displayed[0].signing).toEqual(f.p.signing);
 		expect(displayed[0].digest).toBe(f.p.digest);
 		expect(result.status).toBe("submitted");
+		expect(result.endedAt).toBe(f.p.createdAt);
+		expect((await f.store.get(f.p.id)).endedAt).toBe(result.endedAt);
 		expect(result.answer).toEqual({ taskId: "fake-1" });
 		await expect(f.store.sign(f.p.id, f.options)).rejects.toThrow(
 			"already used",
@@ -228,7 +230,7 @@ test("signer address mismatch and forged signatures never submit", async () => {
 			}),
 		}),
 	).rejects.toThrow("does not recover");
-	expect((await f.store.get(f.p.id)).status).toBe("failed");
+	expect((await f.store.get(f.p.id)).status).toBe("interrupted");
 	await expect(f.store.sign(f.p.id, f.options)).rejects.toThrow("already used");
 });
 test.each([299_999, 300_000, 300_001])(
@@ -291,9 +293,13 @@ test("failed preflight, rejection, and failed submission are terminal", async ()
 		checks: [{ route: "/api/arbitrage/task", ok: false, error: "blocked" }],
 	}));
 	expect(rejected.status).toBe("rejected");
+	expect(rejected.endedAt).toBe(f.p.createdAt);
 	await expect(f.store.sign(f.p.id, f.options)).rejects.toThrow();
 	const g = await fixture();
-	await g.store.reject(g.p.id);
+	g.advance(1000);
+	expect((await g.store.reject(g.p.id)).endedAt).toBe(g.p.createdAt + 1000);
+	g.advance(120_000);
+	expect((await g.store.reject(g.p.id)).endedAt).toBe(g.p.createdAt + 1000);
 	await expect(g.store.preview(g.p.id, g.preview)).rejects.toThrow();
 	const h = await fixture();
 	await h.store.preview(h.p.id, h.preview);
@@ -305,6 +311,7 @@ test("failed preflight, rejection, and failed submission are terminal", async ()
 			},
 		}),
 	).rejects.toThrow("ambiguous");
+	expect((await h.store.get(h.p.id)).endedAt).toBe(h.p.createdAt);
 	await expect(h.store.sign(h.p.id, h.options)).rejects.toThrow();
 	expect(h.counts().signatures).toBe(1);
 });
@@ -352,4 +359,134 @@ test("expiry during preflight persists expired and never allows signing", async 
 	).rejects.toThrow("expired");
 	expect((await f.store.get(f.p.id)).status).toBe("expired");
 	expect(f.counts().signatures).toBe(0);
+});
+
+test.each(["dead", "old", "legacy"])(
+	"reclaims %s locks, logs once, and preserves attempt markers",
+	async (kind) => {
+		const { mkdir, utimes } = await import("node:fs/promises");
+		const f = await fixture();
+		const lock = join(f.directory, "proposals", "p-1.json.lock");
+		await mkdir(lock, { mode: 0o700 });
+		if (kind === "legacy") await utimes(lock, new Date(0), new Date(0));
+		else
+			await writeFile(
+				join(lock, "owner"),
+				JSON.stringify({
+					pid: kind === "dead" ? 2147483647 : process.pid,
+					started_at: kind === "old" ? Date.now() - 600_001 : Date.now(),
+				}),
+				{ mode: 0o600 },
+			);
+		await writeFile(
+			join(f.directory, "proposals", "p-1.signature-used"),
+			f.p.contentHash,
+			{ mode: 0o600 },
+		);
+		const logs: string[] = [];
+		const store = new ProposalStore(
+			f.directory,
+			() => f.p.createdAt,
+			(s) => logs.push(s),
+		);
+		expect((await store.get("p-1")).status).toBe("interrupted");
+		expect((await store.reject("p-1")).status).toBe("rejected");
+		expect(logs).toEqual(["Reclaimed stale lock for p-1."]);
+		expect(
+			await readFile(
+				join(f.directory, "proposals", "p-1.signature-used"),
+				"utf8",
+			),
+		).toBe(f.p.contentHash);
+		await expect(stat(lock)).rejects.toHaveProperty("code", "ENOENT");
+	},
+);
+
+test("live lock identifies its pid and time, blocks a second writer with recovery instructions, then releases", async () => {
+	const f = await fixture();
+	let release!: () => void;
+	let entered!: () => void;
+	const ready = new Promise<void>((resolve) => {
+		entered = resolve;
+	});
+	const hold = new Promise<void>((resolve) => {
+		release = resolve;
+	});
+	const first = f.store.preview("p-1", async () => {
+		entered();
+		await hold;
+		return f.preview();
+	});
+	await ready;
+	const lock = join(f.directory, "proposals", "p-1.json.lock");
+	try {
+		const owner = JSON.parse(await readFile(join(lock, "owner"), "utf8"));
+		expect(owner.pid).toBe(process.pid);
+		expect(owner.started_at).toBeGreaterThan(Date.now() - 5000);
+		expect((await stat(join(lock, "owner"))).mode & 0o777).toBe(0o600);
+		await expect(f.store.reject("p-1")).rejects.toThrow(
+			"another mob process holds p-1; if it crashed, wait a minute and run `mob reject p-1` again",
+		);
+		await expect(f.store.preview("p-1", f.preview)).rejects.toThrow(
+			"another mob process holds p-1; if it crashed, run again in a minute or `mob reject p-1`",
+		);
+	} finally {
+		release();
+		await first;
+	}
+	await expect(stat(lock)).rejects.toHaveProperty("code", "ENOENT");
+});
+
+test("read-time expiry does not write state and rejection closes an expired Proposal", async () => {
+	const f = await fixture();
+	await f.store.preview("p-1", f.preview);
+	f.advance(300_000);
+	expect((await f.store.list())[0].status).toBe("expired");
+	expect(
+		JSON.parse(
+			await readFile(join(f.directory, "proposals", "p-1.json"), "utf8"),
+		).status,
+	).toBe("awaiting-signature");
+	expect((await f.store.reject("p-1")).status).toBe("rejected");
+});
+
+test("cancelling an outstanding signature releases the lock, burns the attempt and rejects late signatures", async () => {
+	const f = await fixture();
+	await f.store.preview("p-1", f.preview);
+	const controller = new AbortController();
+	let entered!: () => void;
+	const ready = new Promise<void>((resolve) => {
+		entered = resolve;
+	});
+	let release!: () => void;
+	const hold = new Promise<void>((resolve) => {
+		release = resolve;
+	});
+	const signing = f.store.sign("p-1", {
+		...f.options,
+		signal: controller.signal,
+		connect: async () => {
+			const signer = await f.options.connect();
+			return {
+				...signer,
+				signMessage: async (args) => {
+					entered();
+					await hold;
+					return signer.signMessage(args);
+				},
+			};
+		},
+	});
+	await ready;
+	controller.abort(new Error("cancelled"));
+	await expect(signing).rejects.toThrow("cancelled");
+	expect((await f.store.get("p-1")).status).toBe("interrupted");
+	await expect(
+		stat(join(f.directory, "proposals", "p-1.json.lock")),
+	).rejects.toHaveProperty("code", "ENOENT");
+	await expect(f.store.sign("p-1", f.options)).rejects.toThrow("already used");
+	release();
+	await Bun.sleep(10);
+	expect(f.counts().submissions).toBe(0);
+	expect((await f.store.reject("p-1")).status).toBe("rejected");
 });

@@ -22,10 +22,15 @@ else
 fi
 if MOB_VERSION="$("$MOB" --version)"; then printf 'MOB_VERSION: %s\n' "$MOB_VERSION"; else printf 'MOB_VERSION: fail\n'; fi
 if API_BASE="$("$MOB" config get api_base)"; then printf 'API_BASE: %s\n' "$API_BASE"; else API_BASE=''; printf 'API_BASE: fail\n'; fi
-if [ -n "$API_BASE" ] && MOB_HTTP="$(curl -m 10 -s -o /dev/null -w '%{http_code}' -H "X-Mobius-Client: mstack/$MOB_VERSION" -A "mstack/$MOB_VERSION" "$API_BASE/api/client-ip")"; then
-  case "$MOB_HTTP" in 2[0-9][0-9]) printf 'API_REACHABLE: ok\n' ;; *) printf 'API_REACHABLE: fail\n' ;; esac
+# Advisory only: this result never gates a venue read or changes scan filters.
+if [ -n "$API_BASE" ] && MOB_HTTP="$(curl -m 15 -s -o /dev/null -w '%{http_code} %{time_total}' -H "X-Mobius-Client: mstack/$MOB_VERSION" -A "mstack/$MOB_VERSION" "$API_BASE/api/client-ip")"; then
+  read -r MOB_STATUS MOB_SECONDS <<< "$MOB_HTTP"
+  case "$MOB_STATUS" in
+    2[0-9][0-9]) awk -v seconds="${MOB_SECONDS:-0}" 'BEGIN { if (seconds >= 3) { printf "API_REACHABLE: slow · %.1f s\n", seconds; print "API slow; venue reads are unaffected" } else if (seconds >= 1) printf "API_REACHABLE: ok · %.1f s\n", seconds; else printf "API_REACHABLE: ok · %.0f ms\n", seconds * 1000 }' ;;
+    *) printf '%s\n' 'API_REACHABLE: unreachable' 'API unreachable; venue reads are unaffected' ;;
+  esac
 else
-  printf 'API_REACHABLE: fail\n'
+  printf '%s\n' 'API_REACHABLE: unreachable' 'API unreachable; venue reads are unaffected'
 fi
 if MOB_OWNER="$("$MOB" config get owner)"; then
   if [ -n "$MOB_OWNER" ]; then printf 'OWNER: set\n'; else printf 'OWNER: unset\n'; fi
@@ -77,6 +82,8 @@ mob_update_check() {
 if ! mob_update_check; then printf 'UPGRADE_CHECK: fail\n'; fi
 true
 ```
+
+Read [references/glossary.md](references/glossary.md) for field meanings and venue deployments instead of reading the source tree.
 
 Run the preamble first. Use the resolved `$MOB` path in place of `mob`; shell-quote every user value. Read stdout and stderr. If `MOB_MISSING` appears, show the install line and stop. Require POLICY manual and a configured owner and signer. Under locked policy, do not offer mutations. If config is missing or invalid, explain it and stop; do not change it yourself. For setup or binding, use `/mob-setup` or `/mob-bind` when the user requests it.
 

@@ -6,7 +6,7 @@
 				"hooks": [
 					{
 						"type": "command",
-						"command": "exec bash \"${CLAUDE_PLUGIN_ROOT}/scripts/sign-guard.sh\"",
+						"command": "exec \"${CLAUDE_PLUGIN_ROOT}/bin/mob\" hook sign-guard",
 						"timeout": 10
 					}
 				]

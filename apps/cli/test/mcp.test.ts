@@ -342,7 +342,7 @@ test("missing owner is a tool error naming the same config command as the CLI", 
 			name === "task_get" ? { taskId: "1842" } : {},
 		);
 		expect(result.isError).toBe(true);
-		expect(text(result)).toContain("mob config set owner");
+		expect(text(result)).toContain("Run `mob setup` first");
 		const errors: string[] = [];
 		await run(["status", ...(name === "task_get" ? ["--task", "1842"] : [])], {
 			...rt,

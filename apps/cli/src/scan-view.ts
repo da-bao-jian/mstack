@@ -8,6 +8,7 @@ export interface ViewOptions {
 	executable: boolean;
 	minApy?: number;
 	includeThin?: boolean;
+	includeCrossDeployment?: boolean;
 }
 
 export function scanView(
@@ -16,6 +17,7 @@ export function scanView(
 ): {
 	view: { executable: Opportunity[]; anywhere: Opportunity[] };
 	thinHidden: number;
+	crossDeploymentHidden: number;
 } {
 	const candidates = result.opportunities.filter(
 		(r) =>
@@ -27,6 +29,10 @@ export function scanView(
 		(r) => options.includeThin || !r.flags.includes("thin"),
 	);
 	const thinHidden = candidates.length - rows.length;
+	const crossDeploymentHidden = options.includeCrossDeployment
+		? 0
+		: rows.filter((r) => r.executable && r.flags.includes("cross-deployment"))
+				.length;
 	rows.sort((a, b) => {
 		if (a.netApyPct === null) return b.netApyPct === null ? 0 : 1;
 		if (b.netApyPct === null) return -1;
@@ -45,10 +51,15 @@ export function scanView(
 	};
 	const view = {
 		executable: select(
-			rows.filter((r) => r.executable),
+			rows.filter(
+				(r) =>
+					r.executable &&
+					(options.includeCrossDeployment ||
+						!r.flags.includes("cross-deployment")),
+			),
 			options.executable ? options.top : (options.topExec ?? 5),
 		),
 		anywhere: options.executable ? [] : select(rows, options.top),
 	};
-	return { view, thinHidden };
+	return { view, thinHidden, crossDeploymentHidden };
 }

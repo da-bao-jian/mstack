@@ -96,7 +96,16 @@ export function renderPalette({ mode }: { mode: Mode }): string {
 }
 export function style(
 	text: string,
-	effect: "bold" | "dim" | "reset" | Color,
+	effect:
+		| "bold"
+		| "dim"
+		| "reset"
+		| "success"
+		| "warning"
+		| "info"
+		| "danger"
+		| "muted"
+		| Color,
 	terminal: Terminal,
 ): string {
 	const mode = detectMode(terminal);
@@ -107,13 +116,22 @@ export function style(
 		mode === "ascii"
 	)
 		return text;
+	const statusColors = {
+		success: "\x1b[32m",
+		warning: "\x1b[33m",
+		info: "\x1b[34m",
+		danger: "\x1b[31m",
+		muted: "\x1b[90m",
+	};
 	const code =
-		effect === "bold"
-			? "\x1b[1m"
-			: effect === "dim"
-				? "\x1b[2m"
-				: effect === "reset"
-					? reset
-					: sgr(effect, mode);
+		effect in statusColors
+			? statusColors[effect as keyof typeof statusColors]
+			: effect === "bold"
+				? "\x1b[1m"
+				: effect === "dim"
+					? "\x1b[2m"
+					: effect === "reset"
+						? reset
+						: sgr(effect as Color, mode);
 	return `${code}${text}${reset}`;
 }

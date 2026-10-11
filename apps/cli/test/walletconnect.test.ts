@@ -38,3 +38,52 @@ test("WalletConnect project ID has no default and rejects malformed IDs", async 
 		await rm(home, { recursive: true, force: true });
 	}
 });
+
+test("human WalletConnect smoke fails in one line before pairing when config or live opt-in is missing", async () => {
+	const home = await mkdtemp(join(tmpdir(), "mstack-wc-smoke-"));
+	async function invoke(live: string) {
+		const child = Bun.spawn(
+			[
+				process.execPath,
+				join(import.meta.dir, "../scripts/smoke-walletconnect.ts"),
+			],
+			{
+				env: { ...process.env, MOB_HOME: home, MOB_LIVE: live },
+				stdout: "pipe",
+				stderr: "pipe",
+			},
+		);
+		const [code, out, err] = await Promise.all([
+			child.exited,
+			new Response(child.stdout).text(),
+			new Response(child.stderr).text(),
+		]);
+		return { code, out, err };
+	}
+	try {
+		expect(await invoke("1")).toEqual({
+			code: 1,
+			out: "",
+			err: "Missing config: owner, walletconnect_project_id. Set with mob config before the live smoke.\n",
+		});
+		await setConfig(
+			"owner",
+			"0x0000000000000000000000000000000000000001",
+			home,
+		);
+		for (const live of ["", "1"])
+			expect(await invoke(live)).toEqual({
+				code: 1,
+				out: "",
+				err: "Missing config: walletconnect_project_id. Set with mob config before the live smoke.\n",
+			});
+		await setConfig("walletconnect_project_id", "a".repeat(32), home);
+		expect(await invoke("")).toEqual({
+			code: 1,
+			out: "",
+			err: "Live WalletConnect smoke requires MOB_LIVE=1 and a mobile wallet. No relay contacted.\n",
+		});
+	} finally {
+		await rm(home, { recursive: true, force: true });
+	}
+});

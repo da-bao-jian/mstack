@@ -6,6 +6,7 @@ import {
 } from "@mstack/liquidation";
 import type { ArbitrageVenue } from "@mstack/mobius-client";
 import type { Config } from "../config.ts";
+import { number, usd } from "../format.ts";
 import {
 	CheckFailure,
 	Checks,
@@ -85,7 +86,8 @@ export async function openPreflight(
 			await checks.fact(`metadata.${side}`, async () => {
 				const leg = input[side];
 				metadata[side] = await reads.metadata(leg.venue, leg.market);
-				return JSON.stringify(metadata[side]);
+				const m = metadata[side];
+				return `lot ${m.lotSize} base; minimum ${m.minBase} base / ${usd(m.minNotionalUsd)}; size precision ${m.sizeDecimals}; maximum leverage ${m.maxLeverage ?? "unknown"}; maintenance fraction ${m.maintenanceMarginFraction ?? "unknown"}`;
 			});
 		await checks.fact("size", () => {
 			requireValue(
@@ -128,7 +130,7 @@ export async function openPreflight(
 				spread <= input.maxSpreadBps,
 				`entry spread ${spread} bps exceeds cap ${input.maxSpreadBps} bps`,
 			);
-			return `${spread} bps <= ${input.maxSpreadBps} bps`;
+			return `${number(spread, 4)} bps <= ${number(input.maxSpreadBps, 4)} bps`;
 		});
 		await checks.fact("protection", () => {
 			if (input.protect === undefined) return "Protection off";
@@ -178,7 +180,7 @@ export async function openPreflight(
 				!block,
 				`${block?.leg}: opening distance ${block?.openDistPct}% is below target ${block?.targetPct}%; use ${block?.largestUsablePct}% or less, or turn protection off`,
 			);
-			return `assumed leverage, not verified on the venue: long=${input.assumedLeverage[0]}, short=${input.assumedLeverage[1]}; estimated distances ${JSON.stringify(legs)}; assumes position margin only, excludes other account positions`;
+			return `assumed leverage, not verified on the venue: long=${input.assumedLeverage[0]}, short=${input.assumedLeverage[1]}; estimated distances ${legs.map((leg) => `${leg.leg} ${number(leg.openDistPct, 2)}%`).join(", ")}; assumes position margin only, excludes other account positions`;
 		});
 	} catch (error) {
 		if (!(error instanceof CheckFailure)) throw error;

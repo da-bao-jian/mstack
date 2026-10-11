@@ -1,4 +1,4 @@
-import { type ParseArgsConfig, parseArgs } from "node:util";
+import type { ParseArgsConfig } from "node:util";
 import type { SecretReader, WalletConnectFactory } from "@mstack/signers";
 import pkg from "../package.json";
 import { config } from "./commands/config.ts";
@@ -13,6 +13,9 @@ import {
 import { scan } from "./commands/scan.ts";
 import { readinessStatus, status, statusApi } from "./commands/status.ts";
 import { configHome, numberFlag, UsageError } from "./config.ts";
+import { paint } from "./format.ts";
+import { withGlossary } from "./glossary.ts";
+import { commandHelp, parseCommand } from "./help.ts";
 import type { HomeServices } from "./home-data.ts";
 import { footer, pct, renderScan, table } from "./render.ts";
 import { renderHistory } from "./render-history.ts";
@@ -27,7 +30,8 @@ Usage:
   mob doctor [--json]
   mob scan [--size N=1000] [--market BASE] [--venues a,b] [--top N=10]
            [--all-pairs] [--executable] [--min-apy PCT] [--strict] [--json | --json-full]
-           [--min-volume N=1000000] [--include-thin] [--hold-days N=7] [--top-exec N=5]
+           [--min-volume N=1000000] [--include-thin] [--include-cross-deployment]
+           [--hold-days N=7] [--top-exec N=5]
   mob rates [--venue V] [--market BASE] [--strict] [--json]
   mob history <BASE> [--days N=7] [--venues a,b] [--strict] [--json]
   mob explain [topic] [--simple]
@@ -55,6 +59,7 @@ Usage:
   mob status --readiness [--owner 0x…] [--json]
   mob upgrade
   mob mcp
+  mob hook sign-guard
   mob --version
   mob --help
 
@@ -77,6 +82,7 @@ const common = {
 	help: flag("boolean"),
 };
 const definitions: Record<string, ParseArgsConfig["options"]> = {
+	hook: { help: flag("boolean") },
 	hello: {
 		help: flag("boolean"),
 		big: flag("boolean"),
@@ -140,6 +146,7 @@ const definitions: Record<string, ParseArgsConfig["options"]> = {
 		"min-apy": flag("string"),
 		"min-volume": flag("string"),
 		"include-thin": flag("boolean"),
+		"include-cross-deployment": flag("boolean"),
 	},
 	rates: { ...common, venue: flag("string"), market: flag("string") },
 	history: { ...common, days: flag("string"), venues: flag("string") },
@@ -158,8 +165,25 @@ const definitions: Record<string, ParseArgsConfig["options"]> = {
 	upgrade: { help: flag("boolean") },
 	mcp: { help: flag("boolean") },
 };
+for (const command of [
+	"open",
+	"close",
+	"neutralize",
+	"resize",
+	"protect",
+	"auto-close",
+	"size-mismatch-close",
+	"proposals",
+	"proposal",
+	"preview",
+	"reject",
+]) {
+	const options = definitions[command];
+	if (options) options.json = flag("boolean");
+}
 
 export interface Runtime extends CommandRuntime {
+	readStdin?: () => Promise<string>;
 	env?: Record<string, string | undefined>;
 	isTTY?: boolean;
 	columns?: number;
@@ -182,7 +206,11 @@ function display(
 	ending: string,
 	json: boolean,
 ): void {
-	rt.out(json ? JSON.stringify(data, null, 2) : `${human}\n${ending}`);
+	rt.out(
+		json
+			? JSON.stringify(withGlossary(data), null, 2)
+			: `${human}\n${paint(ending, "dim", rt)}`,
+	);
 	if (json) rt.err(ending);
 }
 
@@ -197,7 +225,7 @@ export async function run(
 		out: console.log,
 		err: console.error,
 		stdinIsTTY: supplied.prompt !== undefined || !!process.stdin.isTTY,
-		stdoutIsTTY: !!process.stdout.isTTY,
+		stdoutIsTTY: supplied.isTTY ?? !!process.stdout.isTTY,
 		writeStatus: (text) => {
 			process.stdout.write(text);
 		},
@@ -216,15 +244,14 @@ export async function run(
 		const command = args[0];
 		if (!Object.hasOwn(definitions, command))
 			throw new UsageError(`Unknown command ${command}. Run mob --help.`);
-		const { values: parsedValues, positionals } = parseArgs({
-			args: args.slice(1),
-			options: definitions[command],
-			allowPositionals: true,
-			strict: true,
-		});
+		const { values: parsedValues, positionals } = parseCommand(
+			command,
+			args.slice(1),
+			definitions[command],
+		);
 		const values = parsedValues as Record<string, string | boolean | undefined>;
 		if (values.help) {
-			rt.out(help);
+			rt.out(commandHelp(command, definitions[command], help));
 			return 0;
 		}
 		const text = (name: string) => values[name] as string | undefined;
@@ -234,6 +261,12 @@ export async function run(
 				: numberFlag(text(name) as string, name, minimum, integer);
 		const json = values.json === true || values["json-full"] === true;
 		const strict = values.strict === true;
+		if (command === "hook") {
+			if (positionals.length !== 1 || positionals[0] !== "sign-guard")
+				throw new UsageError("Usage: mob hook sign-guard");
+			const { signGuard } = await import("./sign-guard.ts");
+			return signGuard(await (rt.readStdin?.() ?? Bun.stdin.text()), rt.err);
+		}
 		if (command === "hello" || command === "doctor") {
 			if (positionals.length)
 				throw new UsageError(`${command} takes no positional arguments`);
@@ -264,9 +297,14 @@ export async function run(
 			].includes(command)
 		) {
 			const { stagePosition } = await import("./positions.ts");
-			const { showProposal } = await import("./proposal-view.ts");
+			const { showProposal, proposalView } = await import("./proposal-view.ts");
 			const proposal = await stagePosition(command, positionals, values, rt);
-			rt.out(showProposal(proposal));
+			rt.out(
+				json
+					? JSON.stringify(proposalView(proposal), null, 2)
+					: showProposal(proposal, rt.now(), rt),
+			);
+			if (json) return 0;
 			rt.out(
 				`Stopped before signing. To authorize, name ${proposal.id} and run mob sign ${proposal.id}.`,
 			);
@@ -334,14 +372,12 @@ export async function run(
 					: action !== "set" || positionals.length !== 3)
 			)
 				throw new UsageError("Usage: mob config get <key> | set <key> <value>");
-			rt.out(
-				String(
-					await config(
-						action === "get" ? { action, key } : { action: "set", key, value },
-						rt,
-					),
-				),
+			const result = await config(
+				action === "get" ? { action, key } : { action: "set", key, value },
+				rt,
 			);
+			if (result !== "" || rt.stdoutIsTTY)
+				rt.out(result === "" ? "(unset)" : String(result));
 			return 0;
 		}
 		if (positionals.length !== (command === "history" ? 1 : 0))
@@ -362,7 +398,7 @@ export async function run(
 				);
 				rt.out(
 					json
-						? JSON.stringify(result, null, 2)
+						? JSON.stringify(result.map(withGlossary), null, 2)
 						: table(
 								["venue", "ready", "issue", "rebind allowed", "rebind detail"],
 								result.map((r) => [
@@ -389,7 +425,7 @@ export async function run(
 			display(
 				rt,
 				result,
-				renderStatus(result),
+				renderStatus(result, rt.now(), rt),
 				statusFooter(result, statusApi(result), rt.now()),
 				json,
 			);
@@ -409,6 +445,7 @@ export async function run(
 					allPairs: values["all-pairs"] === true,
 					executable: values.executable === true,
 					includeThin: values["include-thin"] === true,
+					includeCrossDeployment: values["include-cross-deployment"] === true,
 					includeFull: values["json-full"] === true,
 				},
 				rt,
@@ -416,8 +453,13 @@ export async function run(
 			display(
 				rt,
 				result,
-				renderScan(result.view, values.executable === true, result.holdDays),
-				`${footer(result, result.unmatched.length, rt.now())} | thin hidden: ${result.counts.thinHidden}`,
+				renderScan(
+					result.view,
+					values.executable === true,
+					result.holdDays,
+					rt,
+				),
+				`${footer(result, result.unmatched.length, rt.now())}\nthin hidden: ${result.counts.thinHidden} (--include-thin) · cross-deployment hidden: ${result.counts.crossDeploymentHidden} (--include-cross-deployment)`,
 				json,
 			);
 			return exitFor(result, strict);
@@ -435,7 +477,7 @@ export async function run(
 					result.view.map((r) => [
 						`${r.venue}:${r.market}`,
 						r.intervalHours,
-						pct(r.ratePerHour * 100, 6),
+						pct(r.ratePerHour * 100, 4),
 						pct(r.annualizedPct, 2),
 						r.markPrice,
 					]),

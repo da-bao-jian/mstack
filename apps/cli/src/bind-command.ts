@@ -125,7 +125,7 @@ export async function bindCommand(
 		version: pkg.version,
 		fetch: rt.fetch,
 	});
-	const store = new ProposalStore(rt.home, rt.now);
+	const store = new ProposalStore(rt.home, rt.now, rt.err);
 	const history = (await store.list()).filter(
 		(p) =>
 			p.owner === owner &&
@@ -158,6 +158,15 @@ export async function bindCommand(
 			printStaged(existing, rt);
 			return existing;
 		}
+		const expired = history.findLast(
+			(p) =>
+				p.submit.binding?.step === step &&
+				["expired", "interrupted"].includes(p.status),
+		);
+		if (expired)
+			rt.out(
+				`${expired.id} is ${expired.status}; staging a fresh binding Proposal.`,
+			);
 		return stageOnboarding(
 			{
 				owner,

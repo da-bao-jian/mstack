@@ -6,11 +6,12 @@ import pkg from "../package.json";
 import { type Config, getConfig, readConfig } from "./config.ts";
 import { object, request } from "./onboarding-http.ts";
 import { credentialReadiness } from "./preflight/readiness.ts";
+import { API_BUDGET_MS, reachability } from "./reachability.ts";
 import type { Runtime } from "./run.ts";
 import { installationRoot } from "./upgrade.ts";
 
 export type Reading<T> = {
-	state: "ok" | "unreachable" | "not checked";
+	state: "ok" | "slow" | "unreachable" | "not checked";
 	value?: T;
 	error?: string;
 };
@@ -264,6 +265,7 @@ export async function collectHome(
 			},
 			(value) => {
 				data.api = { host: data.api.host, ...value };
+				if (value.value) data.api.state = reachability(value.value.latencyMs);
 			},
 		);
 		read(
@@ -286,6 +288,7 @@ export async function collectHome(
 			},
 			(value) => {
 				data.auth = { host: data.auth.host, ...value };
+				if (value.value) data.auth.state = reachability(value.value.latencyMs);
 				if (value.state === "unreachable")
 					data.legal = { state: "unreachable", error: value.error };
 			},
@@ -409,7 +412,7 @@ export async function collectHome(
 				signal.addEventListener("abort", finishAbort, { once: true });
 				timer = setTimeout(
 					() => controller.abort(new Error("Home network budget expired")),
-					services.networkBudgetMs ?? 5000,
+					services.networkBudgetMs ?? API_BUDGET_MS,
 				);
 				if (signal.aborted) resolve();
 			}),
@@ -418,6 +421,10 @@ export async function collectHome(
 		clearTimeout(timer);
 		if (finishAbort) signal.removeEventListener("abort", finishAbort);
 		controller.abort();
+	}
+	if (!options.offline && !configError) {
+		for (const target of [data.api, data.auth])
+			if (target.state === "not checked") target.state = "unreachable";
 	}
 	const awaiting = data.proposals.value?.awaiting[0];
 	data.next = awaiting

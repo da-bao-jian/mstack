@@ -111,6 +111,9 @@ export const mcpTools = [
 			includeThin: boolean(
 				"Include below-threshold or unknown-volume pairs in the views.",
 			),
+			includeCrossDeployment: boolean(
+				"Include Lighter cross-deployment pairs in the executable view; default false.",
+			),
 			holdDays: number(
 				"Positive hold horizon in days for fee amortization; default 7.",
 			),

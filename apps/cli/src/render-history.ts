@@ -23,16 +23,16 @@ export function renderHistory(
 				r.hoursCovered.toFixed(2),
 				pct(
 					r.averageRatePerHour === null ? null : r.averageRatePerHour * 100,
-					6,
+					4,
 				),
 				pct(r.annualizedPct, 2),
-				pct(r.minRatePerHour === null ? null : r.minRatePerHour * 100, 6),
-				pct(r.maxRatePerHour === null ? null : r.maxRatePerHour * 100, 6),
+				pct(r.minRatePerHour === null ? null : r.minRatePerHour * 100, 4),
+				pct(r.maxRatePerHour === null ? null : r.maxRatePerHour * 100, 4),
 			]),
 		),
 		...[...unsupported, ...missing].map((r) => `${r.venue}: ${r.reason}`),
 		bestPair
-			? `Best average spread: long ${bestPair.long} / short ${bestPair.short}: ${pct(bestPair.spreadRate1hPct, 6)}/hour, ${pct(bestPair.spreadAnnualizedPct, 2)}/year (gross; coverage can differ)`
+			? `Best average spread: long ${bestPair.long} / short ${bestPair.short}: ${pct(bestPair.spreadRate1hPct, 4)}/hour, ${pct(bestPair.spreadAnnualizedPct, 2)}/year (gross; coverage can differ)`
 			: "Best average spread: unavailable",
 	].join("\n");
 	return {

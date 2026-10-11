@@ -14,3 +14,4 @@ import "../apps/cli/test/onboarding.test.ts";
 import "../apps/cli/test/walletconnect.test.ts";
 
 import "../apps/cli/test/home.test.ts";
+import "../apps/cli/test/output-polish.test.ts";

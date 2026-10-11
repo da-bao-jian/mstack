@@ -31,6 +31,7 @@ class Element {
 async function page(
 	options: {
 		typed?: boolean;
+		statement?: string;
 		mismatch?: boolean;
 		refuseChain?: boolean;
 		fallback?: boolean;
@@ -70,7 +71,10 @@ async function page(
 		domain: { name: "Test", chainId: 97 },
 		primaryType: "Test",
 		types: { Test: [{ name: "n", type: "uint256" }] },
-		message: { n: "123" },
+		message: {
+			n: "123",
+			...(options.statement ? { statement: options.statement } : {}),
+		},
 	};
 	const signing = options.typed
 		? { type: "typed", typedData }
@@ -486,4 +490,20 @@ test("reject is disabled once a signature is sent for verification", async () =>
 	p.release();
 	await signing;
 	expect(p.el("status").textContent).toBe("Done. You can close this tab.");
+});
+
+test("legal typed statement appears beneath headline before owner and exact JSON", async () => {
+	const statement =
+		"I have read and agree to the terms; <script>text only</script>";
+	const p = await page({ typed: true, statement });
+	expect(p.el("statement").textContent).toBe(statement);
+	expect(p.el("statement").hidden).toBe(false);
+	expect(p.el("message-title").textContent).toBe("Exact typed data JSON");
+	expect(p.el("message").textContent).toContain(statement);
+	expect((html as unknown as string).indexOf('id="purpose"')).toBeLessThan(
+		(html as unknown as string).indexOf('id="statement"'),
+	);
+	expect((html as unknown as string).indexOf('id="statement"')).toBeLessThan(
+		(html as unknown as string).indexOf('id="owner"'),
+	);
 });

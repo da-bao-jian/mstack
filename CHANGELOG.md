@@ -11,6 +11,12 @@
 - Install release binaries without Bun through `install.sh` or the plugin shim.
 - Upgrade downloaded installations with checksum verification. Keep checkout upgrades on the existing Git and Bun path.
 - Add a local release helper that checks the tree, runs all gates, updates versions and release notes, and creates a local tag.
+- Recover interrupted signing safely, reclaim stale Proposal locks, and close the signing page or WalletConnect session on cancellation.
+- Show Proposal state at read time, relative expiry or terminal end time, clear preview cards, and legal statements before exact typed data.
+- Simplify first-run guidance, command help, argument errors, unset config output, and WalletConnect smoke prerequisites.
+- Group position status, format human-readable numbers and times, and apply terminal-only brand colors that respect `NO_COLOR`.
+- Add JSON and skill glossaries, advisory API reachability labels, and opt-in cross-deployment pairs with hidden counts in scan output.
+- Run the signing guard in the compiled CLI so binary-only plugin installs need no Bun.
 
 ## [0.2.0] - Historical summary
 

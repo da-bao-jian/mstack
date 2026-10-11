@@ -20,6 +20,7 @@ export interface ScanOptions {
 	minApy?: number;
 	minVolume24hUsd?: number;
 	includeThin?: boolean;
+	includeCrossDeployment?: boolean;
 	holdDays?: number;
 	includeFull?: boolean;
 }
@@ -62,7 +63,7 @@ export async function scan(options: ScanOptions, rt: Runtime) {
 		takerFeeBps: config.taker_fee_bps,
 		builderFeeTenthsBps: Number(getConfig(config, "builder_fee_tenths_bps")),
 	});
-	const { view, thinHidden } = scanView(result, {
+	const { view, thinHidden, crossDeploymentHidden } = scanView(result, {
 		market,
 		top,
 		topExec,
@@ -70,6 +71,7 @@ export async function scan(options: ScanOptions, rt: Runtime) {
 		executable: options.executable === true,
 		minApy,
 		includeThin: options.includeThin === true,
+		includeCrossDeployment: options.includeCrossDeployment === true,
 	});
 	return withRateCount(
 		{
@@ -83,6 +85,7 @@ export async function scan(options: ScanOptions, rt: Runtime) {
 				qualifying: result.opportunities.filter((row) => row.qualifies).length,
 				executable: result.opportunities.filter((row) => row.executable).length,
 				thinHidden,
+				crossDeploymentHidden,
 				unmatched: result.unmatched.length,
 			},
 			failed: result.failed,

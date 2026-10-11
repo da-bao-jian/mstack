@@ -58,6 +58,7 @@
 <header><svg id="logo" viewBox="0 0 176 144" width="176" height="144" role="img" aria-label="MoB logo" shape-rendering="crispEdges"></svg><span class="wordmark">mstack</span></header>
 <p class="eyebrow">Review signature · <span id="id"></span></p>
 <h1><span id="intent">This signature authorizes:</span> <span id="purpose">Loading Proposal…</span></h1>
+<p id="statement" hidden></p>
 <p class="scope">It cannot move funds.</p>
 <section aria-label="Account check">
 <dl><dt>Expected owner</dt><dd class="address" id="owner"></dd><dt>Connected account</dt><dd class="address" id="account">Not connected</dd></dl>
@@ -291,6 +292,8 @@ async function poll() {
       proposal = view; loadedAt = Date.now();
       if (view.connectionOnly) { el("sign").hidden = true; el("intent").textContent = "This connection checks:"; }
       for (const key of ["id", "purpose", "owner", "digest"]) el(key).textContent = view[key];
+      const statement = view.signing.type === "typed" ? view.signing.typedData.message?.statement : undefined;
+      if (typeof statement === "string") { el("statement").textContent = statement; el("statement").hidden = false; }
       el("message").textContent = view.signing.type === "text" ? view.signing.message : JSON.stringify(view.signing.typedData, null, 2);
       if (view.signing.type === "typed") el("message-title").textContent = "Exact typed data JSON";
       el("copy").disabled = false;

@@ -27,6 +27,7 @@ export class ProposalStore {
 	constructor(
 		home: string,
 		readonly now = Date.now,
+		readonly log: (message: string) => void = console.error,
 	) {
 		this.directory = join(home, "proposals");
 	}
@@ -51,7 +52,15 @@ export class ProposalStore {
 		}
 	}
 	async get(id: string): Promise<Proposal> {
-		const p = JSON.parse(await readPrivate(this.path(id))) as Proposal;
+		let raw: string;
+		try {
+			raw = await readPrivate(this.path(id));
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code === "ENOENT")
+				throw new Error(`No Proposal ${id}`);
+			throw error;
+		}
+		const p = JSON.parse(raw) as Proposal;
 		validateProposal(p);
 		if (p.id !== id) throw new Error("Proposal id mismatch");
 		if (
@@ -59,6 +68,25 @@ export class ProposalStore {
 			p.contentHash
 		)
 			throw new Error("Proposal intent was changed after staging");
+		if (p.status !== "rejected" && !p.signature && (await this.claimed(id)))
+			p.status = "interrupted";
+		else if (
+			["staged", "previewed", "awaiting-signature"].includes(p.status) &&
+			this.now() >= p.expiresAt
+		)
+			p.status = "expired";
+		return p;
+	}
+	private lock<T>(
+		path: string,
+		fn: () => Promise<T>,
+		action: "write" | "reject" = "write",
+	) {
+		return locked(path, fn, this.log, action);
+	}
+	async assertSignable(id: string): Promise<Proposal> {
+		const p = await this.get(id);
+		await this.editable(p);
 		return p;
 	}
 	async list(): Promise<Proposal[]> {
@@ -73,7 +101,7 @@ export class ProposalStore {
 		validateInput(input);
 		const fixed = JSON.parse(canonical(input)) as ProposalInput;
 		await this.ready();
-		return locked(join(this.directory, "counter.lock"), async () => {
+		return this.lock(join(this.directory, "counter.lock"), async () => {
 			let previous = 0;
 			try {
 				const raw = await readPrivate(join(this.directory, "counter"));
@@ -130,6 +158,8 @@ export class ProposalStore {
 		});
 	}
 	private async editable(p: Proposal): Promise<void> {
+		if (p.status === "expired")
+			throw new Error("Proposal expired; stage a new Proposal");
 		if (
 			(await this.claimed(p.id)) ||
 			p.signatureAttemptedAt !== undefined ||
@@ -146,13 +176,14 @@ export class ProposalStore {
 		id: string,
 		preflight: (p: Proposal) => Promise<PreflightResult>,
 	): Promise<Proposal> {
-		return locked(`${this.path(id)}.lock`, async () => {
+		return this.lock(`${this.path(id)}.lock`, async () => {
 			const p = await this.get(id);
 			await this.editable(p);
 			p.preflight = await preflight(structuredClone(p));
 			await this.editable(p);
 			if (!p.preflight.ok) {
 				p.status = "rejected";
+				p.endedAt = this.now();
 				await this.save(p);
 				return p;
 			}
@@ -164,17 +195,28 @@ export class ProposalStore {
 		});
 	}
 	async reject(id: string): Promise<Proposal> {
-		return locked(`${this.path(id)}.lock`, async () => {
-			const p = await this.get(id);
-			await this.editable(p);
-			p.status = "rejected";
-			await this.save(p);
-			return p;
-		});
+		await this.get(id);
+		return this.lock(
+			`${this.path(id)}.lock`,
+			async () => {
+				const p = await this.get(id);
+				if (p.signature || ["submitted", "confirmed"].includes(p.status))
+					throw new Error(
+						"Proposal already signed; check mob status for its result",
+					);
+				if (p.status === "rejected") return p;
+				p.status = "rejected";
+				p.endedAt = this.now();
+				await this.save(p);
+				return p;
+			},
+			"reject",
+		);
 	}
 	async sign(
 		id: string,
 		options: {
+			signal?: AbortSignal;
 			policy: "locked" | "manual";
 			owner: Address;
 			connect: (proposal: Proposal) => Promise<Signer>;
@@ -182,7 +224,8 @@ export class ProposalStore {
 			submit: (p: Proposal, body: JsonObject) => Promise<Json>;
 		},
 	): Promise<Proposal> {
-		return locked(`${this.path(id)}.lock`, async () => {
+		await this.assertSignable(id);
+		return this.lock(`${this.path(id)}.lock`, async () => {
 			const p = await this.get(id);
 			await this.editable(p);
 			if (options.policy !== "manual")
@@ -192,10 +235,19 @@ export class ProposalStore {
 			if (p.status !== "awaiting-signature" || !p.preflight?.ok)
 				throw new Error("Run mob preview before signing");
 			options.display(structuredClone(p));
-			const signer = await options.connect(structuredClone(p));
-			if (getAddress(await signer.address()) !== getAddress(options.owner))
+			options.signal?.throwIfAborted();
+			const signer = await cancellable(
+				options.connect(structuredClone(p)),
+				options.signal,
+			);
+			options.signal?.throwIfAborted();
+			if (
+				getAddress(await cancellable(signer.address(), options.signal)) !==
+				getAddress(options.owner)
+			)
 				throw new Error("Owner does not match signer address");
 			await this.editable(p); // The TTY may have waited past expiry.
+			options.signal?.throwIfAborted();
 			// This marker is durable BEFORE touching the signer, and is never deleted.
 			// Even a crash or failure cannot permit a second signing attempt.
 			await exclusive(
@@ -205,14 +257,18 @@ export class ProposalStore {
 			p.signatureAttemptedAt = this.now();
 			await this.save(p);
 			try {
+				options.signal?.throwIfAborted();
 				if (this.now() >= p.expiresAt) {
 					p.status = "expired";
 					throw new Error("Proposal expired before signing");
 				}
-				const signature: Hex =
+				const signature: Hex = await cancellable(
 					p.signing.type === "text"
-						? await signer.signMessage({ message: p.signing.message })
-						: await signer.signTypedData(structuredClone(p.signing.typedData));
+						? signer.signMessage({ message: p.signing.message })
+						: signer.signTypedData(structuredClone(p.signing.typedData)),
+					options.signal,
+				);
+				options.signal?.throwIfAborted();
 				if (this.now() >= p.expiresAt) {
 					p.status = "expired";
 					throw new Error(
@@ -233,12 +289,15 @@ export class ProposalStore {
 					throw new Error("Signature does not recover Proposal owner");
 				p.signature = signature;
 				p.status = "signed";
+				p.endedAt = this.now();
 				await this.save(p);
 				if (this.now() >= p.expiresAt) {
 					p.status = "expired";
 					throw new Error("Proposal expired before submission");
 				}
 				p.status = "submitted";
+				options.signal?.throwIfAborted();
+				p.endedAt = this.now();
 				await this.save(p);
 				// A copy of the persisted body plus its signature; no prices/nonces refreshed.
 				p.answer = await options.submit(structuredClone(p), {
@@ -250,6 +309,7 @@ export class ProposalStore {
 				return p;
 			} catch (error) {
 				if (p.status !== "expired") p.status = "failed";
+				p.endedAt = this.now();
 				p.error = error instanceof Error ? error.message : String(error);
 				if (error instanceof ApiError)
 					p.answer = JSON.parse(JSON.stringify(error.data)) as Json;
@@ -257,5 +317,25 @@ export class ProposalStore {
 				throw error;
 			}
 		});
+	}
+}
+
+async function cancellable<T>(
+	operation: Promise<T>,
+	signal?: AbortSignal,
+): Promise<T> {
+	if (!signal) return operation;
+	let cancel: () => void = () => {};
+	try {
+		return await Promise.race([
+			operation,
+			new Promise<never>((_, reject) => {
+				cancel = () => reject(signal.reason);
+				signal.addEventListener("abort", cancel, { once: true });
+				if (signal.aborted) cancel();
+			}),
+		]);
+	} finally {
+		signal.removeEventListener("abort", cancel);
 	}
 }

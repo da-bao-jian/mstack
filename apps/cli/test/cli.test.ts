@@ -44,6 +44,7 @@ test("scan JSON contains bounded views and counts without all ranked rows", asyn
 		"annualizationMethod",
 		"counts",
 		"failed",
+		"glossary",
 		"holdDays",
 		"observedAt",
 		"source",
@@ -71,9 +72,15 @@ test("scan json-full opts into all opportunities and retains the bounded counts 
 	const bounded = await invoke(["scan", "--json", "--top", "1"]);
 	const full = await invoke(["scan", "--json-full", "--top", "1"]);
 	expect(full.code).toBe(0);
-	const { opportunities, ...body } = JSON.parse(full.out);
+	const {
+		opportunities,
+		glossary: fullGlossary,
+		...body
+	} = JSON.parse(full.out);
 	expect(opportunities).toHaveLength(29);
-	expect(body).toEqual(JSON.parse(bounded.out));
+	const { glossary: boundedGlossary, ...boundedBody } = JSON.parse(bounded.out);
+	expect(body).toEqual(boundedBody);
+	expect(fullGlossary.venues).toEqual(boundedGlossary.venues);
 	expect(body.counts.qualifying).toBe(
 		opportunities.filter((r: { qualifies: boolean }) => r.qualifies).length,
 	);
@@ -325,7 +332,11 @@ test("status renders every publicTask fixture field and sends client headers", a
 		},
 	);
 	expect(result.code).toBe(0);
-	for (const key of Object.keys(task)) expect(result.out).toContain(key);
+	for (const key of Object.keys(task).filter(
+		(key) => !["task_id", "status"].includes(key),
+	))
+		expect(result.out).toContain(key);
+	expect(result.out).toContain(`Position ${task.task_id} [${task.status}]`);
 	expect(result.out).toContain("funding_usd (estimate)");
 	expect(result.out).toContain(
 		"api: https://funding.mob.exchange | fetched: 0.0s | tasks: 1",
@@ -344,7 +355,7 @@ test("status empty list and errors never masquerade as tasks", async () => {
 				fetch: async () => Response.json([]),
 			})
 		).out,
-	).toContain("No tasks.");
+	).toContain("No positions. Try `mob scan`.");
 	for (const response of [
 		new Response("denied", { status: 403 }),
 		Response.json({ tasks: [] }),
@@ -464,7 +475,7 @@ test("status defaults to the saved owner, permits an override, and names the uns
 	try {
 		const absent = await invoke(["status"], { home: isolated });
 		expect(absent.code).toBe(1);
-		expect(absent.err).toContain("config key owner");
+		expect(absent.err).toContain("Run `mob setup` first");
 		expect(
 			(await invoke(["config", "get", "owner"], { home: isolated })).out,
 		).toBe("");

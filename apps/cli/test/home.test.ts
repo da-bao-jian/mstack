@@ -3,6 +3,7 @@ import {
 	chmod,
 	mkdir,
 	mkdtemp,
+	readFile,
 	rm,
 	symlink,
 	writeFile,
@@ -187,9 +188,10 @@ test("expiry is evaluated at display time and does not rewrite Proposal files", 
 	const p = await proposal(home, homeNow - 400000);
 	const data = await collectHome(rt, { offline: true });
 	expect(data.proposals.value).toEqual({ awaiting: [], expired: [p.id] });
-	expect((await new ProposalStore(home).get(p.id)).status).toBe(
-		"awaiting-signature",
-	);
+	expect(
+		JSON.parse(await readFile(join(home, "proposals", `${p.id}.json`), "utf8"))
+			.status,
+	).toBe("awaiting-signature");
 });
 test("one deadline returns partial results and aborts even if fetch ignores its signal", async () => {
 	const { rt, fake } = await context();
@@ -266,7 +268,7 @@ test("doctor timeout skips critical reads and returns exit 1", async () => {
 	expect(
 		JSON.parse(r.out).checks.find((c: { name: string }) => c.name === "Auth")
 			.status,
-	).toBe("skip");
+	).toBe("fail");
 });
 test("doctor text, no config and missing owner", async () => {
 	const { invoke } = await context(false);
@@ -338,3 +340,21 @@ test("upgrade and terminal ASCII output; help/version remain plain", async () =>
 	])
 		expect((await invoke(args)).code).toBe(1);
 });
+
+test("slow API is labeled, unreachable deadline is explicit, and venue reads still finish", async () => {
+	const { rt, fake, invoke } = await context(false);
+	const fast = rt.fetch;
+	rt.fetch = async (url, init) => {
+		if (url.includes("/api/client-ip")) await Bun.sleep(3100);
+		return fast(url, init);
+	};
+	const result = await invoke(["hello", "--plain"]);
+	expect(result.out).toMatch(/slow · 3\.\d s/);
+	expect(result.out).toContain("API slow; venue reads are unaffected");
+	fake.state.hang = "/api/client-ip";
+	rt.fetch = fast;
+	rt.homeServices = { ...rt.homeServices, networkBudgetMs: 30 };
+	const data = await collectHome(rt);
+	expect(data.api.state).toBe("unreachable");
+	expect(data.auth.state).toBe("ok");
+}, 10_000);

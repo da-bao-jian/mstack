@@ -7,6 +7,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import pkg from "../package.json";
 import { commandError, type Runtime } from "./commands/runtime.ts";
+import { withGlossary } from "./glossary.ts";
 import { mcpTools } from "./mcp-tools.ts";
 
 const MAX_TOOL_MS = 60_000;
@@ -99,7 +100,20 @@ export function createMcpServer(
 							content: [
 								{
 									type: "text",
-									text: typeof data === "string" ? data : JSON.stringify(data),
+									text:
+										typeof data === "string"
+											? data
+											: JSON.stringify(
+													[
+														"funding_scan",
+														"funding_rates",
+														"funding_history",
+														"task_list",
+														"task_get",
+													].includes(request.params.name)
+														? withGlossary(data)
+														: data,
+												),
 								},
 							],
 						};

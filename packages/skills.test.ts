@@ -70,7 +70,7 @@ async function preambleHome() {
 	await script(
 		join(bin, "curl"),
 		// biome-ignore lint/suspicious/noTemplateCurlyInString: This is shell parameter expansion in the fixture.
-		'printf "%s\\n" "$*" >> "$HOME/curl-calls"\nprintf "%s" "${TEST_HTTP_STATUS:-200}"',
+		'printf "%s\\n" "$*" >> "$HOME/curl-calls"\nprintf "%s" "${TEST_HTTP_STATUS:-200} ${TEST_HTTP_SECONDS:-0.312}"',
 	);
 	await script(join(bin, "git"), "exit 1");
 	return { home, bin, path: `${bin}:/usr/bin:/bin` };
@@ -128,7 +128,7 @@ test.each([...outputs.keys()])(
 			.trim()
 			.split("\n");
 		expect(calls).toHaveLength(1);
-		expect(calls[0]).toContain("-m 10");
+		expect(calls[0]).toContain("-m 15");
 		expect(calls[0]).toContain("-o /dev/null");
 		expect(calls[0]).toContain(`X-Mobius-Client: mstack/${pkg.version}`);
 		expect(calls[0]).toContain(`-A mstack/${pkg.version}`);
@@ -152,7 +152,7 @@ test("preamble shows owner presence and HTTP failure, without printing the addre
 	);
 	expect(result.code).toBe(0);
 	expect(result.out).toContain("OWNER: set");
-	expect(result.out).toContain("API_REACHABLE: fail");
+	expect(result.out).toContain("API_REACHABLE: unreachable");
 	expect(result.out).not.toContain(address);
 }, 15_000);
 
@@ -400,7 +400,7 @@ test("preamble config errors are explicit reports and do not block a local skill
 	);
 	expect(result.code).toBe(0);
 	expect(result.out).toContain("API_BASE: fail");
-	expect(result.out).toContain("API_REACHABLE: fail");
+	expect(result.out).toContain("API_REACHABLE: unreachable");
 	expect(result.out).toContain("OWNER: fail");
 	expect(result.out).toContain("POLICY: fail");
 	expect(result.out).toContain("SIGNER: fail");
@@ -649,3 +649,48 @@ test("setup's default home runner invokes the newly built file with the target H
 	);
 	expect(lines.at(-1)).toContain("Next commands:");
 }, 15_000);
+
+test("slow reachability is advisory and measured within a fifteen-second budget", async () => {
+	const { home, path } = await preambleHome();
+	const result = await command(
+		[
+			"/bin/bash",
+			"-c",
+			preamble(outputs.get("skills/mob-scan/SKILL.md") as string),
+		],
+		home,
+		path,
+		{ TEST_HTTP_SECONDS: "6.1" },
+	);
+	expect(result.code).toBe(0);
+	expect(result.out).toContain("API_REACHABLE: slow · 6.1 s");
+	expect(result.out).toContain("API slow; venue reads are unaffected");
+	expect(result.out).toContain("SIGNER: unset");
+}, 15_000);
+
+test("scan, status and manage ship matching glossary references for both hosts", async () => {
+	let reference: string | undefined;
+	for (const host of ["skills", "skills-codex"])
+		for (const name of ["mob-scan", "mob-status", "mob-manage"]) {
+			expect(outputs.get(`${host}/${name}/SKILL.md`)).toContain(
+				"Read [references/glossary.md](references/glossary.md)",
+			);
+			const text = await readFile(
+				join(root, host, name, "references/glossary.md"),
+				"utf8",
+			);
+			if (reference) expect(text).toBe(reference);
+			reference = text;
+			for (const word of [
+				"Lighter on Robinhood Chain",
+				"Lighter mainnet",
+				"qualifies",
+				"executable",
+				"simple",
+				"cost",
+				"source tree",
+				"API reachability is advisory",
+			])
+				expect(text).toContain(word);
+		}
+});

@@ -29,7 +29,7 @@ export function printStaged(
 	rt: Runtime,
 ) {
 	if (p.submit.binding) rt.out(bindingCeremony(p));
-	rt.out(showProposal(p));
+	rt.out(showProposal(p, rt.now(), rt));
 	rt.out(
 		`Stopped before signing. To authorize, name ${p.id} and run mob sign ${p.id}.`,
 	);

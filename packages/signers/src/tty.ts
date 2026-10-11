@@ -2,8 +2,12 @@ import { closeSync, openSync, writeSync } from "node:fs";
 import { ReadStream } from "node:tty";
 
 /** Production reads only the controlling terminal. Tests inject this interface. */
-export type SecretReader = (prompt: string) => Promise<string>;
-export const readSecretFromTty: SecretReader = async (prompt) => {
+export type SecretReader = (
+	prompt: string,
+	signal?: AbortSignal,
+) => Promise<string>;
+export const readSecretFromTty: SecretReader = async (prompt, signal) => {
+	signal?.throwIfAborted();
 	let fd: number;
 	try {
 		fd = openSync("/dev/tty", "r+");
@@ -19,6 +23,7 @@ export const readSecretFromTty: SecretReader = async (prompt) => {
 	}
 	const wasRaw = tty.isRaw;
 	const bytes: number[] = [];
+	let cancel: (() => void) | undefined;
 	try {
 		if (!tty.isTTY) throw new Error("A controlling TTY (/dev/tty) is required");
 		tty.setRawMode(true);
@@ -33,6 +38,9 @@ export const readSecretFromTty: SecretReader = async (prompt) => {
 				if (error) reject(error);
 				else resolve(Buffer.from(bytes).toString("utf8"));
 			};
+			cancel = () => finish(new Error("TTY input cancelled"));
+			signal?.addEventListener("abort", cancel, { once: true });
+			if (signal?.aborted) cancel();
 			tty.on("data", (chunk: Buffer) => {
 				for (const byte of chunk) {
 					if (finished) break;
@@ -57,6 +65,7 @@ export const readSecretFromTty: SecretReader = async (prompt) => {
 			tty.on("end", () => finish(new Error("TTY closed before input")));
 		});
 	} finally {
+		if (cancel) signal?.removeEventListener("abort", cancel);
 		bytes.fill(0);
 		if (tty.isTTY) tty.setRawMode(wasRaw);
 		tty.destroy();

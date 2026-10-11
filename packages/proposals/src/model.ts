@@ -24,6 +24,7 @@ export type ProposalStatus =
 	| "staged"
 	| "previewed"
 	| "awaiting-signature"
+	| "interrupted"
 	| "signed"
 	| "submitted"
 	| "confirmed"
@@ -107,6 +108,7 @@ export interface Proposal extends ProposalInput {
 	digest: Hex;
 	contentHash: Hex;
 	status: ProposalStatus;
+	endedAt?: number;
 	preflight?: PreflightResult;
 	signatureAttemptedAt?: number;
 	signature?: Hex;
@@ -344,6 +346,7 @@ export function validateProposal(p: Proposal): void {
 			"staged",
 			"previewed",
 			"awaiting-signature",
+			"interrupted",
 			"signed",
 			"submitted",
 			"confirmed",
@@ -353,6 +356,11 @@ export function validateProposal(p: Proposal): void {
 		].includes(p.status)
 	)
 		throw new Error("Invalid Proposal status");
+	if (
+		p.endedAt !== undefined &&
+		(!Number.isSafeInteger(p.endedAt) || p.endedAt < p.createdAt)
+	)
+		throw new Error("Invalid Proposal end time");
 	if (
 		p.preflight &&
 		(p.preflight.checks.length !== p.preflightPlan.checks.length ||
