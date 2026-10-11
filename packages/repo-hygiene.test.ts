@@ -47,7 +47,11 @@ for (const [file, content] of generated) {
 		expect(content.trimEnd().split("\n").length).toBeLessThanOrEqual(120);
 		const preamble = /```bash\n([\s\S]*?)\n```/.exec(parts[2]);
 		expect(preamble?.[1].split("\n")).toHaveLength(1);
-		expect(preamble?.[1]).toContain("/bin/mob-preamble");
+		expect(preamble?.[1]).toContain(
+			file.startsWith("skills-codex/")
+				? "~/.agents/skills/mstack/bin/mob-preamble"
+				: `\${CLAUDE_SKILL_DIR}/scripts/preamble.sh`,
+		);
 		for (const [, reference] of parts[2].matchAll(
 			/\]\((references\/[^)]+)\)/g,
 		)) {
@@ -79,4 +83,5 @@ test("plugin and marketplace agree on the plugin name", async () => {
 	).json();
 	expect(marketplace.plugins[0].name).toBe(plugin.name);
 	expect(plugin.displayName).toBe("mstack");
+	expect(plugin).not.toHaveProperty("userConfig");
 });

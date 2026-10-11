@@ -9,14 +9,6 @@
 	"license": "MIT",
 	"keywords": ["funding", "perpetuals", "mobius", "proposals"],
 	"skills": ["./skills/"],
-	"userConfig": {
-		"api_base": {
-			"type": "string",
-			"title": "Mobius API base",
-			"description": "Public Mobius API URL. Apply an override with mob config set api_base <URL>.",
-			"default": "https://funding.mob.exchange"
-		}
-	},
 	"displayName": "mstack",
 	"homepage": "https://github.com/da-bao-jian/mstack#readme",
 	"repository": "https://github.com/da-bao-jian/mstack"

@@ -10,14 +10,21 @@ const env = {
 	...process.env,
 	HOME: home,
 	MOB_HOME: join(home, ".mob"),
-	CLAUDE_PLUGIN_ROOT: "",
-	PATH: `${join(home, ".agents/skills/mstack/bin")}:${dirname(process.execPath)}:${process.env.PATH}`,
+	CLAUDE_PLUGIN_ROOT: undefined,
+	CLAUDE_SKILL_DIR: undefined,
+	CLAUDE_PROJECT_DIR: undefined,
+	CLAUDE_PLUGIN_DATA: undefined,
+	PATH: `${dirname(process.execPath)}:${process.env.PATH}`,
 };
 
-async function run(args: string[], isolated = true): Promise<string> {
+async function run(
+	args: string[],
+	isolated = true,
+	cwd = root,
+): Promise<string> {
 	const start = performance.now();
 	const proc = Bun.spawn(args, {
-		cwd: root,
+		cwd,
 		env: isolated ? env : process.env,
 		stdout: "pipe",
 		stderr: "pipe",
@@ -37,10 +44,7 @@ async function run(args: string[], isolated = true): Promise<string> {
 }
 
 try {
-	console.log("$ HOME=<temporary> ./setup --host codex -q");
-	await run([join(root, "setup"), "--host", "codex", "-q"]);
-	console.log("Created symlinks:");
-	for (const name of [
+	const names = [
 		"mob",
 		"mob-scan",
 		"mob-explain",
@@ -50,32 +54,32 @@ try {
 		"mob-open",
 		"mob-manage",
 		"mob-close",
-		"mstack/bin",
-	]) {
-		const path = join(home, ".agents/skills", name);
-		console.log(`~/.agents/skills/${name} -> ${await readlink(path)}`);
-	}
-	for (const name of [
-		"mob",
-		"mob-scan",
-		"mob-explain",
-		"mob-status",
-		"mob-setup",
-		"mob-bind",
-		"mob-open",
-		"mob-manage",
-		"mob-close",
-	]) {
-		console.log(`\n$ bash <${name} preamble>`);
-		const body = await readFile(
-			join(home, ".agents/skills", name, "SKILL.md"),
-			"utf8",
+	];
+	for (const host of ["claude", "codex"]) {
+		console.log(`$ HOME=<temporary> ./setup --host ${host} -q`);
+		await run([join(root, "setup"), "--host", host, "-q"]);
+		const installed = join(
+			home,
+			host === "claude" ? ".claude" : ".agents",
+			"skills",
 		);
-		const code = /```bash\n([\s\S]*?)\n```/.exec(body)?.[1];
-		if (!code) throw new Error(`Missing ${name} preamble`);
-		const out = await run(["bash", "-c", code]);
-		if (!/API_REACHABLE: (ok|slow) ·/.test(out))
-			throw new Error("Mobius API was unreachable");
+		console.log("Created symlinks:");
+		for (const name of [...names, "mstack/bin"])
+			console.log(
+				`${join(installed, name)} -> ${await readlink(join(installed, name))}`,
+			);
+		for (const name of names) {
+			const directory = join(installed, name);
+			console.log(`\n$ bash <${host}/${name} preamble> (cwd outside checkout)`);
+			const body = await readFile(join(directory, "SKILL.md"), "utf8");
+			const code = /```bash\n([\s\S]*?)\n```/.exec(body)?.[1];
+			if (!code) throw new Error(`Missing ${name} preamble`);
+			// Claude substitutes this exact token in skill text; it is not a shell env var.
+			const rendered = code.replaceAll(`\${CLAUDE_SKILL_DIR}`, directory);
+			const out = await run(["bash", "-c", rendered], true, home);
+			if (!/API_REACHABLE: (ok|slow) ·/.test(out))
+				throw new Error("Mobius API was unreachable");
+		}
 	}
 	console.log("\n$ claude plugin validate --strict .");
 	await run(["claude", "plugin", "validate", "--strict", "."], false);
@@ -85,6 +89,7 @@ try {
 		false,
 	);
 } finally {
-	await run([join(root, "setup"), "--host", "codex", "--uninstall", "-q"]);
+	for (const host of ["claude", "codex"])
+		await run([join(root, "setup"), "--host", host, "--uninstall", "-q"]);
 	await rm(home, { recursive: true, force: true });
 }

@@ -4,11 +4,11 @@ description: Stage one position management change for human approval. Use for "r
 license: MIT
 metadata:
   version: "0.3.0"
-allowed-tools: Bash Read AskUserQuestion
+allowed-tools: Bash Read AskUserQuestion Bash(${CLAUDE_SKILL_DIR}/scripts/preamble.sh *)
 ---
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/skills/mstack}/bin/mob-preamble"
+bash "${CLAUDE_SKILL_DIR}/scripts/preamble.sh"
 ```
 
 Read [references/glossary.md](references/glossary.md) for field meanings and venue deployments instead of reading the source tree.

@@ -2,11 +2,13 @@ import { afterAll, expect, test } from "bun:test";
 import {
 	chmod,
 	copyFile,
+	cp,
 	lstat,
 	mkdir,
 	mkdtemp,
 	readFile,
 	readlink,
+	realpath,
 	rm,
 	symlink,
 	unlink,
@@ -37,7 +39,7 @@ async function command(
 	args: string[],
 	home: string,
 	path?: string,
-	extra: Record<string, string> = {},
+	extra: Record<string, string | undefined> = {},
 ) {
 	const proc = Bun.spawn(args, {
 		cwd: home,
@@ -45,7 +47,11 @@ async function command(
 			...process.env,
 			HOME: home,
 			MOB_HOME: join(home, ".mob"),
-			CLAUDE_PLUGIN_ROOT: "",
+			CLAUDE_PLUGIN_ROOT: undefined,
+			CLAUDE_SKILL_DIR: undefined,
+			CLAUDE_PROJECT_DIR: undefined,
+			CLAUDE_PLUGIN_DATA: undefined,
+			MSTACK_MOB_BIN: "",
 			MSTACK_ROOT: "",
 			MSTACK_VERBOSE: "",
 			PATH: path ?? process.env.PATH,
@@ -67,6 +73,7 @@ async function preambleHome() {
 	const bin = join(home, "bin");
 	for (const directory of [
 		home,
+		join(home, "plugin"),
 		join(home, ".claude/skills/mstack"),
 		join(home, ".agents/skills/mstack"),
 	]) {
@@ -76,6 +83,12 @@ async function preambleHome() {
 			join(directory, "bin/mob-preamble"),
 		);
 		await symlink(join(root, "scripts"), join(directory, "scripts"));
+	}
+	for (const [file, body] of outputs) {
+		if (!file.startsWith("skills/")) continue;
+		const target = join(home, "plugin", file);
+		await mkdir(dirname(target), { recursive: true });
+		await writeFile(target, body);
 	}
 	await script(
 		join(bin, "mob"),
@@ -91,10 +104,15 @@ async function preambleHome() {
 	return { home, bin, path: `${bin}:/usr/bin:/bin` };
 }
 
-function preamble(body: string): string {
+function preamble(body: string, home: string, skillDirectory?: string): string {
 	const match = /^---\n[\s\S]*?\n---\n\n```bash\n([\s\S]*?)\n```/.exec(body);
 	if (!match) throw new Error("Expected first content to be one bash preamble");
-	return match[1];
+	const name = /^name: (.+)$/m.exec(body)?.[1];
+	if (!name) throw new Error("Missing skill name");
+	return match[1].replaceAll(
+		`\${CLAUDE_SKILL_DIR}`,
+		skillDirectory ?? join(home, "plugin/skills", name),
+	);
 }
 
 test("generator is deterministic and committed output matches both host overlays", async () => {
@@ -113,11 +131,94 @@ test("generator is deterministic and committed output matches both host overlays
 	}
 });
 
+test("each Claude skill has a generated executable wrapper and exact host substitutions (G1)", async () => {
+	for (const [file, body] of skills) {
+		if (!file.startsWith("skills/")) {
+			expect(body).toContain("bash ~/.agents/skills/mstack/bin/mob-preamble");
+			continue;
+		}
+		expect(body).not.toContain(":-");
+		expect(body).toContain(`bash "\${CLAUDE_SKILL_DIR}/scripts/preamble.sh"`);
+		expect(body).toContain(`Bash(\${CLAUDE_SKILL_DIR}/scripts/preamble.sh *)`);
+		const wrapper = join(dirname(file), "scripts/preamble.sh");
+		expect(await readFile(join(root, wrapper), "utf8")).toBe(
+			outputs.get(wrapper) as string,
+		);
+		expect((await lstat(join(root, wrapper))).mode & 0o111).toBe(0o111);
+	}
+});
+
+test.each(["plugin root", "personal symlink", "copied plugin cache"])(
+	"Claude preamble resolves from %s outside the checkout, without exported host variables (G1)",
+	async (layout) => {
+		const { home, bin, path } = await preambleHome();
+		const binary = join(home, "test-mob");
+		await copyFile(join(bin, "mob"), binary);
+		await unlink(join(bin, "mob"));
+		let plugin = root;
+		if (layout === "copied plugin cache") {
+			plugin = join(home, "plugin cache/mstack/0.3.0");
+			for (const directory of ["bin", "skills"])
+				await cp(join(root, directory), join(plugin, directory), {
+					recursive: true,
+				});
+			await mkdir(join(plugin, "scripts"));
+			for (const name of ["skill-preamble.sh", "skill-splash.sh"])
+				await copyFile(
+					join(root, "scripts", name),
+					join(plugin, "scripts", name),
+				);
+		}
+		if (layout === "personal symlink") {
+			await rm(join(home, ".claude"), { recursive: true, force: true });
+			// Run the real setup entry point. Keep install/build offline and out of this test.
+			await script(
+				join(bin, "bun"),
+				`case "$1 $2" in
+  'install --frozen-lockfile'|'run build') exit 0 ;;
+  *) exec ${quote(process.execPath)} "$@" ;;
+esac`,
+			);
+			const installed = await command(
+				[join(root, "setup"), "--host", "claude", "-q"],
+				home,
+				path,
+			);
+			expect(installed).toEqual({ code: 0, out: "", err: "" });
+			expect(await readlink(join(home, ".claude/skills/mob"))).toBe(
+				join(root, "skills/mob"),
+			);
+		}
+		for (const name of ["mob", "mob-scan"]) {
+			const directory =
+				layout === "personal symlink"
+					? join(home, ".claude/skills", name)
+					: join(plugin, "skills", name);
+			const body = await readFile(join(directory, "SKILL.md"), "utf8");
+			const result = await command(
+				["bash", "-c", preamble(body, home, directory)],
+				home,
+				path,
+				{ MSTACK_MOB_BIN: binary, CDPATH: join(home, "unrelated") },
+			);
+			expect(result.code).toBe(0);
+			expect(result.err).toBe("");
+			expect(result.out).toContain(
+				`MOB_BIN: ${await realpath(plugin)}/bin/mob`,
+			);
+			expect(result.out).toContain(`MOB_VERSION: ${pkg.version}`);
+			expect(result.out).toContain("API_REACHABLE: ok");
+			expect(result.out.includes("<<<MOB")).toBe(name === "mob");
+		}
+	},
+	30_000,
+);
+
 test.each([...skills.keys()])(
 	"%s has valid bash and prints expected preamble keys",
 	async (file) => {
 		const { home, path } = await preambleHome();
-		const body = preamble(outputs.get(file) as string);
+		const body = preamble(outputs.get(file) as string, home);
 		expect(
 			(await command(["/bin/bash", "-n", "-c", body], home, path)).code,
 		).toBe(0);
@@ -154,7 +255,11 @@ test("preamble shows owner presence and HTTP failure, without printing the addre
 			.code,
 	).toBe(0);
 	const result = await command(
-		["/bin/bash", "-c", preamble(outputs.get("skills/mob/SKILL.md") as string)],
+		[
+			"/bin/bash",
+			"-c",
+			preamble(outputs.get("skills/mob/SKILL.md") as string, home),
+		],
 		home,
 		path,
 		{ TEST_HTTP_STATUS: "503" },
@@ -180,7 +285,7 @@ test.each(["claude", "agents", "codex"])(
 					[
 						"/bin/bash",
 						"-c",
-						preamble(outputs.get("skills/mob/SKILL.md") as string),
+						preamble(outputs.get("skills/mob/SKILL.md") as string, home),
 					],
 					home,
 					path,
@@ -195,7 +300,11 @@ test("missing binary stops with an install line before any API call", async () =
 	const { home, bin, path } = await preambleHome();
 	await unlink(join(bin, "mob"));
 	const result = await command(
-		["/bin/bash", "-c", preamble(outputs.get("skills/mob/SKILL.md") as string)],
+		[
+			"/bin/bash",
+			"-c",
+			preamble(outputs.get("skills/mob/SKILL.md") as string, home),
+		],
 		home,
 		path,
 	);
@@ -204,24 +313,28 @@ test("missing binary stops with an install line before any API call", async () =
 	expect(result.out).not.toContain("API_BASE");
 }, 15_000);
 
-test("plugin root puts the shipped shim on PATH", async () => {
+test("skill wrapper puts the shipped shim on PATH without exported Claude variables", async () => {
 	const { home, bin } = await preambleHome();
 	const plugin = join(home, "plugin");
-	await mkdir(plugin);
-	await symlink(bin, join(plugin, "bin"));
+	await copyFile(join(bin, "mob"), join(plugin, "bin/mob"));
 	// Keep curl and git mocked even though the plugin shim is appended to PATH.
 	const mocks = join(home, "probe-bin");
 	await mkdir(mocks);
 	for (const name of ["curl", "git"])
 		await symlink(join(bin, name), join(mocks, name));
 	const result = await command(
-		["/bin/bash", "-c", preamble(outputs.get("skills/mob/SKILL.md") as string)],
+		[
+			"/bin/bash",
+			"-c",
+			preamble(outputs.get("skills/mob/SKILL.md") as string, home),
+		],
 		home,
 		`${mocks}:/usr/bin:/bin`,
-		{ CLAUDE_PLUGIN_ROOT: plugin },
+		{ CLAUDE_PLUGIN_ROOT: undefined },
 	);
 	expect(result.code).toBe(0);
 	expect(result.out).toContain(`MOB_VERSION: ${pkg.version}`);
+	expect(result.out).toContain(`MOB_BIN: ${await realpath(plugin)}/bin/mob`);
 	expect(
 		(await readFile(join(home, "curl-calls"), "utf8")).trim().split("\n"),
 	).toHaveLength(1);
@@ -245,7 +358,7 @@ test("upgrade checks fetch once per hour, print changed hashes, and never use a 
   *) exit 1 ;;
 esac`,
 	);
-	const code = preamble(outputs.get("skills/mob/SKILL.md") as string);
+	const code = preamble(outputs.get("skills/mob/SKILL.md") as string, home);
 	for (let i = 0; i < 2; i++) {
 		const result = await command(["/bin/bash", "-c", code], home, path);
 		expect(result.code).toBe(0);
@@ -301,7 +414,7 @@ test("every generated skill plus its fresh-home preamble stays below 8 KiB (D2)"
 			`skills/${router ? "mob" : "mob-scan"}/SKILL.md`,
 		) as string;
 		const result = await command(
-			["/bin/bash", "-c", preamble(body)],
+			["/bin/bash", "-c", preamble(body, home)],
 			home,
 			path,
 		);
@@ -421,7 +534,7 @@ test.each(["keystore", "browser", "walletconnect"])(
 			[
 				"/bin/bash",
 				"-c",
-				preamble(outputs.get("skills/mob/SKILL.md") as string),
+				preamble(outputs.get("skills/mob/SKILL.md") as string, home),
 			],
 			home,
 			path,
@@ -586,13 +699,17 @@ test("preamble prefers the documented Codex binary over the legacy one", async (
 	await script(join(home, ".codex/skills/mstack/bin/mob"), "exit 99");
 	await unlink(join(bin, "mob"));
 	const result = await command(
-		["bash", "-c", preamble(skills.get("skills-codex/mob/SKILL.md") as string)],
+		[
+			"bash",
+			"-c",
+			preamble(skills.get("skills-codex/mob/SKILL.md") as string, home),
+		],
 		home,
 		path,
 	);
 	expect(result.code).toBe(0);
 	expect(result.out).toContain(
-		`MOB_BIN: ${home}/.agents/skills/mstack/bin/mob`,
+		`MOB_BIN: ${await realpath(home)}/.agents/skills/mstack/bin/mob`,
 	);
 	expect(result.out).toContain(`MOB_VERSION: ${pkg.version}`);
 }, 15_000);
@@ -602,7 +719,11 @@ test("preamble config errors are explicit reports and do not block a local skill
 	await mkdir(join(home, ".mob"));
 	await writeFile(join(home, ".mob/config.json"), "invalid json");
 	const result = await command(
-		["/bin/bash", "-c", preamble(outputs.get("skills/mob/SKILL.md") as string)],
+		[
+			"/bin/bash",
+			"-c",
+			preamble(outputs.get("skills/mob/SKILL.md") as string, home),
+		],
 		home,
 		path,
 	);
@@ -756,8 +877,11 @@ test.each(["skills", "skills-codex"])(
 
 test("router splash is ASCII, delimited and limited to once per hour for both hosts", async () => {
 	const { home, path } = await preambleHome();
-	const claude = preamble(outputs.get("skills/mob/SKILL.md") as string);
-	const codex = preamble(outputs.get("skills-codex/mob/SKILL.md") as string);
+	const claude = preamble(outputs.get("skills/mob/SKILL.md") as string, home);
+	const codex = preamble(
+		outputs.get("skills-codex/mob/SKILL.md") as string,
+		home,
+	);
 	const first = await command(["/bin/bash", "-c", claude], home, path);
 	const block = /<<<MOB\n([\s\S]*?)\nMOB>>>/.exec(first.out);
 	expect(block).not.toBeNull();
@@ -850,7 +974,7 @@ test("slow reachability is advisory and measured within a fifteen-second budget"
 		[
 			"/bin/bash",
 			"-c",
-			preamble(outputs.get("skills/mob-scan/SKILL.md") as string),
+			preamble(outputs.get("skills/mob-scan/SKILL.md") as string, home),
 		],
 		home,
 		path,

@@ -4,11 +4,11 @@ description: Set up public wallet settings and stage legal acceptance. Use for "
 license: MIT
 metadata:
   version: "0.3.0"
-allowed-tools: Bash Read AskUserQuestion
+allowed-tools: Bash Read AskUserQuestion Bash(${CLAUDE_SKILL_DIR}/scripts/preamble.sh *)
 ---
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/skills/mstack}/bin/mob-preamble"
+bash "${CLAUDE_SKILL_DIR}/scripts/preamble.sh"
 ```
 
 Run the preamble first. Use the path printed as `MOB_BIN` in place of `mob`; shell-quote every user value. Read stdout and stderr. If `MOB_MISSING` appears, show the install line and stop. Under locked policy, do not offer mutations.

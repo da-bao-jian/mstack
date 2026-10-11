@@ -4,11 +4,11 @@ description: Route Mobius funding and position requests to the right skill. Use 
 license: MIT
 metadata:
   version: "0.3.0"
-allowed-tools: Bash Read AskUserQuestion
+allowed-tools: Bash Read AskUserQuestion Bash(${CLAUDE_SKILL_DIR}/scripts/preamble.sh *)
 ---
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/skills/mstack}/bin/mob-preamble" --router
+bash "${CLAUDE_SKILL_DIR}/scripts/preamble.sh" --router
 ```
 
 # Mobius router

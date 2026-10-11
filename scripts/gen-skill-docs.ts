@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { chmod, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const repo = resolve(import.meta.dir, "..");
@@ -13,6 +13,10 @@ export async function renderSkills(root = repo): Promise<Map<string, string>> {
 		await readFile(resolve(root, "package.json"), "utf8"),
 	);
 	const outputs = new Map<string, string>();
+	const claudePreamble = await readFile(
+		resolve(root, "hosts/claude/preamble.sh"),
+		"utf8",
+	);
 	for (const host of ["claude", "codex"] as const) {
 		const overlay: unknown = JSON.parse(
 			await readFile(resolve(root, `hosts/${host}/overlay.json`), "utf8"),
@@ -43,7 +47,7 @@ export async function renderSkills(root = repo): Promise<Map<string, string>> {
 			const command =
 				host === "claude"
 					? // biome-ignore lint/suspicious/noTemplateCurlyInString: Host and shell substitutions are literal skill content.
-						'bash "${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/skills/mstack}/bin/mob-preamble"'
+						'bash "${CLAUDE_SKILL_DIR}/scripts/preamble.sh"'
 					: "bash ~/.agents/skills/mstack/bin/mob-preamble";
 			replacements.PREAMBLE = `\`\`\`bash\n${command}${name === "mob" ? " --router" : ""}\n\`\`\``;
 			let body = source.replace(/\{\{([A-Z_]+)\}\}/g, (_, key: string) => {
@@ -58,6 +62,8 @@ export async function renderSkills(root = repo): Promise<Map<string, string>> {
 			if (host === "codex") body = body.replace(/`\/(mob[\w-]*)`/g, "`$$$1`");
 			const directory = `${host === "claude" ? "skills" : "skills-codex"}/${name}`;
 			outputs.set(`${directory}/SKILL.md`, `${body.trimEnd()}\n`);
+			if (host === "claude")
+				outputs.set(`${directory}/scripts/preamble.sh`, claudePreamble);
 			const references = resolve(root, "skills-src", name, "references");
 			for (const reference of [
 				...new Bun.Glob("*.md").scanSync(references),
@@ -86,6 +92,7 @@ if (import.meta.main) {
 		const target = resolve(repo, file);
 		await mkdir(resolve(target, ".."), { recursive: true });
 		await writeFile(target, body);
+		if (file.endsWith(".sh")) await chmod(target, 0o755);
 	}
 	console.log(
 		`Generated ${[...outputs.keys()].filter((file) => file.endsWith("SKILL.md")).length / 2} skills for Claude and Codex (${outputs.size} files).`,

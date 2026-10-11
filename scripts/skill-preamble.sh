@@ -1,5 +1,5 @@
 set -uo pipefail
-# Claude Code exposes the plugin root. Put its shipped shim on PATH.
+# Honor a caller-supplied root; skill wrappers also put their own bin on PATH.
 if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
   export PATH="$PATH:$CLAUDE_PLUGIN_ROOT/bin"
 fi

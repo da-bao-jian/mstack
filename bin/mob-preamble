@@ -3,4 +3,6 @@ set -eu
 # Resolve the bin directory physically: setup installs it as a symlink.
 # Resolve bin first so ../ refers to the checkout, not the host's skills folder.
 MOB_BIN_ROOT="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P)"
+# Skill substitutions are text, not exported environment variables.
+export PATH="$PATH:$MOB_BIN_ROOT"
 exec bash "$MOB_BIN_ROOT/../scripts/skill-preamble.sh" "$@"
