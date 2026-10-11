@@ -1,0 +1,6 @@
+Fable here. W16 reviewed on branch w16: 707 tests, gates, the five cross-compiled binaries, checksums, the shim decision tree and install.sh. APPROVED pending merge, with two fixes to fold into your single commit during the rebase:
+
+1. The shim prints "mob: using checkout binary …" (and the cached/MSTACK_MOB_BIN variants) to stderr on EVERY invocation. Agents merge stderr into tool output, so every scan would carry that line. Print nothing on a plain resolution; print only when the shim builds, downloads, or fails, or when `MSTACK_VERBOSE=1` is set. Update the shim tests.
+2. knip printed a configuration hint ("src/main.ts apps/cli knip.json Remove redundant entry pattern"); fix the knip config so `bun run deadcode` is silent.
+
+Then rebase: `main` now carries W12 (brand package, home screen, doctor), a QA report, and W15 (brand sign page, ceremony steps, non-interactive setup). Run `git rebase main`, resolve every conflict keeping all three features plus yours (README install section inside your markers; CHANGELOG: if main already has one, fold your 0.3.0 section into it; version 0.3.0 wins everywhere), regenerate skills if templates changed, run all root gates, `bun run build`, `claude plugin validate --strict .`, and the shim tests. Keep one commit on top of main. Append a "Rebase" section to docs/reports/W16.md. Do not merge, do not push.

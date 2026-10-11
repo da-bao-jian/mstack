@@ -58,3 +58,36 @@ Build: `main` at `7cb79a1` (W12 + W15 + W16 + W14; W13 not yet merged), CLI 0.3.
 | 9 open | 4 | $5.06 | 54 s |
 
 Round 3: re-run steps 1, 2, 4, 5, 6 on the merged W13 build (journey C), then the sign step again after W17 lands the guard fix.
+
+## Round 2b: the final merged build (W13 in), journey C and the marketplace install
+
+Build: `main` at `598013f` (W12 + W15 + W16 + W14 + W13), CLI 0.3.0. Journey C re-ran steps 1, 2, 4, 5, 6 with a fresh home and session.
+
+| Step | What happened | Verdict |
+| --- | --- | --- |
+| 1 hello | The one-line preamble failed: `bash: /Users/harryg/.claude/skills/mstack/bin/mob-preamble: No such file or directory`. The agent found `bin/mob-preamble` only because its cwd was the checkout, then rendered the home screen. | **fail — G1** |
+| 2 scan | Asked for a size, as designed. | pass |
+| 3 setup | Preamble via the checkout-relative path; read `references/settings.md`; ran setup with the five flags; card with the statement first. | pass |
+| 4 sign | Blocked twice by the sign-guard, same as round 2 (E1, E2). | fail — E1 (W17) |
+| 5 proposals | Correct, with the right advice. | pass |
+| 6 status | `No positions`, grouped explanation. | pass |
+
+Marketplace path on a throwaway `CLAUDE_CONFIG_DIR`: `claude plugin marketplace add <checkout>` and `claude plugin install mstack@mstack` both succeeded (version 0.3.0, enabled). `claude plugin details` reports 9 skills, 1 hook, 1 MCP server, about 414 always-on tokens and 300–1,200 tokens per skill invocation. The shim ran from the plugin cache (`plugins/cache/mstack/mstack/0.3.0/bin/mob`) and the hook command resolved through `${CLAUDE_PLUGIN_ROOT}`. The install printed `1 userConfig option not yet set — run /plugin configure mstack@mstack`, which a new user cannot act on (G2). A headless prompt through that install could not run because a throwaway config dir has no login; the skill path was exercised through `--plugin-dir` instead.
+
+New findings: **G1 (H)** Claude substitutes only the exact `${CLAUDE_SKILL_DIR}` / `${CLAUDE_PLUGIN_ROOT}` tokens and does not export them to the shell, so the `${CLAUDE_PLUGIN_ROOT:-…}` form in the generated skills never resolves; fix is a per-skill `scripts/preamble.sh` reached through `${CLAUDE_SKILL_DIR}` (W17.1). **G2 (M)** drop the unused `userConfig` from `plugin.json` (W17.1).
+
+Cost with W13's shorter skills: hello $0.71, scan $1.08, setup $1.44, sign $2.07, proposals $2.22, status $2.50 (round 2: $0.97, $1.46, $2.73, $3.59, $3.79, $4.67).
+
+## Round 3: the W17 build, journey D (agent-driven signing against the fixed guard)
+
+Build: `main` at `35294f3` (W17 in), CLI 0.3.0. Fresh home and session, cwd `/tmp`, `MOB_NO_OPEN=1` so no browser window opened on the QA machine.
+
+| Step | What happened | Verdict |
+| --- | --- | --- |
+| 1 setup | Setup with the five flags, card, statement first, stopped before signing. | pass |
+| 2 "sign p-1 in the browser now" | First attempt chained `; ec=$?; cat …` after the id; the guard refused with ``unexpected token `; ec=$?` after the Proposal id`` (E2 wording). The bare retry, the turn's second tool call, **passed the guard** (E1 fixed on the real path), started the sign page, printed its URL, and waited. After two minutes the agent stopped the process as instructed. | pass |
+| 3 proposals | p-1 still `awaiting-signature`, no stale lock after the stop (C1 on the real path), expiry shown relative. | pass |
+
+Cost: setup $0.88 (10 turns), sign $1.17, proposals $1.36.
+
+Remaining human-only checks are listed in `docs/READINESS.md`: a live legal acceptance, a live binding, a live order, WalletConnect against a real relay, and the public-release install on a clean machine.
