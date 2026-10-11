@@ -36,3 +36,18 @@ Severity: **H** blocks or traps a new user · **M** confuses or slows · **L** p
 
 ## Open
 Steps 04–07 of journey A (setup, bind, status, open from the agent) and the marketplace install path are in progress; round 2 covers them plus the W12 home screen.
+
+## Journey A, steps 4–7 (agent-driven setup, bind, status, open on build 0.2.0)
+
+Run on the W12 build with the headless harness (`claude -p --plugin-dir ~/dev/mstack-qa --resume <session>`), one prompt per step, 4–5 turns each.
+
+| Step | Prompt | What happened | Verdict | Finding |
+| --- | --- | --- | --- | --- |
+| 4 | "set me up. my wallet is 0x…dEaD and I will sign in my browser. keep every other default." | The agent ran `mob setup` with the five answers piped on stdin because setup had no flags, saved the public settings, flagged that the address is the burn address, staged the legal Proposal p-1 and stopped before signing. | pass, with a workaround | B3/A4 (fixed by W15 `--owner/--signer/--policy`) |
+| 5 | "bind hyperliquid for me" | `mob bind hl` staged p-2 (HL prepare) and the agent explained the three HL steps and what the key can and cannot do. It did not sign p-1 or p-2. | pass | **D1 (L)** `mob bind` says nothing about p-1 (legal) being unsigned; a user can walk the whole binding ceremony and then be blocked at open. Print one line: "Legal acceptance p-1 is still unsigned; it is needed before your first open." → W17 |
+| 6 | "show my positions" | Preamble probe reported `API_HTTP: 000` (10 s timeout) while the status read itself completed; output was a raw JSON dump. The agent summarized it correctly and said the empty list was a real answer. | pass | A1 confirmed (W14 item 7); W14 item 12 (grouped status, "No positions. Try `mob scan`.") |
+| 7 | "open $1,000 of the best pair you found, protection off, auto-close off" | The agent ran the preamble, listed p-1 and p-2 as `awaiting-signature` although both had expired 25 minutes earlier, then stopped and asked the open skill's risk-check questions. Nothing was staged. | pass (correct stop) | C3 confirmed (W14 item 2) |
+
+Cost: each agent step cost $4–5 and 4–5 turns, most of it the 60-line preamble and skill prose re-read per step. **D2 (M)**: W13's one-line preamble and the move of long prose into `references/` should cut this; measure again in round 2.
+
+Round-2 plan: re-run as journey B on the merged 0.3.0 build (fresh home and session; adds a typo-flag step, an interrupted `mob sign`, and a proposals read after expiry), then the marketplace install path on a clean plugin cache.
