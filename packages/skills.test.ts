@@ -1,4 +1,4 @@
-import { afterAll, expect, test } from "bun:test";
+import { afterAll, beforeAll, expect, test } from "bun:test";
 import {
 	chmod,
 	copyFile,
@@ -21,6 +21,12 @@ import { renderSkills } from "../scripts/gen-skill-docs.ts";
 import { setup } from "../scripts/setup.ts";
 
 const root = resolve(import.meta.dir, "..");
+// Resolve before subprocesses change cwd to a disposable HOME. Never fall back
+// to source mode if an explicitly selected binary is missing or fails to start.
+const testBinary = process.env.MSTACK_TEST_MOB_BIN
+	? resolve(root, process.env.MSTACK_TEST_MOB_BIN)
+	: undefined;
+const proxySink = "http://127.0.0.1:9";
 const temporary = await mkdtemp(join(tmpdir(), "mob-skills-test-"));
 afterAll(() => rm(temporary, { recursive: true, force: true }));
 const outputs = await renderSkills();
@@ -56,6 +62,16 @@ async function command(
 			MSTACK_VERBOSE: "",
 			PATH: path ?? process.env.PATH,
 			...extra,
+			// Compiled Bun cannot use the source preload. Block HTTP(S) in both
+			// modes, including router hello reads; inherited NO_PROXY must not win.
+			http_proxy: proxySink,
+			https_proxy: proxySink,
+			HTTP_PROXY: proxySink,
+			HTTPS_PROXY: proxySink,
+			all_proxy: proxySink,
+			ALL_PROXY: proxySink,
+			no_proxy: "",
+			NO_PROXY: "",
 		},
 		stdout: "pipe",
 		stderr: "pipe",
@@ -92,17 +108,29 @@ async function preambleHome() {
 	}
 	await script(
 		join(bin, "mob"),
-		`exec ${quote(process.execPath)} --preload ${quote(join(root, "packages/funding/test/no-network.ts"))} ${quote(join(root, "apps/cli/src/main.ts"))} "$@"`,
+		testBinary
+			? `exec ${quote(testBinary)} "$@"`
+			: `exec ${quote(process.execPath)} --preload ${quote(join(root, "packages/funding/test/no-network.ts"))} ${quote(join(root, "apps/cli/src/main.ts"))} "$@"`,
 	);
 	// A recorded HTTP 200 status; never request the real API during tests.
 	await script(
 		join(bin, "curl"),
 		// biome-ignore lint/suspicious/noTemplateCurlyInString: This is shell parameter expansion in the fixture.
-		'printf "%s\\n" "$*" >> "$HOME/curl-calls"\nprintf "%s" "${TEST_HTTP_STATUS:-200} ${TEST_HTTP_SECONDS:-0.312}"',
+		'printf "%s\\n" "$*" >> "$HOME/curl-calls"\nprintf "%s\\n" "$http_proxy" "$https_proxy" "$HTTP_PROXY" "$HTTPS_PROXY" "$all_proxy" "$ALL_PROXY" "$no_proxy" "$NO_PROXY" > "$HOME/proxy-env"\nprintf "%s" "${TEST_HTTP_STATUS:-200} ${TEST_HTTP_SECONDS:-0.312}"',
 	);
 	await script(join(bin, "git"), "exit 1");
 	return { home, bin, path: `${bin}:/usr/bin:/bin` };
 }
+
+beforeAll(async () => {
+	const { home, path } = await preambleHome();
+	// Warm the source transpiler once, or verify the selected compiled binary.
+	expect(await command(["mob", "--version"], home, path)).toEqual({
+		code: 0,
+		out: `${pkg.version}\n`,
+		err: "",
+	});
+}, 60_000); // One CLI spawn; cold source startup shares the loaded CI runner.
 
 function preamble(body: string, home: string, skillDirectory?: string): string {
 	const match = /^---\n[\s\S]*?\n---\n\n```bash\n([\s\S]*?)\n```/.exec(body);
@@ -211,7 +239,7 @@ esac`,
 			expect(result.out.includes("<<<MOB")).toBe(name === "mob");
 		}
 	},
-	30_000,
+	60_000, // Two preambles (11 CLI spawns); symlink setup adds two build stubs.
 );
 
 test.each([...skills.keys()])(
@@ -243,9 +271,57 @@ test.each([...skills.keys()])(
 		expect(calls[0]).toContain(`X-Mobius-Client: mstack/${pkg.version}`);
 		expect(calls[0]).toContain(`-A mstack/${pkg.version}`);
 		expect(calls[0]).toContain("https://funding.mob.exchange/api/client-ip");
+		expect(await readFile(join(home, "proxy-env"), "utf8")).toBe(
+			`${Array(6).fill(proxySink).join("\n")}\n\n\n`,
+		);
 	},
-	15_000,
+	60_000, // One syntax-check shell and one preamble (five or six CLI spawns).
 );
+
+test("preamble fixtures block CLI network reads even without the source preload", async () => {
+	const { home, path } = await preambleHome();
+	let requests = 0;
+	const origin = Bun.serve({
+		hostname: "127.0.0.1",
+		port: 0,
+		fetch: () => {
+			requests++;
+			return Response.json({ error: "Fixture proxy was bypassed" });
+		},
+	});
+	try {
+		expect(
+			(
+				await command(
+					["mob", "config", "set", "api_base", origin.url.href],
+					home,
+					path,
+				)
+			).code,
+		).toBe(0);
+		const hello = await command(["mob", "hello", "--json"], home, path);
+		expect(hello.code).toBe(0);
+		expect(JSON.parse(hello.out).api.state).toBe("unreachable");
+		const result = await command(
+			[
+				"bash",
+				"-c",
+				preamble(outputs.get("skills/mob-scan/SKILL.md") as string, home),
+			],
+			home,
+			path,
+		);
+		expect(result.code).toBe(0);
+		// Only the recorded curl succeeds. A real CLI request would hit the trap.
+		expect(result.out).toContain("API_REACHABLE: ok");
+		expect(
+			(await readFile(join(home, "curl-calls"), "utf8")).trim().split("\n"),
+		).toHaveLength(1);
+		expect(requests).toBe(0);
+	} finally {
+		await origin.stop(true);
+	}
+}, 60_000); // Two direct CLI spawns and one preamble (five CLI spawns).
 
 test("preamble shows owner presence and HTTP failure, without printing the address", async () => {
 	const { home, path } = await preambleHome();
@@ -268,7 +344,7 @@ test("preamble shows owner presence and HTTP failure, without printing the addre
 	expect(result.out).toContain("OWNER: set");
 	expect(result.out).toContain("API_REACHABLE: unreachable");
 	expect(result.out).not.toContain(address);
-}, 15_000);
+}, 60_000); // One config CLI and one router preamble (six CLI spawns).
 
 test.each(["claude", "agents", "codex"])(
 	"preamble resolves the %s install when mob is absent from PATH",
@@ -293,7 +369,7 @@ test.each(["claude", "agents", "codex"])(
 			).out,
 		).toContain(`MOB_VERSION: ${pkg.version}`);
 	},
-	15_000,
+	60_000, // One router preamble (six CLI spawns) per install layout.
 );
 
 test("missing binary stops with an install line before any API call", async () => {
@@ -311,7 +387,7 @@ test("missing binary stops with an install line before any API call", async () =
 	expect(result.code).toBe(1);
 	expect(result.out).toContain("MOB_MISSING\nInstall:");
 	expect(result.out).not.toContain("API_BASE");
-}, 15_000);
+}, 60_000); // One preamble shell; missing mob prevents all CLI spawns.
 
 test("skill wrapper puts the shipped shim on PATH without exported Claude variables", async () => {
 	const { home, bin } = await preambleHome();
@@ -338,7 +414,7 @@ test("skill wrapper puts the shipped shim on PATH without exported Claude variab
 	expect(
 		(await readFile(join(home, "curl-calls"), "utf8")).trim().split("\n"),
 	).toHaveLength(1);
-}, 15_000);
+}, 60_000); // One router preamble (six CLI spawns) through the shipped shim.
 
 test("upgrade checks fetch once per hour, print changed hashes, and never use a failed check", async () => {
 	const { home, bin, path } = await preambleHome();
@@ -389,7 +465,7 @@ esac`,
 	expect(await readFile(join(home, "fetch-calls"), "utf8")).toBe(
 		"fetch\nfetch\n",
 	);
-}, 15_000); // Four preambles launch repeated real CLI processes; allow for startup time.
+}, 60_000); // Four preambles (21 CLI spawns, including one uncached hello).
 
 test("open skills stop on missing readiness before asking about risk (E3)", () => {
 	for (const host of ["skills", "skills-codex"]) {
@@ -429,7 +505,7 @@ test("every generated skill plus its fresh-home preamble stays below 8 KiB (D2)"
 			Buffer.byteLength(body) +
 				(costs.get(file.endsWith("/mob/SKILL.md")) as number),
 		).toBeLessThanOrEqual(8192);
-}, 15_000);
+}, 60_000); // Two fresh-home preambles (11 CLI spawns).
 
 test("credential-free public clone prints a successful update check without git diagnostics (D3)", async () => {
 	const { home, bin, path } = await preambleHome();
@@ -473,7 +549,7 @@ test("credential-free public clone prints a successful update check without git 
 	expect(result.out).not.toContain("UPGRADE_CHECK: fail");
 	expect(result.err).toBe("");
 	expect(result.out).not.toMatch(/fatal:|Username|Password|credential-helper/);
-}, 15_000);
+}, 60_000); // Five local git commands and one preamble (five CLI spawns).
 
 test("mutation skills confine signing to the explicit rule and never initiate secret/config/reject commands", () => {
 	for (const [file, body] of skills) {
@@ -542,7 +618,7 @@ test.each(["keystore", "browser", "walletconnect"])(
 		expect(result.out).toContain("POLICY: locked");
 		expect(result.out).toContain(`SIGNER: ${signer}`);
 	},
-	15_000,
+	60_000, // Two config CLI spawns and one router preamble (six CLI spawns).
 );
 
 test("setup installs host outputs once and uninstalls only links it made", async () => {
@@ -590,7 +666,7 @@ test("setup installs host outputs once and uninstalls only links it made", async
 	await expect(lstat(join(home, ".agents/skills/mstack"))).rejects.toThrow();
 	await expect(lstat(join(home, ".agents/skills/mob"))).rejects.toThrow();
 	await setup(["--host", "codex", "--uninstall", "-q"], options);
-}, 15_000);
+});
 
 test("uninstall preserves nonempty and pre-existing directories", async () => {
 	for (const existing of [false, true]) {
@@ -609,7 +685,7 @@ test("uninstall preserves nonempty and pre-existing directories", async () => {
 		await setup(["--host", "claude", "--uninstall"], options);
 		expect((await lstat(runtime)).isDirectory()).toBe(true);
 	}
-}, 15_000);
+});
 
 test("Codex installs both roots when legacy skills exist and preserves replacements", async () => {
 	const home = await mkdtemp(join(temporary, "codex-dual-"));
@@ -712,7 +788,7 @@ test("preamble prefers the documented Codex binary over the legacy one", async (
 		`MOB_BIN: ${await realpath(home)}/.agents/skills/mstack/bin/mob`,
 	);
 	expect(result.out).toContain(`MOB_VERSION: ${pkg.version}`);
-}, 15_000);
+}, 60_000); // One router preamble (six CLI spawns) through the preferred install.
 
 test("preamble config errors are explicit reports and do not block a local skill", async () => {
 	const { home, path } = await preambleHome();
@@ -733,7 +809,7 @@ test("preamble config errors are explicit reports and do not block a local skill
 	expect(result.out).toContain("OWNER: fail");
 	expect(result.out).toContain("POLICY: fail");
 	expect(result.out).toContain("SIGNER: fail");
-}, 15_000);
+}, 60_000); // One router preamble (six CLI spawns) reading malformed config.
 
 test("setup preserves pre-existing matching links and rejects conflicts before build", async () => {
 	const home = await mkdtemp(join(temporary, "existing-"));
@@ -759,7 +835,7 @@ test("setup preserves pre-existing matching links and rejects conflicts before b
 			},
 		}),
 	).rejects.toThrow("Refusing to replace");
-}, 15_000);
+});
 
 test("auto setup selects detected hosts and prints each host integration paragraph", async () => {
 	const home = await mkdtemp(join(temporary, "auto-"));
@@ -781,7 +857,7 @@ test("auto setup selects detected hosts and prints each host integration paragra
 	await expect(setup(["--host", "unknown"], options)).rejects.toThrow(
 		"host must be",
 	);
-}, 15_000);
+});
 
 test("POSIX shim builds only when missing and keeps build output off stdout", async () => {
 	const home = await mkdtemp(join(temporary, "shim-"));
@@ -834,7 +910,7 @@ fi`,
 			)
 		).err,
 	).toContain("requires Bun");
-}, 15_000);
+}, 60_000); // Five shell spawns; the first shim also launches two build stubs.
 
 test.each(["skills", "skills-codex"])(
 	"%s onboarding skills explain public input and ask separately for each signature",
@@ -905,7 +981,7 @@ test("router splash is ASCII, delimited and limited to once per hour for both ho
 			);
 		else expect(body).not.toContain("hello --compact --ascii");
 	}
-}, 15_000);
+}, 60_000); // Four preambles (22 CLI spawns, including two uncached hellos).
 
 test("plugin does not use SessionStart for a user-visible install notice", async () => {
 	const { hooks } = JSON.parse(
@@ -943,7 +1019,7 @@ test("setup runs the fresh binary home after building, then prints three command
 	events.length = 0;
 	await setup(["--host", "codex", "-q"], options);
 	expect(events).toEqual(["build"]);
-}, 15_000);
+});
 
 test("setup's default home runner invokes the newly built file with the target HOME", async () => {
 	const home = await mkdtemp(join(temporary, "real-ending-home-"));
@@ -966,7 +1042,7 @@ test("setup's default home runner invokes the newly built file with the target H
 		`hello\n${join(home, ".mob")}\n`,
 	);
 	expect(lines.at(-1)).toContain("Next commands:");
-}, 15_000);
+}, 60_000); // One fake binary spawn through setup's default home runner.
 
 test("slow reachability is advisory and measured within a fifteen-second budget", async () => {
 	const { home, path } = await preambleHome();
@@ -984,7 +1060,7 @@ test("slow reachability is advisory and measured within a fifteen-second budget"
 	expect(result.out).toContain("API_REACHABLE: slow · 6.1 s");
 	expect(result.out).toContain("API slow; venue reads are unaffected");
 	expect(result.out).toContain("SIGNER: unset");
-}, 15_000);
+}, 60_000); // One scan preamble (five CLI spawns); curl latency is recorded.
 
 test("scan, status and manage ship matching glossary references for both hosts", async () => {
 	let reference: string | undefined;

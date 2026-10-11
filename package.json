@@ -18,7 +18,7 @@
 		"smoke:browser": "bun run --filter @mstack/cli smoke:browser",
 		"check": "tsc --build",
 		"lint": "biome check . --error-on-warnings",
-		"test": "bun test packages apps",
+		"test": "bun test --timeout 30000 packages apps",
 		"build": "bun run --workspaces --if-present build",
 		"deadcode": "knip",
 		"gen:skills": "bun scripts/gen-skill-docs.ts",
