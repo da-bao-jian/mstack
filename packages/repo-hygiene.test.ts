@@ -7,6 +7,37 @@ const root = resolve(import.meta.dir, "..");
 const generated = await renderSkills();
 const version = (await Bun.file(join(root, "package.json")).json()).version;
 
+test("every skill description starts with its task and quotes trigger phrases, including first contact", () => {
+	const tasks: Record<string, string> = {
+		mob: "Start here for mstack and Mobius.",
+		"mob-scan": "Compare perpetual funding rates",
+		"mob-setup": "Set up public wallet settings",
+		"mob-status": "Read Mobius position status",
+		"mob-bind": "Connect a venue",
+		"mob-explain": "Explain funding and Mobius mechanics",
+		"mob-open": "Stage a delta-neutral position",
+		"mob-manage": "Stage one position management change",
+		"mob-close": "Stage a position close",
+	};
+	const everyday: Record<string, string> = {
+		mob: "what can you do",
+		"mob-scan": "where is the best funding right now",
+		"mob-setup": "set up my wallet",
+		"mob-status": "what positions do I have",
+	};
+	for (const [file, content] of generated) {
+		if (!file.endsWith("SKILL.md")) continue;
+		const { name, description } = Bun.YAML.parse(content.split("---")[1]) as {
+			name: string;
+			description: string;
+		};
+		expect(tasks[name]).toBeDefined();
+		expect(description.startsWith(tasks[name])).toBe(true);
+		expect(description).toMatch(/\bUse for "[^"\n]+"/);
+		if (everyday[name]) expect(description).toContain(`"${everyday[name]}"`);
+	}
+});
+
 test("one small AGENTS.md is the shared repository instruction file", async () => {
 	await expect(lstat(join(root, "CLAUDE.md"))).rejects.toMatchObject({
 		code: "ENOENT",

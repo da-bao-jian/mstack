@@ -1,6 +1,6 @@
 ---
 name: mob-setup
-description: Set up public wallet settings and stage legal acceptance. Use for "set up mobius", "connect wallet", or "configure my signer"; each signature needs explicit approval. (mstack)
+description: Set up public wallet settings and stage legal acceptance. Use for "set up my wallet", "set up mobius", "connect wallet", or "configure my signer"; each signature needs explicit approval. (mstack)
 license: MIT
 metadata:
   version: "0.3.0"

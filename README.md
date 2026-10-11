@@ -35,7 +35,9 @@ claude plugin marketplace add da-bao-jian/mstack
 claude plugin install mstack@mstack
 ```
 
-Start with `/mstack:mob` in Claude Code. The plugin includes nine skills, stdio MCP, and a Bash signing guard.
+First message: `/mstack:mob` or just ask: find me the best funding arb.
+
+The plugin includes nine skills, stdio MCP, and a Bash signing guard.
 
 The plugin root stays at the repository root so the marketplace copy includes the source needed by `bin/mob`.
 The root `bun.lock` triggers Claude Code's automatic dependency-install check and a directory reviewer hold.
