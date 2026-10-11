@@ -32,7 +32,19 @@ test("native HIP-3 and Aster USD1 markets survive staging unchanged", async () =
 	// Explicit test mutations of recorded rows; no claim of a recorded NVDA listing.
 	premium.push({ ...premium[2], symbol: "NVDAUSD1", markPrice: "180" });
 	funding.push({ symbol: "NVDAUSD1", fundingIntervalHours: 8 });
+	const metadata = await Bun.file(
+		new URL(
+			"../../../packages/funding/fixtures/aster/exchangeInfo.json",
+			import.meta.url,
+		),
+	).json();
+	metadata.symbols.push({
+		...metadata.symbols[1],
+		symbol: "NVDAUSD1",
+		baseAsset: "NVDA",
+	});
 	const ctx = await metadataContext({
+		"aster/exchangeInfo.json": metadata,
 		"aster/premiumIndex.json": premium,
 		"aster/fundingInfo.json": funding,
 	});

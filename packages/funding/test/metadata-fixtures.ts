@@ -1,7 +1,7 @@
 import type { FetchContext } from "../src/types.ts";
 import { fixtureContext } from "./fixtures.ts";
 
-/** HL meta is a projection of a recorded metaAndAssetCtxs response. Aster is explicitly synthetic. */
+/** HL meta is a projection of a recorded metaAndAssetCtxs response. Aster exchangeInfo is recorded and trimmed. */
 export async function metadataContext(
 	overrides: Record<string, unknown> = {},
 ): Promise<FetchContext> {
@@ -19,7 +19,7 @@ export async function metadataContext(
 				}
 			}
 			if (url === "https://fapi.asterdex.com/fapi/v3/exchangeInfo")
-				file = "aster/exchangeInfo.synthetic.json";
+				file = "aster/exchangeInfo.json";
 			if (!file) return ctx.fetch(url, init);
 			const value = Object.hasOwn(overrides, file)
 				? overrides[file]

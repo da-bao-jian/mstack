@@ -47,7 +47,10 @@ export function pinnedChain(view: SigningView): number | undefined {
 		throw new Error("Invalid signing chainId");
 	return chain;
 }
-export function checkedView(input: SigningView): SigningView {
+export function checkedView(
+	input: SigningView,
+	connectionOnly = false,
+): SigningView {
 	const view = structuredClone({
 		id: input.id,
 		purpose: input.purpose,
@@ -57,7 +60,12 @@ export function checkedView(input: SigningView): SigningView {
 		signing: input.signing,
 	});
 	getAddress(view.owner);
-	if (!/^p-[1-9]\d*$/.test(view.id) || !Number.isSafeInteger(view.expiresAt))
+	if (
+		!(connectionOnly
+			? view.id === "wallet-connection"
+			: /^p-[1-9]\d*$/.test(view.id)) ||
+		!Number.isSafeInteger(view.expiresAt)
+	)
 		throw new Error("Invalid signing Proposal");
 	const digest =
 		view.signing.type === "text"

@@ -12,6 +12,24 @@ const owner = "0x0000000000000000000000000000000000000001";
 const reads: {
 	[R in keyof ReadRoutes]: { params: ReadRoutes[R]["params"]; result: unknown };
 } = {
+	"/legal/terms": {
+		params: {},
+		result: {
+			termsVersion: "1",
+			termsUrl: "https://mob.exchange/terms",
+			privacyVersion: "1",
+			privacyUrl: "https://mob.exchange/privacy",
+		},
+	},
+	"/legal/acceptance": {
+		params: { wallet: owner },
+		result: {
+			accepted: false,
+			termsVersion: "1",
+			privacyVersion: "1",
+			acceptedAt: null,
+		},
+	},
 	"/api/arbitrage/list": { params: { owner }, result: [task] },
 	"/api/arbitrage/task": { params: { owner, taskId: "t1" }, result: task },
 	"/api/arbitrage/liq-trims": {
@@ -63,6 +81,16 @@ const auth = { timestamp: 1787555739, signature: "0x1234" as const };
 const writes: {
 	[R in keyof WriteRoutes]: { body: WriteRoutes[R]["body"]; result: unknown };
 } = {
+	"/legal/acceptance": {
+		body: {
+			wallet: owner,
+			termsVersion: "1",
+			privacyVersion: "1",
+			signedAt: 1787555739,
+			signature: "0x1234",
+		},
+		result: { ok: true },
+	},
 	"/api/arbitrage/create": {
 		body: {
 			...auth,

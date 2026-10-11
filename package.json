@@ -23,7 +23,8 @@
 		"live:skills": "bun scripts/live-skills.ts",
 		"live:smoke": "bun run --filter @mstack/funding live:smoke",
 		"live:mcp": "bun run --filter @mstack/cli live:mcp",
-		"smoke:open": "bun run --filter @mstack/cli smoke:open"
+		"smoke:open": "bun run --filter @mstack/cli smoke:open",
+		"smoke:bind": "bun run --filter @mstack/cli smoke:bind"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.15",

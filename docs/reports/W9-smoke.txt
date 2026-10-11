@@ -1,0 +1,1548 @@
+$ bun run --filter @mstack/cli smoke:bind
+$ mob keystore create
+[hidden; injected test TTY reader]
+[hidden; injected test TTY reader]
+Keystore: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+exit=0
+$ mob setup
+Public owner address: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Signer (keystore | browser): keystore
+Policy (manual | locked): manual
+Auth API base: http://127.0.0.1:60900
+Legal signing chain id: 97
+Setup saved. No keystore was created.
+Next step in your own terminal: mob keystore create
+p-1
+Status: awaiting-signature
+Purpose: Accept Mobius legal terms
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/legal/acceptance
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+{
+  "domain": {
+    "chainId": 97,
+    "name": "Mobius Legal",
+    "version": "1"
+  },
+  "message": {
+    "privacyUrl": "https://mob.exchange/privacy",
+    "privacyVersion": "2026-10",
+    "signedAt": 1791701045,
+    "statement": "I have read and agree to the Mobius Terms of Service and Privacy Policy. This signature only records my acceptance. It does not authorize any transaction and cannot move funds.",
+    "termsUrl": "https://mob.exchange/terms",
+    "termsVersion": "2026-10",
+    "wallet": "0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3"
+  },
+  "primaryType": "AcceptLegalTerms",
+  "types": {
+    "AcceptLegalTerms": [
+      {
+        "name": "statement",
+        "type": "string"
+      },
+      {
+        "name": "wallet",
+        "type": "address"
+      },
+      {
+        "name": "termsVersion",
+        "type": "string"
+      },
+      {
+        "name": "termsUrl",
+        "type": "string"
+      },
+      {
+        "name": "privacyVersion",
+        "type": "string"
+      },
+      {
+        "name": "privacyUrl",
+        "type": "string"
+      },
+      {
+        "name": "signedAt",
+        "type": "uint256"
+      }
+    ]
+  }
+}
+Digest: 0x03e9225c2a8558d2f1ec14ed4fa492c08c537f3097b1466da7ad0f3bd391804f
+Stored body: {"privacyVersion":"2026-10","signedAt":1791701045,"termsVersion":"2026-10","wallet":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"route":"staged","name":"legal.terms","detail":"{\"termsVersion\":\"2026-10\",\"termsUrl\":\"https://mob.exchange/terms\",\"privacyVersion\":\"2026-10\",\"privacyUrl\":\"https://mob.exchange/privacy\"}","ok":true}]}
+Stopped before signing. To authorize, name p-1 and run mob sign p-1.
+exit=0
+$ mob setup
+Public owner address: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Signer (keystore | browser): keystore
+Policy (manual | locked): manual
+Auth API base: http://127.0.0.1:60900
+Legal signing chain id: 97
+Setup saved. No keystore was created.
+Next step in your own terminal: mob keystore create
+p-1
+Status: awaiting-signature
+Purpose: Accept Mobius legal terms
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/legal/acceptance
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+{
+  "domain": {
+    "chainId": 97,
+    "name": "Mobius Legal",
+    "version": "1"
+  },
+  "message": {
+    "privacyUrl": "https://mob.exchange/privacy",
+    "privacyVersion": "2026-10",
+    "signedAt": 1791701045,
+    "statement": "I have read and agree to the Mobius Terms of Service and Privacy Policy. This signature only records my acceptance. It does not authorize any transaction and cannot move funds.",
+    "termsUrl": "https://mob.exchange/terms",
+    "termsVersion": "2026-10",
+    "wallet": "0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3"
+  },
+  "primaryType": "AcceptLegalTerms",
+  "types": {
+    "AcceptLegalTerms": [
+      {
+        "name": "statement",
+        "type": "string"
+      },
+      {
+        "name": "wallet",
+        "type": "address"
+      },
+      {
+        "name": "termsVersion",
+        "type": "string"
+      },
+      {
+        "name": "termsUrl",
+        "type": "string"
+      },
+      {
+        "name": "privacyVersion",
+        "type": "string"
+      },
+      {
+        "name": "privacyUrl",
+        "type": "string"
+      },
+      {
+        "name": "signedAt",
+        "type": "uint256"
+      }
+    ]
+  }
+}
+Digest: 0x03e9225c2a8558d2f1ec14ed4fa492c08c537f3097b1466da7ad0f3bd391804f
+Stored body: {"privacyVersion":"2026-10","signedAt":1791701045,"termsVersion":"2026-10","wallet":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"route":"staged","name":"legal.terms","detail":"{\"termsVersion\":\"2026-10\",\"termsUrl\":\"https://mob.exchange/terms\",\"privacyVersion\":\"2026-10\",\"privacyUrl\":\"https://mob.exchange/privacy\"}","ok":true}]}
+Stopped before signing. To authorize, name p-1 and run mob sign p-1.
+exit=0
+$ mob preview p-1
+p-1
+Status: awaiting-signature
+Purpose: Accept Mobius legal terms
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/legal/acceptance
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+{
+  "domain": {
+    "chainId": 97,
+    "name": "Mobius Legal",
+    "version": "1"
+  },
+  "message": {
+    "privacyUrl": "https://mob.exchange/privacy",
+    "privacyVersion": "2026-10",
+    "signedAt": 1791701045,
+    "statement": "I have read and agree to the Mobius Terms of Service and Privacy Policy. This signature only records my acceptance. It does not authorize any transaction and cannot move funds.",
+    "termsUrl": "https://mob.exchange/terms",
+    "termsVersion": "2026-10",
+    "wallet": "0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3"
+  },
+  "primaryType": "AcceptLegalTerms",
+  "types": {
+    "AcceptLegalTerms": [
+      {
+        "name": "statement",
+        "type": "string"
+      },
+      {
+        "name": "wallet",
+        "type": "address"
+      },
+      {
+        "name": "termsVersion",
+        "type": "string"
+      },
+      {
+        "name": "termsUrl",
+        "type": "string"
+      },
+      {
+        "name": "privacyVersion",
+        "type": "string"
+      },
+      {
+        "name": "privacyUrl",
+        "type": "string"
+      },
+      {
+        "name": "signedAt",
+        "type": "uint256"
+      }
+    ]
+  }
+}
+Digest: 0x03e9225c2a8558d2f1ec14ed4fa492c08c537f3097b1466da7ad0f3bd391804f
+Stored body: {"privacyVersion":"2026-10","signedAt":1791701045,"termsVersion":"2026-10","wallet":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"detail":"{\"termsVersion\":\"2026-10\",\"termsUrl\":\"https://mob.exchange/terms\",\"privacyVersion\":\"2026-10\",\"privacyUrl\":\"https://mob.exchange/privacy\"}","name":"legal.terms","route":"staged","ok":true}]}
+Stopped before signing. To authorize this Proposal, name p-1 and run mob sign p-1.
+exit=0
+$ mob sign p-1
+p-1
+Status: awaiting-signature
+Purpose: Accept Mobius legal terms
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/legal/acceptance
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+{
+  "domain": {
+    "chainId": 97,
+    "name": "Mobius Legal",
+    "version": "1"
+  },
+  "message": {
+    "privacyUrl": "https://mob.exchange/privacy",
+    "privacyVersion": "2026-10",
+    "signedAt": 1791701045,
+    "statement": "I have read and agree to the Mobius Terms of Service and Privacy Policy. This signature only records my acceptance. It does not authorize any transaction and cannot move funds.",
+    "termsUrl": "https://mob.exchange/terms",
+    "termsVersion": "2026-10",
+    "wallet": "0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3"
+  },
+  "primaryType": "AcceptLegalTerms",
+  "types": {
+    "AcceptLegalTerms": [
+      {
+        "name": "statement",
+        "type": "string"
+      },
+      {
+        "name": "wallet",
+        "type": "address"
+      },
+      {
+        "name": "termsVersion",
+        "type": "string"
+      },
+      {
+        "name": "termsUrl",
+        "type": "string"
+      },
+      {
+        "name": "privacyVersion",
+        "type": "string"
+      },
+      {
+        "name": "privacyUrl",
+        "type": "string"
+      },
+      {
+        "name": "signedAt",
+        "type": "uint256"
+      }
+    ]
+  }
+}
+Digest: 0x03e9225c2a8558d2f1ec14ed4fa492c08c537f3097b1466da7ad0f3bd391804f
+Stored body: {"privacyVersion":"2026-10","signedAt":1791701045,"termsVersion":"2026-10","wallet":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"detail":"{\"termsVersion\":\"2026-10\",\"termsUrl\":\"https://mob.exchange/terms\",\"privacyVersion\":\"2026-10\",\"privacyUrl\":\"https://mob.exchange/privacy\"}","name":"legal.terms","route":"staged","ok":true}]}
+[hidden; injected test TTY reader]
+p-1: submitted
+Server answer: {"ok":true}
+Submission is acknowledged; execution is not confirmed.
+exit=0
+$ mob bind hl
+hl: key can trade, cancel and adjust margin; cannot withdraw; expires after 179 days. The Mobius server creates and holds this venue key.
+p-2
+Status: awaiting-signature
+Purpose: hl: prepare; key can trade, cancel and adjust margin; cannot withdraw; expires after 179 days
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/api/binding/hl/prepare
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+Prepare HL binding nonce=f9096128-6285-45b5-97a9-affc8a88310f timestamp=1791701045
+Digest: 0x2a26d25d8504754262eb47da9ee52bb166d9326938fd88b0803c4e9f0b702bab
+Stored body: {"nonce":"f9096128-6285-45b5-97a9-affc8a88310f","timestamp":1791701045}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"route":"staged","name":"binding.next-step","detail":"hl prepare","ok":true},{"route":"/api/binding/rebind-check","name":"binding.rebind-allowed","ok":true}]}
+Stopped before signing. To authorize, name p-2 and run mob sign p-2.
+exit=0
+$ mob bind hl
+hl: key can trade, cancel and adjust margin; cannot withdraw; expires after 179 days. The Mobius server creates and holds this venue key.
+p-2
+Status: awaiting-signature
+Purpose: hl: prepare; key can trade, cancel and adjust margin; cannot withdraw; expires after 179 days
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/api/binding/hl/prepare
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+Prepare HL binding nonce=f9096128-6285-45b5-97a9-affc8a88310f timestamp=1791701045
+Digest: 0x2a26d25d8504754262eb47da9ee52bb166d9326938fd88b0803c4e9f0b702bab
+Stored body: {"nonce":"f9096128-6285-45b5-97a9-affc8a88310f","timestamp":1791701045}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"route":"staged","name":"binding.next-step","detail":"hl prepare","ok":true},{"route":"/api/binding/rebind-check","name":"binding.rebind-allowed","ok":true}]}
+Stopped before signing. To authorize, name p-2 and run mob sign p-2.
+exit=0
+$ mob preview p-2
+p-2
+Status: awaiting-signature
+Purpose: hl: prepare; key can trade, cancel and adjust margin; cannot withdraw; expires after 179 days
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/api/binding/hl/prepare
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+Prepare HL binding nonce=f9096128-6285-45b5-97a9-affc8a88310f timestamp=1791701045
+Digest: 0x2a26d25d8504754262eb47da9ee52bb166d9326938fd88b0803c4e9f0b702bab
+Stored body: {"nonce":"f9096128-6285-45b5-97a9-affc8a88310f","timestamp":1791701045}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"detail":"hl prepare","name":"binding.next-step","route":"staged","ok":true},{"route":"/api/binding/rebind-check","name":"binding.rebind-allowed","ok":true}]}
+Stopped before signing. To authorize this Proposal, name p-2 and run mob sign p-2.
+exit=0
+$ mob sign p-2
+p-2
+Status: awaiting-signature
+Purpose: hl: prepare; key can trade, cancel and adjust margin; cannot withdraw; expires after 179 days
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/api/binding/hl/prepare
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+Prepare HL binding nonce=f9096128-6285-45b5-97a9-affc8a88310f timestamp=1791701045
+Digest: 0x2a26d25d8504754262eb47da9ee52bb166d9326938fd88b0803c4e9f0b702bab
+Stored body: {"nonce":"f9096128-6285-45b5-97a9-affc8a88310f","timestamp":1791701045}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"detail":"hl prepare","name":"binding.next-step","route":"staged","ok":true},{"route":"/api/binding/rebind-check","name":"binding.rebind-allowed","ok":true}]}
+[hidden; injected test TTY reader]
+p-2: submitted
+Server answer: {"sessionId":"session-hl","agentAddress":"0x0000000000000000000000000000000000000002","builderAddress":"0x0000000000000000000000000000000000000003"}
+Submission is acknowledged; execution is not confirmed.
+exit=0
+$ mob bind hl
+hl: key can trade, cancel and adjust margin; cannot withdraw; expires after 179 days. The Mobius server creates and holds this venue key.
+p-3
+Status: awaiting-signature
+Purpose: hl: approve-agent; key can trade, cancel and adjust margin; cannot withdraw; expires after 179 days
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST https://api.hyperliquid.xyz/exchange
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+{
+  "domain": {
+    "chainId": 42161,
+    "name": "HyperliquidSignTransaction",
+    "verifyingContract": "0x0000000000000000000000000000000000000000",
+    "version": "1"
+  },
+  "message": {
+    "agentAddress": "0x0000000000000000000000000000000000000002",
+    "agentName": "mobius-bot valid_until 1807166645877",
+    "hyperliquidChain": "Mainnet",
+    "nonce": 1791701045877,
+    "signatureChainId": "0xa4b1",
+    "type": "approveAgent"
+  },
+  "primaryType": "HyperliquidTransaction:ApproveAgent",
+  "types": {
+    "HyperliquidTransaction:ApproveAgent": [
+      {
+        "name": "hyperliquidChain",
+        "type": "string"
+      },
+      {
+        "name": "agentAddress",
+        "type": "address"
+      },
+      {
+        "name": "agentName",
+        "type": "string"
+      },
+      {
+        "name": "nonce",
+        "type": "uint64"
+      }
+    ]
+  }
+}
+Digest: 0x6ad6a3c2384dbcc32fd02b04de40a9c82193c83abc6fdeffebb4c3ed9e461a8d
+Stored body: {"action":{"agentAddress":"0x0000000000000000000000000000000000000002","agentName":"mobius-bot valid_until 1807166645877","hyperliquidChain":"Mainnet","nonce":1791701045877,"signatureChainId":"0xa4b1","type":"approveAgent"},"nonce":1791701045877}
+Submit plan: {"base":"https://api.hyperliquid.xyz","binding":{"apiBase":"http://127.0.0.1:60900","sessionId":"session-hl","step":"approve-agent","venue":"hl"},"body":{"action":{"agentAddress":"0x0000000000000000000000000000000000000002","agentName":"mobius-bot valid_until 1807166645877","hyperliquidChain":"Mainnet","nonce":1791701045877,"signatureChainId":"0xa4b1","type":"approveAgent"},"nonce":1791701045877},"format":"hl","route":"/exchange","signatureField":"signature"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"route":"staged","name":"binding.next-step","detail":"hl approve-agent session=session-hl","ok":true}]}
+Stopped before signing. To authorize, name p-3 and run mob sign p-3.
+exit=0
+$ mob bind hl
+hl: key can trade, cancel and adjust margin; cannot withdraw; expires after 179 days. The Mobius server creates and holds this venue key.
+p-3
+Status: awaiting-signature
+Purpose: hl: approve-agent; key can trade, cancel and adjust margin; cannot withdraw; expires after 179 days
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST https://api.hyperliquid.xyz/exchange
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+{
+  "domain": {
+    "chainId": 42161,
+    "name": "HyperliquidSignTransaction",
+    "verifyingContract": "0x0000000000000000000000000000000000000000",
+    "version": "1"
+  },
+  "message": {
+    "agentAddress": "0x0000000000000000000000000000000000000002",
+    "agentName": "mobius-bot valid_until 1807166645877",
+    "hyperliquidChain": "Mainnet",
+    "nonce": 1791701045877,
+    "signatureChainId": "0xa4b1",
+    "type": "approveAgent"
+  },
+  "primaryType": "HyperliquidTransaction:ApproveAgent",
+  "types": {
+    "HyperliquidTransaction:ApproveAgent": [
+      {
+        "name": "hyperliquidChain",
+        "type": "string"
+      },
+      {
+        "name": "agentAddress",
+        "type": "address"
+      },
+      {
+        "name": "agentName",
+        "type": "string"
+      },
+      {
+        "name": "nonce",
+        "type": "uint64"
+      }
+    ]
+  }
+}
+Digest: 0x6ad6a3c2384dbcc32fd02b04de40a9c82193c83abc6fdeffebb4c3ed9e461a8d
+Stored body: {"action":{"agentAddress":"0x0000000000000000000000000000000000000002","agentName":"mobius-bot valid_until 1807166645877","hyperliquidChain":"Mainnet","nonce":1791701045877,"signatureChainId":"0xa4b1","type":"approveAgent"},"nonce":1791701045877}
+Submit plan: {"base":"https://api.hyperliquid.xyz","binding":{"apiBase":"http://127.0.0.1:60900","sessionId":"session-hl","step":"approve-agent","venue":"hl"},"body":{"action":{"agentAddress":"0x0000000000000000000000000000000000000002","agentName":"mobius-bot valid_until 1807166645877","hyperliquidChain":"Mainnet","nonce":1791701045877,"signatureChainId":"0xa4b1","type":"approveAgent"},"nonce":1791701045877},"format":"hl","route":"/exchange","signatureField":"signature"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"route":"staged","name":"binding.next-step","detail":"hl approve-agent session=session-hl","ok":true}]}
+Stopped before signing. To authorize, name p-3 and run mob sign p-3.
+exit=0
+$ mob preview p-3
+p-3
+Status: awaiting-signature
+Purpose: hl: approve-agent; key can trade, cancel and adjust margin; cannot withdraw; expires after 179 days
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST https://api.hyperliquid.xyz/exchange
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+{
+  "domain": {
+    "chainId": 42161,
+    "name": "HyperliquidSignTransaction",
+    "verifyingContract": "0x0000000000000000000000000000000000000000",
+    "version": "1"
+  },
+  "message": {
+    "agentAddress": "0x0000000000000000000000000000000000000002",
+    "agentName": "mobius-bot valid_until 1807166645877",
+    "hyperliquidChain": "Mainnet",
+    "nonce": 1791701045877,
+    "signatureChainId": "0xa4b1",
+    "type": "approveAgent"
+  },
+  "primaryType": "HyperliquidTransaction:ApproveAgent",
+  "types": {
+    "HyperliquidTransaction:ApproveAgent": [
+      {
+        "name": "hyperliquidChain",
+        "type": "string"
+      },
+      {
+        "name": "agentAddress",
+        "type": "address"
+      },
+      {
+        "name": "agentName",
+        "type": "string"
+      },
+      {
+        "name": "nonce",
+        "type": "uint64"
+      }
+    ]
+  }
+}
+Digest: 0x6ad6a3c2384dbcc32fd02b04de40a9c82193c83abc6fdeffebb4c3ed9e461a8d
+Stored body: {"action":{"agentAddress":"0x0000000000000000000000000000000000000002","agentName":"mobius-bot valid_until 1807166645877","hyperliquidChain":"Mainnet","nonce":1791701045877,"signatureChainId":"0xa4b1","type":"approveAgent"},"nonce":1791701045877}
+Submit plan: {"base":"https://api.hyperliquid.xyz","binding":{"apiBase":"http://127.0.0.1:60900","sessionId":"session-hl","step":"approve-agent","venue":"hl"},"body":{"action":{"agentAddress":"0x0000000000000000000000000000000000000002","agentName":"mobius-bot valid_until 1807166645877","hyperliquidChain":"Mainnet","nonce":1791701045877,"signatureChainId":"0xa4b1","type":"approveAgent"},"nonce":1791701045877},"format":"hl","route":"/exchange","signatureField":"signature"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"detail":"hl approve-agent session=session-hl","name":"binding.next-step","route":"staged","ok":true}]}
+Stopped before signing. To authorize this Proposal, name p-3 and run mob sign p-3.
+exit=0
+$ mob sign p-3
+p-3
+Status: awaiting-signature
+Purpose: hl: approve-agent; key can trade, cancel and adjust margin; cannot withdraw; expires after 179 days
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST https://api.hyperliquid.xyz/exchange
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+{
+  "domain": {
+    "chainId": 42161,
+    "name": "HyperliquidSignTransaction",
+    "verifyingContract": "0x0000000000000000000000000000000000000000",
+    "version": "1"
+  },
+  "message": {
+    "agentAddress": "0x0000000000000000000000000000000000000002",
+    "agentName": "mobius-bot valid_until 1807166645877",
+    "hyperliquidChain": "Mainnet",
+    "nonce": 1791701045877,
+    "signatureChainId": "0xa4b1",
+    "type": "approveAgent"
+  },
+  "primaryType": "HyperliquidTransaction:ApproveAgent",
+  "types": {
+    "HyperliquidTransaction:ApproveAgent": [
+      {
+        "name": "hyperliquidChain",
+        "type": "string"
+      },
+      {
+        "name": "agentAddress",
+        "type": "address"
+      },
+      {
+        "name": "agentName",
+        "type": "string"
+      },
+      {
+        "name": "nonce",
+        "type": "uint64"
+      }
+    ]
+  }
+}
+Digest: 0x6ad6a3c2384dbcc32fd02b04de40a9c82193c83abc6fdeffebb4c3ed9e461a8d
+Stored body: {"action":{"agentAddress":"0x0000000000000000000000000000000000000002","agentName":"mobius-bot valid_until 1807166645877","hyperliquidChain":"Mainnet","nonce":1791701045877,"signatureChainId":"0xa4b1","type":"approveAgent"},"nonce":1791701045877}
+Submit plan: {"base":"https://api.hyperliquid.xyz","binding":{"apiBase":"http://127.0.0.1:60900","sessionId":"session-hl","step":"approve-agent","venue":"hl"},"body":{"action":{"agentAddress":"0x0000000000000000000000000000000000000002","agentName":"mobius-bot valid_until 1807166645877","hyperliquidChain":"Mainnet","nonce":1791701045877,"signatureChainId":"0xa4b1","type":"approveAgent"},"nonce":1791701045877},"format":"hl","route":"/exchange","signatureField":"signature"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"detail":"hl approve-agent session=session-hl","name":"binding.next-step","route":"staged","ok":true}]}
+[hidden; injected test TTY reader]
+p-3: submitted
+Server answer: {"status":"ok","response":{"type":"default"}}
+Submission is acknowledged; execution is not confirmed.
+exit=0
+$ mob bind hl
+hl: key can trade, cancel and adjust margin; cannot withdraw; expires after 179 days. The Mobius server creates and holds this venue key.
+p-4
+Status: awaiting-signature
+Purpose: hl: approve-builder-fee; key can trade, cancel and adjust margin; cannot withdraw; expires after 179 days
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST https://api.hyperliquid.xyz/exchange
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+{
+  "domain": {
+    "chainId": 42161,
+    "name": "HyperliquidSignTransaction",
+    "verifyingContract": "0x0000000000000000000000000000000000000000",
+    "version": "1"
+  },
+  "message": {
+    "builder": "0x0000000000000000000000000000000000000003",
+    "hyperliquidChain": "Mainnet",
+    "maxFeeRate": "0.1%",
+    "nonce": 1791701045877,
+    "signatureChainId": "0xa4b1",
+    "type": "approveBuilderFee"
+  },
+  "primaryType": "HyperliquidTransaction:ApproveBuilderFee",
+  "types": {
+    "HyperliquidTransaction:ApproveBuilderFee": [
+      {
+        "name": "hyperliquidChain",
+        "type": "string"
+      },
+      {
+        "name": "maxFeeRate",
+        "type": "string"
+      },
+      {
+        "name": "builder",
+        "type": "address"
+      },
+      {
+        "name": "nonce",
+        "type": "uint64"
+      }
+    ]
+  }
+}
+Digest: 0x3884162d13b32a9cae1dded968d2d6efe351572a3caf52a2b38fe09910eb40fd
+Stored body: {"action":{"builder":"0x0000000000000000000000000000000000000003","hyperliquidChain":"Mainnet","maxFeeRate":"0.1%","nonce":1791701045877,"signatureChainId":"0xa4b1","type":"approveBuilderFee"},"nonce":1791701045877}
+Submit plan: {"base":"https://api.hyperliquid.xyz","binding":{"apiBase":"http://127.0.0.1:60900","sessionId":"session-hl","step":"approve-builder-fee","venue":"hl"},"body":{"action":{"builder":"0x0000000000000000000000000000000000000003","hyperliquidChain":"Mainnet","maxFeeRate":"0.1%","nonce":1791701045877,"signatureChainId":"0xa4b1","type":"approveBuilderFee"},"nonce":1791701045877},"completion":{"base":"http://127.0.0.1:60900","finalize":{"body":{"ownerAddress":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3"},"route":"/api/binding/hl/builder-finalize"},"sessionId":"session-hl","statusRoute":"/api/binding/hl/status"},"format":"hl","route":"/exchange","signatureField":"signature"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"route":"staged","name":"binding.next-step","detail":"hl approve-builder-fee session=session-hl","ok":true}]}
+Stopped before signing. To authorize, name p-4 and run mob sign p-4.
+exit=0
+$ mob bind hl
+hl: key can trade, cancel and adjust margin; cannot withdraw; expires after 179 days. The Mobius server creates and holds this venue key.
+p-4
+Status: awaiting-signature
+Purpose: hl: approve-builder-fee; key can trade, cancel and adjust margin; cannot withdraw; expires after 179 days
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST https://api.hyperliquid.xyz/exchange
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+{
+  "domain": {
+    "chainId": 42161,
+    "name": "HyperliquidSignTransaction",
+    "verifyingContract": "0x0000000000000000000000000000000000000000",
+    "version": "1"
+  },
+  "message": {
+    "builder": "0x0000000000000000000000000000000000000003",
+    "hyperliquidChain": "Mainnet",
+    "maxFeeRate": "0.1%",
+    "nonce": 1791701045877,
+    "signatureChainId": "0xa4b1",
+    "type": "approveBuilderFee"
+  },
+  "primaryType": "HyperliquidTransaction:ApproveBuilderFee",
+  "types": {
+    "HyperliquidTransaction:ApproveBuilderFee": [
+      {
+        "name": "hyperliquidChain",
+        "type": "string"
+      },
+      {
+        "name": "maxFeeRate",
+        "type": "string"
+      },
+      {
+        "name": "builder",
+        "type": "address"
+      },
+      {
+        "name": "nonce",
+        "type": "uint64"
+      }
+    ]
+  }
+}
+Digest: 0x3884162d13b32a9cae1dded968d2d6efe351572a3caf52a2b38fe09910eb40fd
+Stored body: {"action":{"builder":"0x0000000000000000000000000000000000000003","hyperliquidChain":"Mainnet","maxFeeRate":"0.1%","nonce":1791701045877,"signatureChainId":"0xa4b1","type":"approveBuilderFee"},"nonce":1791701045877}
+Submit plan: {"base":"https://api.hyperliquid.xyz","binding":{"apiBase":"http://127.0.0.1:60900","sessionId":"session-hl","step":"approve-builder-fee","venue":"hl"},"body":{"action":{"builder":"0x0000000000000000000000000000000000000003","hyperliquidChain":"Mainnet","maxFeeRate":"0.1%","nonce":1791701045877,"signatureChainId":"0xa4b1","type":"approveBuilderFee"},"nonce":1791701045877},"completion":{"base":"http://127.0.0.1:60900","finalize":{"body":{"ownerAddress":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3"},"route":"/api/binding/hl/builder-finalize"},"sessionId":"session-hl","statusRoute":"/api/binding/hl/status"},"format":"hl","route":"/exchange","signatureField":"signature"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"route":"staged","name":"binding.next-step","detail":"hl approve-builder-fee session=session-hl","ok":true}]}
+Stopped before signing. To authorize, name p-4 and run mob sign p-4.
+exit=0
+$ mob preview p-4
+p-4
+Status: awaiting-signature
+Purpose: hl: approve-builder-fee; key can trade, cancel and adjust margin; cannot withdraw; expires after 179 days
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST https://api.hyperliquid.xyz/exchange
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+{
+  "domain": {
+    "chainId": 42161,
+    "name": "HyperliquidSignTransaction",
+    "verifyingContract": "0x0000000000000000000000000000000000000000",
+    "version": "1"
+  },
+  "message": {
+    "builder": "0x0000000000000000000000000000000000000003",
+    "hyperliquidChain": "Mainnet",
+    "maxFeeRate": "0.1%",
+    "nonce": 1791701045877,
+    "signatureChainId": "0xa4b1",
+    "type": "approveBuilderFee"
+  },
+  "primaryType": "HyperliquidTransaction:ApproveBuilderFee",
+  "types": {
+    "HyperliquidTransaction:ApproveBuilderFee": [
+      {
+        "name": "hyperliquidChain",
+        "type": "string"
+      },
+      {
+        "name": "maxFeeRate",
+        "type": "string"
+      },
+      {
+        "name": "builder",
+        "type": "address"
+      },
+      {
+        "name": "nonce",
+        "type": "uint64"
+      }
+    ]
+  }
+}
+Digest: 0x3884162d13b32a9cae1dded968d2d6efe351572a3caf52a2b38fe09910eb40fd
+Stored body: {"action":{"builder":"0x0000000000000000000000000000000000000003","hyperliquidChain":"Mainnet","maxFeeRate":"0.1%","nonce":1791701045877,"signatureChainId":"0xa4b1","type":"approveBuilderFee"},"nonce":1791701045877}
+Submit plan: {"base":"https://api.hyperliquid.xyz","binding":{"apiBase":"http://127.0.0.1:60900","sessionId":"session-hl","step":"approve-builder-fee","venue":"hl"},"body":{"action":{"builder":"0x0000000000000000000000000000000000000003","hyperliquidChain":"Mainnet","maxFeeRate":"0.1%","nonce":1791701045877,"signatureChainId":"0xa4b1","type":"approveBuilderFee"},"nonce":1791701045877},"completion":{"base":"http://127.0.0.1:60900","finalize":{"body":{"ownerAddress":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3"},"route":"/api/binding/hl/builder-finalize"},"sessionId":"session-hl","statusRoute":"/api/binding/hl/status"},"format":"hl","route":"/exchange","signatureField":"signature"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"detail":"hl approve-builder-fee session=session-hl","name":"binding.next-step","route":"staged","ok":true}]}
+Stopped before signing. To authorize this Proposal, name p-4 and run mob sign p-4.
+exit=0
+$ mob sign p-4
+p-4
+Status: awaiting-signature
+Purpose: hl: approve-builder-fee; key can trade, cancel and adjust margin; cannot withdraw; expires after 179 days
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST https://api.hyperliquid.xyz/exchange
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+{
+  "domain": {
+    "chainId": 42161,
+    "name": "HyperliquidSignTransaction",
+    "verifyingContract": "0x0000000000000000000000000000000000000000",
+    "version": "1"
+  },
+  "message": {
+    "builder": "0x0000000000000000000000000000000000000003",
+    "hyperliquidChain": "Mainnet",
+    "maxFeeRate": "0.1%",
+    "nonce": 1791701045877,
+    "signatureChainId": "0xa4b1",
+    "type": "approveBuilderFee"
+  },
+  "primaryType": "HyperliquidTransaction:ApproveBuilderFee",
+  "types": {
+    "HyperliquidTransaction:ApproveBuilderFee": [
+      {
+        "name": "hyperliquidChain",
+        "type": "string"
+      },
+      {
+        "name": "maxFeeRate",
+        "type": "string"
+      },
+      {
+        "name": "builder",
+        "type": "address"
+      },
+      {
+        "name": "nonce",
+        "type": "uint64"
+      }
+    ]
+  }
+}
+Digest: 0x3884162d13b32a9cae1dded968d2d6efe351572a3caf52a2b38fe09910eb40fd
+Stored body: {"action":{"builder":"0x0000000000000000000000000000000000000003","hyperliquidChain":"Mainnet","maxFeeRate":"0.1%","nonce":1791701045877,"signatureChainId":"0xa4b1","type":"approveBuilderFee"},"nonce":1791701045877}
+Submit plan: {"base":"https://api.hyperliquid.xyz","binding":{"apiBase":"http://127.0.0.1:60900","sessionId":"session-hl","step":"approve-builder-fee","venue":"hl"},"body":{"action":{"builder":"0x0000000000000000000000000000000000000003","hyperliquidChain":"Mainnet","maxFeeRate":"0.1%","nonce":1791701045877,"signatureChainId":"0xa4b1","type":"approveBuilderFee"},"nonce":1791701045877},"completion":{"base":"http://127.0.0.1:60900","finalize":{"body":{"ownerAddress":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3"},"route":"/api/binding/hl/builder-finalize"},"sessionId":"session-hl","statusRoute":"/api/binding/hl/status"},"format":"hl","route":"/exchange","signatureField":"signature"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"detail":"hl approve-builder-fee session=session-hl","name":"binding.next-step","route":"staged","ok":true}]}
+[hidden; injected test TTY reader]
+p-4: submitted
+Server answer: {"venue":{"status":"ok","response":{"type":"default"}},"binding":{"status":"bound"},"finalize":{"ok":true}}
+Submission is acknowledged; execution is not confirmed.
+exit=0
+$ mob bind hl
+hl: key can trade, cancel and adjust margin; cannot withdraw; expires after 179 days. The Mobius server creates and holds this venue key.
+hl: bound. No Proposal needed.
+exit=0
+$ mob bind aster
+aster: key can trade perpetuals; cannot trade spot or withdraw; expires after 365 days. The Mobius server creates and holds this venue key.
+p-5
+Status: awaiting-signature
+Purpose: aster: prepare; key can trade perpetuals; cannot trade spot or withdraw; expires after 365 days
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/api/binding/aster/prepare
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+Prepare Aster binding nonce=ada74237-43bc-4512-8b65-bf5fce76a064 timestamp=1791701045
+Digest: 0xbe85c386e1603221ee57769a7813e6acac1e52ac80bc9a80ee86420506881b7c
+Stored body: {"nonce":"ada74237-43bc-4512-8b65-bf5fce76a064","timestamp":1791701045}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"route":"staged","name":"binding.next-step","detail":"aster prepare","ok":true},{"route":"/api/binding/rebind-check","name":"binding.rebind-allowed","ok":true}]}
+Stopped before signing. To authorize, name p-5 and run mob sign p-5.
+exit=0
+$ mob bind aster
+aster: key can trade perpetuals; cannot trade spot or withdraw; expires after 365 days. The Mobius server creates and holds this venue key.
+p-5
+Status: awaiting-signature
+Purpose: aster: prepare; key can trade perpetuals; cannot trade spot or withdraw; expires after 365 days
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/api/binding/aster/prepare
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+Prepare Aster binding nonce=ada74237-43bc-4512-8b65-bf5fce76a064 timestamp=1791701045
+Digest: 0xbe85c386e1603221ee57769a7813e6acac1e52ac80bc9a80ee86420506881b7c
+Stored body: {"nonce":"ada74237-43bc-4512-8b65-bf5fce76a064","timestamp":1791701045}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"route":"staged","name":"binding.next-step","detail":"aster prepare","ok":true},{"route":"/api/binding/rebind-check","name":"binding.rebind-allowed","ok":true}]}
+Stopped before signing. To authorize, name p-5 and run mob sign p-5.
+exit=0
+$ mob preview p-5
+p-5
+Status: awaiting-signature
+Purpose: aster: prepare; key can trade perpetuals; cannot trade spot or withdraw; expires after 365 days
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/api/binding/aster/prepare
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+Prepare Aster binding nonce=ada74237-43bc-4512-8b65-bf5fce76a064 timestamp=1791701045
+Digest: 0xbe85c386e1603221ee57769a7813e6acac1e52ac80bc9a80ee86420506881b7c
+Stored body: {"nonce":"ada74237-43bc-4512-8b65-bf5fce76a064","timestamp":1791701045}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"detail":"aster prepare","name":"binding.next-step","route":"staged","ok":true},{"route":"/api/binding/rebind-check","name":"binding.rebind-allowed","ok":true}]}
+Stopped before signing. To authorize this Proposal, name p-5 and run mob sign p-5.
+exit=0
+$ mob sign p-5
+p-5
+Status: awaiting-signature
+Purpose: aster: prepare; key can trade perpetuals; cannot trade spot or withdraw; expires after 365 days
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/api/binding/aster/prepare
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+Prepare Aster binding nonce=ada74237-43bc-4512-8b65-bf5fce76a064 timestamp=1791701045
+Digest: 0xbe85c386e1603221ee57769a7813e6acac1e52ac80bc9a80ee86420506881b7c
+Stored body: {"nonce":"ada74237-43bc-4512-8b65-bf5fce76a064","timestamp":1791701045}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"detail":"aster prepare","name":"binding.next-step","route":"staged","ok":true},{"route":"/api/binding/rebind-check","name":"binding.rebind-allowed","ok":true}]}
+[hidden; injected test TTY reader]
+p-5: submitted
+Server answer: {"sessionId":"session-aster","agentAddress":"0x0000000000000000000000000000000000000002","approvalParams":{"agentName":"mobius-bot","agentAddress":"0x0000000000000000000000000000000000000002","ipWhitelist":"","expired":1823237045877,"canSpotTrade":false,"canPerpTrade":true,"canWithdraw":false,"builder":"0x0000000000000000000000000000000000000003","maxFeeRate":"0.1%","builderName":"mobius","asterChain":"Mainnet","user":"0x593bf60d2cae05f0b64c17aedbfa914693bb06b3","nonce":1791701045877000},"baseUrl":"https://fapi.asterdex.com","signingChainId":56}
+Submission is acknowledged; execution is not confirmed.
+exit=0
+$ mob bind aster
+aster: key can trade perpetuals; cannot trade spot or withdraw; expires after 365 days. The Mobius server creates and holds this venue key.
+p-6
+Status: awaiting-signature
+Purpose: aster: approve-agent; key can trade perpetuals; cannot trade spot or withdraw; expires after 365 days
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST https://fapi.asterdex.com/fapi/v3/approveAgent
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+{
+  "domain": {
+    "chainId": 56,
+    "name": "AsterSignTransaction",
+    "verifyingContract": "0x0000000000000000000000000000000000000000",
+    "version": "1"
+  },
+  "message": {
+    "AgentAddress": "0x0000000000000000000000000000000000000002",
+    "AgentName": "mobius-bot",
+    "AsterChain": "Mainnet",
+    "Builder": "0x0000000000000000000000000000000000000003",
+    "BuilderName": "mobius",
+    "CanPerpTrade": true,
+    "CanSpotTrade": false,
+    "CanWithdraw": false,
+    "Expired": 1823237045877,
+    "IpWhitelist": "",
+    "MaxFeeRate": "0.1%",
+    "Nonce": 1791701045877000,
+    "User": "0x593bf60d2cae05f0b64c17aedbfa914693bb06b3"
+  },
+  "primaryType": "ApproveAgent",
+  "types": {
+    "ApproveAgent": [
+      {
+        "name": "AgentName",
+        "type": "string"
+      },
+      {
+        "name": "AgentAddress",
+        "type": "string"
+      },
+      {
+        "name": "IpWhitelist",
+        "type": "string"
+      },
+      {
+        "name": "Expired",
+        "type": "uint256"
+      },
+      {
+        "name": "CanSpotTrade",
+        "type": "bool"
+      },
+      {
+        "name": "CanPerpTrade",
+        "type": "bool"
+      },
+      {
+        "name": "CanWithdraw",
+        "type": "bool"
+      },
+      {
+        "name": "Builder",
+        "type": "string"
+      },
+      {
+        "name": "MaxFeeRate",
+        "type": "string"
+      },
+      {
+        "name": "BuilderName",
+        "type": "string"
+      },
+      {
+        "name": "AsterChain",
+        "type": "string"
+      },
+      {
+        "name": "User",
+        "type": "string"
+      },
+      {
+        "name": "Nonce",
+        "type": "uint256"
+      }
+    ]
+  }
+}
+Digest: 0x86d66f0f2751030fb974ac2904a7f564e4778030c9af8278cc5b37386eb425be
+Stored body: {"agentAddress":"0x0000000000000000000000000000000000000002","agentName":"mobius-bot","asterChain":"Mainnet","builder":"0x0000000000000000000000000000000000000003","builderName":"mobius","canPerpTrade":true,"canSpotTrade":false,"canWithdraw":false,"expired":1823237045877,"ipWhitelist":"","maxFeeRate":"0.1%","nonce":1791701045877000,"signatureChainId":56,"user":"0x593bf60d2cae05f0b64c17aedbfa914693bb06b3"}
+Submit plan: {"base":"https://fapi.asterdex.com","binding":{"apiBase":"http://127.0.0.1:60900","sessionId":"session-aster","step":"approve-agent","venue":"aster"},"body":{"agentAddress":"0x0000000000000000000000000000000000000002","agentName":"mobius-bot","asterChain":"Mainnet","builder":"0x0000000000000000000000000000000000000003","builderName":"mobius","canPerpTrade":true,"canSpotTrade":false,"canWithdraw":false,"expired":1823237045877,"ipWhitelist":"","maxFeeRate":"0.1%","nonce":1791701045877000,"signatureChainId":56,"user":"0x593bf60d2cae05f0b64c17aedbfa914693bb06b3"},"completion":{"base":"http://127.0.0.1:60900","finalize":{"body":{"ownerAddress":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3"},"route":"/api/binding/aster/builder-finalize"},"sessionId":"session-aster","statusRoute":"/api/binding/aster/status"},"fieldOrder":["agentName","agentAddress","ipWhitelist","expired","canSpotTrade","canPerpTrade","canWithdraw","builder","maxFeeRate","builderName","asterChain","user","nonce","signatureChainId"],"format":"aster","route":"/fapi/v3/approveAgent","signatureField":"signature"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"route":"staged","name":"binding.next-step","detail":"aster approve-agent session=session-aster","ok":true}]}
+Stopped before signing. To authorize, name p-6 and run mob sign p-6.
+exit=0
+$ mob bind aster
+aster: key can trade perpetuals; cannot trade spot or withdraw; expires after 365 days. The Mobius server creates and holds this venue key.
+p-6
+Status: awaiting-signature
+Purpose: aster: approve-agent; key can trade perpetuals; cannot trade spot or withdraw; expires after 365 days
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST https://fapi.asterdex.com/fapi/v3/approveAgent
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+{
+  "domain": {
+    "chainId": 56,
+    "name": "AsterSignTransaction",
+    "verifyingContract": "0x0000000000000000000000000000000000000000",
+    "version": "1"
+  },
+  "message": {
+    "AgentAddress": "0x0000000000000000000000000000000000000002",
+    "AgentName": "mobius-bot",
+    "AsterChain": "Mainnet",
+    "Builder": "0x0000000000000000000000000000000000000003",
+    "BuilderName": "mobius",
+    "CanPerpTrade": true,
+    "CanSpotTrade": false,
+    "CanWithdraw": false,
+    "Expired": 1823237045877,
+    "IpWhitelist": "",
+    "MaxFeeRate": "0.1%",
+    "Nonce": 1791701045877000,
+    "User": "0x593bf60d2cae05f0b64c17aedbfa914693bb06b3"
+  },
+  "primaryType": "ApproveAgent",
+  "types": {
+    "ApproveAgent": [
+      {
+        "name": "AgentName",
+        "type": "string"
+      },
+      {
+        "name": "AgentAddress",
+        "type": "string"
+      },
+      {
+        "name": "IpWhitelist",
+        "type": "string"
+      },
+      {
+        "name": "Expired",
+        "type": "uint256"
+      },
+      {
+        "name": "CanSpotTrade",
+        "type": "bool"
+      },
+      {
+        "name": "CanPerpTrade",
+        "type": "bool"
+      },
+      {
+        "name": "CanWithdraw",
+        "type": "bool"
+      },
+      {
+        "name": "Builder",
+        "type": "string"
+      },
+      {
+        "name": "MaxFeeRate",
+        "type": "string"
+      },
+      {
+        "name": "BuilderName",
+        "type": "string"
+      },
+      {
+        "name": "AsterChain",
+        "type": "string"
+      },
+      {
+        "name": "User",
+        "type": "string"
+      },
+      {
+        "name": "Nonce",
+        "type": "uint256"
+      }
+    ]
+  }
+}
+Digest: 0x86d66f0f2751030fb974ac2904a7f564e4778030c9af8278cc5b37386eb425be
+Stored body: {"agentAddress":"0x0000000000000000000000000000000000000002","agentName":"mobius-bot","asterChain":"Mainnet","builder":"0x0000000000000000000000000000000000000003","builderName":"mobius","canPerpTrade":true,"canSpotTrade":false,"canWithdraw":false,"expired":1823237045877,"ipWhitelist":"","maxFeeRate":"0.1%","nonce":1791701045877000,"signatureChainId":56,"user":"0x593bf60d2cae05f0b64c17aedbfa914693bb06b3"}
+Submit plan: {"base":"https://fapi.asterdex.com","binding":{"apiBase":"http://127.0.0.1:60900","sessionId":"session-aster","step":"approve-agent","venue":"aster"},"body":{"agentAddress":"0x0000000000000000000000000000000000000002","agentName":"mobius-bot","asterChain":"Mainnet","builder":"0x0000000000000000000000000000000000000003","builderName":"mobius","canPerpTrade":true,"canSpotTrade":false,"canWithdraw":false,"expired":1823237045877,"ipWhitelist":"","maxFeeRate":"0.1%","nonce":1791701045877000,"signatureChainId":56,"user":"0x593bf60d2cae05f0b64c17aedbfa914693bb06b3"},"completion":{"base":"http://127.0.0.1:60900","finalize":{"body":{"ownerAddress":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3"},"route":"/api/binding/aster/builder-finalize"},"sessionId":"session-aster","statusRoute":"/api/binding/aster/status"},"fieldOrder":["agentName","agentAddress","ipWhitelist","expired","canSpotTrade","canPerpTrade","canWithdraw","builder","maxFeeRate","builderName","asterChain","user","nonce","signatureChainId"],"format":"aster","route":"/fapi/v3/approveAgent","signatureField":"signature"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"route":"staged","name":"binding.next-step","detail":"aster approve-agent session=session-aster","ok":true}]}
+Stopped before signing. To authorize, name p-6 and run mob sign p-6.
+exit=0
+$ mob preview p-6
+p-6
+Status: awaiting-signature
+Purpose: aster: approve-agent; key can trade perpetuals; cannot trade spot or withdraw; expires after 365 days
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST https://fapi.asterdex.com/fapi/v3/approveAgent
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+{
+  "domain": {
+    "chainId": 56,
+    "name": "AsterSignTransaction",
+    "verifyingContract": "0x0000000000000000000000000000000000000000",
+    "version": "1"
+  },
+  "message": {
+    "AgentAddress": "0x0000000000000000000000000000000000000002",
+    "AgentName": "mobius-bot",
+    "AsterChain": "Mainnet",
+    "Builder": "0x0000000000000000000000000000000000000003",
+    "BuilderName": "mobius",
+    "CanPerpTrade": true,
+    "CanSpotTrade": false,
+    "CanWithdraw": false,
+    "Expired": 1823237045877,
+    "IpWhitelist": "",
+    "MaxFeeRate": "0.1%",
+    "Nonce": 1791701045877000,
+    "User": "0x593bf60d2cae05f0b64c17aedbfa914693bb06b3"
+  },
+  "primaryType": "ApproveAgent",
+  "types": {
+    "ApproveAgent": [
+      {
+        "name": "AgentName",
+        "type": "string"
+      },
+      {
+        "name": "AgentAddress",
+        "type": "string"
+      },
+      {
+        "name": "IpWhitelist",
+        "type": "string"
+      },
+      {
+        "name": "Expired",
+        "type": "uint256"
+      },
+      {
+        "name": "CanSpotTrade",
+        "type": "bool"
+      },
+      {
+        "name": "CanPerpTrade",
+        "type": "bool"
+      },
+      {
+        "name": "CanWithdraw",
+        "type": "bool"
+      },
+      {
+        "name": "Builder",
+        "type": "string"
+      },
+      {
+        "name": "MaxFeeRate",
+        "type": "string"
+      },
+      {
+        "name": "BuilderName",
+        "type": "string"
+      },
+      {
+        "name": "AsterChain",
+        "type": "string"
+      },
+      {
+        "name": "User",
+        "type": "string"
+      },
+      {
+        "name": "Nonce",
+        "type": "uint256"
+      }
+    ]
+  }
+}
+Digest: 0x86d66f0f2751030fb974ac2904a7f564e4778030c9af8278cc5b37386eb425be
+Stored body: {"agentAddress":"0x0000000000000000000000000000000000000002","agentName":"mobius-bot","asterChain":"Mainnet","builder":"0x0000000000000000000000000000000000000003","builderName":"mobius","canPerpTrade":true,"canSpotTrade":false,"canWithdraw":false,"expired":1823237045877,"ipWhitelist":"","maxFeeRate":"0.1%","nonce":1791701045877000,"signatureChainId":56,"user":"0x593bf60d2cae05f0b64c17aedbfa914693bb06b3"}
+Submit plan: {"base":"https://fapi.asterdex.com","binding":{"apiBase":"http://127.0.0.1:60900","sessionId":"session-aster","step":"approve-agent","venue":"aster"},"body":{"agentAddress":"0x0000000000000000000000000000000000000002","agentName":"mobius-bot","asterChain":"Mainnet","builder":"0x0000000000000000000000000000000000000003","builderName":"mobius","canPerpTrade":true,"canSpotTrade":false,"canWithdraw":false,"expired":1823237045877,"ipWhitelist":"","maxFeeRate":"0.1%","nonce":1791701045877000,"signatureChainId":56,"user":"0x593bf60d2cae05f0b64c17aedbfa914693bb06b3"},"completion":{"base":"http://127.0.0.1:60900","finalize":{"body":{"ownerAddress":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3"},"route":"/api/binding/aster/builder-finalize"},"sessionId":"session-aster","statusRoute":"/api/binding/aster/status"},"fieldOrder":["agentName","agentAddress","ipWhitelist","expired","canSpotTrade","canPerpTrade","canWithdraw","builder","maxFeeRate","builderName","asterChain","user","nonce","signatureChainId"],"format":"aster","route":"/fapi/v3/approveAgent","signatureField":"signature"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"detail":"aster approve-agent session=session-aster","name":"binding.next-step","route":"staged","ok":true}]}
+Stopped before signing. To authorize this Proposal, name p-6 and run mob sign p-6.
+exit=0
+$ mob sign p-6
+p-6
+Status: awaiting-signature
+Purpose: aster: approve-agent; key can trade perpetuals; cannot trade spot or withdraw; expires after 365 days
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST https://fapi.asterdex.com/fapi/v3/approveAgent
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+{
+  "domain": {
+    "chainId": 56,
+    "name": "AsterSignTransaction",
+    "verifyingContract": "0x0000000000000000000000000000000000000000",
+    "version": "1"
+  },
+  "message": {
+    "AgentAddress": "0x0000000000000000000000000000000000000002",
+    "AgentName": "mobius-bot",
+    "AsterChain": "Mainnet",
+    "Builder": "0x0000000000000000000000000000000000000003",
+    "BuilderName": "mobius",
+    "CanPerpTrade": true,
+    "CanSpotTrade": false,
+    "CanWithdraw": false,
+    "Expired": 1823237045877,
+    "IpWhitelist": "",
+    "MaxFeeRate": "0.1%",
+    "Nonce": 1791701045877000,
+    "User": "0x593bf60d2cae05f0b64c17aedbfa914693bb06b3"
+  },
+  "primaryType": "ApproveAgent",
+  "types": {
+    "ApproveAgent": [
+      {
+        "name": "AgentName",
+        "type": "string"
+      },
+      {
+        "name": "AgentAddress",
+        "type": "string"
+      },
+      {
+        "name": "IpWhitelist",
+        "type": "string"
+      },
+      {
+        "name": "Expired",
+        "type": "uint256"
+      },
+      {
+        "name": "CanSpotTrade",
+        "type": "bool"
+      },
+      {
+        "name": "CanPerpTrade",
+        "type": "bool"
+      },
+      {
+        "name": "CanWithdraw",
+        "type": "bool"
+      },
+      {
+        "name": "Builder",
+        "type": "string"
+      },
+      {
+        "name": "MaxFeeRate",
+        "type": "string"
+      },
+      {
+        "name": "BuilderName",
+        "type": "string"
+      },
+      {
+        "name": "AsterChain",
+        "type": "string"
+      },
+      {
+        "name": "User",
+        "type": "string"
+      },
+      {
+        "name": "Nonce",
+        "type": "uint256"
+      }
+    ]
+  }
+}
+Digest: 0x86d66f0f2751030fb974ac2904a7f564e4778030c9af8278cc5b37386eb425be
+Stored body: {"agentAddress":"0x0000000000000000000000000000000000000002","agentName":"mobius-bot","asterChain":"Mainnet","builder":"0x0000000000000000000000000000000000000003","builderName":"mobius","canPerpTrade":true,"canSpotTrade":false,"canWithdraw":false,"expired":1823237045877,"ipWhitelist":"","maxFeeRate":"0.1%","nonce":1791701045877000,"signatureChainId":56,"user":"0x593bf60d2cae05f0b64c17aedbfa914693bb06b3"}
+Submit plan: {"base":"https://fapi.asterdex.com","binding":{"apiBase":"http://127.0.0.1:60900","sessionId":"session-aster","step":"approve-agent","venue":"aster"},"body":{"agentAddress":"0x0000000000000000000000000000000000000002","agentName":"mobius-bot","asterChain":"Mainnet","builder":"0x0000000000000000000000000000000000000003","builderName":"mobius","canPerpTrade":true,"canSpotTrade":false,"canWithdraw":false,"expired":1823237045877,"ipWhitelist":"","maxFeeRate":"0.1%","nonce":1791701045877000,"signatureChainId":56,"user":"0x593bf60d2cae05f0b64c17aedbfa914693bb06b3"},"completion":{"base":"http://127.0.0.1:60900","finalize":{"body":{"ownerAddress":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3"},"route":"/api/binding/aster/builder-finalize"},"sessionId":"session-aster","statusRoute":"/api/binding/aster/status"},"fieldOrder":["agentName","agentAddress","ipWhitelist","expired","canSpotTrade","canPerpTrade","canWithdraw","builder","maxFeeRate","builderName","asterChain","user","nonce","signatureChainId"],"format":"aster","route":"/fapi/v3/approveAgent","signatureField":"signature"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"detail":"aster approve-agent session=session-aster","name":"binding.next-step","route":"staged","ok":true}]}
+[hidden; injected test TTY reader]
+p-6: submitted
+Server answer: {"venue":{"code":200,"msg":"success"},"binding":{"status":"bound"},"finalize":{"ok":true}}
+Submission is acknowledged; execution is not confirmed.
+exit=0
+$ mob bind aster
+aster: key can trade perpetuals; cannot trade spot or withdraw; expires after 365 days. The Mobius server creates and holds this venue key.
+aster: bound. No Proposal needed.
+exit=0
+$ mob bind lighter
+lighter: key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry. The Mobius server creates and holds this venue key.
+p-7
+Status: awaiting-signature
+Purpose: lighter: prepare; key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/api/binding/lighter/prepare
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+Prepare Lighter binding accountIndex=11 chainId=466324 nonce=066ffbd8-b0c3-4c6b-9b32-6cf589b42a13 timestamp=1791701045
+Digest: 0xe260a3ae6e585d457db02f0fe87a75a4000e3adfb6cffb563f0db216c81618eb
+Stored body: {"accountIndex":11,"chainId":466324,"nonce":"066ffbd8-b0c3-4c6b-9b32-6cf589b42a13","timestamp":1791701045}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"route":"staged","name":"binding.next-step","detail":"lighter prepare","ok":true},{"route":"/api/binding/rebind-check","name":"binding.rebind-allowed","ok":true}]}
+Stopped before signing. To authorize, name p-7 and run mob sign p-7.
+exit=0
+$ mob bind lighter
+lighter: key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry. The Mobius server creates and holds this venue key.
+p-7
+Status: awaiting-signature
+Purpose: lighter: prepare; key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/api/binding/lighter/prepare
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+Prepare Lighter binding accountIndex=11 chainId=466324 nonce=066ffbd8-b0c3-4c6b-9b32-6cf589b42a13 timestamp=1791701045
+Digest: 0xe260a3ae6e585d457db02f0fe87a75a4000e3adfb6cffb563f0db216c81618eb
+Stored body: {"accountIndex":11,"chainId":466324,"nonce":"066ffbd8-b0c3-4c6b-9b32-6cf589b42a13","timestamp":1791701045}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"route":"staged","name":"binding.next-step","detail":"lighter prepare","ok":true},{"route":"/api/binding/rebind-check","name":"binding.rebind-allowed","ok":true}]}
+Stopped before signing. To authorize, name p-7 and run mob sign p-7.
+exit=0
+$ mob preview p-7
+p-7
+Status: awaiting-signature
+Purpose: lighter: prepare; key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/api/binding/lighter/prepare
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+Prepare Lighter binding accountIndex=11 chainId=466324 nonce=066ffbd8-b0c3-4c6b-9b32-6cf589b42a13 timestamp=1791701045
+Digest: 0xe260a3ae6e585d457db02f0fe87a75a4000e3adfb6cffb563f0db216c81618eb
+Stored body: {"accountIndex":11,"chainId":466324,"nonce":"066ffbd8-b0c3-4c6b-9b32-6cf589b42a13","timestamp":1791701045}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"detail":"lighter prepare","name":"binding.next-step","route":"staged","ok":true},{"route":"/api/binding/rebind-check","name":"binding.rebind-allowed","ok":true}]}
+Stopped before signing. To authorize this Proposal, name p-7 and run mob sign p-7.
+exit=0
+$ mob sign p-7
+p-7
+Status: awaiting-signature
+Purpose: lighter: prepare; key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/api/binding/lighter/prepare
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+Prepare Lighter binding accountIndex=11 chainId=466324 nonce=066ffbd8-b0c3-4c6b-9b32-6cf589b42a13 timestamp=1791701045
+Digest: 0xe260a3ae6e585d457db02f0fe87a75a4000e3adfb6cffb563f0db216c81618eb
+Stored body: {"accountIndex":11,"chainId":466324,"nonce":"066ffbd8-b0c3-4c6b-9b32-6cf589b42a13","timestamp":1791701045}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"detail":"lighter prepare","name":"binding.next-step","route":"staged","ok":true},{"route":"/api/binding/rebind-check","name":"binding.rebind-allowed","ok":true}]}
+[hidden; injected test TTY reader]
+p-7: submitted
+Server answer: {"sessionId":"session-lighter","messageToSign":"ChangePubKey account=11\nkey=public-lighter","txInfo":{"AccountIndex":11,"ApiKeyIndex":3,"PublicKey":"public-lighter","Nonce":1}}
+Submission is acknowledged; execution is not confirmed.
+exit=0
+$ mob bind lighter
+lighter: key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry. The Mobius server creates and holds this venue key.
+p-8
+Status: awaiting-signature
+Purpose: lighter: approve-key; key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST https://api.rh.lighter.xyz/api/v1/sendTx
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+ChangePubKey account=11
+key=public-lighter
+Digest: 0x63dde8127e66644a60266b7975ef6a1b717c0477c6a796bbebe927c8c9289e74
+Stored body: {"tx_info":{"AccountIndex":11,"ApiKeyIndex":3,"Nonce":1,"PublicKey":"public-lighter"},"tx_type":8}
+Submit plan: {"base":"https://api.rh.lighter.xyz","binding":{"apiBase":"http://127.0.0.1:60900","sessionId":"session-lighter","step":"approve-key","venue":"lighter"},"body":{"tx_info":{"AccountIndex":11,"ApiKeyIndex":3,"Nonce":1,"PublicKey":"public-lighter"},"tx_type":8},"completion":{"base":"http://127.0.0.1:60900","sessionId":"session-lighter","statusRoute":"/api/binding/lighter/status"},"format":"lighter","route":"/api/v1/sendTx","signatureField":"signature"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"route":"staged","name":"binding.next-step","detail":"lighter approve-key session=session-lighter","ok":true}]}
+Stopped before signing. To authorize, name p-8 and run mob sign p-8.
+exit=0
+$ mob bind lighter
+lighter: key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry. The Mobius server creates and holds this venue key.
+p-8
+Status: awaiting-signature
+Purpose: lighter: approve-key; key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST https://api.rh.lighter.xyz/api/v1/sendTx
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+ChangePubKey account=11
+key=public-lighter
+Digest: 0x63dde8127e66644a60266b7975ef6a1b717c0477c6a796bbebe927c8c9289e74
+Stored body: {"tx_info":{"AccountIndex":11,"ApiKeyIndex":3,"Nonce":1,"PublicKey":"public-lighter"},"tx_type":8}
+Submit plan: {"base":"https://api.rh.lighter.xyz","binding":{"apiBase":"http://127.0.0.1:60900","sessionId":"session-lighter","step":"approve-key","venue":"lighter"},"body":{"tx_info":{"AccountIndex":11,"ApiKeyIndex":3,"Nonce":1,"PublicKey":"public-lighter"},"tx_type":8},"completion":{"base":"http://127.0.0.1:60900","sessionId":"session-lighter","statusRoute":"/api/binding/lighter/status"},"format":"lighter","route":"/api/v1/sendTx","signatureField":"signature"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"route":"staged","name":"binding.next-step","detail":"lighter approve-key session=session-lighter","ok":true}]}
+Stopped before signing. To authorize, name p-8 and run mob sign p-8.
+exit=0
+$ mob preview p-8
+p-8
+Status: awaiting-signature
+Purpose: lighter: approve-key; key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST https://api.rh.lighter.xyz/api/v1/sendTx
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+ChangePubKey account=11
+key=public-lighter
+Digest: 0x63dde8127e66644a60266b7975ef6a1b717c0477c6a796bbebe927c8c9289e74
+Stored body: {"tx_info":{"AccountIndex":11,"ApiKeyIndex":3,"Nonce":1,"PublicKey":"public-lighter"},"tx_type":8}
+Submit plan: {"base":"https://api.rh.lighter.xyz","binding":{"apiBase":"http://127.0.0.1:60900","sessionId":"session-lighter","step":"approve-key","venue":"lighter"},"body":{"tx_info":{"AccountIndex":11,"ApiKeyIndex":3,"Nonce":1,"PublicKey":"public-lighter"},"tx_type":8},"completion":{"base":"http://127.0.0.1:60900","sessionId":"session-lighter","statusRoute":"/api/binding/lighter/status"},"format":"lighter","route":"/api/v1/sendTx","signatureField":"signature"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"detail":"lighter approve-key session=session-lighter","name":"binding.next-step","route":"staged","ok":true}]}
+Stopped before signing. To authorize this Proposal, name p-8 and run mob sign p-8.
+exit=0
+$ mob sign p-8
+p-8
+Status: awaiting-signature
+Purpose: lighter: approve-key; key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST https://api.rh.lighter.xyz/api/v1/sendTx
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+ChangePubKey account=11
+key=public-lighter
+Digest: 0x63dde8127e66644a60266b7975ef6a1b717c0477c6a796bbebe927c8c9289e74
+Stored body: {"tx_info":{"AccountIndex":11,"ApiKeyIndex":3,"Nonce":1,"PublicKey":"public-lighter"},"tx_type":8}
+Submit plan: {"base":"https://api.rh.lighter.xyz","binding":{"apiBase":"http://127.0.0.1:60900","sessionId":"session-lighter","step":"approve-key","venue":"lighter"},"body":{"tx_info":{"AccountIndex":11,"ApiKeyIndex":3,"Nonce":1,"PublicKey":"public-lighter"},"tx_type":8},"completion":{"base":"http://127.0.0.1:60900","sessionId":"session-lighter","statusRoute":"/api/binding/lighter/status"},"format":"lighter","route":"/api/v1/sendTx","signatureField":"signature"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"detail":"lighter approve-key session=session-lighter","name":"binding.next-step","route":"staged","ok":true}]}
+[hidden; injected test TTY reader]
+p-8: submitted
+Server answer: {"venue":{"code":200,"tx_hash":"test-transaction"},"binding":{"status":"bound"}}
+Submission is acknowledged; execution is not confirmed.
+exit=0
+$ mob bind lighter
+lighter: key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry. The Mobius server creates and holds this venue key.
+lighter: bound. No Proposal needed.
+exit=0
+$ mob bind lighter-mainnet
+lighter-mainnet: key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry. The Mobius server creates and holds this venue key.
+p-9
+Status: awaiting-signature
+Purpose: lighter-mainnet: prepare; key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/api/binding/lighter/prepare
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+Prepare Lighter binding accountIndex=22 chainId=304 nonce=f55f0422-5577-478d-982f-c7eb6467c0be timestamp=1791701045 venue=lighter-mainnet
+Digest: 0x72e9c5f6fb29d6360c5662a27920d85c65edae07cf0ea7f3c912f90ae3c6dfe5
+Stored body: {"accountIndex":22,"chainId":304,"nonce":"f55f0422-5577-478d-982f-c7eb6467c0be","timestamp":1791701045,"venue":"lighter-mainnet"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"route":"staged","name":"binding.next-step","detail":"lighter-mainnet prepare","ok":true},{"route":"/api/binding/rebind-check","name":"binding.rebind-allowed","ok":true}]}
+Stopped before signing. To authorize, name p-9 and run mob sign p-9.
+exit=0
+$ mob bind lighter-mainnet
+lighter-mainnet: key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry. The Mobius server creates and holds this venue key.
+p-9
+Status: awaiting-signature
+Purpose: lighter-mainnet: prepare; key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/api/binding/lighter/prepare
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+Prepare Lighter binding accountIndex=22 chainId=304 nonce=f55f0422-5577-478d-982f-c7eb6467c0be timestamp=1791701045 venue=lighter-mainnet
+Digest: 0x72e9c5f6fb29d6360c5662a27920d85c65edae07cf0ea7f3c912f90ae3c6dfe5
+Stored body: {"accountIndex":22,"chainId":304,"nonce":"f55f0422-5577-478d-982f-c7eb6467c0be","timestamp":1791701045,"venue":"lighter-mainnet"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"route":"staged","name":"binding.next-step","detail":"lighter-mainnet prepare","ok":true},{"route":"/api/binding/rebind-check","name":"binding.rebind-allowed","ok":true}]}
+Stopped before signing. To authorize, name p-9 and run mob sign p-9.
+exit=0
+$ mob preview p-9
+p-9
+Status: awaiting-signature
+Purpose: lighter-mainnet: prepare; key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/api/binding/lighter/prepare
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+Prepare Lighter binding accountIndex=22 chainId=304 nonce=f55f0422-5577-478d-982f-c7eb6467c0be timestamp=1791701045 venue=lighter-mainnet
+Digest: 0x72e9c5f6fb29d6360c5662a27920d85c65edae07cf0ea7f3c912f90ae3c6dfe5
+Stored body: {"accountIndex":22,"chainId":304,"nonce":"f55f0422-5577-478d-982f-c7eb6467c0be","timestamp":1791701045,"venue":"lighter-mainnet"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"detail":"lighter-mainnet prepare","name":"binding.next-step","route":"staged","ok":true},{"route":"/api/binding/rebind-check","name":"binding.rebind-allowed","ok":true}]}
+Stopped before signing. To authorize this Proposal, name p-9 and run mob sign p-9.
+exit=0
+$ mob sign p-9
+p-9
+Status: awaiting-signature
+Purpose: lighter-mainnet: prepare; key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/api/binding/lighter/prepare
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+Prepare Lighter binding accountIndex=22 chainId=304 nonce=f55f0422-5577-478d-982f-c7eb6467c0be timestamp=1791701045 venue=lighter-mainnet
+Digest: 0x72e9c5f6fb29d6360c5662a27920d85c65edae07cf0ea7f3c912f90ae3c6dfe5
+Stored body: {"accountIndex":22,"chainId":304,"nonce":"f55f0422-5577-478d-982f-c7eb6467c0be","timestamp":1791701045,"venue":"lighter-mainnet"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"detail":"lighter-mainnet prepare","name":"binding.next-step","route":"staged","ok":true},{"route":"/api/binding/rebind-check","name":"binding.rebind-allowed","ok":true}]}
+[hidden; injected test TTY reader]
+p-9: submitted
+Server answer: {"sessionId":"session-lighter-mainnet","messageToSign":"ChangePubKey account=22\nkey=public-lighter-mainnet","txInfo":{"AccountIndex":22,"ApiKeyIndex":3,"PublicKey":"public-lighter-mainnet","Nonce":1}}
+Submission is acknowledged; execution is not confirmed.
+exit=0
+$ mob bind lighter-mainnet
+lighter-mainnet: key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry. The Mobius server creates and holds this venue key.
+p-10
+Status: awaiting-signature
+Purpose: lighter-mainnet: approve-key; key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST https://mainnet.zklighter.elliot.ai/api/v1/sendTx
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+ChangePubKey account=22
+key=public-lighter-mainnet
+Digest: 0x4bc2de319fa083780cec1713842e0640e8ae26bc89fc85670cfbbe1c60fcf671
+Stored body: {"tx_info":{"AccountIndex":22,"ApiKeyIndex":3,"Nonce":1,"PublicKey":"public-lighter-mainnet"},"tx_type":8}
+Submit plan: {"base":"https://mainnet.zklighter.elliot.ai","binding":{"apiBase":"http://127.0.0.1:60900","sessionId":"session-lighter-mainnet","step":"approve-key","venue":"lighter-mainnet"},"body":{"tx_info":{"AccountIndex":22,"ApiKeyIndex":3,"Nonce":1,"PublicKey":"public-lighter-mainnet"},"tx_type":8},"completion":{"base":"http://127.0.0.1:60900","sessionId":"session-lighter-mainnet","statusRoute":"/api/binding/lighter/status"},"format":"lighter","route":"/api/v1/sendTx","signatureField":"signature"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"route":"staged","name":"binding.next-step","detail":"lighter-mainnet approve-key session=session-lighter-mainnet","ok":true}]}
+Stopped before signing. To authorize, name p-10 and run mob sign p-10.
+exit=0
+$ mob bind lighter-mainnet
+lighter-mainnet: key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry. The Mobius server creates and holds this venue key.
+p-10
+Status: awaiting-signature
+Purpose: lighter-mainnet: approve-key; key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST https://mainnet.zklighter.elliot.ai/api/v1/sendTx
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+ChangePubKey account=22
+key=public-lighter-mainnet
+Digest: 0x4bc2de319fa083780cec1713842e0640e8ae26bc89fc85670cfbbe1c60fcf671
+Stored body: {"tx_info":{"AccountIndex":22,"ApiKeyIndex":3,"Nonce":1,"PublicKey":"public-lighter-mainnet"},"tx_type":8}
+Submit plan: {"base":"https://mainnet.zklighter.elliot.ai","binding":{"apiBase":"http://127.0.0.1:60900","sessionId":"session-lighter-mainnet","step":"approve-key","venue":"lighter-mainnet"},"body":{"tx_info":{"AccountIndex":22,"ApiKeyIndex":3,"Nonce":1,"PublicKey":"public-lighter-mainnet"},"tx_type":8},"completion":{"base":"http://127.0.0.1:60900","sessionId":"session-lighter-mainnet","statusRoute":"/api/binding/lighter/status"},"format":"lighter","route":"/api/v1/sendTx","signatureField":"signature"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"route":"staged","name":"binding.next-step","detail":"lighter-mainnet approve-key session=session-lighter-mainnet","ok":true}]}
+Stopped before signing. To authorize, name p-10 and run mob sign p-10.
+exit=0
+$ mob preview p-10
+p-10
+Status: awaiting-signature
+Purpose: lighter-mainnet: approve-key; key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST https://mainnet.zklighter.elliot.ai/api/v1/sendTx
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+ChangePubKey account=22
+key=public-lighter-mainnet
+Digest: 0x4bc2de319fa083780cec1713842e0640e8ae26bc89fc85670cfbbe1c60fcf671
+Stored body: {"tx_info":{"AccountIndex":22,"ApiKeyIndex":3,"Nonce":1,"PublicKey":"public-lighter-mainnet"},"tx_type":8}
+Submit plan: {"base":"https://mainnet.zklighter.elliot.ai","binding":{"apiBase":"http://127.0.0.1:60900","sessionId":"session-lighter-mainnet","step":"approve-key","venue":"lighter-mainnet"},"body":{"tx_info":{"AccountIndex":22,"ApiKeyIndex":3,"Nonce":1,"PublicKey":"public-lighter-mainnet"},"tx_type":8},"completion":{"base":"http://127.0.0.1:60900","sessionId":"session-lighter-mainnet","statusRoute":"/api/binding/lighter/status"},"format":"lighter","route":"/api/v1/sendTx","signatureField":"signature"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"detail":"lighter-mainnet approve-key session=session-lighter-mainnet","name":"binding.next-step","route":"staged","ok":true}]}
+Stopped before signing. To authorize this Proposal, name p-10 and run mob sign p-10.
+exit=0
+$ mob sign p-10
+p-10
+Status: awaiting-signature
+Purpose: lighter-mainnet: approve-key; key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST https://mainnet.zklighter.elliot.ai/api/v1/sendTx
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+ChangePubKey account=22
+key=public-lighter-mainnet
+Digest: 0x4bc2de319fa083780cec1713842e0640e8ae26bc89fc85670cfbbe1c60fcf671
+Stored body: {"tx_info":{"AccountIndex":22,"ApiKeyIndex":3,"Nonce":1,"PublicKey":"public-lighter-mainnet"},"tx_type":8}
+Submit plan: {"base":"https://mainnet.zklighter.elliot.ai","binding":{"apiBase":"http://127.0.0.1:60900","sessionId":"session-lighter-mainnet","step":"approve-key","venue":"lighter-mainnet"},"body":{"tx_info":{"AccountIndex":22,"ApiKeyIndex":3,"Nonce":1,"PublicKey":"public-lighter-mainnet"},"tx_type":8},"completion":{"base":"http://127.0.0.1:60900","sessionId":"session-lighter-mainnet","statusRoute":"/api/binding/lighter/status"},"format":"lighter","route":"/api/v1/sendTx","signatureField":"signature"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"detail":"lighter-mainnet approve-key session=session-lighter-mainnet","name":"binding.next-step","route":"staged","ok":true}]}
+[hidden; injected test TTY reader]
+p-10: submitted
+Server answer: {"venue":{"code":200,"tx_hash":"test-transaction"},"binding":{"status":"bound"}}
+Submission is acknowledged; execution is not confirmed.
+exit=0
+$ mob bind lighter-mainnet
+lighter-mainnet: key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry. The Mobius server creates and holds this venue key.
+p-11
+Status: awaiting-signature
+Purpose: lighter-mainnet: approve-integrator; key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/api/binding/lighter/integrator-approve
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+Approve zero-fee Lighter integrator owner=0x593bf60d2cae05f0b64c17aedbfa914693bb06b3 venue=lighter-mainnet integratorIndex=7 nonce=df360afd-7def-44a4-9d1c-62c4d4b0f537 timestamp=1791701045
+Digest: 0x5a7ef85c0a226b7f095090e3e39c4a44338e227b267ed43dfc754fcfe9d23a40
+Stored body: {"nonce":"df360afd-7def-44a4-9d1c-62c4d4b0f537","ownerAddress":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","timestamp":1791701045,"venue":"lighter-mainnet"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"route":"staged","name":"binding.next-step","detail":"lighter-mainnet approve-integrator","ok":true}]}
+Stopped before signing. To authorize, name p-11 and run mob sign p-11.
+exit=0
+$ mob bind lighter-mainnet
+lighter-mainnet: key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry. The Mobius server creates and holds this venue key.
+p-11
+Status: awaiting-signature
+Purpose: lighter-mainnet: approve-integrator; key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/api/binding/lighter/integrator-approve
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+Approve zero-fee Lighter integrator owner=0x593bf60d2cae05f0b64c17aedbfa914693bb06b3 venue=lighter-mainnet integratorIndex=7 nonce=df360afd-7def-44a4-9d1c-62c4d4b0f537 timestamp=1791701045
+Digest: 0x5a7ef85c0a226b7f095090e3e39c4a44338e227b267ed43dfc754fcfe9d23a40
+Stored body: {"nonce":"df360afd-7def-44a4-9d1c-62c4d4b0f537","ownerAddress":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","timestamp":1791701045,"venue":"lighter-mainnet"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"route":"staged","name":"binding.next-step","detail":"lighter-mainnet approve-integrator","ok":true}]}
+Stopped before signing. To authorize, name p-11 and run mob sign p-11.
+exit=0
+$ mob preview p-11
+p-11
+Status: awaiting-signature
+Purpose: lighter-mainnet: approve-integrator; key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/api/binding/lighter/integrator-approve
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+Approve zero-fee Lighter integrator owner=0x593bf60d2cae05f0b64c17aedbfa914693bb06b3 venue=lighter-mainnet integratorIndex=7 nonce=df360afd-7def-44a4-9d1c-62c4d4b0f537 timestamp=1791701045
+Digest: 0x5a7ef85c0a226b7f095090e3e39c4a44338e227b267ed43dfc754fcfe9d23a40
+Stored body: {"nonce":"df360afd-7def-44a4-9d1c-62c4d4b0f537","ownerAddress":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","timestamp":1791701045,"venue":"lighter-mainnet"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"detail":"lighter-mainnet approve-integrator","name":"binding.next-step","route":"staged","ok":true}]}
+Stopped before signing. To authorize this Proposal, name p-11 and run mob sign p-11.
+exit=0
+$ mob sign p-11
+p-11
+Status: awaiting-signature
+Purpose: lighter-mainnet: approve-integrator; key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry
+Owner: 0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3
+Route: POST http://127.0.0.1:60900/api/binding/lighter/integrator-approve
+Expires: 2026-10-11T06:49:05.000Z
+Message:
+Approve zero-fee Lighter integrator owner=0x593bf60d2cae05f0b64c17aedbfa914693bb06b3 venue=lighter-mainnet integratorIndex=7 nonce=df360afd-7def-44a4-9d1c-62c4d4b0f537 timestamp=1791701045
+Digest: 0x5a7ef85c0a226b7f095090e3e39c4a44338e227b267ed43dfc754fcfe9d23a40
+Stored body: {"nonce":"df360afd-7def-44a4-9d1c-62c4d4b0f537","ownerAddress":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","timestamp":1791701045,"venue":"lighter-mainnet"}
+Preflight: {"ok":true,"checkedAt":1791701045877,"checks":[{"route":"staged","name":"config.owner","detail":"0x593bf60d2cae05f0b64c17AEDBfA914693bB06B3","ok":true},{"route":"staged","name":"config.signer","detail":"keystore","ok":true},{"route":"staged","name":"config.policy","detail":"manual","ok":true},{"detail":"lighter-mainnet approve-integrator","name":"binding.next-step","route":"staged","ok":true}]}
+[hidden; injected test TTY reader]
+p-11: submitted
+Server answer: {"ok":true,"integratorIndex":7,"expiresAt":1794293045877}
+Submission is acknowledged; execution is not confirmed.
+exit=0
+$ mob bind lighter-mainnet
+lighter-mainnet: key can trade, cancel, adjust leverage and isolated margin, approve integrators; can withdraw to your own address, not trade-only; cannot transfer to third parties without your L1 signature; no expiry. The Mobius server creates and holds this venue key.
+lighter-mainnet: bound; integrator approved. No Proposal needed.
+exit=0
+$ mob sign p-11
+mob: Proposal is terminal or already used for signing
+exit=1
+Fake server: legal acceptance: signer recovered; exact body
+Fake server: hl prepare: signer recovered; exact body
+Fake server: hl approveAgent: typed signer recovered; exact body
+Fake server: hl approveBuilderFee: typed signer recovered; exact body
+Fake server: hl builder-finalize: stored plan body
+Fake server: aster prepare: signer recovered; exact body
+Fake server: aster approveAgent: dynamic typed signer recovered; exact ordered form
+Fake server: aster builder-finalize: stored plan body
+Fake server: lighter prepare: signer recovered; exact body
+Fake server: lighter sendTx: L1Sig recovered; exact tx_info
+Fake server: lighter-mainnet prepare: signer recovered; exact body
+Fake server: lighter-mainnet sendTx: L1Sig recovered; exact tx_info
+Fake server: lighter-mainnet integrator: signer recovered; exact body
+11 Proposals; 13 sanctioned POSTs including two stored builder-finalize calls. Every signer recovered, every mutation field checked. Re-entry stages only the next step; repeat sign refused.
+All endpoints are local fakes. No live binding, legal acceptance or venue mutation occurred.
+Exited with code 0

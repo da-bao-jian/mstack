@@ -188,5 +188,14 @@
 		"status": 200,
 		"observedAt": 1791638889997,
 		"rawSha256": "54f58a38632a7ef0a3fff28359a35a84e48498cbc795f3f4add1e3a74414182a"
+	},
+	{
+		"file": "aster/exchangeInfo.json",
+		"url": "https://fapi.asterdex.com/fapi/v3/exchangeInfo",
+		"method": "GET",
+		"observedAt": 1791699881276,
+		"status": 200,
+		"rawSha256": "7ea5a0e8a6697fd258ebf458be3e1cf486605c746c73a48753e3d4324e09a505",
+		"trim": "BTCUSDT and BTCUSD1; symbol/baseAsset/quoteAsset; LOT_SIZE and MIN_NOTIONAL filters retained verbatim"
 	}
 ]

@@ -14,6 +14,7 @@ export function showProposal(p: Proposal): string {
 			: JSON.stringify(p.signing.typedData, null, 2),
 		`Digest: ${p.digest}`,
 		`Stored body: ${JSON.stringify(p.submit.body)}`,
+		...(p.submit.format ? [`Submit plan: ${JSON.stringify(p.submit)}`] : []),
 		...(p.preflight ? [`Preflight: ${JSON.stringify(p.preflight)}`] : []),
 		...(p.answer !== undefined
 			? [`Server answer: ${JSON.stringify(p.answer)}`]

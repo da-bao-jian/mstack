@@ -7,6 +7,9 @@ export interface Config {
 	signer?: "keystore" | "browser" | "walletconnect";
 	policy?: "locked" | "manual";
 	api_base?: string;
+	auth_base?: string;
+	legal_chain_id?: number;
+	hl_signature_chain_id?: string;
 	owner?: string;
 	default_size_usd?: number;
 	taker_fee_bps?: Record<string, number>;
@@ -67,6 +70,9 @@ function knownKey(key: string): void {
 			"signer",
 			"policy",
 			"api_base",
+			"auth_base",
+			"legal_chain_id",
+			"hl_signature_chain_id",
 			"owner",
 			"default_size_usd",
 			"builder_fee_tenths_bps",
@@ -81,7 +87,10 @@ function knownKey(key: string): void {
 	throw new UsageError(`Unknown config key ${key}`);
 }
 
-function parsedValue(key: string, value: string | number): string | number {
+export function parsedValue(
+	key: string,
+	value: string | number,
+): string | number {
 	knownKey(key);
 	if (key === "signer" || key === "policy") {
 		const allowed =
@@ -92,7 +101,19 @@ function parsedValue(key: string, value: string | number): string | number {
 			throw new UsageError(`Invalid ${key}: expected ${allowed.join(" | ")}`);
 		return String(value);
 	}
-	if (key === "api_base") return apiBase(String(value));
+	if (key === "api_base" || key === "auth_base") return apiBase(String(value));
+	if (key === "legal_chain_id") return numberFlag(value, key, 1, true);
+	if (key === "hl_signature_chain_id") {
+		if (
+			!/^0x[0-9a-f]+$/i.test(String(value)) ||
+			!Number.isSafeInteger(Number(value)) ||
+			Number(value) <= 0
+		)
+			throw new UsageError(
+				"hl_signature_chain_id must be a positive safe hex chain id",
+			);
+		return `0x${Number(value).toString(16)}`;
+	}
 	if (key === "owner") return ownerAddress(String(value));
 	const result = numberFlag(value, key, 0, key === "builder_fee_tenths_bps");
 	if (key === "default_size_usd" && result === 0)
@@ -127,7 +148,14 @@ export async function readConfig(home = configHome()): Promise<Config> {
 		} else {
 			if (
 				typeof item !==
-				(["api_base", "owner", "signer", "policy"].includes(key)
+				([
+					"api_base",
+					"auth_base",
+					"hl_signature_chain_id",
+					"owner",
+					"signer",
+					"policy",
+				].includes(key)
 					? "string"
 					: "number")
 			)
@@ -140,6 +168,11 @@ export async function readConfig(home = configHome()): Promise<Config> {
 
 export function getConfig(config: Config, key: string): string | number {
 	knownKey(key);
+	if (key === "auth_base")
+		return config.auth_base ?? "https://auth.mob.exchange";
+	if (key === "legal_chain_id") return config.legal_chain_id ?? 97;
+	if (key === "hl_signature_chain_id")
+		return config.hl_signature_chain_id ?? "0xa4b1";
 	if (key === "policy") return config.policy ?? "manual";
 	if (key === "signer") return config.signer ?? "";
 	if (key === "owner") return config.owner ?? "";

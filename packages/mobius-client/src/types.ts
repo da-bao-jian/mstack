@@ -25,6 +25,24 @@ type Owner = { owner: string };
 type Task = Owner & { taskId: string };
 type Page = Task & { limit: number; cursor?: string };
 export interface ReadRoutes {
+	"/legal/terms": {
+		params: Record<string, never>;
+		result: {
+			termsVersion: string;
+			termsUrl: string;
+			privacyVersion: string;
+			privacyUrl: string;
+		};
+	};
+	"/legal/acceptance": {
+		params: { wallet: string };
+		result: {
+			accepted: boolean;
+			termsVersion: string;
+			privacyVersion: string;
+			acceptedAt: string | null;
+		};
+	};
 	"/api/arbitrage/list": { params: Owner; result: PublicTask[] };
 	"/api/arbitrage/task": { params: Task; result: PublicTask };
 	"/api/arbitrage/liq-trims": { params: Page; result: LogPage };
@@ -78,6 +96,16 @@ export interface ReadRoutes {
 	};
 }
 export interface WriteRoutes {
+	"/legal/acceptance": {
+		body: {
+			wallet: string;
+			termsVersion: string;
+			privacyVersion: string;
+			signedAt: number;
+			signature: `0x${string}`;
+		};
+		result: { ok: true };
+	};
 	"/api/arbitrage/create": {
 		body: Signed<OpenBody>;
 		result: { taskId: string };

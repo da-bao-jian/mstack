@@ -1,0 +1,38 @@
+{
+	"symbols": [
+		{
+			"symbol": "BTCUSDT",
+			"baseAsset": "BTC",
+			"quoteAsset": "USDT",
+			"filters": [
+				{
+					"stepSize": "0.001",
+					"filterType": "LOT_SIZE",
+					"maxQty": "1000",
+					"minQty": "0.001"
+				},
+				{
+					"notional": "5",
+					"filterType": "MIN_NOTIONAL"
+				}
+			]
+		},
+		{
+			"symbol": "BTCUSD1",
+			"baseAsset": "BTC",
+			"quoteAsset": "USD1",
+			"filters": [
+				{
+					"stepSize": "0.001",
+					"filterType": "LOT_SIZE",
+					"maxQty": "1000",
+					"minQty": "0.001"
+				},
+				{
+					"notional": "5",
+					"filterType": "MIN_NOTIONAL"
+				}
+			]
+		}
+	]
+}

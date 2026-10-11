@@ -237,7 +237,8 @@ test("version and help expose only delivered commands", async () => {
 		"size-mismatch-close",
 	])
 		expect(result.out).toContain(`mob ${name}`);
-	expect(result.out).not.toMatch(/mob (bind|setup)/);
+	expect(result.out).toContain("mob setup");
+	expect(result.out).toContain("mob bind <hl|aster|lighter|lighter-mainnet>");
 	expect(result.out).not.toContain("--leverage");
 	expect(result.out).not.toContain("--margin");
 	expect(result.out).toContain("mob sign <id>");

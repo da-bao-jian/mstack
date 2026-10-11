@@ -88,7 +88,8 @@ el("connect").onclick = async () => {
     await reportAccount();
     provider.on?.("accountsChanged", accounts => { if (provider !== selected) return; address = accounts[0]; void reportAccount().catch(error => status(error.message, true)); });
     provider.on?.("chainChanged", chain => { if (provider !== selected) return; chainId = Number(chain); void reportAccount().catch(error => status(error.message, true)); });
-    status("Connected. Review the message and digest before signing.");
+    if (proposal.connectionOnly) { done = true; status("Wallet chain received. Return to your terminal. No signature requested."); }
+    else status("Connected. Review the message and digest before signing.");
   } catch (error) { status(error.message, true); }
   finally { busy = false; refresh(); }
 };
@@ -129,6 +130,7 @@ async function poll() {
     const view = await api("/api/proposal");
     if (!proposal) {
       proposal = view;
+      if (view.connectionOnly) { el("sign").hidden = true; }
       for (const key of ["id", "purpose", "owner", "digest"]) el(key).textContent = view[key];
       el("message").textContent = view.signing.type === "text" ? view.signing.message : JSON.stringify(view.signing.typedData, null, 2);
     }

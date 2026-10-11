@@ -16,6 +16,7 @@ export interface BrowserOptions {
 	openUrl?: (url: string) => Promise<void>;
 	onUrl?: (url: string) => void;
 	now?: () => number;
+	connectionOnly?: boolean;
 }
 
 /** One process, one Proposal, one accepted signature. The token never touches disk. */
@@ -23,7 +24,7 @@ export function browserSigner(
 	input: SigningView,
 	options: BrowserOptions = {},
 ): InteractiveSigner {
-	const view = checkedView(input);
+	const view = checkedView(input, options.connectionOnly);
 	const now = options.now ?? Date.now;
 	const token = randomBytes(32).toString("hex");
 	const nonce = randomBytes(24).toString("base64");
@@ -114,7 +115,14 @@ export function browserSigner(
 						},
 					);
 				if (req.method === "GET" && url.pathname === "/api/proposal")
-					return Response.json({ ...view, ready: requested }, { headers });
+					return Response.json(
+						{
+							...view,
+							ready: requested,
+							...(options.connectionOnly ? { connectionOnly: true } : {}),
+						},
+						{ headers },
+					);
 				if (req.method !== "POST") return reply(404, "Unknown route");
 				if (req.headers.get("origin") !== origin)
 					return reply(403, "Invalid Origin");
@@ -147,7 +155,10 @@ export function browserSigner(
 							address: getAddress(body.address),
 							chainId: body.chainId,
 						};
-						connected.resolve(account);
+						if (options.connectionOnly) {
+							const reported = account;
+							setTimeout(() => connected.resolve(reported), 10);
+						} else connected.resolve(account);
 						return Response.json({ ok: true }, { headers });
 					}
 					if (!requested || !account)
@@ -192,6 +203,8 @@ export function browserSigner(
 		);
 	}
 	async function sign(payload: SigningView["signing"]) {
+		if (options.connectionOnly)
+			throw new Error("Connection-only bridge cannot sign");
 		alive();
 		assertPayload(view, payload);
 		if (requested) throw new Error("Proposal signing already requested");

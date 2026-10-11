@@ -1,5 +1,5 @@
-import { MobiusClient, type WriteRoutes } from "@mstack/mobius-client";
-import { type Json, ProposalStore, runPreflight } from "@mstack/proposals";
+import { ApiError, MobiusClient } from "@mstack/mobius-client";
+import { ProposalStore, runPreflight } from "@mstack/proposals";
 import {
 	browserSigner,
 	createKeystore,
@@ -13,6 +13,7 @@ import {
 import { getAddress } from "viem";
 import pkg from "../package.json";
 import { readConfig, UsageError } from "./config.ts";
+import { submitPlan } from "./onboarding-http.ts";
 import { CheckFailure, Checks, configChecks } from "./preflight/checks.ts";
 import { showProposal } from "./proposal-view.ts";
 import type { Runtime } from "./run.ts";
@@ -152,20 +153,25 @@ export async function p1(
 				await checkConfig();
 				if (rt.now() >= p.expiresAt)
 					throw new Error("Proposal expired before submission");
-				return (await new MobiusClient({
-					base: p.submit.base,
-					version: pkg.version,
-					fetch: rt.fetch,
-				}).write(
-					p.submit.route,
-					body as WriteRoutes[keyof WriteRoutes]["body"],
-					AbortSignal.timeout(p.expiresAt - rt.now()),
-				)) as Json;
+				return submitPlan(p, body, rt);
 			},
 		});
 		rt.out(
 			`${result.id}: ${result.status}\nServer answer: ${JSON.stringify(result.answer)}\nSubmission is acknowledged; execution is not confirmed.`,
 		);
+	} catch (error) {
+		if (
+			error instanceof ApiError &&
+			error.status === 409 &&
+			(await store.get(id)).submit.route === "/legal/acceptance"
+		) {
+			rt.out(
+				"Legal terms changed. The old Proposal cannot be signed again; staging current terms for new approval.",
+			);
+			const { stageLegal } = await import("./setup-command.ts");
+			await stageLegal(rt, true);
+		}
+		throw error;
 	} finally {
 		await close?.();
 	}

@@ -29,6 +29,7 @@ export async function fakeBrowserWallet(
 	assert.ok(page.headers.get("Content-Security-Policy"));
 	let view = (await (await api("/api/proposal")).json()) as SigningView & {
 		ready: boolean;
+		connectionOnly?: boolean;
 	};
 	assert.equal(
 		(
@@ -39,6 +40,7 @@ export async function fakeBrowserWallet(
 		).status,
 		200,
 	);
+	if (view.connectionOnly) return;
 	while (!view.ready) {
 		if (Date.now() >= view.expiresAt) throw new Error("Fake wallet expired");
 		await Bun.sleep(10);

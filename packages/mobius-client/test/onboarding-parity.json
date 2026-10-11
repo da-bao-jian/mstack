@@ -1,0 +1,72 @@
+{
+	"provenance": "mobius@33ed2ece; HL SDK v0.33.2. No upstream test files for these ports were included in the supplied reference snapshot.",
+	"asterSourceSha256": "b17362c526cfb446d17a4fd0682afe93fb3a1675bb0141d3c99d0f93007c0718",
+	"legalBlockSha256": "76d63d66b03aa9b757f39daa7bb856314070a7266b860fc3b51daad34bceefd1",
+	"lighterBlockSha256": "29b326c9a3476b82f02877b11a2198ddf0c23871843f65a607ac32d8fd0b0eb4",
+	"hlReferenceFunctionSha256": "68b3b0de08633313b25aadf9273d9fb542a000ec5f0851625315d707b9c8c1e6",
+	"hlReferenceFunction": "export async function signUserSignedAction(args) {\n  const { wallet, action, types } = args;\n  return await signTypedData({\n    wallet,\n    domain: {\n      name: \"HyperliquidSignTransaction\",\n      version: \"1\",\n      chainId: parseInt(action.signatureChainId),\n      verifyingContract: \"0x0000000000000000000000000000000000000000\"\n    },\n    types,\n    primaryType: Object.keys(types)[0],\n    message: action\n  });\n}",
+	"cases": [
+		{
+			"action": {
+				"type": "approveAgent",
+				"signatureChainId": "0xa4b1",
+				"hyperliquidChain": "Mainnet",
+				"nonce": 1791690000000,
+				"agentAddress": "0x0000000000000000000000000000000000000002",
+				"agentName": "mobius-bot valid_until 1800000000000"
+			},
+			"types": {
+				"HyperliquidTransaction:ApproveAgent": [
+					{
+						"name": "hyperliquidChain",
+						"type": "string"
+					},
+					{
+						"name": "agentAddress",
+						"type": "address"
+					},
+					{
+						"name": "agentName",
+						"type": "string"
+					},
+					{
+						"name": "nonce",
+						"type": "uint64"
+					}
+				]
+			},
+			"digest": "0xf3ee38f021c8df1d8c1de72d4bde9ed67c329759fcae4f98f3b338c600929fcd"
+		},
+		{
+			"action": {
+				"type": "approveBuilderFee",
+				"signatureChainId": "0xa4b1",
+				"hyperliquidChain": "Mainnet",
+				"nonce": 1791690000000,
+				"maxFeeRate": "0.1%",
+				"builder": "0x0000000000000000000000000000000000000003"
+			},
+			"types": {
+				"HyperliquidTransaction:ApproveBuilderFee": [
+					{
+						"name": "hyperliquidChain",
+						"type": "string"
+					},
+					{
+						"name": "maxFeeRate",
+						"type": "string"
+					},
+					{
+						"name": "builder",
+						"type": "address"
+					},
+					{
+						"name": "nonce",
+						"type": "uint64"
+					}
+				]
+			},
+			"digest": "0xc992308ab21155bfb62a1c7b9b0d1aaecca39e00f9f5d0acf0f2f358ec67df8a"
+		}
+	]
+}

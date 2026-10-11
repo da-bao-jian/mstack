@@ -70,19 +70,19 @@ test.each([
 	],
 	[
 		"aster",
-		"aster/exchangeInfo.synthetic.json",
+		"aster/exchangeInfo.json",
 		["symbols", 0, "filters", 0, "stepSize"],
 		0,
 	],
 	[
 		"aster",
-		"aster/exchangeInfo.synthetic.json",
+		"aster/exchangeInfo.json",
 		["symbols", 0, "filters", 0, "minQty"],
 		null,
 	],
 	[
 		"aster",
-		"aster/exchangeInfo.synthetic.json",
+		"aster/exchangeInfo.json",
 		["symbols", 0, "filters", 1, "notional"],
 		"NaN",
 	],
@@ -125,14 +125,14 @@ test("metadata rejects missing markets, duplicates and HTTP failures", async () 
 
 test("tiny Aster lots retain their real decimal precision", async () => {
 	const raw = await changed(
-		"aster/exchangeInfo.synthetic.json",
+		"aster/exchangeInfo.json",
 		["symbols", 0, "filters", 0, "stepSize"],
 		"0.0000000001",
 	);
 	const row = await fetchMarketMetadata(
 		"aster",
 		"BTC",
-		await metadataContext({ "aster/exchangeInfo.synthetic.json": raw }),
+		await metadataContext({ "aster/exchangeInfo.json": raw }),
 	);
 	expect(row.sizeDecimals).toBe(10);
 	expect(row.lotSize).toBe(1e-10);

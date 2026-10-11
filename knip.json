@@ -1,10 +1,18 @@
 {
 	"$schema": "https://unpkg.com/knip@6/schema.json",
 	"workspaces": {
-		"packages/liquidation": { "project": ["src/**/*.ts", "test/**/*.ts"] },
-		"packages/mobius-client": { "project": ["src/**/*.ts", "test/**/*.ts"] },
-		"packages/proposals": { "project": ["src/**/*.ts", "test/**/*.ts"] },
-		"packages/signers": { "project": ["src/**/*.ts", "test/**/*.ts"] },
+		"packages/liquidation": {
+			"project": ["src/**/*.ts", "test/**/*.ts"]
+		},
+		"packages/mobius-client": {
+			"project": ["src/**/*.ts", "test/**/*.ts"]
+		},
+		"packages/proposals": {
+			"project": ["src/**/*.ts", "test/**/*.ts"]
+		},
+		"packages/signers": {
+			"project": ["src/**/*.ts", "test/**/*.ts"]
+		},
 		".": {
 			"entry": [
 				"packages/*.test.ts",
@@ -23,5 +31,8 @@
 			"entry": ["src/main.ts"],
 			"project": ["src/**/*.ts", "test/**/*.ts", "scripts/**/*.ts"]
 		}
+	},
+	"ignoreIssues": {
+		"packages/mobius-client/src/onboarding/aster.ts": ["exports"]
 	}
 }

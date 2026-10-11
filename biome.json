@@ -1,25 +1,68 @@
 {
 	"$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
-	"vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
-	"files": { "includes": ["**", "!!reference", "!!**/dist"] },
-	"formatter": { "enabled": true, "indentStyle": "tab" },
-	"linter": { "enabled": true, "rules": { "preset": "recommended" } },
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"files": {
+		"includes": ["**", "!!reference", "!!**/dist"]
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab"
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"preset": "recommended"
+		}
+	},
 	"overrides": [
 		{
 			"includes": [
 				"packages/liquidation/src/**",
+				"packages/mobius-client/src/onboarding/**",
 				"apps/cli/src/preflight/resizePlan.ts"
 			],
-			"formatter": { "enabled": false },
-			"assist": { "enabled": false }
+			"formatter": {
+				"enabled": false
+			},
+			"assist": {
+				"enabled": false
+			}
 		},
 		{
 			"includes": ["packages/funding/src/index.ts"],
-			"formatter": { "enabled": false }
+			"formatter": {
+				"enabled": false
+			}
 		},
 		{
 			"includes": ["packages/funding/src/index.test.ts"],
-			"assist": { "enabled": false }
+			"assist": {
+				"enabled": false
+			}
+		},
+		{
+			"includes": ["packages/mobius-client/src/onboarding/types.ts"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noExplicitAny": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": ["packages/mobius-client/src/onboarding/hl.ts"],
+			"linter": {
+				"rules": {
+					"correctness": {
+						"useParseIntRadix": "off"
+					}
+				}
+			}
 		}
 	]
 }

@@ -66,7 +66,34 @@ export interface ProposalInput {
 	signing: SigningPayload;
 	submit: {
 		base: string;
-		route: keyof WriteRoutes;
+		route:
+			| keyof WriteRoutes
+			| "/exchange"
+			| "/fapi/v3/approveAgent"
+			| "/api/v1/sendTx";
+		format?: "hl" | "aster" | "lighter";
+		fieldOrder?: string[];
+		binding?: {
+			venue: "hl" | "aster" | "lighter" | "lighter-mainnet";
+			step: string;
+			sessionId?: string;
+			publicKey?: string;
+			apiBase: string;
+		};
+		completion?: {
+			base: string;
+			statusRoute:
+				| "/api/binding/hl/status"
+				| "/api/binding/aster/status"
+				| "/api/binding/lighter/status";
+			sessionId: string;
+			finalize?: {
+				route:
+					| "/api/binding/hl/builder-finalize"
+					| "/api/binding/aster/builder-finalize";
+				body: { ownerAddress: string };
+			};
+		};
 		body: JsonObject;
 		signatureField: string;
 	};
@@ -159,10 +186,15 @@ export function validateInput(p: ProposalInput): void {
 		throw new Error("Proposal kind does not match signing payload");
 	if (
 		p.signing.type === "text" &&
-		(!p.signing.message || /[\p{Cc}\p{Cf}]/u.test(p.signing.message))
+		(!p.signing.message ||
+			/[\p{Cc}\p{Cf}]/u.test(
+				p.kind === "venue-submit"
+					? p.signing.message.replaceAll("\n", "")
+					: p.signing.message,
+			))
 	)
 		throw new Error(
-			"Text message must be nonempty and have no terminal control characters",
+			"Text message must be nonempty and have no terminal control characters (venue-submit permits line feeds)",
 		);
 	const base = new URL(p.submit.base);
 	if (
@@ -180,11 +212,75 @@ export function validateInput(p: ProposalInput): void {
 			"Submission requires HTTPS (HTTP is allowed only on loopback)",
 		);
 	if (
-		!Object.hasOwn(writeRoutes, p.submit.route) ||
+		(!Object.hasOwn(writeRoutes, p.submit.route) && !p.submit.format) ||
 		p.submit.route.endsWith("/alert-dismiss") ||
 		p.submit.route.endsWith("/builder-finalize")
 	)
 		throw new Error("Invalid submission route");
+	const formats = {
+		hl: { route: "/exchange", hosts: ["api.hyperliquid.xyz"] },
+		aster: { route: "/fapi/v3/approveAgent", hosts: ["fapi.asterdex.com"] },
+		lighter: {
+			route: "/api/v1/sendTx",
+			hosts: ["api.rh.lighter.xyz", "mainnet.zklighter.elliot.ai"],
+		},
+	};
+	if (p.submit.format) {
+		const format = formats[p.submit.format];
+		if (
+			!format ||
+			p.submit.route !== format.route ||
+			!format.hosts.includes(base.hostname) ||
+			base.pathname !== "/" ||
+			base.port
+		)
+			throw new Error("Invalid venue submission endpoint");
+	}
+	if (
+		p.submit.format &&
+		((p.submit.format === "lighter" &&
+			(p.kind !== "venue-submit" || p.signing.type !== "text")) ||
+			(p.submit.format !== "lighter" && p.kind !== "sign-typed"))
+	)
+		throw new Error("Venue submission kind does not match signing payload");
+	if (p.submit.format === "aster" && !p.submit.fieldOrder)
+		throw new Error("Aster form field order is required at staging");
+	if (
+		p.submit.fieldOrder &&
+		(p.submit.format !== "aster" ||
+			new Set(p.submit.fieldOrder).size !== p.submit.fieldOrder.length ||
+			canonical([...p.submit.fieldOrder].sort()) !==
+				canonical(Object.keys(p.submit.body).sort()))
+	)
+		throw new Error("Invalid form field order");
+	if (p.submit.completion) {
+		const c = p.submit.completion;
+		const u = new URL(c.base);
+		if (
+			u.username ||
+			u.password ||
+			u.search ||
+			u.hash ||
+			(u.protocol !== "https:" &&
+				!(u.protocol === "http:" && u.hostname === "127.0.0.1"))
+		)
+			throw new Error("Invalid binding completion base");
+		const venue = p.submit.format === "lighter" ? "lighter" : p.submit.format;
+		if (
+			!venue ||
+			c.statusRoute !== `/api/binding/${venue}/status` ||
+			!c.sessionId ||
+			/[\p{Cc}\p{Cf}]/u.test(c.sessionId)
+		)
+			throw new Error("Invalid binding completion");
+		if (
+			c.finalize &&
+			(venue === "lighter" ||
+				c.finalize.route !== `/api/binding/${venue}/builder-finalize` ||
+				getAddress(c.finalize.body.ownerAddress) !== getAddress(p.owner))
+		)
+			throw new Error("Invalid builder finalization");
+	}
 	if (
 		p.submit.signatureField !== "signature" ||
 		Object.hasOwn(p.submit.body, p.submit.signatureField)

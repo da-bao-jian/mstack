@@ -1,5 +1,7 @@
 import type { ReadRoutes, WriteRoutes } from "./types.ts";
 export const readRoutes: { [R in keyof ReadRoutes]: true } = {
+	"/legal/terms": true,
+	"/legal/acceptance": true,
 	"/api/arbitrage/list": true,
 	"/api/arbitrage/task": true,
 	"/api/arbitrage/liq-trims": true,
@@ -15,6 +17,7 @@ export const readRoutes: { [R in keyof ReadRoutes]: true } = {
 	"/api/binding/rebind-check": true,
 };
 export const writeRoutes: { [R in keyof WriteRoutes]: true } = {
+	"/legal/acceptance": true,
 	"/api/arbitrage/create": true,
 	"/api/arbitrage/close": true,
 	"/api/arbitrage/neutralize": true,

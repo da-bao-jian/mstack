@@ -64,6 +64,23 @@ function validateRead(route: keyof ReadRoutes, value: unknown): unknown {
 		return value;
 	}
 	const body = record(value);
+	if (route === "/legal/terms" || route === "/legal/acceptance") {
+		for (const key of ["termsVersion", "privacyVersion"]) {
+			required(body, key, "string");
+			if (
+				!(body[key] as string).trim() ||
+				/[\p{Cc}\p{Cf}]/u.test(body[key] as string)
+			)
+				throw new Error(`invalid ${key}`);
+		}
+		if (route === "/legal/terms") {
+			for (const key of ["termsUrl", "privacyUrl"])
+				required(body, key, "string");
+		} else {
+			required(body, "accepted", "boolean");
+			if (body.acceptedAt !== null) required(body, "acceptedAt", "string");
+		}
+	}
 	if (route === "/api/arbitrage/rates") {
 		required(body, "observedAt", "number");
 		if (
