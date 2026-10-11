@@ -80,3 +80,18 @@ Signing rules (PRD §6.1) apply unchanged: the agent never signs; `mob sign <id>
 
 ## W11 — Skills, MCP, docs
 - Skills `/mob-setup`, `/mob-bind`, `/mob-open`, `/mob-manage`, `/mob-close` per PRD §7.2–7.3; the router's P1 refusal sentence is replaced by the stop-and-ask rules. MCP tools `propose_open`, `propose_resize`, `propose_neutralize`, `propose_protect`, `propose_auto_close`, `propose_close`, `propose_bind_step` return a Proposal id and the `mob sign <id>` instruction; there is no signing tool. Static skill test: no skill runs `mob sign` without the user's latest message naming the id. A plugin `PreToolUse` hook that refuses a `mob sign` whose id is absent from the last user turn. README custody statement unchanged; version 0.2.0.
+
+---
+
+# Production-readiness program (after P1)
+
+Decided 2026-10-11. Goal: ship something that feels like a finished product from an experienced agentic engineer: a sleek, consistent terminal experience, and a repository that follows the current Claude Code and Codex conventions for skills, plugins, MCP and `AGENTS.md`/`CLAUDE.md`. Each package is one Codex run under two hours, reviewed by Fable before the next.
+
+| Package | Scope |
+|---|---|
+| **W12 brand + home screen** | The MoB logo rendered in the terminal from `assets/logo.json`; `mob` with no arguments becomes a neofetch-style home screen; `./setup` ends with it; the `/mob` skill shows it once per hour; `mob doctor`. |
+| **W13 agent conventions + repo hygiene** | Plugin root moves to `plugin/` so the repo root can carry `CLAUDE.md` without a validator warning; `CLAUDE.md` → `@AGENTS.md`; `AGENTS.md` rewritten for contributors; skills slimmed to progressive-disclosure form with a one-line preamble call; full `plugin.json` metadata for the Anthropic directory; SECURITY, CONTRIBUTING, CHANGELOG, THIRD_PARTY_NOTICES, ARCHITECTURE, issue templates, Renovate; everything checked against the official Claude Code and Codex docs. |
+| **W14 output polish** | Preview cards instead of JSON dumps, checklists for preflight, grouped `mob status`, number formatting, brand colors on TTY only, error hints, first-run guidance. |
+| **W15 sign page + ceremonies** | The browser sign page in brand style with the logo, a plain "this authorizes" sentence, countdown, phone width; step indicators for setup and bind. |
+| **W16 release engineering** | GitHub Actions release matrix (macOS arm64/x64, Linux x64/arm64) with SHA-256 sums, `bin/mob` download fallback for users without Bun, CHANGELOG, tag 0.3.0, README refresh. |
+| **W17 final sweep** | Security review of the signing surfaces, argument-parsing fuzz tests, dependency audit, a production-readiness report listing what only a human can do (live run, public repo, license decision). |
