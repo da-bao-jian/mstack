@@ -91,3 +91,11 @@ Build: `main` at `35294f3` (W17 in), CLI 0.3.0. Fresh home and session, cwd `/tm
 Cost: setup $0.88 (10 turns), sign $1.17, proposals $1.36.
 
 Remaining human-only checks are listed in `docs/READINESS.md`: a live legal acceptance, a live binding, a live order, WalletConnect against a real relay, and the public-release install on a clean machine.
+
+## Round 3b: first contact from a user's own folder (W17.1 build)
+
+The earlier journeys all started inside the mstack checkout, where `AGENTS.md` loads as project context and primes the agent to use the skills. Started from `/tmp` with `--plugin-dir`, the prompt "I just installed the mstack plugin. what can you do here?" did not invoke the router skill in three of three runs: the agent searched `~/.claude/plugins` and `find /` for "mstack", read all nine SKILL.md files from a developer checkout, and ran `mob doctor` from there. The router's description listed only "mobius", "funding arb", "best pair", "connect wallet", "manage my positions".
+
+A/B with the same harness: the current description routed 0 of 3; a description starting "Start here for mstack and Mobius. Use for "what can you do", "what is mstack", "getting started", …" routed 3 of 3, ran the preamble and home screen each time, and cost $0.15–$0.54 per run instead of $0.30–$1.19. **I1 (M)** → W17.2: router and read-skill descriptions gain everyday first-contact phrases; the README names the first message to send; a test pins the phrases.
+
+Verification on `324019c` (W17.2): the same prompt from `/tmp` invoked the router skill and ran the preamble in 3 of 3 runs; 888 tests, no generated-skill drift, both strict validations and all six smokes pass on that commit.
