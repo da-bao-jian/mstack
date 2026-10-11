@@ -1,0 +1,3 @@
+interface:
+  display_name: "mob-status"
+  short_description: "Read Mobius position status and estimated funding"

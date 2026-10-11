@@ -1,0 +1,3 @@
+interface:
+  display_name: "mob-bind"
+  short_description: "Connect a venue through one binding Proposal at a time"

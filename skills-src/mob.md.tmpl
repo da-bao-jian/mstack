@@ -1,6 +1,6 @@
 ---
 name: mob
-description: Route funding and Mobius questions to read and Proposal skills. Use for "mobius", "funding rates", "best pair", "how does it work", or "my positions". (mstack)
+description: Route Mobius funding and position requests to the right skill. Use for "mobius", "funding arb", "best pair", "connect wallet", or "manage my positions". (mstack)
 {{FRONTMATTER}}---
 
 {{PREAMBLE}}
@@ -9,7 +9,7 @@ description: Route funding and Mobius questions to read and Proposal skills. Use
 
 If the preamble printed a block between `<<<MOB` and `MOB>>>`, reproduce it exactly, inside one fenced code block, before anything else.
 
-Run the preamble first. Use the resolved `$MOB` path for all CLI commands below; shell-quote each user value. Keep both stdout and stderr. If `MOB_MISSING` appears, show the install line and stop. Report API reachability failures; direct venue scans can still run.
+Run the preamble first. Use the path printed as `MOB_BIN` for all CLI commands below; shell-quote each user value. Keep both stdout and stderr. If `MOB_MISSING` appears, show the install line and stop. Report API reachability failures; direct venue scans can still run.
 
 | User asks about | Use skill |
 |---|---|
@@ -22,7 +22,7 @@ Run the preamble first. Use the resolved `$MOB` path for all CLI commands below;
 | Resize, neutralize, protection, auto-close, size mismatch | `/mob-manage` |
 | Close a position | `/mob-close` |
 
-Load the named skill and follow it. Available commands include setup, bind, scan, rates, history, explain, status, config, open, close, resize, neutralize, protect, auto-close, size-mismatch-close, proposals, proposal show, and preview. Setup saves only public choices the user explicitly requests; it never creates a keystore. Binding asks for separate approval for every Proposal. Upgrade is installation maintenance only.
+Load the named skill and follow it. For command scope and installation checks, read [the command guide](references/commands.md).
 
 ## Standing rules
 

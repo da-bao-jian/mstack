@@ -1,0 +1,3 @@
+interface:
+  display_name: "mob-open"
+  short_description: "Stage a delta-neutral position for human approval"

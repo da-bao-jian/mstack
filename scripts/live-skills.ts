@@ -11,7 +11,7 @@ const env = {
 	HOME: home,
 	MOB_HOME: join(home, ".mob"),
 	CLAUDE_PLUGIN_ROOT: "",
-	PATH: `${dirname(process.execPath)}:${process.env.PATH}`,
+	PATH: `${join(home, ".agents/skills/mstack/bin")}:${dirname(process.execPath)}:${process.env.PATH}`,
 };
 
 async function run(args: string[], isolated = true): Promise<string> {
@@ -52,8 +52,8 @@ try {
 		"mob-close",
 		"mstack/bin",
 	]) {
-		const path = join(home, ".codex/skills", name);
-		console.log(`~/.codex/skills/${name} -> ${await readlink(path)}`);
+		const path = join(home, ".agents/skills", name);
+		console.log(`~/.agents/skills/${name} -> ${await readlink(path)}`);
 	}
 	for (const name of [
 		"mob",
@@ -68,20 +68,20 @@ try {
 	]) {
 		console.log(`\n$ bash <${name} preamble>`);
 		const body = await readFile(
-			join(home, ".codex/skills", name, "SKILL.md"),
+			join(home, ".agents/skills", name, "SKILL.md"),
 			"utf8",
 		);
 		const code = /```bash\n([\s\S]*?)\n```/.exec(body)?.[1];
 		if (!code) throw new Error(`Missing ${name} preamble`);
 		const out = await run(["bash", "-c", code]);
-		if (!out.includes("API_REACHABLE: ok"))
+		if (!/API_REACHABLE: (ok|slow) ·/.test(out))
 			throw new Error("Mobius API was unreachable");
 	}
-	console.log("\n$ claude plugin validate .");
-	await run(["claude", "plugin", "validate", "."], false);
-	console.log("\n$ claude plugin validate .claude-plugin/plugin.json");
+	console.log("\n$ claude plugin validate --strict .");
+	await run(["claude", "plugin", "validate", "--strict", "."], false);
+	console.log("\n$ claude plugin validate --strict .claude-plugin/plugin.json");
 	await run(
-		["claude", "plugin", "validate", ".claude-plugin/plugin.json"],
+		["claude", "plugin", "validate", "--strict", ".claude-plugin/plugin.json"],
 		false,
 	);
 } finally {

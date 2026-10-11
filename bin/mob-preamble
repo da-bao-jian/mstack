@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+# Resolve the bin directory physically: setup installs it as a symlink.
+# Resolve bin first so ../ refers to the checkout, not the host's skills folder.
+MOB_BIN_ROOT="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P)"
+exec bash "$MOB_BIN_ROOT/../scripts/skill-preamble.sh" "$@"

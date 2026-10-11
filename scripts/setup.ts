@@ -94,7 +94,9 @@ export async function setup(
 	for (const host of ["claude", "codex"])
 		if (
 			values.host === host ||
-			(values.host === "auto" && (await exists(join(home, `.${host}`))))
+			(values.host === "auto" &&
+				((await exists(join(home, `.${host}`))) ||
+					(host === "codex" && (await exists(join(home, ".agents/skills"))))))
 		)
 			hosts.push(host);
 	if (!hosts.length) {
@@ -109,30 +111,52 @@ export async function setup(
 		directories: string[];
 	}[] = [];
 	for (const host of hosts) {
-		const skills = join(home, `.${host}`, "skills");
+		const roots = host === "codex" ? [".agents", ".codex"] : [".claude"];
+		const activeRoots = [];
+		for (const directory of roots)
+			if (
+				directory !== ".codex" ||
+				values.uninstall ||
+				(await exists(join(home, ".codex/skills")))
+			)
+				activeRoots.push(directory);
 		const ledger = join(home, ".mob", `mstack-install-${host}.json`);
-		const directories = [
-			join(home, `.${host}`),
-			skills,
-			join(skills, "mstack"),
-		];
-		const wanted = [
-			{ path: join(skills, "mstack", "bin"), target: join(root, "bin") },
-			...[
-				"mob",
-				"mob-scan",
-				"mob-explain",
-				"mob-status",
-				"mob-setup",
-				"mob-bind",
-				"mob-open",
-				"mob-manage",
-				"mob-close",
-			].map((name) => ({
-				path: join(skills, name),
-				target: join(root, host === "claude" ? "skills" : "skills-codex", name),
-			})),
-		];
+		const directories = activeRoots.flatMap((directory) => [
+			join(home, directory),
+			join(home, directory, "skills"),
+			join(home, directory, "skills/mstack"),
+		]);
+		const linksFor = (directory: string) => {
+			const skills = join(home, directory, "skills");
+			return [
+				{ path: join(skills, "mstack", "bin"), target: join(root, "bin") },
+				...[
+					"mob",
+					"mob-scan",
+					"mob-explain",
+					"mob-status",
+					"mob-setup",
+					"mob-bind",
+					"mob-open",
+					"mob-manage",
+					"mob-close",
+				].map((name) => ({
+					path: join(skills, name),
+					target: join(
+						root,
+						host === "claude" ? "skills" : "skills-codex",
+						name,
+					),
+				})),
+			];
+		};
+		const wanted = activeRoots.flatMap(linksFor);
+		const allowedLinks = roots.flatMap(linksFor);
+		const allowedDirectories = roots.flatMap((directory) => [
+			join(home, directory),
+			join(home, directory, "skills"),
+			join(home, directory, "skills/mstack"),
+		]);
 		const record: InstallRecord = (await exists(ledger))
 			? JSON.parse(await readFile(ledger, "utf8"))
 			: { root, links: [] };
@@ -141,7 +165,9 @@ export async function setup(
 			!Array.isArray(record.links) ||
 			record.links.some(
 				(link) =>
-					!wanted.some((w) => w.path === link.path && w.target === link.target),
+					!allowedLinks.some(
+						(w) => w.path === link.path && w.target === link.target,
+					),
 			)
 		)
 			throw new Error(
@@ -150,7 +176,7 @@ export async function setup(
 		if (
 			record.directories !== undefined &&
 			(!Array.isArray(record.directories) ||
-				record.directories.some((path) => !directories.includes(path)))
+				record.directories.some((path) => !allowedDirectories.includes(path)))
 		)
 			throw new Error(`Invalid directory ownership: ${ledger}`);
 		// Preflight all hosts before a build or mutation. Never replace unrelated files.
@@ -213,10 +239,10 @@ export async function setup(
 		}
 		if (!values.quiet) {
 			out(
-				`Installed ${host}: mob, mob-scan, mob-explain, mob-status, mob-setup, mob-bind, mob-open, mob-manage, mob-close. Binary: ${join(home, `.${host}`, "skills/mstack/bin/mob")}`,
+				`Installed ${host}: mob, mob-scan, mob-explain, mob-status, mob-setup, mob-bind, mob-open, mob-manage, mob-close. Binary: ${join(home, host === "codex" ? ".agents" : ".claude", "skills/mstack/bin/mob")}`,
 			);
 			out(
-				`Paste into ${host === "claude" ? "CLAUDE.md" : "AGENTS.md"}:\nUse /mob for funding and Mobius questions. The installed mstack skills are /mob (router), /mob-scan (funding comparisons), /mob-explain (bundled explanations), /mob-status (public task reads), /mob-setup (public configuration and legal acceptance), /mob-bind (one venue approval at a time), /mob-open, /mob-manage, and /mob-close (stage a Proposal and stop for explicit approval). Browser signing requires the latest user message to name the Proposal id; keystore signing needs the human's own terminal.`,
+				`Optional AGENTS.md integration:\nUse ${host === "claude" ? "/mob" : "$mob"} for funding and Mobius questions. The installed mstack skills cover scanning, explanations, status, setup, binding, opening, managing, and closing. Mutation skills stage a Proposal and stop for explicit approval. Browser signing requires the latest user message to name the Proposal id; keystore signing needs the human's own terminal.`,
 			);
 		}
 	}

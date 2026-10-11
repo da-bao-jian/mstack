@@ -1,8 +1,11 @@
 {
 	"name": "mstack",
 	"version": "0.3.0",
-	"description": "Funding-rate scanner and Mobius agent stack. Scan every perp venue, then open and manage delta-neutral positions from your agent. Your keys never leave your wallet.",
-	"author": { "name": "mstack contributors" },
+	"description": "Compare public funding rates and stage Mobius positions for explicit human wallet approval.",
+	"author": {
+		"name": "mstack contributors",
+		"url": "https://github.com/da-bao-jian"
+	},
 	"license": "MIT",
 	"keywords": ["funding", "perpetuals", "mobius", "proposals"],
 	"skills": ["./skills/"],
@@ -13,5 +16,8 @@
 			"description": "Public Mobius API URL. Apply an override with mob config set api_base <URL>.",
 			"default": "https://funding.mob.exchange"
 		}
-	}
+	},
+	"displayName": "mstack",
+	"homepage": "https://github.com/da-bao-jian/mstack#readme",
+	"repository": "https://github.com/da-bao-jian/mstack"
 }

@@ -7,11 +7,17 @@ if command -v mob >/dev/null 2>&1; then
   MOB="$(command -v mob)"
 elif [ -x "$HOME/.claude/skills/mstack/bin/mob" ]; then
   MOB="$HOME/.claude/skills/mstack/bin/mob"
+elif [ -x "$HOME/.agents/skills/mstack/bin/mob" ]; then
+  MOB="$HOME/.agents/skills/mstack/bin/mob"
 elif [ -x "$HOME/.codex/skills/mstack/bin/mob" ]; then
   MOB="$HOME/.codex/skills/mstack/bin/mob"
 else
   printf '%s\n' 'MOB_MISSING' 'Install: cd <mstack-checkout> && ./setup --host auto (Bun >= 1.3 required)'
   exit 1
+fi
+printf 'MOB_BIN: %s\n' "$MOB"
+if [ "${1:-}" = --router ]; then
+  source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/skill-splash.sh"
 fi
 if MOB_VERSION="$("$MOB" --version)"; then printf 'MOB_VERSION: %s\n' "$MOB_VERSION"; else printf 'MOB_VERSION: fail\n'; fi
 if API_BASE="$("$MOB" config get api_base)"; then printf 'API_BASE: %s\n' "$API_BASE"; else API_BASE=''; printf 'API_BASE: fail\n'; fi
@@ -44,6 +50,7 @@ if MOB_SIGNER=$("$MOB" config get signer); then
 else
   printf 'SIGNER: fail\n'
 fi
+MOB_UPDATE_REASON='cannot read checkout or update-check state'
 mob_update_check() {
   MOB_BIN_DIR="$(cd "$(dirname "$MOB")" && pwd -P)" || return 1
   MOB_REPO="$(git -C "$MOB_BIN_DIR" rev-parse --show-toplevel 2>/dev/null)" || return 0
@@ -54,23 +61,36 @@ mob_update_check() {
   MOB_NOW="$(date +%s)" || return 1
   MOB_LAST=0
   MOB_CHECK=ok
-  if [ -f "$MOB_STAMP" ]; then read -r MOB_LAST MOB_CHECK < "$MOB_STAMP" || return 1; fi
+  MOB_CACHED_REASON=''
+  if [ -f "$MOB_STAMP" ]; then read -r MOB_LAST MOB_CHECK MOB_CACHED_REASON < "$MOB_STAMP" || return 1; fi
   case "$MOB_LAST" in ''|*[!0-9]*) return 1 ;; esac
   if [ "$((MOB_NOW - MOB_LAST))" -ge 3600 ]; then
     printf '%s pending\n' "$MOB_NOW" > "$MOB_STAMP" || return 1
-    if git -C "$MOB_REPO" fetch -q origin; then
+    if MOB_FETCH_ERROR="$(GIT_TERMINAL_PROMPT=0 git -C "$MOB_REPO" fetch -q origin 2>&1)"; then
       printf '%s ok\n' "$MOB_NOW" > "$MOB_STAMP" || return 1
       MOB_CHECK=ok
     else
-      printf '%s fail\n' "$MOB_NOW" > "$MOB_STAMP" || return 1
+      # Keep remote URLs and credential-helper diagnostics out of skill context.
+      case "$MOB_FETCH_ERROR" in
+        *'could not read Username'*|*'could not read Password'*|*'Authentication failed'*|*'Permission denied'*|*'terminal prompts disabled'*)
+          MOB_CACHED_REASON='git fetch credentials unavailable or rejected' ;;
+        *'Could not resolve host'*|*'Could not resolve proxy'*)
+          MOB_CACHED_REASON='git fetch could not resolve host or proxy' ;;
+        *) MOB_CACHED_REASON='git fetch origin failed; check repository access and network' ;;
+      esac
+      printf '%s fail %s\n' "$MOB_NOW" "$MOB_CACHED_REASON" > "$MOB_STAMP" || return 1
       MOB_CHECK=fail
     fi
   fi
-  [ "$MOB_CHECK" = ok ] || return 1
+  if [ "$MOB_CHECK" != ok ]; then
+    MOB_UPDATE_REASON="${MOB_CACHED_REASON:-previous update check failed or did not complete; retry after the hourly interval}"
+    return 1
+  fi
+  MOB_UPDATE_REASON='cannot resolve HEAD or origin/main'
   MOB_LOCAL="$(git -C "$MOB_REPO" rev-parse HEAD)" || return 1
   MOB_REMOTE="$(git -C "$MOB_REPO" rev-parse origin/main)" || return 1
   if [ "$MOB_LOCAL" != "$MOB_REMOTE" ]; then printf 'UPGRADE_AVAILABLE %s %s\n' "$MOB_LOCAL" "$MOB_REMOTE"; fi
   return 0
 }
-if ! mob_update_check; then printf 'UPGRADE_CHECK: fail\n'; fi
+if ! mob_update_check 2>/dev/null; then printf 'UPGRADE_CHECK: fail (%s)\n' "$MOB_UPDATE_REASON"; fi
 true

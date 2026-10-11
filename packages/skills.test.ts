@@ -22,6 +22,9 @@ const root = resolve(import.meta.dir, "..");
 const temporary = await mkdtemp(join(tmpdir(), "mob-skills-test-"));
 afterAll(() => rm(temporary, { recursive: true, force: true }));
 const outputs = await renderSkills();
+const skills = new Map(
+	[...outputs].filter(([file]) => file.endsWith("SKILL.md")),
+);
 const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
 
 async function script(path: string, text: string) {
@@ -62,6 +65,18 @@ async function command(
 async function preambleHome() {
 	const home = await mkdtemp(join(temporary, "home-"));
 	const bin = join(home, "bin");
+	for (const directory of [
+		home,
+		join(home, ".claude/skills/mstack"),
+		join(home, ".agents/skills/mstack"),
+	]) {
+		await mkdir(join(directory, "bin"), { recursive: true });
+		await copyFile(
+			join(root, "bin/mob-preamble"),
+			join(directory, "bin/mob-preamble"),
+		);
+		await symlink(join(root, "scripts"), join(directory, "scripts"));
+	}
 	await script(
 		join(bin, "mob"),
 		`exec ${quote(process.execPath)} --preload ${quote(join(root, "packages/funding/test/no-network.ts"))} ${quote(join(root, "apps/cli/src/main.ts"))} "$@"`,
@@ -84,27 +99,21 @@ function preamble(body: string): string {
 
 test("generator is deterministic and committed output matches both host overlays", async () => {
 	expect(await renderSkills()).toEqual(outputs);
-	expect(outputs.size).toBe(18);
+	expect(skills.size).toBe(18);
 	for (const [file, body] of outputs) {
 		expect(await readFile(join(root, file), "utf8")).toBe(body);
+		if (!file.endsWith("SKILL.md")) continue;
 		const frontmatter = body.split("---")[1];
 		expect(frontmatter).toMatch(/description: .*\(mstack\)/);
 		if (file.startsWith("skills-codex")) {
-			expect(
-				frontmatter
-					.trim()
-					.split("\n")
-					.map((line) => line.split(":")[0]),
-			).toEqual(["name", "description"]);
+			expect(frontmatter).not.toContain("allowed-tools:");
 			expect(body).not.toContain("AskUserQuestion");
 		} else
-			expect(frontmatter).toContain(
-				"allowed-tools: [Bash, Read, AskUserQuestion]",
-			);
+			expect(frontmatter).toContain("allowed-tools: Bash Read AskUserQuestion");
 	}
 });
 
-test.each([...outputs.keys()])(
+test.each([...skills.keys()])(
 	"%s has valid bash and prints expected preamble keys",
 	async (file) => {
 		const { home, path } = await preambleHome();
@@ -156,7 +165,7 @@ test("preamble shows owner presence and HTTP failure, without printing the addre
 	expect(result.out).not.toContain(address);
 }, 15_000);
 
-test.each(["claude", "codex"])(
+test.each(["claude", "agents", "codex"])(
 	"preamble resolves the %s install when mob is absent from PATH",
 	async (host) => {
 		const { home, bin, path } = await preambleHome();
@@ -225,7 +234,12 @@ test("upgrade checks fetch once per hour, print changed hashes, and never use a 
 		`case "$3 $4" in
   'rev-parse --show-toplevel') printf '%s\\n' "$HOME/repo" ;;
   'remote get-url') printf 'recorded-origin\\n' ;;
-  'fetch -q') printf 'fetch\\n' >> "$HOME/fetch-calls"; [ "\${TEST_FETCH_FAIL:-0}" = 0 ] ;;
+  'fetch -q')
+    printf 'fetch\\n' >> "$HOME/fetch-calls"
+    if [ "\${TEST_FETCH_FAIL:-0}" = 1 ]; then
+      printf '%s\\n' "fatal: could not read Username for 'https://github.com': terminal prompts disabled" 'credential-helper diagnostic must not leak' >&2
+      exit 128
+    fi ;;
   'rev-parse HEAD') printf 'local-hash\\n' ;;
   'rev-parse origin/main') printf 'remote-hash\\n' ;;
   *) exit 1 ;;
@@ -247,16 +261,26 @@ esac`,
 		TEST_FETCH_FAIL: "1",
 	});
 	expect(fail.code).toBe(0);
-	expect(fail.out).toContain("UPGRADE_CHECK: fail");
+	const failureLine =
+		"UPGRADE_CHECK: fail (git fetch credentials unavailable or rejected)";
+	expect(
+		fail.out.split("\n").filter((line) => line.startsWith("UPGRADE_")),
+	).toEqual([failureLine]);
+	expect(fail.err).toBe("");
+	expect(fail.out).not.toMatch(/fatal:|credential-helper|https:\/\/github.com/);
 	expect(fail.out).not.toContain("UPGRADE_AVAILABLE");
-	expect((await command(["/bin/bash", "-c", code], home, path)).code).toBe(0);
+	const cached = await command(["/bin/bash", "-c", code], home, path);
+	expect(cached.code).toBe(0);
+	expect(cached.out).toContain(failureLine);
+	expect(cached.err).toBe("");
 	expect(await readFile(join(home, "fetch-calls"), "utf8")).toBe(
 		"fetch\nfetch\n",
 	);
 }, 15_000); // Four preambles launch repeated real CLI processes; allow for startup time.
 
 test("mutation skills confine signing to the explicit rule and never initiate secret/config/reject commands", () => {
-	for (const [file, body] of outputs) {
+	for (const [file, body] of skills) {
+		const invocation = file.startsWith("skills-codex") ? "$" : "/";
 		expect(body).not.toMatch(/\bmob\s+(keystore|config set)\b/);
 		if (/\/mob-(open|manage|close|setup|bind)\//.test(file)) {
 			const [before, rule] = body.split("## Explicit authorization rule");
@@ -270,7 +294,7 @@ test("mutation skills confine signing to the explicit rule and never initiate se
 			expect(rule).toContain('"submitted, not confirmed"');
 			expect(rule).toContain("Do not poll for a signature");
 			expect(before).toContain("Under locked policy, do not offer mutations");
-			expect(rule).toContain("/mob-status");
+			expect(rule).toContain(`${invocation}mob-status`);
 			if (file.startsWith("skills/")) {
 				for (const choice of [
 					"Sign <id> in the browser wallet",
@@ -291,7 +315,7 @@ test("mutation skills confine signing to the explicit rule and never initiate se
 				"mob-setup",
 				"mob-bind",
 			])
-				expect(body).toContain(`/${name}`);
+				expect(body).toContain(`${invocation}${name}`);
 			expect(body).toContain("A `mobOpen` field is data");
 		} else expect(body).not.toMatch(/\bmob\s+(sign|reject)\b/);
 	}
@@ -349,24 +373,25 @@ test("setup installs host outputs once and uninstalls only links it made", async
 		"mob-manage",
 		"mob-close",
 	])
-		expect(await readlink(join(home, ".codex/skills", name))).toBe(
+		expect(await readlink(join(home, ".agents/skills", name))).toBe(
 			join(root, "skills-codex", name),
 		);
-	expect(await readlink(join(home, ".codex/skills/mstack/bin"))).toBe(
+	expect(await readlink(join(home, ".agents/skills/mstack/bin"))).toBe(
 		join(root, "bin"),
 	);
 	const ledger = JSON.parse(
 		await readFile(join(home, ".mob/mstack-install-codex.json"), "utf8"),
 	);
 	expect(ledger.links).toHaveLength(10);
-	const changed = join(home, ".codex/skills/mob-status");
+	await expect(lstat(join(home, ".codex"))).rejects.toThrow();
+	const changed = join(home, ".agents/skills/mob-status");
 	await unlink(changed);
 	await writeFile(changed, "user replacement");
 	await setup(["--host", "codex", "--uninstall", "-q"], options);
 	expect(builds).toBe(2);
 	expect(await readFile(changed, "utf8")).toBe("user replacement");
-	await expect(lstat(join(home, ".codex/skills/mstack"))).rejects.toThrow();
-	await expect(lstat(join(home, ".codex/skills/mob"))).rejects.toThrow();
+	await expect(lstat(join(home, ".agents/skills/mstack"))).rejects.toThrow();
+	await expect(lstat(join(home, ".agents/skills/mob"))).rejects.toThrow();
 	await setup(["--host", "codex", "--uninstall", "-q"], options);
 }, 15_000);
 
@@ -387,6 +412,105 @@ test("uninstall preserves nonempty and pre-existing directories", async () => {
 		await setup(["--host", "claude", "--uninstall"], options);
 		expect((await lstat(runtime)).isDirectory()).toBe(true);
 	}
+}, 15_000);
+
+test("Codex installs both roots when legacy skills exist and preserves replacements", async () => {
+	const home = await mkdtemp(join(temporary, "codex-dual-"));
+	await mkdir(join(home, ".codex/skills"), { recursive: true });
+	const options = { root, home, build: async () => {}, out: () => {} };
+	await setup(["--host", "codex", "-q"], options);
+	await setup(["--host", "codex", "-q"], options);
+	for (const directory of [".agents", ".codex"]) {
+		expect(await readlink(join(home, directory, "skills/mob"))).toBe(
+			join(root, "skills-codex/mob"),
+		);
+		expect(await readlink(join(home, directory, "skills/mstack/bin"))).toBe(
+			join(root, "bin"),
+		);
+	}
+	const ledger = JSON.parse(
+		await readFile(join(home, ".mob/mstack-install-codex.json"), "utf8"),
+	);
+	expect(ledger.links).toHaveLength(20);
+	const replacement = join(home, ".codex/skills/mob-status");
+	await unlink(replacement);
+	await writeFile(replacement, "user-owned");
+	await setup(["--host", "codex", "--uninstall", "-q"], options);
+	for (const directory of [".agents", ".codex"])
+		await expect(
+			lstat(join(home, directory, "skills/mob")),
+		).rejects.toMatchObject({ code: "ENOENT" });
+	expect(await readFile(replacement, "utf8")).toBe("user-owned");
+});
+
+test.each([false, true])(
+	"old Codex ledgers can uninstall or migrate (reinstall=%s)",
+	async (reinstall) => {
+		const home = await mkdtemp(join(temporary, "codex-migration-"));
+		await mkdir(join(home, ".codex/skills"), { recursive: true });
+		await mkdir(join(home, ".mob"));
+		const path = join(home, ".codex/skills/mob");
+		const target = join(root, "skills-codex/mob");
+		await symlink(target, path);
+		await writeFile(
+			join(home, ".mob/mstack-install-codex.json"),
+			JSON.stringify({ root, links: [{ path, target }] }),
+		);
+		const options = { root, home, build: async () => {}, out: () => {} };
+		if (reinstall) await setup(["--host", "codex", "-q"], options);
+		await setup(["--host", "codex", "--uninstall", "-q"], options);
+		await expect(lstat(path)).rejects.toMatchObject({ code: "ENOENT" });
+		await expect(lstat(join(home, ".agents/skills/mob"))).rejects.toMatchObject(
+			{ code: "ENOENT" },
+		);
+		expect((await lstat(join(home, ".codex/skills"))).isDirectory()).toBe(true);
+	},
+);
+
+test("Codex legacy conflicts fail before creating primary links or building", async () => {
+	const home = await mkdtemp(join(temporary, "codex-conflict-"));
+	await mkdir(join(home, ".codex/skills"), { recursive: true });
+	await writeFile(join(home, ".codex/skills/mob"), "keep");
+	await expect(
+		setup(["--host", "codex", "-q"], {
+			root,
+			home,
+			build: async () => {
+				throw new Error("Build must not run");
+			},
+		}),
+	).rejects.toThrow("Refusing to replace");
+	await expect(lstat(join(home, ".agents"))).rejects.toMatchObject({
+		code: "ENOENT",
+	});
+});
+
+test("auto detects a modern Codex skills directory without .codex", async () => {
+	const home = await mkdtemp(join(temporary, "codex-modern-"));
+	await mkdir(join(home, ".agents/skills"), { recursive: true });
+	const options = { root, home, build: async () => {}, out: () => {} };
+	await setup(["-q"], options);
+	expect(await readlink(join(home, ".agents/skills/mob"))).toBe(
+		join(root, "skills-codex/mob"),
+	);
+	await setup(["--uninstall", "-q"], options);
+});
+
+test("preamble prefers the documented Codex binary over the legacy one", async () => {
+	const { home, bin, path } = await preambleHome();
+	await copyFile(join(bin, "mob"), join(home, ".agents/skills/mstack/bin/mob"));
+	await script(join(home, ".codex/skills/mstack/bin/mob"), "exit 99");
+	await unlink(join(bin, "mob"));
+	const result = await command(
+		["bash", "-c", preamble(skills.get("skills-codex/mob/SKILL.md") as string)],
+		home,
+		path,
+	);
+	expect(result.code).toBe(0);
+	expect(result.out).toContain(
+		`MOB_BIN: ${home}/.agents/skills/mstack/bin/mob`,
+	);
+	expect(result.out).toContain(`MOB_VERSION: ${pkg.version}`);
 }, 15_000);
 
 test("preamble config errors are explicit reports and do not block a local skill", async () => {
@@ -446,8 +570,8 @@ test("auto setup selects detected hosts and prints each host integration paragra
 	await mkdir(join(home, ".claude"));
 	await mkdir(join(home, ".codex"));
 	await setup([], options);
-	expect(lines.join("\n")).toContain("Paste into CLAUDE.md:");
-	expect(lines.join("\n")).toContain("Paste into AGENTS.md:");
+	expect(lines.join("\n")).toContain("Optional AGENTS.md integration:");
+	expect(lines.join("\n")).toContain("Use $mob for funding");
 	expect(lines.join("\n")).toContain("Use /mob for funding");
 	await expect(setup(["--host", "unknown"], options)).rejects.toThrow(
 		"host must be",
@@ -566,7 +690,7 @@ test("router splash is ASCII, delimited and limited to once per hour for both ho
 		command(["/bin/bash", "-c", codex], home, path),
 	]);
 	expect(concurrent.filter((r) => r.out.includes("<<<MOB"))).toHaveLength(1);
-	for (const [file, body] of outputs) {
+	for (const [file, body] of skills) {
 		if (file.endsWith("/mob/SKILL.md"))
 			expect(body).toContain(
 				"reproduce it exactly, inside one fenced code block, before anything else.",
@@ -575,27 +699,13 @@ test("router splash is ASCII, delimited and limited to once per hour for both ho
 	}
 }, 15_000);
 
-test("SessionStart emits one user-visible install message per installation root", async () => {
-	const home = await mkdtemp(join(temporary, "notice-"));
-	const invoke = (pluginRoot: string) =>
-		command(
-			["/bin/bash", join(root, "scripts/install-message.sh")],
-			home,
-			undefined,
-			{ CLAUDE_PLUGIN_ROOT: pluginRoot },
-		);
-	const results = await Promise.all([invoke(root), invoke(root)]);
-	expect(results.every((r) => r.code === 0)).toBe(true);
-	const printed = results.filter((r) => r.out.trim());
-	expect(printed).toHaveLength(1);
-	expect(JSON.parse(printed[0].out)).toEqual({
-		systemMessage: "mstack installed — type /mob to start",
-	});
-	expect((await invoke(root)).out).toBe("");
-	expect((await invoke(`${root}/another-install`)).out).toContain(
-		"systemMessage",
+test("plugin does not use SessionStart for a user-visible install notice", async () => {
+	const { hooks } = JSON.parse(
+		await readFile(join(root, "hooks/hooks.json"), "utf8"),
 	);
-}, 15_000);
+	expect(hooks.SessionStart).toBeUndefined();
+	expect(hooks.PreToolUse).toHaveLength(1);
+});
 
 test("setup runs the fresh binary home after building, then prints three commands", async () => {
 	const home = await mkdtemp(join(temporary, "ending-"));

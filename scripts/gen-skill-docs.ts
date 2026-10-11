@@ -9,12 +9,9 @@ export async function renderSkills(root = repo): Promise<Map<string, string>> {
 		.filter((f) => f.endsWith(".md.tmpl"))
 		.sort();
 	if (!files.length) throw new Error("No skill templates found");
-	const preamble = (
-		await readFile(resolve(root, "scripts/skill-preamble.sh"), "utf8")
-	).trimEnd();
-	const splash = (
-		await readFile(resolve(root, "scripts/skill-splash.sh"), "utf8")
-	).trimEnd();
+	const { version } = JSON.parse(
+		await readFile(resolve(root, "package.json"), "utf8"),
+	);
 	const outputs = new Map<string, string>();
 	for (const host of ["claude", "codex"] as const) {
 		const overlay: unknown = JSON.parse(
@@ -33,18 +30,23 @@ export async function renderSkills(root = repo): Promise<Map<string, string>> {
 			if (typeof values[key] !== "string")
 				throw new Error(`Missing ${host} ${key}`);
 		const replacements: Record<string, string> = {
-			FRONTMATTER: values.frontmatter as string,
+			FRONTMATTER: `license: MIT\nmetadata:\n  version: "${version}"\n${values.frontmatter}`,
 			ASK_SIZE: values.askSize as string,
 			ASK_OWNER: values.askOwner as string,
 			ASK_OPEN: values.askOpen as string,
 			ASK_SIGN: values.askSign as string,
-			PREAMBLE: `\`\`\`bash\n${preamble}\n\`\`\``,
+			PREAMBLE: "",
 		};
 		for (const file of files) {
 			const name = file.slice(0, -".md.tmpl".length);
 			const source = await readFile(resolve(root, "skills-src", file), "utf8");
-			replacements.PREAMBLE = `\`\`\`bash\n${name === "mob" ? preamble.replace("if MOB_VERSION=", `${splash}\nif MOB_VERSION=`) : preamble}\n\`\`\``;
-			const body = source.replace(/\{\{([A-Z_]+)\}\}/g, (_, key: string) => {
+			const command =
+				host === "claude"
+					? // biome-ignore lint/suspicious/noTemplateCurlyInString: Host and shell substitutions are literal skill content.
+						'bash "${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/skills/mstack}/bin/mob-preamble"'
+					: "bash ~/.agents/skills/mstack/bin/mob-preamble";
+			replacements.PREAMBLE = `\`\`\`bash\n${command}${name === "mob" ? " --router" : ""}\n\`\`\``;
+			let body = source.replace(/\{\{([A-Z_]+)\}\}/g, (_, key: string) => {
 				if (!Object.hasOwn(replacements, key))
 					throw new Error(`Unknown template field ${key}`);
 				return replacements[key];
@@ -53,10 +55,26 @@ export async function renderSkills(root = repo): Promise<Map<string, string>> {
 				throw new Error(`Unresolved template in ${file}`);
 			if (host === "codex" && /AskUserQuestion|allowed-tools:/.test(body))
 				throw new Error(`Claude-only tool in ${file}`);
-			outputs.set(
-				`${host === "claude" ? "skills" : "skills-codex"}/${name}/SKILL.md`,
-				`${body.trimEnd()}\n`,
-			);
+			if (host === "codex") body = body.replace(/`\/(mob[\w-]*)`/g, "`$$$1`");
+			const directory = `${host === "claude" ? "skills" : "skills-codex"}/${name}`;
+			outputs.set(`${directory}/SKILL.md`, `${body.trimEnd()}\n`);
+			const references = resolve(root, "skills-src", name, "references");
+			for (const reference of [
+				...new Bun.Glob("*.md").scanSync(references),
+			].sort()) {
+				outputs.set(
+					`${directory}/references/${reference}`,
+					await readFile(resolve(references, reference), "utf8"),
+				);
+			}
+			if (host === "codex") {
+				const description = /^description: (.+)$/m.exec(source)?.[1];
+				if (!description) throw new Error(`Missing description in ${file}`);
+				outputs.set(
+					`${directory}/agents/openai.yaml`,
+					`interface:\n  display_name: "${name}"\n  short_description: ${JSON.stringify(description.split(". ")[0].slice(0, 64))}\n`,
+				);
+			}
 		}
 	}
 	return outputs;
@@ -69,5 +87,7 @@ if (import.meta.main) {
 		await mkdir(resolve(target, ".."), { recursive: true });
 		await writeFile(target, body);
 	}
-	console.log(`Generated ${outputs.size / 2} skills for Claude and Codex.`);
+	console.log(
+		`Generated ${[...outputs.keys()].filter((file) => file.endsWith("SKILL.md")).length / 2} skills for Claude and Codex (${outputs.size} files).`,
+	);
 }
