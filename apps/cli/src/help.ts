@@ -121,7 +121,9 @@ export function parseCommand(
 		return parseArgs({ args, options, allowPositionals: true, strict: true });
 	} catch (error) {
 		const e = error as Error & { code?: string };
-		const option = e.message.match(/--?[A-Za-z][\w-]*/)?.[0];
+		const option =
+			e.message.match(/['"](-[^'"\s]+)['"]/)?.[1] ??
+			args.find((arg) => arg.startsWith("-") && arg !== "--");
 		const see = `See \`mob ${command} --help\`.`;
 		if (e.code === "ERR_PARSE_ARGS_UNKNOWN_OPTION" && option) {
 			const nearest = Object.keys(options ?? {}).sort(

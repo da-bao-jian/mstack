@@ -1,0 +1,1620 @@
+{
+	"lockfile": "bun.lock",
+	"scope": "All resolved external packages, including dev and optional platform packages. Workspace packages are MIT.",
+	"packages": [
+		{
+			"package": "@adraffy/ens-normalize",
+			"version": "1.11.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@biomejs/biome",
+			"version": "2.5.15",
+			"license": "MIT OR Apache-2.0",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@biomejs/cli-darwin-arm64",
+			"version": "2.5.15",
+			"license": "MIT OR Apache-2.0",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@biomejs/cli-darwin-x64",
+			"version": "2.5.15",
+			"license": "MIT OR Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@biomejs/cli-linux-arm64-musl",
+			"version": "2.5.15",
+			"license": "MIT OR Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@biomejs/cli-linux-arm64",
+			"version": "2.5.15",
+			"license": "MIT OR Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@biomejs/cli-linux-x64-musl",
+			"version": "2.5.15",
+			"license": "MIT OR Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@biomejs/cli-linux-x64",
+			"version": "2.5.15",
+			"license": "MIT OR Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@biomejs/cli-win32-arm64",
+			"version": "2.5.15",
+			"license": "MIT OR Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@biomejs/cli-win32-x64",
+			"version": "2.5.15",
+			"license": "MIT OR Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@emnapi/core",
+			"version": "1.11.2",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@emnapi/runtime",
+			"version": "1.11.2",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@emnapi/wasi-threads",
+			"version": "1.2.2",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@hono/node-server",
+			"version": "2.1.4",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@modelcontextprotocol/sdk",
+			"version": "1.32.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@msgpack/msgpack",
+			"version": "3.1.3",
+			"license": "ISC",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@napi-rs/wasm-runtime",
+			"version": "1.2.5",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@noble/ciphers",
+			"version": "1.3.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@noble/curves",
+			"version": "1.8.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@noble/curves",
+			"version": "1.9.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@noble/curves",
+			"version": "1.9.7",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@noble/hashes",
+			"version": "1.7.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@noble/hashes",
+			"version": "1.8.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@oxc-parser/binding-android-arm-eabi",
+			"version": "0.153.0",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-parser/binding-android-arm64",
+			"version": "0.153.0",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-parser/binding-darwin-arm64",
+			"version": "0.153.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@oxc-parser/binding-darwin-x64",
+			"version": "0.153.0",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-parser/binding-freebsd-x64",
+			"version": "0.153.0",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-parser/binding-linux-arm-gnueabihf",
+			"version": "0.153.0",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-parser/binding-linux-arm-musleabihf",
+			"version": "0.153.0",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-parser/binding-linux-arm64-gnu",
+			"version": "0.153.0",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-parser/binding-linux-arm64-musl",
+			"version": "0.153.0",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-parser/binding-linux-ppc64-gnu",
+			"version": "0.153.0",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-parser/binding-linux-riscv64-gnu",
+			"version": "0.153.0",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-parser/binding-linux-riscv64-musl",
+			"version": "0.153.0",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-parser/binding-linux-s390x-gnu",
+			"version": "0.153.0",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-parser/binding-linux-x64-gnu",
+			"version": "0.153.0",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-parser/binding-linux-x64-musl",
+			"version": "0.153.0",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-parser/binding-openharmony-arm64",
+			"version": "0.153.0",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-parser/binding-win32-arm64-msvc",
+			"version": "0.153.0",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-parser/binding-win32-ia32-msvc",
+			"version": "0.153.0",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-parser/binding-win32-x64-msvc",
+			"version": "0.153.0",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-project/types",
+			"version": "0.153.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@oxc-resolver/binding-android-arm-eabi",
+			"version": "11.24.2",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-resolver/binding-android-arm64",
+			"version": "11.24.2",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-resolver/binding-darwin-arm64",
+			"version": "11.24.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@oxc-resolver/binding-darwin-x64",
+			"version": "11.24.2",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-resolver/binding-freebsd-x64",
+			"version": "11.24.2",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-resolver/binding-linux-arm-gnueabihf",
+			"version": "11.24.2",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-resolver/binding-linux-arm-musleabihf",
+			"version": "11.24.2",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-resolver/binding-linux-arm64-gnu",
+			"version": "11.24.2",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-resolver/binding-linux-arm64-musl",
+			"version": "11.24.2",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-resolver/binding-linux-ppc64-gnu",
+			"version": "11.24.2",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-resolver/binding-linux-riscv64-gnu",
+			"version": "11.24.2",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-resolver/binding-linux-riscv64-musl",
+			"version": "11.24.2",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-resolver/binding-linux-s390x-gnu",
+			"version": "11.24.2",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-resolver/binding-linux-x64-gnu",
+			"version": "11.24.2",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-resolver/binding-linux-x64-musl",
+			"version": "11.24.2",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-resolver/binding-openharmony-arm64",
+			"version": "11.24.2",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-resolver/binding-wasm32-wasi",
+			"version": "11.24.2",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-resolver/binding-win32-arm64-msvc",
+			"version": "11.24.2",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@oxc-resolver/binding-win32-x64-msvc",
+			"version": "11.24.2",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@scure/base",
+			"version": "1.2.6",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@scure/bip32",
+			"version": "1.7.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@scure/bip39",
+			"version": "1.6.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@tybys/wasm-util",
+			"version": "0.10.4",
+			"license": "MIT",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@types/bun",
+			"version": "1.4.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@types/node",
+			"version": "26.6.5",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@types/qrcode-terminal",
+			"version": "0.12.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@typescript/typescript-aix-ppc64",
+			"version": "7.0.2",
+			"license": "Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@typescript/typescript-darwin-arm64",
+			"version": "7.0.2",
+			"license": "Apache-2.0",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@typescript/typescript-darwin-x64",
+			"version": "7.0.2",
+			"license": "Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@typescript/typescript-freebsd-arm64",
+			"version": "7.0.2",
+			"license": "Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@typescript/typescript-freebsd-x64",
+			"version": "7.0.2",
+			"license": "Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@typescript/typescript-linux-arm64",
+			"version": "7.0.2",
+			"license": "Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@typescript/typescript-linux-arm",
+			"version": "7.0.2",
+			"license": "Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@typescript/typescript-linux-loong64",
+			"version": "7.0.2",
+			"license": "Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@typescript/typescript-linux-mips64el",
+			"version": "7.0.2",
+			"license": "Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@typescript/typescript-linux-ppc64",
+			"version": "7.0.2",
+			"license": "Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@typescript/typescript-linux-riscv64",
+			"version": "7.0.2",
+			"license": "Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@typescript/typescript-linux-s390x",
+			"version": "7.0.2",
+			"license": "Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@typescript/typescript-linux-x64",
+			"version": "7.0.2",
+			"license": "Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@typescript/typescript-netbsd-arm64",
+			"version": "7.0.2",
+			"license": "Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@typescript/typescript-netbsd-x64",
+			"version": "7.0.2",
+			"license": "Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@typescript/typescript-openbsd-arm64",
+			"version": "7.0.2",
+			"license": "Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@typescript/typescript-openbsd-x64",
+			"version": "7.0.2",
+			"license": "Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@typescript/typescript-sunos-x64",
+			"version": "7.0.2",
+			"license": "Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@typescript/typescript-win32-arm64",
+			"version": "7.0.2",
+			"license": "Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@typescript/typescript-win32-x64",
+			"version": "7.0.2",
+			"license": "Apache-2.0",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "@walletconnect/core",
+			"version": "2.25.0",
+			"license": "SEE LICENSE IN LICENSE.md",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@walletconnect/environment",
+			"version": "1.0.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@walletconnect/events",
+			"version": "1.0.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@walletconnect/heartbeat",
+			"version": "1.2.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@walletconnect/jsonrpc-provider",
+			"version": "1.0.14",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@walletconnect/jsonrpc-types",
+			"version": "1.0.4",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@walletconnect/jsonrpc-utils",
+			"version": "1.0.8",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@walletconnect/jsonrpc-ws-connection",
+			"version": "1.0.16",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@walletconnect/keyvaluestorage",
+			"version": "1.1.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@walletconnect/logger",
+			"version": "3.0.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@walletconnect/relay-api",
+			"version": "1.0.11",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@walletconnect/relay-auth",
+			"version": "1.1.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@walletconnect/safe-json",
+			"version": "1.0.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@walletconnect/sign-client",
+			"version": "2.25.0",
+			"license": "SEE LICENSE IN LICENSE.md",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@walletconnect/time",
+			"version": "1.0.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@walletconnect/types",
+			"version": "2.25.0",
+			"license": "SEE LICENSE IN LICENSE.md",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@walletconnect/utils",
+			"version": "2.25.0",
+			"license": "SEE LICENSE IN LICENSE.md",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@walletconnect/window-getters",
+			"version": "1.0.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "@walletconnect/window-metadata",
+			"version": "1.0.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "abitype",
+			"version": "1.2.3",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "accepts",
+			"version": "2.0.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "ajv-formats",
+			"version": "3.0.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "ajv",
+			"version": "8.20.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "anymatch",
+			"version": "3.1.3",
+			"license": "ISC",
+			"source": "installed package.json"
+		},
+		{
+			"package": "atomic-sleep",
+			"version": "1.0.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "blakejs",
+			"version": "1.2.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "body-parser",
+			"version": "2.3.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "bun-types",
+			"version": "1.4.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "bytes",
+			"version": "3.1.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "call-bind-apply-helpers",
+			"version": "1.0.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "call-bound",
+			"version": "1.0.4",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "chokidar",
+			"version": "5.0.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "content-disposition",
+			"version": "2.0.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "content-type",
+			"version": "1.0.5",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "content-type",
+			"version": "2.1.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "cookie-es",
+			"version": "1.2.3",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "cookie-signature",
+			"version": "1.2.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "cookie",
+			"version": "0.7.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "cors",
+			"version": "2.8.6",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "cross-spawn",
+			"version": "7.0.6",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "crossws",
+			"version": "0.3.5",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "debug",
+			"version": "4.4.3",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "defu",
+			"version": "6.1.7",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "depd",
+			"version": "2.0.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "destr",
+			"version": "2.0.5",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "detect-browser",
+			"version": "5.3.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "dunder-proto",
+			"version": "1.0.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "ee-first",
+			"version": "1.1.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "encodeurl",
+			"version": "2.0.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "es-define-property",
+			"version": "1.0.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "es-errors",
+			"version": "1.3.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "es-object-atoms",
+			"version": "1.1.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "es-toolkit",
+			"version": "1.45.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "escape-html",
+			"version": "1.0.3",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "etag",
+			"version": "1.8.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "eventemitter3",
+			"version": "5.0.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "events",
+			"version": "3.3.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "eventsource-parser",
+			"version": "3.1.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "eventsource",
+			"version": "3.0.7",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "express-rate-limit",
+			"version": "8.7.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "express",
+			"version": "5.3.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "fast-deep-equal",
+			"version": "3.1.3",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "fast-uri",
+			"version": "3.1.8",
+			"license": "BSD-3-Clause",
+			"source": "installed package.json"
+		},
+		{
+			"package": "fd-package-json",
+			"version": "2.0.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "fdir",
+			"version": "6.5.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "finalhandler",
+			"version": "2.1.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "formatly",
+			"version": "0.11.4",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "forwarded",
+			"version": "0.2.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "fresh",
+			"version": "2.0.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "function-bind",
+			"version": "1.1.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "get-intrinsic",
+			"version": "1.3.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "get-proto",
+			"version": "1.0.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "get-tsconfig",
+			"version": "4.14.3",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "gopd",
+			"version": "1.2.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "h3",
+			"version": "1.15.11",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "has-symbols",
+			"version": "1.1.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "hasown",
+			"version": "2.0.4",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "hono",
+			"version": "4.13.13",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "http-errors",
+			"version": "2.0.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "iconv-lite",
+			"version": "0.7.3",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "idb-keyval",
+			"version": "6.3.0",
+			"license": "Apache-2.0",
+			"source": "installed package.json"
+		},
+		{
+			"package": "inherits",
+			"version": "2.0.4",
+			"license": "ISC",
+			"source": "installed package.json"
+		},
+		{
+			"package": "ip-address",
+			"version": "10.7.3",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "ipaddr.js",
+			"version": "1.9.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "iron-webcrypto",
+			"version": "1.2.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "is-promise",
+			"version": "4.0.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "isexe",
+			"version": "2.0.0",
+			"license": "ISC",
+			"source": "installed package.json"
+		},
+		{
+			"package": "isows",
+			"version": "1.0.7",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "jiti",
+			"version": "2.7.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "jose",
+			"version": "6.2.12",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "json-schema-traverse",
+			"version": "1.0.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "json-schema-typed",
+			"version": "8.0.2",
+			"license": "BSD-2-Clause",
+			"source": "installed package.json"
+		},
+		{
+			"package": "keyvaluestorage-interface",
+			"version": "1.0.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "knip",
+			"version": "6.41.0",
+			"license": "ISC",
+			"source": "installed package.json"
+		},
+		{
+			"package": "lru-cache",
+			"version": "11.5.3",
+			"license": "BlueOak-1.0.0",
+			"source": "installed package.json"
+		},
+		{
+			"package": "math-intrinsics",
+			"version": "1.1.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "media-typer",
+			"version": "1.1.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "merge-descriptors",
+			"version": "2.0.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "mime-db",
+			"version": "1.54.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "mime-types",
+			"version": "3.0.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "ms",
+			"version": "2.1.3",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "multiformats",
+			"version": "9.9.0",
+			"license": "(Apache-2.0 AND MIT)",
+			"source": "installed package.json"
+		},
+		{
+			"package": "negotiator",
+			"version": "1.1.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "node-fetch-native",
+			"version": "1.6.7",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "node-mock-http",
+			"version": "1.0.5",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "normalize-path",
+			"version": "3.0.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "object-assign",
+			"version": "4.1.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "object-inspect",
+			"version": "1.13.4",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "ofetch",
+			"version": "1.5.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "on-exit-leak-free",
+			"version": "2.1.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "on-finished",
+			"version": "2.4.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "once",
+			"version": "1.4.0",
+			"license": "ISC",
+			"source": "installed package.json"
+		},
+		{
+			"package": "ox",
+			"version": "0.14.54",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "ox",
+			"version": "0.9.3",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "oxc-parser",
+			"version": "0.153.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "oxc-resolver",
+			"version": "11.24.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "package-manager-detector",
+			"version": "1.9.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "parseurl",
+			"version": "1.3.3",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "path-key",
+			"version": "3.1.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "path-to-regexp",
+			"version": "8.4.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "picomatch",
+			"version": "2.3.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "picomatch",
+			"version": "4.0.7",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "pino-abstract-transport",
+			"version": "2.0.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "pino-std-serializers",
+			"version": "7.1.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "pino",
+			"version": "10.0.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "pkce-challenge",
+			"version": "5.0.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "process-warning",
+			"version": "5.1.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "proxy-addr",
+			"version": "2.0.8",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "qrcode-terminal",
+			"version": "0.12.0",
+			"license": "UNDECLARED",
+			"source": "installed package.json"
+		},
+		{
+			"package": "qs",
+			"version": "6.16.0",
+			"license": "BSD-3-Clause",
+			"source": "installed package.json"
+		},
+		{
+			"package": "quick-format-unescaped",
+			"version": "4.0.4",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "radix3",
+			"version": "1.1.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "range-parser",
+			"version": "1.3.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "raw-body",
+			"version": "3.0.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "readdirp",
+			"version": "5.1.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "real-require",
+			"version": "0.2.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "require-from-string",
+			"version": "2.0.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "resolve-pkg-maps",
+			"version": "1.0.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "router",
+			"version": "2.2.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "safe-stable-stringify",
+			"version": "2.5.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "safer-buffer",
+			"version": "2.1.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "send",
+			"version": "1.2.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "serve-static",
+			"version": "2.2.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "setprototypeof",
+			"version": "1.2.0",
+			"license": "ISC",
+			"source": "installed package.json"
+		},
+		{
+			"package": "shebang-command",
+			"version": "2.0.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "shebang-regex",
+			"version": "3.0.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "side-channel-list",
+			"version": "1.0.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "side-channel-map",
+			"version": "1.0.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "side-channel-weakmap",
+			"version": "1.0.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "side-channel",
+			"version": "1.1.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "slow-redact",
+			"version": "0.3.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "smol-toml",
+			"version": "1.9.1",
+			"license": "BSD-3-Clause",
+			"source": "installed package.json"
+		},
+		{
+			"package": "sonic-boom",
+			"version": "4.2.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "split2",
+			"version": "4.2.0",
+			"license": "ISC",
+			"source": "installed package.json"
+		},
+		{
+			"package": "statuses",
+			"version": "2.0.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "strip-json-comments",
+			"version": "5.0.3",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "thread-stream",
+			"version": "3.2.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "tinyglobby",
+			"version": "0.2.17",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "toidentifier",
+			"version": "1.0.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "tslib",
+			"version": "1.14.1",
+			"license": "0BSD",
+			"source": "installed package.json"
+		},
+		{
+			"package": "tslib",
+			"version": "2.8.1",
+			"license": "0BSD",
+			"source": "npm registry version metadata"
+		},
+		{
+			"package": "type-is",
+			"version": "2.1.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "typescript",
+			"version": "7.0.2",
+			"license": "Apache-2.0",
+			"source": "installed package.json"
+		},
+		{
+			"package": "ufo",
+			"version": "1.6.4",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "uint8arrays",
+			"version": "3.1.1",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "unbash",
+			"version": "5.0.0",
+			"license": "ISC",
+			"source": "installed package.json"
+		},
+		{
+			"package": "uncrypto",
+			"version": "0.1.3",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "undici-types",
+			"version": "8.9.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "unpipe",
+			"version": "1.0.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "unstorage",
+			"version": "1.17.5",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "vary",
+			"version": "1.1.2",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "viem",
+			"version": "2.57.4",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "walk-up-path",
+			"version": "4.0.0",
+			"license": "ISC",
+			"source": "installed package.json"
+		},
+		{
+			"package": "which",
+			"version": "2.0.2",
+			"license": "ISC",
+			"source": "installed package.json"
+		},
+		{
+			"package": "wrappy",
+			"version": "1.0.2",
+			"license": "ISC",
+			"source": "installed package.json"
+		},
+		{
+			"package": "ws",
+			"version": "7.5.13",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "ws",
+			"version": "8.21.0",
+			"license": "MIT",
+			"source": "installed package.json"
+		},
+		{
+			"package": "yaml",
+			"version": "2.9.1",
+			"license": "ISC",
+			"source": "installed package.json"
+		},
+		{
+			"package": "zod-to-json-schema",
+			"version": "3.25.2",
+			"license": "ISC",
+			"source": "installed package.json"
+		},
+		{
+			"package": "zod",
+			"version": "4.6.5",
+			"license": "MIT",
+			"source": "installed package.json"
+		}
+	]
+}

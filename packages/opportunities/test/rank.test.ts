@@ -54,16 +54,14 @@ function rank(
 	return rankOpportunities(snapshot(rates), { sizeUsd: 1000, ...overrides });
 }
 
-test("cross-deployment Lighter pairs remain executable and carry a display flag", () => {
+test("cross-deployment Lighter pairs are informational and carry a display flag", () => {
 	const [row] = rank([
 		rate("lighter", "1000PEPE", 0.0001),
 		rate("lighter-mainnet", "1000PEPE", 0.0002),
 	]).opportunities;
 	expect(row.flags).toEqual(["cross-deployment"]);
-	expect(row.executable).toBe(true);
-	expect(row.mobOpen).toBe(
-		"mob open PEPE --long lighter:1000PEPE --short lighter-mainnet:1000PEPE --size 1000",
-	);
+	expect(row.executable).toBe(false);
+	expect(row.mobOpen).toBeUndefined();
 });
 
 test.each(["lighter", "lighter-mainnet"])(
@@ -389,7 +387,7 @@ test("net APY amortizes fees over the hold and never counts favorable marks as i
 });
 
 test.each([undefined, 0, 999_999, 1_000_000])(
-	"per-leg liquidity gate at %s keeps execution independent",
+	"per-leg liquidity gate at %s also gates execution",
 	(volume24hUsd) => {
 		for (const index of [0, 1]) {
 			const rows = [rate("hl", "BTC", 0), rate("lighter", "BTC", 0.0008, 8)];
@@ -397,7 +395,7 @@ test.each([undefined, 0, 999_999, 1_000_000])(
 			const row = rank(rows).opportunities[0];
 			expect(row.flags.includes("thin")).toBe(volume24hUsd !== 1_000_000);
 			expect(row.qualifies).toBe(volume24hUsd === 1_000_000);
-			expect(row.executable).toBe(true);
+			expect(row.executable).toBe(volume24hUsd === 1_000_000);
 			expect(
 				rank(rows, { minVolume24hUsd: 0 }).opportunities[0].qualifies,
 			).toBe(volume24hUsd !== undefined);

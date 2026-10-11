@@ -18,6 +18,77 @@ import { bindFlow } from "./fixtures/bind-flow.ts";
 import { fakeOnboarding } from "./fixtures/fake-onboarding.ts";
 
 const wallet = privateKeyToAccount(`0x${"01".repeat(32)}`);
+
+test.each([false, true])(
+	"bind names unsigned or unstaged legal acceptance (staged=%s)",
+	async (staged) => {
+		const h = await harness();
+		try {
+			if (staged) expect(await h.invoke(["setup"])).toBe(0);
+			h.lines.length = 0;
+			expect(await h.invoke(["bind", "aster"])).toBe(0);
+			expect(
+				h.lines.filter((line) => line.startsWith("Legal acceptance")),
+			).toEqual([
+				staged
+					? "Legal acceptance p-1 is still unsigned; it is needed before your first open."
+					: "Legal acceptance is not staged; it is needed before your first open. Run mob setup.",
+			]);
+			expect(h.server.writes).toHaveLength(0);
+		} finally {
+			await h.close();
+		}
+	},
+	15_000,
+);
+
+test.each(["legal", "hl", "aster", "lighter", "lighter-mainnet"])(
+	"sign expired %s refreshes only its intent and stops before the wallet",
+	async (kind) => {
+		const h = await harness();
+		try {
+			expect(
+				await h.invoke(kind === "legal" ? ["setup"] : ["bind", kind]),
+			).toBe(0);
+			const old = await h.store.get("p-1");
+			h.rt.now = () => h.now + 300_001;
+			h.rt.openUrl = async () => {
+				throw new Error("must never open a wallet while refreshing");
+			};
+			h.lines.length = 0;
+			expect(await h.invoke(["sign", "p-1"])).toBe(0);
+			const store = new ProposalStore(h.home, h.rt.now);
+			const all = await store.list();
+			expect(all.map((p) => [p.id, p.status])).toEqual([
+				["p-1", "expired"],
+				["p-2", "awaiting-signature"],
+			]);
+			const fresh = all[1];
+			expect(fresh.purpose).toBe(old.purpose);
+			expect(fresh.owner).toBe(old.owner);
+			expect(fresh.submit.base).toBe(old.submit.base);
+			expect(fresh.submit.route).toBe(old.submit.route);
+			expect(fresh.digest).not.toBe(old.digest);
+			expect(fresh.signatureAttemptedAt).toBeUndefined();
+			expect(fresh.expiresAt).toBe(
+				(kind === "legal"
+					? Number(fresh.submit.body.signedAt)
+					: Number(fresh.submit.body.timestamp)) *
+					1000 +
+					300_000,
+			);
+			expect(h.lines.join("\n")).toContain("Next: mob sign p-2");
+			expect(h.server.writes).toHaveLength(0);
+			h.lines.length = 0;
+			expect(await h.invoke(["proposals", "--json"])).toBe(0);
+			expect(h.lines.join("\n")).toContain('"status": "expired"');
+			expect(h.lines.join("\n")).toContain('"status": "awaiting-signature"');
+		} finally {
+			await h.close();
+		}
+	},
+	15_000,
+);
 async function harness() {
 	const home = await mkdtemp(join(tmpdir(), "mstack-onboarding-test-")),
 		now = Date.now();
@@ -612,7 +683,7 @@ test("binding indicators show the next action before preview, including pending 
 			h.lines.length = 0;
 			expect(await h.invoke(["bind", "hl"])).toBe(0);
 			const output = h.lines.join("\n");
-			expect(output).toStartWith(
+			expect(output.replace(/^Legal acceptance[^\n]+\n/, "")).toStartWith(
 				"Hyperliquid binding · step 1 of 3 · prepare binding\n▶ prepare binding\n· approve agent\n· approve builder fee",
 			);
 			expect(output.indexOf("This signature asks Mobius")).toBeLessThan(

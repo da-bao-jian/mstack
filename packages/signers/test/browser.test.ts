@@ -105,7 +105,7 @@ test.each([false, true])(
 		}
 	},
 );
-test("browser rejects wrong token, Origin, account, recovered signer, and malformed input without consuming token", async () => {
+test("browser rejects unauthenticated requests without consuming the signing attempt", async () => {
 	const h = await harness();
 	try {
 		expect((await loopback(`${h.url.origin}/api/proposal`)).status).toBe(403);
@@ -147,18 +147,6 @@ test("browser rejects wrong token, Origin, account, recovered signer, and malfor
 		const pending = h.signer.signMessage({ message });
 		const signature = await wallet.signMessage({ message });
 		expect(
-			(await h.api("/api/signature", { address: stranger.address, signature }))
-				.status,
-		).toBe(403);
-		expect(
-			(
-				await h.api("/api/signature", {
-					address: wallet.address,
-					signature: await stranger.signMessage({ message }),
-				})
-			).status,
-		).toBe(400);
-		expect(
 			(
 				await h.api(
 					"/api/signature",
@@ -176,14 +164,6 @@ test("browser rejects wrong token, Origin, account, recovered signer, and malfor
 				)
 			).status,
 		).toBe(403);
-		expect(
-			(
-				await h.api("/api/signature", {
-					address: wallet.address,
-					signature: "0x00",
-				})
-			).status,
-		).toBe(400);
 		expect(
 			(await h.api("/api/signature", { address: wallet.address, signature }))
 				.status,
@@ -207,13 +187,38 @@ test("browser refuses changed payload and pinned-chain mismatch", async () => {
 			signature: await wallet.signTypedData(typedData),
 		};
 		expect((await h.api("/api/signature", body)).status).toBe(409);
-		await h.api("/api/account", { address: wallet.address, chainId: 97 });
-		expect((await h.api("/api/signature", body)).status).toBe(200);
-		expect(await pending).toBe(body.signature);
+		await expect(pending).rejects.toThrow("signature rejected");
+		await expect(loopback(h.url)).rejects.toThrow();
 	} finally {
 		await h.signer.close();
 	}
 });
+test.each(["malformed", "wrong-owner", "wrong-recovery"])(
+	"browser consumes one authenticated signature POST even for %s",
+	async (failure) => {
+		const h = await harness();
+		try {
+			await h.api("/api/account", { address: wallet.address, chainId: 1 });
+			await h.account;
+			const message = (h.proposal.signing as { message: string }).message;
+			const pending = h.signer.signMessage({ message });
+			const response = await h.api("/api/signature", {
+				address: failure === "wrong-owner" ? stranger.address : wallet.address,
+				signature:
+					failure === "malformed"
+						? `0x${"00".repeat(65)}`
+						: await stranger.signMessage({ message }),
+			});
+			expect(response.status).toBeGreaterThanOrEqual(400);
+			expect(await response.text()).not.toMatch(/0x[\da-f]{130}/i);
+			await expect(pending).rejects.toThrow("signature rejected");
+			await expect(loopback(h.url)).rejects.toThrow();
+		} finally {
+			await h.signer.close();
+		}
+	},
+);
+
 test("browser expires, closes listener, and fails pending sign", async () => {
 	const h = await harness({ ...view(), expiresAt: Date.now() + 200 });
 	await h.api("/api/account", { address: wallet.address, chainId: 1 });

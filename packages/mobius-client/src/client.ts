@@ -189,7 +189,7 @@ export class MobiusClient {
 			...(method === "POST" ? { body: JSON.stringify(data) } : {}),
 		});
 		const raw = await response.text();
-		const label = route.split("/").at(-1);
+		const label = route;
 		const fail = (reason: string, value: unknown) =>
 			new ApiError(
 				`${label}: HTTP ${response.status}: ${reason}; body: ${clean(raw.slice(0, 240))}`,
@@ -203,7 +203,11 @@ export class MobiusClient {
 			throw fail("malformed body (invalid JSON)", raw);
 		}
 		if (!response.ok) {
-			if (isVenueReadinessError(body))
+			if (
+				response.status < 500 &&
+				response.status !== 429 &&
+				isVenueReadinessError(body)
+			)
 				throw new ApiError(raw, response.status, body);
 			throw fail("request failed", body);
 		}

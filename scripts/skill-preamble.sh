@@ -55,9 +55,10 @@ mob_update_check() {
   MOB_BIN_DIR="$(cd "$(dirname "$MOB")" && pwd -P)" || return 1
   MOB_REPO="$(git -C "$MOB_BIN_DIR" rev-parse --show-toplevel 2>/dev/null)" || return 0
   git -C "$MOB_REPO" remote get-url origin >/dev/null 2>&1 || return 0
-  mkdir -p "$HOME/.mob" || return 1
+  MOB_STATE_HOME="${MOB_HOME:-$HOME/.mob}"
+  mkdir -p -m 700 "$MOB_STATE_HOME" || return 1
   MOB_REPO_ID="$(printf '%s' "$MOB_REPO" | cksum | cut -d ' ' -f 1)" || return 1
-  MOB_STAMP="$HOME/.mob/upgrade-check-$MOB_REPO_ID"
+  MOB_STAMP="$MOB_STATE_HOME/upgrade-check-$MOB_REPO_ID"
   MOB_NOW="$(date +%s)" || return 1
   MOB_LAST=0
   MOB_CHECK=ok
@@ -65,7 +66,7 @@ mob_update_check() {
   if [ -f "$MOB_STAMP" ]; then read -r MOB_LAST MOB_CHECK MOB_CACHED_REASON < "$MOB_STAMP" || return 1; fi
   case "$MOB_LAST" in ''|*[!0-9]*) return 1 ;; esac
   if [ "$((MOB_NOW - MOB_LAST))" -ge 3600 ]; then
-    printf '%s pending\n' "$MOB_NOW" > "$MOB_STAMP" || return 1
+    (umask 077; printf '%s pending\n' "$MOB_NOW" > "$MOB_STAMP") || return 1
     if MOB_FETCH_ERROR="$(GIT_TERMINAL_PROMPT=0 git -C "$MOB_REPO" fetch -q origin 2>&1)"; then
       printf '%s ok\n' "$MOB_NOW" > "$MOB_STAMP" || return 1
       MOB_CHECK=ok
@@ -92,5 +93,5 @@ mob_update_check() {
   if [ "$MOB_LOCAL" != "$MOB_REMOTE" ]; then printf 'UPGRADE_AVAILABLE %s %s\n' "$MOB_LOCAL" "$MOB_REMOTE"; fi
   return 0
 }
-if ! mob_update_check 2>/dev/null; then printf 'UPGRADE_CHECK: fail (%s)\n' "$MOB_UPDATE_REASON"; fi
+if mob_update_check 2>/dev/null; then printf 'UPGRADE_CHECK: ok\n'; else printf 'UPGRADE_CHECK: fail (%s)\n' "$MOB_UPDATE_REASON"; fi
 true

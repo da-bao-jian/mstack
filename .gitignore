@@ -8,3 +8,6 @@ reference/
 .env.*
 !.env.example
 .DS_Store
+apps/cli/dist/
+.mob/
+**/.mob/

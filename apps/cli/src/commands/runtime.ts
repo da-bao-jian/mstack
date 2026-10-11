@@ -10,6 +10,7 @@ import {
 	okx,
 	type Snapshot,
 } from "@mstack/funding";
+import { publicText } from "@mstack/proposals";
 import { SETUP_FIRST, UsageError } from "../config.ts";
 
 export interface Runtime {
@@ -33,7 +34,9 @@ const SNAPSHOT_TIMEOUT_MS = 30_000;
 export function commandError(error: unknown): string {
 	if (error instanceof Error && error.message.endsWith(SETUP_FIRST))
 		return SETUP_FIRST;
-	return `mob: ${error instanceof Error ? error.message : String(error)}`;
+	return publicText(
+		`mob: ${error instanceof Error ? error.message : String(error)}`,
+	);
 }
 
 export function selectedVenues(names?: readonly string[]) {

@@ -1,8 +1,10 @@
 # Third-party notices
 
 mstack's own code is licensed under [MIT](LICENSE). Dependencies retain their own
-licenses. This inventory records the named direct runtime dependencies; it is not
-an exhaustive transitive dependency bill of materials.
+licenses. The table names direct runtime dependencies. The checked
+[dependency inventory](docs/licenses/dependency-inventory.json) lists every exact
+external resolution in `bun.lock`, including transitive, development, and optional
+platform packages. Its license fields come from package manifests.
 
 | Component | Pinned version | License and notice |
 |---|---|---|
@@ -20,7 +22,11 @@ is not MIT; the repository's MIT license does not replace it.
 
 Byte-exact Mobius ports retain source paths and commit provenance in their headers.
 Review dependency licenses and notices again when changing a pinned version or
-preparing binary distribution. No dependency version changes are part of W13.
+preparing binary distribution. W13 and W17 change no dependency versions.
+
+W17 makes `@walletconnect/sign-client` an exact optional dependency. The SDK loads
+through a dynamic import only when that backend is selected. Compiled binaries
+still bundle it; the Community License decision remains a release prerequisite.
 
 W14 and W16 add no packages. Compiled release binaries bundle the existing runtime
 dependencies and retain their license obligations. Release assets include `VERSION`

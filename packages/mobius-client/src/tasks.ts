@@ -79,6 +79,8 @@ export function validateTask(value: unknown): PublicTask {
 		if (typeof row[key] !== "string" || row[key] === "")
 			throw new Error(`invalid ${key}`);
 	}
+	if (typeof row.owner !== "string" || !/^0x[\da-f]{40}$/i.test(row.owner))
+		throw new Error("invalid owner");
 	for (const key of numericFields) {
 		const item = row[key];
 		if (item === null) continue;

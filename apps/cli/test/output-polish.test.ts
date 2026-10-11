@@ -237,7 +237,7 @@ test("glossary covers every emitted field and explains actual ranking gates and 
 		expect(status.glossary.fields[key]).toBeString();
 });
 
-test("cross-deployment hiding changes only the executable view and counts", async () => {
+test("cross-deployment flag reveals informational rows and preserves hidden counts", async () => {
 	const h = await harness();
 	const args = [
 		"scan",
@@ -254,7 +254,7 @@ test("cross-deployment hiding changes only the executable view and counts", asyn
 		(await h.invoke([...args, "--include-cross-deployment"])).out,
 	);
 	expect(
-		shown.view.executable.some((r: { flags: string[] }) =>
+		shown.view.anywhere.some((r: { flags: string[] }) =>
 			r.flags.includes("cross-deployment"),
 		),
 	).toBe(true);
@@ -264,9 +264,9 @@ test("cross-deployment hiding changes only the executable view and counts", asyn
 		),
 	).toBe(false);
 	expect(hidden.opportunities).toEqual(shown.opportunities);
-	expect(hidden.view.anywhere).toEqual(shown.view.anywhere);
+	expect(hidden.view.executable).toEqual(shown.view.executable);
 	expect(hidden.counts.crossDeploymentHidden).toBe(
-		shown.view.executable.length - hidden.view.executable.length,
+		shown.view.anywhere.length - hidden.view.anywhere.length,
 	);
 	expect(shown.counts.crossDeploymentHidden).toBe(0);
 	const human = await h.invoke(["scan"]);

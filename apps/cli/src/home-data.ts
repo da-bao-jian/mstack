@@ -1,6 +1,10 @@
 import { lstat } from "node:fs/promises";
 import { join } from "node:path";
-import { type ArbitrageVenue, MobiusClient } from "@mstack/mobius-client";
+import {
+	ApiError,
+	type ArbitrageVenue,
+	MobiusClient,
+} from "@mstack/mobius-client";
 import { ProposalStore } from "@mstack/proposals";
 import pkg from "../package.json";
 import { type Config, getConfig, readConfig } from "./config.ts";
@@ -17,7 +21,11 @@ export type Reading<T> = {
 };
 const unchecked = <T>(): Reading<T> => ({ state: "not checked" });
 const failure = (error: unknown) =>
-	error instanceof Error ? error.message : String(error);
+	error instanceof ApiError
+		? `HTTP ${error.status}: public read failed`
+		: error instanceof Error
+			? error.message
+			: String(error);
 export const homeVenues = [
 	"hl",
 	"lighter",

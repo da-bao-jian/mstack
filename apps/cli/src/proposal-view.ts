@@ -1,4 +1,4 @@
-import type { Proposal } from "@mstack/proposals";
+import { type Proposal, publicText, publicValue } from "@mstack/proposals";
 import { expiry, paint, relative, type Terminal } from "./format.ts";
 import { clean } from "./render.ts";
 
@@ -65,7 +65,7 @@ export function showProposal(
 			: ["Preflight: not checked"]),
 		box,
 		`Digest: ${p.digest}`,
-		...(p.error ? [`Issue: ${clean(p.error)}`] : []),
+		...(p.error ? [`Issue: ${clean(publicText(p.error))}`] : []),
 		paint(`Next: ${next}`, "sky", terminal),
 	].join("\n");
 }
@@ -85,8 +85,8 @@ export function proposalView(p: Proposal) {
 		signing: p.signing,
 		submit: p.submit,
 		preflight: p.preflight,
-		answer: p.answer,
-		error: p.error,
+		answer: publicValue(p.answer),
+		error: p.error === undefined ? undefined : publicText(p.error),
 	};
 }
 export function proposalResult(p: Proposal) {

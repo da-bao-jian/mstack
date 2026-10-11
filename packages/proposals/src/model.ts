@@ -174,21 +174,43 @@ export function contentHash(
 }
 export function validateInput(p: ProposalInput): void {
 	canonical(p);
-	getAddress(p.owner);
-	if (!p.purpose || /[\p{Cc}\p{Cf}]/u.test(p.purpose))
-		throw new Error("Invalid Proposal purpose");
+	const object = (value: unknown, field: string) => {
+		if (!value || typeof value !== "object" || Array.isArray(value))
+			throw new Error(`${field}: expected an object`);
+	};
+	object(p, "Proposal");
+	try {
+		getAddress(p.owner);
+	} catch {
+		throw new Error("owner: invalid address");
+	}
+	object(p.signing, "signing");
+	object(p.submit, "submit");
+	object(p.submit.body, "submit.body");
+	object(p.preflightPlan, "preflightPlan");
+	if (!Array.isArray(p.preflightPlan.checks))
+		throw new Error("preflightPlan.checks: expected an array");
+	if (
+		typeof p.purpose !== "string" ||
+		!p.purpose ||
+		/[\p{Cc}\p{Cf}]/u.test(p.purpose)
+	)
+		throw new Error("purpose: Invalid Proposal purpose");
 	if (!["sign-text", "sign-typed", "venue-submit"].includes(p.kind))
-		throw new Error("Invalid Proposal kind");
+		throw new Error("kind: Invalid Proposal kind");
 	if (p.signing.type !== "text" && p.signing.type !== "typed")
-		throw new Error("Invalid signing payload");
+		throw new Error("signing.type: Invalid signing payload");
 	if (
 		(p.kind === "sign-text" && p.signing.type !== "text") ||
 		(p.kind === "sign-typed" && p.signing.type !== "typed")
 	)
-		throw new Error("Proposal kind does not match signing payload");
+		throw new Error(
+			"kind/signing.type: Proposal kind does not match signing payload",
+		);
 	if (
 		p.signing.type === "text" &&
-		(!p.signing.message ||
+		(typeof p.signing.message !== "string" ||
+			!p.signing.message ||
 			/[\p{Cc}\p{Cf}]/u.test(
 				p.kind === "venue-submit"
 					? p.signing.message.replaceAll("\n", "")
@@ -196,9 +218,23 @@ export function validateInput(p: ProposalInput): void {
 			))
 	)
 		throw new Error(
-			"Text message must be nonempty and have no terminal control characters (venue-submit permits line feeds)",
+			"signing.message: Text message must be nonempty and have no terminal control characters (venue-submit permits line feeds)",
 		);
-	const base = new URL(p.submit.base);
+	let base: URL;
+	try {
+		base = new URL(p.submit.base);
+	} catch {
+		throw new Error("submit.base: invalid URL");
+	}
+	if (typeof p.submit.route !== "string")
+		throw new Error("submit.route: expected a string");
+	if (p.signing.type === "typed") {
+		try {
+			hashTypedData(p.signing.typedData);
+		} catch {
+			throw new Error("signing.typedData: invalid typed data");
+		}
+	}
 	if (
 		(base.protocol !== "https:" &&
 			!(
@@ -211,14 +247,14 @@ export function validateInput(p: ProposalInput): void {
 		base.hash
 	)
 		throw new Error(
-			"Submission requires HTTPS (HTTP is allowed only on loopback)",
+			"submit.base: Submission requires HTTPS (HTTP is allowed only on loopback)",
 		);
 	if (
 		(!Object.hasOwn(writeRoutes, p.submit.route) && !p.submit.format) ||
 		p.submit.route.endsWith("/alert-dismiss") ||
 		p.submit.route.endsWith("/builder-finalize")
 	)
-		throw new Error("Invalid submission route");
+		throw new Error("submit.route: Invalid submission route");
 	const formats = {
 		hl: { route: "/exchange", hosts: ["api.hyperliquid.xyz"] },
 		aster: { route: "/fapi/v3/approveAgent", hosts: ["fapi.asterdex.com"] },
@@ -236,7 +272,7 @@ export function validateInput(p: ProposalInput): void {
 			base.pathname !== "/" ||
 			base.port
 		)
-			throw new Error("Invalid venue submission endpoint");
+			throw new Error("submit.format: Invalid venue submission endpoint");
 	}
 	if (
 		p.submit.format &&
@@ -244,9 +280,13 @@ export function validateInput(p: ProposalInput): void {
 			(p.kind !== "venue-submit" || p.signing.type !== "text")) ||
 			(p.submit.format !== "lighter" && p.kind !== "sign-typed"))
 	)
-		throw new Error("Venue submission kind does not match signing payload");
+		throw new Error(
+			"submit.format: Venue submission kind does not match signing payload",
+		);
 	if (p.submit.format === "aster" && !p.submit.fieldOrder)
-		throw new Error("Aster form field order is required at staging");
+		throw new Error(
+			"submit.fieldOrder: Aster form field order is required at staging",
+		);
 	if (
 		p.submit.fieldOrder &&
 		(p.submit.format !== "aster" ||
@@ -254,7 +294,7 @@ export function validateInput(p: ProposalInput): void {
 			canonical([...p.submit.fieldOrder].sort()) !==
 				canonical(Object.keys(p.submit.body).sort()))
 	)
-		throw new Error("Invalid form field order");
+		throw new Error("submit.fieldOrder: Invalid form field order");
 	if (p.submit.completion) {
 		const c = p.submit.completion;
 		const u = new URL(c.base);
@@ -266,7 +306,9 @@ export function validateInput(p: ProposalInput): void {
 			(u.protocol !== "https:" &&
 				!(u.protocol === "http:" && u.hostname === "127.0.0.1"))
 		)
-			throw new Error("Invalid binding completion base");
+			throw new Error(
+				"submit.completion.base: Invalid binding completion base",
+			);
 		const venue = p.submit.format === "lighter" ? "lighter" : p.submit.format;
 		if (
 			!venue ||
@@ -274,30 +316,37 @@ export function validateInput(p: ProposalInput): void {
 			!c.sessionId ||
 			/[\p{Cc}\p{Cf}]/u.test(c.sessionId)
 		)
-			throw new Error("Invalid binding completion");
+			throw new Error("submit.completion: Invalid binding completion");
 		if (
 			c.finalize &&
 			(venue === "lighter" ||
 				c.finalize.route !== `/api/binding/${venue}/builder-finalize` ||
 				getAddress(c.finalize.body.ownerAddress) !== getAddress(p.owner))
 		)
-			throw new Error("Invalid builder finalization");
+			throw new Error(
+				"submit.completion.finalize: Invalid builder finalization",
+			);
 	}
 	if (
 		p.submit.signatureField !== "signature" ||
 		Object.hasOwn(p.submit.body, p.submit.signatureField)
 	)
-		throw new Error("Signature field must be empty at staging");
+		throw new Error(
+			"submit.signatureField: Signature field must be empty at staging",
+		);
 	if (!p.preflightPlan.checks.length)
-		throw new Error("Proposal requires a stored preflight plan");
+		throw new Error("preflightPlan: Proposal requires a stored preflight plan");
 	for (const check of p.preflightPlan.checks) {
+		object(check, "preflightPlan.checks[]");
 		if (
 			check.name !== undefined &&
 			(typeof check.name !== "string" ||
 				!check.name ||
 				/[\p{Cc}\p{Cf}]/u.test(check.name))
 		)
-			throw new Error("Invalid preflight check name");
+			throw new Error(
+				"preflightPlan.checks[].name: Invalid preflight check name",
+			);
 		if (check.route === "staged") {
 			if (
 				!check.name ||
@@ -305,7 +354,9 @@ export function validateInput(p: ProposalInput): void {
 				!check.detail ||
 				/[\p{Cc}\p{Cf}]/u.test(check.detail)
 			)
-				throw new Error("Invalid staged preflight evidence");
+				throw new Error(
+					"preflightPlan.checks[].detail: Invalid staged preflight evidence",
+				);
 			continue;
 		}
 		if (
@@ -313,20 +364,28 @@ export function validateInput(p: ProposalInput): void {
 				check.route,
 			)
 		)
-			throw new Error("Preflight must use a public read without side effects");
+			throw new Error(
+				"preflightPlan.checks[].route: Preflight must use a public read without side effects",
+			);
 		if (
+			!Array.isArray(check.assertions) ||
 			!check.assertions.length ||
 			check.assertions.some(
 				(a) =>
+					!a ||
+					typeof a !== "object" ||
 					("remainingMs" in a &&
 						(!Number.isSafeInteger(a.remainingMs) || a.remainingMs < 0)) ||
+					!Array.isArray(a.path) ||
 					!a.path.length ||
 					a.path.some((key) =>
 						["__proto__", "constructor", "prototype"].includes(key),
 					),
 			)
 		)
-			throw new Error("Preflight needs explicit assertions");
+			throw new Error(
+				"preflightPlan.checks[].assertions: Preflight needs explicit assertions",
+			);
 	}
 }
 export function validateProposal(p: Proposal): void {
@@ -340,7 +399,9 @@ export function validateProposal(p: Proposal): void {
 		p.digest !== digest(p.signing) ||
 		p.contentHash !== contentHash(p)
 	)
-		throw new Error("Proposal integrity check failed");
+		throw new Error(
+			"Proposal integrity check failed (version/id/createdAt/expiresAt/signing.digest/contentHash)",
+		);
 	if (
 		![
 			"staged",
@@ -355,15 +416,16 @@ export function validateProposal(p: Proposal): void {
 			"expired",
 		].includes(p.status)
 	)
-		throw new Error("Invalid Proposal status");
+		throw new Error("status: Invalid Proposal status");
 	if (
 		p.endedAt !== undefined &&
 		(!Number.isSafeInteger(p.endedAt) || p.endedAt < p.createdAt)
 	)
-		throw new Error("Invalid Proposal end time");
+		throw new Error("endedAt: Invalid Proposal end time");
 	if (
 		p.preflight &&
-		(p.preflight.checks.length !== p.preflightPlan.checks.length ||
+		(!Array.isArray(p.preflight.checks) ||
+			p.preflight.checks.length !== p.preflightPlan.checks.length ||
 			!Number.isSafeInteger(p.preflight.checkedAt) ||
 			p.preflight.checkedAt < p.createdAt ||
 			(p.status !== "expired" && p.preflight.checkedAt >= p.expiresAt) ||
@@ -375,5 +437,5 @@ export function validateProposal(p: Proposal): void {
 			) ||
 			p.preflight.ok !== p.preflight.checks.every((check) => check.ok))
 	)
-		throw new Error("Invalid preflight result");
+		throw new Error("preflight: Invalid preflight result");
 }

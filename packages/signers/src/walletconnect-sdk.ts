@@ -8,7 +8,13 @@ export const createSdkClient: WalletConnectFactory = async (
 	signal,
 ) => {
 	signal.throwIfAborted();
-	const { SignClient } = await import("@walletconnect/sign-client");
+	const { SignClient } = await import("@walletconnect/sign-client").catch(
+		() => {
+			throw new Error(
+				"Optional WalletConnect package is unavailable; reinstall mstack with optional dependencies to use walletconnect",
+			);
+		},
+	);
 	signal.throwIfAborted();
 	const sdk = await SignClient.init(walletConnectInitOptions(projectId));
 	let closing: Promise<void> | undefined;

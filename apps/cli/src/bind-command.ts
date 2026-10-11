@@ -1,6 +1,7 @@
 import {
 	type ApproveAgentParams,
 	type ArbitrageVenue,
+	bindingPrepareMessage,
 	buildApproveAgentTypedRequest,
 	hlTypedAction,
 	lighterIntegratorApprovalMessage,
@@ -126,7 +127,36 @@ export async function bindCommand(
 		fetch: rt.fetch,
 	});
 	const store = new ProposalStore(rt.home, rt.now, rt.err);
-	const history = (await store.list()).filter(
+	const proposals = await store.list();
+	if (!refreshed) {
+		const legal = proposals.findLast(
+			(p) =>
+				p.owner === owner &&
+				p.submit.route === "/legal/acceptance" &&
+				!p.signature &&
+				["staged", "previewed", "awaiting-signature", "expired"].includes(
+					p.status,
+				),
+		);
+		const auth = new MobiusClient({
+			base: String(getConfig(config, "auth_base")),
+			version: pkg.version,
+			fetch: rt.fetch,
+		});
+		try {
+			if (!(await auth.read("/legal/acceptance", { wallet: owner })).accepted)
+				rt.out(
+					legal
+						? `Legal acceptance ${legal.id} is still unsigned; it is needed before your first open.`
+						: "Legal acceptance is not staged; it is needed before your first open. Run mob setup.",
+				);
+		} catch {
+			rt.out(
+				"Legal acceptance could not be checked; run mob setup before your first open.",
+			);
+		}
+	}
+	const history = proposals.filter(
 		(p) =>
 			p.owner === owner &&
 			p.submit.binding?.venue === venue &&
@@ -312,7 +342,10 @@ export async function bindCommand(
 				venue: venue === "lighter-mainnet" ? venue : null,
 			});
 		} else
-			message = `Prepare ${venue === "hl" ? "HL" : "Aster"} binding nonce=${nonce} timestamp=${timestamp}`;
+			message = bindingPrepareMessage(group as "hl" | "aster", {
+				nonce,
+				timestamp,
+			});
 		await stage(
 			"prepare",
 			{ type: "text", message },

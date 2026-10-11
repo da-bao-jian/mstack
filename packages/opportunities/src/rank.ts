@@ -217,6 +217,8 @@ export function rankOpportunities(
 				if (long.quoteClass === "coin" || short.quoteClass === "coin")
 					flags.push("coin-margined");
 				const executable =
+					!thin &&
+					!flags.includes("cross-deployment") &&
 					executableVenues.has(long.venue) &&
 					executableVenues.has(short.venue) &&
 					!hlLeg?.oiCapped;

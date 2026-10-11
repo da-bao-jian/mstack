@@ -137,6 +137,12 @@ export function browserSigner(
 				if (!["/api/account", "/api/signature"].includes(url.pathname))
 					return reply(404, "Unknown route");
 				if (accepting) return reply(409, "Signature verification in progress");
+				const signatureAttempt = url.pathname === "/api/signature";
+				if (signatureAttempt) {
+					if (!requested || !account)
+						return reply(409, "CLI is not ready to sign");
+					used = true;
+				}
 				accepting = true;
 				try {
 					const body = await req.json();
@@ -183,6 +189,11 @@ export function browserSigner(
 					);
 				} finally {
 					accepting = false;
+					if (signatureAttempt && !terminal)
+						finish(
+							new Error("Browser signature rejected; stage a new Proposal"),
+							true,
+						);
 				}
 			},
 		});

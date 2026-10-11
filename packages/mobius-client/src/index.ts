@@ -6,6 +6,7 @@ export { buildApproveAgentTypedRequest } from "./onboarding/aster.ts";
 export * from "./onboarding/hl.ts";
 export * from "./onboarding/legal.ts";
 export * from "./onboarding/lighter.ts";
+export * from "./onboarding/prepare.ts";
 export * from "./openTaskMessage.ts";
 export * from "./rate-limit.ts";
 export * from "./resizeTaskMessage.ts";

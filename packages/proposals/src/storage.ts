@@ -20,6 +20,12 @@ export async function readPrivate(path: string): Promise<string> {
 		await file.close();
 	}
 }
+export async function privateDirectory(path: string): Promise<void> {
+	await mkdir(path, { recursive: true, mode: 0o700 });
+	const info = await lstat(path);
+	if (!info.isDirectory() || (info.mode & 0o777) !== 0o700)
+		throw new Error(`${path}: directory must be private (0700), not a symlink`);
+}
 export async function exclusive(path: string, text: string): Promise<void> {
 	const file = await open(path, "wx", 0o600);
 	try {
@@ -82,6 +88,8 @@ export async function locked<T>(
 		}
 		try {
 			const info = await lstat(path);
+			if (!info.isDirectory() || (info.mode & 0o777) !== 0o700)
+				throw new Error(`${path}: lock must be a private 0700 directory`);
 			let stale = false;
 			try {
 				const previous = JSON.parse(await readPrivate(ownerPath));

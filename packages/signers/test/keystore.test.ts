@@ -39,6 +39,8 @@ test("create encrypts a new key in a 0600 file and signs text and typed data", a
 	const raw = await readFile(file, "utf8");
 	expect(raw).not.toContain(password);
 	const value = JSON.parse(raw);
+	expect(value.kdf).toMatchObject({ name: "scrypt", N: 32768, r: 8, p: 1 });
+	expect(Buffer.from(value.kdf.salt, "base64")).toHaveLength(32);
 	expect(Object.keys(value.crypto).sort()).toEqual([
 		"authTag",
 		"ciphertext",
@@ -65,9 +67,15 @@ test("create encrypts a new key in a 0600 file and signs text and typed data", a
 	expect(
 		await recoverTypedDataAddress({
 			...typed,
-			signature: await signer.signTypedData(typed),
+			signature: await (
+				await unlockKeystore(home, address, secret)
+			).signTypedData(typed),
 		}),
 	).toBe(address);
+	await expect(signer.signMessage({ message })).rejects.toThrow("already used");
+	const closed = await unlockKeystore(home, address, secret);
+	await closed.close?.();
+	await expect(closed.signMessage({ message })).rejects.toThrow("closed");
 	await expect(
 		unlockKeystore(home, address, async () => "wrong"),
 	).rejects.toThrow("Cannot unlock");
@@ -86,6 +94,22 @@ test("create encrypts a new key in a 0600 file and signs text and typed data", a
 	await chmod(file, 0o644);
 	await expect(unlockKeystore(home, address, secret)).rejects.toThrow("0600");
 	await chmod(file, 0o600);
+	await writeFile(
+		file,
+		JSON.stringify({ ...value, kdf: { ...value.kdf, N: 1 } }),
+	);
+	let promptsAfterTampering = 0;
+	await expect(
+		unlockKeystore(home, address, async () => {
+			promptsAfterTampering++;
+			return password;
+		}),
+	).rejects.toThrow("Invalid keystore metadata");
+	expect(promptsAfterTampering).toBe(0);
+	await writeFile(file, raw);
+	await chmod(join(home, "keystore"), 0o755);
+	await expect(unlockKeystore(home, address, secret)).rejects.toThrow("0700");
+	await chmod(join(home, "keystore"), 0o700);
 });
 test("import takes the key only through the reader, never stores plaintext, refuses overwrite", async () => {
 	const key = generatePrivateKey();

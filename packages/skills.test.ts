@@ -278,6 +278,90 @@ esac`,
 	);
 }, 15_000); // Four preambles launch repeated real CLI processes; allow for startup time.
 
+test("open skills stop on missing readiness before asking about risk (E3)", () => {
+	for (const host of ["skills", "skills-codex"]) {
+		const body = outputs.get(`${host}/mob-open/SKILL.md`) as string;
+		expect(body.indexOf("mob status --readiness --json")).toBeLessThan(
+			body.indexOf("ask three risk questions"),
+		);
+		expect(body).toContain("mob hello --json");
+		expect(body).toContain("legal.value.accepted");
+		expect(body).toContain("unsigned, expired, missing, or cannot be checked");
+		expect(body).toContain(
+			"Do not ask the risk questions while readiness is missing",
+		);
+	}
+});
+
+test("every generated skill plus its fresh-home preamble stays below 8 KiB (D2)", async () => {
+	const costs = new Map<boolean, number>();
+	for (const router of [false, true]) {
+		const { home, path } = await preambleHome();
+		const body = outputs.get(
+			`skills/${router ? "mob" : "mob-scan"}/SKILL.md`,
+		) as string;
+		const result = await command(
+			["/bin/bash", "-c", preamble(body)],
+			home,
+			path,
+		);
+		expect(result.code).toBe(0);
+		costs.set(
+			router,
+			Buffer.byteLength(result.out) + Buffer.byteLength(result.err),
+		);
+	}
+	for (const [file, body] of skills)
+		expect(
+			Buffer.byteLength(body) +
+				(costs.get(file.endsWith("/mob/SKILL.md")) as number),
+		).toBeLessThanOrEqual(8192);
+}, 15_000);
+
+test("credential-free public clone prints a successful update check without git diagnostics (D3)", async () => {
+	const { home, bin, path } = await preambleHome();
+	await unlink(join(bin, "git"));
+	const checkout = join(home, "checkout"),
+		origin = join(home, "public-origin.git");
+	const git = async (args: string[]) => {
+		const result = await command(
+			[
+				"/usr/bin/git",
+				"-c",
+				"credential.helper=",
+				"-c",
+				"user.name=W17 fixture",
+				"-c",
+				"user.email=w17@example.invalid",
+				...args,
+			],
+			home,
+			path,
+			{ GIT_TERMINAL_PROMPT: "0", GIT_CONFIG_NOSYSTEM: "1" },
+		);
+		expect(result.code).toBe(0);
+	};
+	await git(["init", "--bare", "--initial-branch=main", origin]);
+	await git(["clone", origin, checkout]);
+	await mkdir(join(checkout, "bin"));
+	await copyFile(join(bin, "mob"), join(checkout, "bin/mob"));
+	await git(["-C", checkout, "add", "bin/mob"]);
+	await git(["-C", checkout, "commit", "-m", "fixture"]);
+	// Populate the local anonymous remote without any push command.
+	await git(["--git-dir", origin, "fetch", checkout, "main:main"]);
+	const result = await command(
+		["/bin/bash", join(root, "scripts/skill-preamble.sh")],
+		home,
+		`${checkout}/bin:${path}`,
+		{ GIT_TERMINAL_PROMPT: "0", GIT_CONFIG_NOSYSTEM: "1" },
+	);
+	expect(result.code).toBe(0);
+	expect(result.out).toContain("UPGRADE_CHECK: ok");
+	expect(result.out).not.toContain("UPGRADE_CHECK: fail");
+	expect(result.err).toBe("");
+	expect(result.out).not.toMatch(/fatal:|Username|Password|credential-helper/);
+}, 15_000);
+
 test("mutation skills confine signing to the explicit rule and never initiate secret/config/reject commands", () => {
 	for (const [file, body] of skills) {
 		const invocation = file.startsWith("skills-codex") ? "$" : "/";

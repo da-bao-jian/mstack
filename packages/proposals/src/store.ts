@@ -1,4 +1,4 @@
-import { lstat, mkdir, readdir } from "node:fs/promises";
+import { lstat, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { ApiError } from "@mstack/mobius-client";
 import type { Signer } from "@mstack/signers";
@@ -21,11 +21,18 @@ import {
 	validateInput,
 	validateProposal,
 } from "./model.ts";
-import { atomic, exclusive, locked, readPrivate } from "./storage.ts";
+import { readRecord, serializeRecord } from "./record.ts";
+import {
+	atomic,
+	exclusive,
+	locked,
+	privateDirectory,
+	readPrivate,
+} from "./storage.ts";
 export class ProposalStore {
 	readonly directory: string;
 	constructor(
-		home: string,
+		readonly home: string,
 		readonly now = Date.now,
 		readonly log: (message: string) => void = console.error,
 	) {
@@ -36,11 +43,12 @@ export class ProposalStore {
 		return join(this.directory, `${id}.json`);
 	}
 	private async ready() {
-		await mkdir(this.directory, { recursive: true, mode: 0o700 });
+		await privateDirectory(this.home);
+		await privateDirectory(this.directory);
 	}
 	private async save(p: Proposal) {
 		validateProposal(p);
-		await atomic(this.path(p.id), `${JSON.stringify(p, null, 2)}\n`);
+		await atomic(this.path(p.id), serializeRecord(p));
 	}
 	private async claimed(id: string) {
 		try {
@@ -52,22 +60,34 @@ export class ProposalStore {
 		}
 	}
 	async get(id: string): Promise<Proposal> {
+		const path = this.path(id);
 		let raw: string;
 		try {
-			raw = await readPrivate(this.path(id));
+			raw = await readPrivate(path);
 		} catch (error) {
 			if ((error as NodeJS.ErrnoException).code === "ENOENT")
 				throw new Error(`No Proposal ${id}`);
-			throw error;
+			throw new Error(
+				`${path}: file: ${error instanceof Error ? error.message : String(error)}`,
+			);
 		}
-		const p = JSON.parse(raw) as Proposal;
-		validateProposal(p);
-		if (p.id !== id) throw new Error("Proposal id mismatch");
-		if (
-			(await readPrivate(join(this.directory, `${id}.intent`))).trim() !==
-			p.contentHash
-		)
-			throw new Error("Proposal intent was changed after staging");
+		let p: Proposal;
+		try {
+			await this.ready();
+			p = readRecord(raw);
+			if (p.id !== id) throw new Error("id: Proposal id mismatch");
+			if (
+				(await readPrivate(join(this.directory, `${id}.intent`))).trim() !==
+				p.contentHash
+			)
+				throw new Error(
+					"contentHash: Proposal intent was changed after staging",
+				);
+		} catch (error) {
+			throw new Error(
+				`${path}: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
 		if (p.status !== "rejected" && !p.signature && (await this.claimed(id)))
 			p.status = "interrupted";
 		else if (
@@ -120,7 +140,11 @@ export class ProposalStore {
 			const now = this.now();
 			// Anchor expiry to the staged request's timestamp. Crossing a second
 			// while saving must neither refresh the request nor extend its window.
-			const timestamp = fixed.submit.body.timestamp;
+			const timestamp =
+				fixed.submit.body.timestamp ??
+				(fixed.submit.route === "/legal/acceptance"
+					? fixed.submit.body.signedAt
+					: undefined);
 			const createdAt =
 				timestamp === undefined
 					? Math.floor(now / 1000) * 1000
@@ -153,7 +177,7 @@ export class ProposalStore {
 				join(this.directory, `${id}.intent`),
 				`${p.contentHash}\n`,
 			);
-			await exclusive(this.path(id), `${JSON.stringify(p, null, 2)}\n`);
+			await exclusive(this.path(id), serializeRecord(p));
 			return p;
 		});
 	}

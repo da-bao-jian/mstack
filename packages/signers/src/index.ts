@@ -1,5 +1,6 @@
 import type { Address, Hex, SignableMessage, TypedDataDefinition } from "viem";
 export interface Signer {
+	close?(): Promise<void>;
 	address(): Promise<Address>;
 	chainId?(): Promise<number>;
 	signMessage(args: { message: SignableMessage }): Promise<Hex>;

@@ -25,14 +25,17 @@ export function scanView(
 			(!options.executable || r.executable) &&
 			(options.minApy === undefined || r.spreadAnnualizedPct >= options.minApy),
 	);
-	const rows = candidates.filter(
+	const liquid = candidates.filter(
 		(r) => options.includeThin || !r.flags.includes("thin"),
 	);
-	const thinHidden = candidates.length - rows.length;
+	const thinHidden = candidates.length - liquid.length;
 	const crossDeploymentHidden = options.includeCrossDeployment
 		? 0
-		: rows.filter((r) => r.executable && r.flags.includes("cross-deployment"))
-				.length;
+		: liquid.filter((r) => r.flags.includes("cross-deployment")).length;
+	const rows = liquid.filter(
+		(r) =>
+			options.includeCrossDeployment || !r.flags.includes("cross-deployment"),
+	);
 	rows.sort((a, b) => {
 		if (a.netApyPct === null) return b.netApyPct === null ? 0 : 1;
 		if (b.netApyPct === null) return -1;

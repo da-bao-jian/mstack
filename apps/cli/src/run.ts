@@ -81,7 +81,7 @@ const common = {
 	strict: flag("boolean"),
 	help: flag("boolean"),
 };
-const definitions: Record<string, ParseArgsConfig["options"]> = {
+export const definitions: Record<string, ParseArgsConfig["options"]> = {
 	hook: { help: flag("boolean") },
 	hello: {
 		help: flag("boolean"),

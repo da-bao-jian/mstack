@@ -5,7 +5,7 @@ import {
 	randomBytes,
 } from "node:crypto";
 import { constants } from "node:fs";
-import { mkdir, open, readdir } from "node:fs/promises";
+import { lstat, mkdir, open, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { type Address, getAddress, type Hex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
@@ -39,6 +39,8 @@ function base64(value: string, size: number): Buffer {
 	return bytes;
 }
 async function readStore(home: string, address: string): Promise<Keystore> {
+	await checkDirectory(home);
+	await checkDirectory(join(home, "keystore"));
 	const file = await open(
 		pathFor(home, address),
 		constants.O_RDONLY | constants.O_NOFOLLOW,
@@ -65,6 +67,13 @@ async function readStore(home: string, address: string): Promise<Keystore> {
 	} finally {
 		await file.close();
 	}
+}
+async function checkDirectory(path: string) {
+	const info = await lstat(path);
+	if (!info.isDirectory() || (info.mode & 0o777) !== 0o700)
+		throw new Error(
+			`${path}: keystore directory must be private (0700), not a symlink`,
+		);
 }
 async function save(
 	home: string,
@@ -106,6 +115,8 @@ async function save(
 			},
 		};
 		await mkdir(join(home, "keystore"), { recursive: true, mode: 0o700 });
+		await checkDirectory(home);
+		await checkDirectory(join(home, "keystore"));
 		const file = await open(pathFor(home, account.address), "wx", 0o600);
 		try {
 			await file.writeFile(`${JSON.stringify(value, null, 2)}\n`);
@@ -177,17 +188,28 @@ export async function unlockKeystore(
 			Buffer.from(`mstack-keystore-v1:${value.address.toLowerCase()}`),
 		);
 		cipher.setAuthTag(base64(value.crypto.authTag, 16));
-		plaintext = Buffer.concat([
-			cipher.update(base64(value.crypto.ciphertext, 32)),
-			cipher.final(),
-		]);
-		const account = privateKeyToAccount(`0x${plaintext.toString("hex")}`);
+		plaintext = cipher.update(base64(value.crypto.ciphertext, 32));
+		// Keep a reference before authentication, so failure also clears the bytes.
+		cipher.final().fill(0);
+		let account: ReturnType<typeof privateKeyToAccount> | undefined =
+			privateKeyToAccount(`0x${plaintext.toString("hex")}`);
 		if (account.address !== getAddress(address))
 			throw new Error("Address mismatch");
+		const owner = account.address;
+		const take = () => {
+			if (!account)
+				throw new Error("Keystore signer is closed or already used");
+			const active = account;
+			account = undefined;
+			return active;
+		};
 		return {
-			address: async () => account.address,
-			signMessage: (args) => account.signMessage(args),
-			signTypedData: (args) => account.signTypedData(args),
+			address: async () => owner,
+			signMessage: async (args) => take().signMessage(args),
+			signTypedData: async (args) => take().signTypedData(args),
+			close: async () => {
+				account = undefined;
+			},
 		};
 	} catch {
 		throw new Error("Cannot unlock keystore: wrong passphrase or invalid file");

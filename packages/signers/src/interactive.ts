@@ -100,16 +100,21 @@ export async function verifySignature(
 	if (typeof signature !== "string" || !/^0x[\da-f]{130}$/i.test(signature))
 		throw new Error("Invalid signature");
 	const sig = signature as Hex;
-	const recovered =
-		view.signing.type === "text"
-			? await recoverMessageAddress({
-					message: view.signing.message,
-					signature: sig,
-				})
-			: await recoverTypedDataAddress({
-					...view.signing.typedData,
-					signature: sig,
-				});
+	let recovered: Address;
+	try {
+		recovered =
+			view.signing.type === "text"
+				? await recoverMessageAddress({
+						message: view.signing.message,
+						signature: sig,
+					})
+				: await recoverTypedDataAddress({
+						...view.signing.typedData,
+						signature: sig,
+					});
+	} catch {
+		throw new Error("Invalid signature recovery");
+	}
 	if (getAddress(recovered) !== getAddress(view.owner))
 		throw new Error("Signature does not recover Proposal owner");
 	return sig;

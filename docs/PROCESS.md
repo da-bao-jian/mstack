@@ -43,7 +43,7 @@ parallel assignments now use isolated branches so reviews do not overwrite work.
 | [W14](reports/W14.md) | CLI output, sign lifecycle, help, sign-guard command, skill glossaries |
 | [W15](reports/W15.md) | Signing page, ceremony steps, public setup flags |
 | [W16](reports/W16.md) | Installer, release workflow, downloads, version 0.3.0 |
-| W17 | Planned final security and production-readiness review |
+| [W17](reports/W17.md) | Signing security sweep, deterministic properties, dependency audit, and readiness report |
 
 The [onboarding QA report](reports/QA-onboarding-1.md) records findings across
 packages. Reports describe the state at delivery; they are not current usage docs.

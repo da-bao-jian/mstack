@@ -8,9 +8,11 @@
 		".": "./src/index.ts"
 	},
 	"dependencies": {
-		"@walletconnect/sign-client": "2.25.0",
 		"qrcode-terminal": "0.12.0",
 		"viem": "2.57.4"
+	},
+	"optionalDependencies": {
+		"@walletconnect/sign-client": "2.25.0"
 	},
 	"devDependencies": {
 		"@types/qrcode-terminal": "0.12.2"

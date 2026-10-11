@@ -1,5 +1,5 @@
 import { ApiError, MobiusClient } from "@mstack/mobius-client";
-import { ProposalStore, runPreflight } from "@mstack/proposals";
+import { ProposalStore, publicText, runPreflight } from "@mstack/proposals";
 import {
 	browserSigner,
 	createKeystore,
@@ -17,6 +17,7 @@ import { readConfig, SETUP_FIRST, UsageError } from "./config.ts";
 import { submitPlan } from "./onboarding-http.ts";
 import { CheckFailure, Checks, configChecks } from "./preflight/checks.ts";
 import { proposalTiming, proposalView, showProposal } from "./proposal-view.ts";
+import { refreshExpired } from "./refresh-proposal.ts";
 import type { Runtime } from "./run.ts";
 import { walletWait } from "./wallet-wait.ts";
 
@@ -111,6 +112,8 @@ export async function p1(
 			);
 		return;
 	}
+	const stored = await store.get(id);
+	if (await refreshExpired(stored, rt)) return;
 	const proposal = await store.assertSignable(id);
 	const config = await readConfig(rt.home);
 	if ((config.policy ?? "manual") !== "manual")
@@ -179,12 +182,16 @@ export async function p1(
 					});
 					close = () => wallet.close();
 					signer = wallet;
-				} else
+				} else {
 					signer = await unlockKeystore(
 						rt.home,
 						config.owner as string,
 						(prompt) => read(prompt, cancellation.signal),
 					);
+					close = async () => {
+						await signer.close?.();
+					};
+				}
 				return {
 					async address() {
 						const address = await signer.address();
@@ -213,7 +220,9 @@ export async function p1(
 			},
 		});
 		rt.out(
-			`${result.id}: ${result.status} · Server answer: ${JSON.stringify(result.answer)} · Submission is acknowledged; execution is not confirmed.`,
+			publicText(
+				`${result.id}: ${result.status} · Server answer: ${JSON.stringify(result.answer)} · Submission is acknowledged; execution is not confirmed.`,
+			),
 		);
 	} catch (error) {
 		waiting?.stop();

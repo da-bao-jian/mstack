@@ -142,7 +142,12 @@ export async function readConfig(home = configHome()): Promise<Config> {
 		if ((error as NodeJS.ErrnoException).code === "ENOENT") return {};
 		throw error;
 	}
-	const value: unknown = JSON.parse(raw);
+	let value: unknown;
+	try {
+		value = JSON.parse(raw);
+	} catch {
+		throw new Error(`${join(home, "config.json")}: malformed JSON`);
+	}
 	if (!value || typeof value !== "object" || Array.isArray(value))
 		throw new Error("Config must be an object");
 	for (const [key, item] of Object.entries(value)) {
