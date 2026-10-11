@@ -63,6 +63,12 @@
 					}
 				}
 			}
+		},
+		{
+			"includes": ["assets/logo.json"],
+			"formatter": {
+				"enabled": false
+			}
 		}
 	]
 }

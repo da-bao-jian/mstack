@@ -1,5 +1,26 @@
 # mstack
 
+```text
+                         ░░░░░░░░░░░░░░░░░░
+                       ░░█░░░░░░░░░░░░░░░░░
+                     ░░███░░░░░░░░░░░░░░░░░
+                    ░█████░░░░░░░░░░░░░░░░░
+          ▒▒▒▒▒▒▒▒████████░░░░░░░░░░░░░░░░░
+       ▒▒▒▒▒▒▒▒▒▒▒████████░░░░░░░░░░░░░░░░░
+     ▒▒▒▒▒▒▒▒▒▒▒▒▒████████░░░░░░░░░░░░░░░░░
+   ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████████░░░░░░░░░░░░░░░░░
+ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████████░░░░░░░░░░░░░░░░░
+ ░░░░░░░░░░░░░░░░░████████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+ ░░░░░░░░░░░░░░░░░████████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+ ░░░░░░░░░░░░░░░░░████████▒▒▒▒▒▒▒▒▒▒▒▒▒
+ ░░░░░░░░░░░░░░░░░████████▒▒▒▒▒▒▒▒▒▒▒
+ ░░░░░░░░░░░░░░░░░████████▒▒▒▒▒▒▒▒▒
+ ░░░░░░░░░░░░░░░░░██████░
+ ░░░░░░░░░░░░░░░░░█████
+ ░░░░░░░░░░░░░░░░░███
+ ░░░░░░░░░░░░░░░░░█
+```
+
 An open-source funding-rate scanner and Mobius agent stack, with public reads and explicit Proposal signing.
 
 `mob open` and the manage commands stage a Proposal, print its preview, and stop. Stored Proposals can be signed explicitly through `mob sign <id>`. See the [CLI commands](apps/cli/README.md). Skills and MCP can stage Proposals; human authorization is required for signing.
@@ -13,6 +34,16 @@ An open-source funding-rate scanner and Mobius agent stack, with public reads an
 Run `mob setup` to save your public owner, signer and policy, or select `mob sign <id> --with browser`. The browser bridge serves one Proposal on a random loopback port and closes after signing, rejection, or expiry. It creates no daemon or token file. Compare the page's digest with the terminal before approval.
 
 The current setup menu offers browser and keystore. For WalletConnect, create a project at [Reown Cloud](https://cloud.reown.com), then run `mob config set walletconnect_project_id <project-id>` and `mob config set signer walletconnect`. There is no default project ID. `mob sign <id> --with walletconnect` also selects this backend. Pairing uses the WalletConnect relay; SDK telemetry is disabled. Each Proposal gets a fresh session kept in memory, with owner and signature recovery checks and the same expiry deadline.
+
+## Home screen and diagnostics
+
+Run `mob` or `mob hello` for the logo, public account status and one next command. Use `--big`, `--compact`, `--plain`, `--ascii`, `--offline` or `--json`. Below 90 terminal columns, the logo appears above the details. `--compact` hides the info block and keeps the logo, palette and next command. Add `--offline` to omit network reads.
+
+`mob doctor` checks the installation, public configuration, signer availability, API access, legal acceptance, venue readiness and local Proposals. `mob doctor --json` returns the checklist. It never opens a wallet or requests a secret. Both screens share a five-second network budget; unfinished reads say `not checked`. Upgrade status uses the cached `origin/main` reference; these commands do not fetch GitHub.
+
+Doctor exits 1 for a failed or unchecked critical item. Unbound venues, Bun availability for upgrades, and upgrade notices are optional. A bound venue's readiness and deposit/account checks are critical. A valid `locked` policy passes and is labeled as disabling mutations. The HL deposit check reports current perpetual account value; it cannot establish past deposits or spot-only balances.
+
+The installer ends with the home screen and three next commands; `-q` stays quiet. The `/mob` router shows a compact ASCII splash at most once per hour, shared between hosts. Claude Code shows a one-time install notice for each plugin installation path.
 
 ## 30-second install
 

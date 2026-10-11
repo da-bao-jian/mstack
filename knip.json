@@ -34,6 +34,9 @@
 		"apps/cli": {
 			"entry": ["src/main.ts"],
 			"project": ["src/**/*.ts", "test/**/*.ts", "scripts/**/*.ts"]
+		},
+		"packages/brand": {
+			"project": ["src/**/*.ts", "test/**/*.ts"]
 		}
 	},
 	"ignoreIssues": {

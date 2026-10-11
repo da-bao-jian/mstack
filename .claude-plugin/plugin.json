@@ -1,7 +1,7 @@
 {
 	"name": "mstack",
 	"version": "0.2.0",
-	"description": "Funding reads and Proposal skills with explicit human approval.",
+	"description": "Funding-rate scanner and Mobius agent stack. Scan every perp venue, then open and manage delta-neutral positions from your agent. Your keys never leave your wallet.",
 	"author": { "name": "mstack contributors" },
 	"license": "MIT",
 	"keywords": ["funding", "perpetuals", "mobius", "proposals"],

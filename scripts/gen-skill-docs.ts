@@ -12,6 +12,9 @@ export async function renderSkills(root = repo): Promise<Map<string, string>> {
 	const preamble = (
 		await readFile(resolve(root, "scripts/skill-preamble.sh"), "utf8")
 	).trimEnd();
+	const splash = (
+		await readFile(resolve(root, "scripts/skill-splash.sh"), "utf8")
+	).trimEnd();
 	const outputs = new Map<string, string>();
 	for (const host of ["claude", "codex"] as const) {
 		const overlay: unknown = JSON.parse(
@@ -40,6 +43,7 @@ export async function renderSkills(root = repo): Promise<Map<string, string>> {
 		for (const file of files) {
 			const name = file.slice(0, -".md.tmpl".length);
 			const source = await readFile(resolve(root, "skills-src", file), "utf8");
+			replacements.PREAMBLE = `\`\`\`bash\n${name === "mob" ? preamble.replace("if MOB_VERSION=", `${splash}\nif MOB_VERSION=`) : preamble}\n\`\`\``;
 			const body = source.replace(/\{\{([A-Z_]+)\}\}/g, (_, key: string) => {
 				if (!Object.hasOwn(replacements, key))
 					throw new Error(`Unknown template field ${key}`);

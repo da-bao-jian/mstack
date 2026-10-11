@@ -66,6 +66,7 @@ export async function setup(
 		home?: string;
 		build?: (root: string, quiet: boolean) => Promise<void>;
 		out?: (text: string) => void;
+		showHome?: (binary: string, home: string) => Promise<void>;
 	} = {},
 ): Promise<void> {
 	const root = await realpath(options.root ?? resolve(import.meta.dir, ".."));
@@ -218,6 +219,27 @@ export async function setup(
 				`Paste into ${host === "claude" ? "CLAUDE.md" : "AGENTS.md"}:\nUse /mob for funding and Mobius questions. The installed mstack skills are /mob (router), /mob-scan (funding comparisons), /mob-explain (bundled explanations), /mob-status (public task reads), /mob-setup (public configuration and legal acceptance), /mob-bind (one venue approval at a time), /mob-open, /mob-manage, and /mob-close (stage a Proposal and stop for explicit approval). Browser signing requires the latest user message to name the Proposal id; keystore signing needs the human's own terminal.`,
 			);
 		}
+	}
+	if (!values.uninstall && !values.quiet) {
+		await (
+			options.showHome ??
+			(async (binary, home) => {
+				const child = Bun.spawn([binary, "hello"], {
+					env: {
+						...Bun.env,
+						HOME: home,
+						MOB_HOME: options.home
+							? join(home, ".mob")
+							: (Bun.env.MOB_HOME ?? join(home, ".mob")),
+					},
+					stdin: "ignore",
+					stdout: "inherit",
+					stderr: "inherit",
+				});
+				if ((await child.exited) !== 0) throw new Error("Home screen failed");
+			})
+		)(join(root, "apps/cli/dist/mob"), home);
+		out("Next commands:\n  mob setup\n  mob scan --size 1000\n  mob doctor");
 	}
 }
 

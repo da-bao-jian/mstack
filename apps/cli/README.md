@@ -156,3 +156,9 @@ A typed-data domain's chain ID pins the session and request chain. Unpinned text
 The backend uses `@walletconnect/sign-client` 2.25.0 and `qrcode-terminal` 0.12.0. Relay communication is required for this backend. SDK telemetry and logging are disabled. Pairing state and protocol keys stay in memory, with a separate storage namespace for each interaction. The relay connection and heartbeat are closed at the end. The SDK runs in a short-lived worker, which is terminated after cleanup to discard pending protocol timers.
 
 `bun run smoke:walletconnect:mock` uses a mocked sign-client and a real loopback fake funding-server. It does not contact a relay. With your owner and project ID configured, `MOB_LIVE=1 bun run smoke:walletconnect` prints a real pairing URI and waits up to 60 seconds for a mobile wallet to sign a harmless test message. It makes no Mobius or venue submission. Without `MOB_LIVE=1`, the live script refuses before contacting a relay.
+
+## Home and doctor
+
+`mob` and `mob hello` show the MoB logo and status. Options: `--big`, `--compact`, `--plain`, `--ascii`, `--offline`, `--json`. Compact output keeps the logo, palette and next command. Reads share one five-second deadline; `--offline` omits them.
+
+`mob doctor [--json]` checks public configuration and signer availability without signing. Exit 0 means every critical check passed; exit 1 includes failed or unchecked critical checks. Unbound venues and upgrade tooling are optional. Upgrade status is based on cached `origin/main`, without a GitHub request.

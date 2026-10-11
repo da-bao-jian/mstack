@@ -13,6 +13,7 @@ import {
 import { scan } from "./commands/scan.ts";
 import { readinessStatus, status, statusApi } from "./commands/status.ts";
 import { configHome, numberFlag, UsageError } from "./config.ts";
+import type { HomeServices } from "./home-data.ts";
 import { footer, pct, renderScan, table } from "./render.ts";
 import { renderHistory } from "./render-history.ts";
 import { renderStatus, statusFooter } from "./status.ts";
@@ -21,6 +22,9 @@ import { installationRoot, upgrade } from "./upgrade.ts";
 const help = `mob ${pkg.version} — funding reads and explicit Proposal signing
 
 Usage:
+  mob [--big | --compact] [--plain | --ascii] [--offline] [--json]
+  mob hello [--big | --compact] [--plain | --ascii] [--offline] [--json]
+  mob doctor [--json]
   mob scan [--size N=1000] [--market BASE] [--venues a,b] [--top N=10]
            [--all-pairs] [--executable] [--min-apy PCT] [--strict] [--json | --json-full]
            [--min-volume N=1000000] [--include-thin] [--hold-days N=7] [--top-exec N=5]
@@ -72,6 +76,16 @@ const common = {
 	help: flag("boolean"),
 };
 const definitions: Record<string, ParseArgsConfig["options"]> = {
+	hello: {
+		help: flag("boolean"),
+		big: flag("boolean"),
+		compact: flag("boolean"),
+		plain: flag("boolean"),
+		ascii: flag("boolean"),
+		offline: flag("boolean"),
+		json: flag("boolean"),
+	},
+	doctor: { help: flag("boolean"), json: flag("boolean") },
 	setup: { help: flag("boolean") },
 	bind: { help: flag("boolean") },
 	open: {
@@ -136,6 +150,10 @@ const definitions: Record<string, ParseArgsConfig["options"]> = {
 };
 
 export interface Runtime extends CommandRuntime {
+	env?: Record<string, string | undefined>;
+	isTTY?: boolean;
+	columns?: number;
+	homeServices?: HomeServices;
 	prompt?: (question: string, defaultValue: string) => Promise<string>;
 	readSecret?: SecretReader;
 	openUrl?: (url: string) => Promise<void>;
@@ -168,7 +186,7 @@ export async function run(
 		...supplied,
 	};
 	try {
-		if (args.length === 0 || (args.length === 1 && args[0] === "--help")) {
+		if (args.length === 1 && args[0] === "--help") {
 			rt.out(help);
 			return 0;
 		}
@@ -176,6 +194,7 @@ export async function run(
 			rt.out(pkg.version);
 			return 0;
 		}
+		if (!args.length || args[0].startsWith("--")) args = ["hello", ...args];
 		const command = args[0];
 		if (!Object.hasOwn(definitions, command))
 			throw new UsageError(`Unknown command ${command}. Run mob --help.`);
@@ -197,6 +216,24 @@ export async function run(
 				: numberFlag(text(name) as string, name, minimum, integer);
 		const json = values.json === true || values["json-full"] === true;
 		const strict = values.strict === true;
+		if (command === "hello" || command === "doctor") {
+			if (positionals.length)
+				throw new UsageError(`${command} takes no positional arguments`);
+			const { home, doctor } = await import("./home.ts");
+			if (command === "doctor") return doctor(json, rt);
+			await home(
+				{
+					big: values.big === true,
+					compact: values.compact === true,
+					plain: values.plain === true,
+					ascii: values.ascii === true,
+					offline: values.offline === true,
+					json,
+				},
+				rt,
+			);
+			return 0;
+		}
 		if (
 			[
 				"open",

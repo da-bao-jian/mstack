@@ -18,7 +18,7 @@ type Credential =
 	| ReadRoutes["/api/binding/aster/credential"]["result"]
 	| ReadRoutes["/api/binding/lighter/credential"]["result"];
 
-function credentialReadiness(
+export function credentialReadiness(
 	venue: ArbitrageVenue,
 	credential: Credential,
 	now: number,

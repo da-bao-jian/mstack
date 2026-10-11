@@ -62,7 +62,7 @@ async function preambleHome() {
 	const bin = join(home, "bin");
 	await script(
 		join(bin, "mob"),
-		`exec ${quote(process.execPath)} ${quote(join(root, "apps/cli/src/main.ts"))} "$@"`,
+		`exec ${quote(process.execPath)} --preload ${quote(join(root, "packages/funding/test/no-network.ts"))} ${quote(join(root, "apps/cli/src/main.ts"))} "$@"`,
 	);
 	// A recorded HTTP 200 status; never request the real API during tests.
 	await script(
@@ -132,6 +132,7 @@ test.each([...outputs.keys()])(
 		expect(calls[0]).toContain("-A mstack/0.2.0");
 		expect(calls[0]).toContain("https://funding.mob.exchange/api/client-ip");
 	},
+	15_000,
 );
 
 test("preamble shows owner presence and HTTP failure, without printing the address", async () => {
@@ -151,7 +152,7 @@ test("preamble shows owner presence and HTTP failure, without printing the addre
 	expect(result.out).toContain("OWNER: set");
 	expect(result.out).toContain("API_REACHABLE: fail");
 	expect(result.out).not.toContain(address);
-});
+}, 15_000);
 
 test.each(["claude", "codex"])(
 	"preamble resolves the %s install when mob is absent from PATH",
@@ -176,6 +177,7 @@ test.each(["claude", "codex"])(
 			).out,
 		).toContain("MOB_VERSION: 0.2.0");
 	},
+	15_000,
 );
 
 test("missing binary stops with an install line before any API call", async () => {
@@ -189,7 +191,7 @@ test("missing binary stops with an install line before any API call", async () =
 	expect(result.code).toBe(1);
 	expect(result.out).toContain("MOB_MISSING\nInstall:");
 	expect(result.out).not.toContain("API_BASE");
-});
+}, 15_000);
 
 test("plugin root puts the shipped shim on PATH", async () => {
 	const { home, bin } = await preambleHome();
@@ -212,7 +214,7 @@ test("plugin root puts the shipped shim on PATH", async () => {
 	expect(
 		(await readFile(join(home, "curl-calls"), "utf8")).trim().split("\n"),
 	).toHaveLength(1);
-});
+}, 15_000);
 
 test("upgrade checks fetch once per hour, print changed hashes, and never use a failed check", async () => {
 	const { home, bin, path } = await preambleHome();
@@ -249,7 +251,7 @@ esac`,
 	expect(await readFile(join(home, "fetch-calls"), "utf8")).toBe(
 		"fetch\nfetch\n",
 	);
-});
+}, 15_000); // Four preambles launch repeated real CLI processes; allow for startup time.
 
 test("mutation skills confine signing to the explicit rule and never initiate secret/config/reject commands", () => {
 	for (const [file, body] of outputs) {
@@ -317,6 +319,7 @@ test.each(["keystore", "browser", "walletconnect"])(
 		expect(result.out).toContain("POLICY: locked");
 		expect(result.out).toContain(`SIGNER: ${signer}`);
 	},
+	15_000,
 );
 
 test("setup installs host outputs once and uninstalls only links it made", async () => {
@@ -363,20 +366,26 @@ test("setup installs host outputs once and uninstalls only links it made", async
 	await expect(lstat(join(home, ".codex/skills/mstack"))).rejects.toThrow();
 	await expect(lstat(join(home, ".codex/skills/mob"))).rejects.toThrow();
 	await setup(["--host", "codex", "--uninstall", "-q"], options);
-});
+}, 15_000);
 
 test("uninstall preserves nonempty and pre-existing directories", async () => {
 	for (const existing of [false, true]) {
 		const home = await mkdtemp(join(temporary, "directories-"));
 		const runtime = join(home, ".claude/skills/mstack");
 		if (existing) await mkdir(runtime, { recursive: true });
-		const options = { root, home, build: async () => {}, out: () => {} };
+		const options = {
+			root,
+			home,
+			build: async () => {},
+			showHome: async () => {},
+			out: () => {},
+		};
 		await setup(["--host", "claude"], options);
 		if (!existing) await writeFile(join(runtime, "user-file"), "keep");
 		await setup(["--host", "claude", "--uninstall"], options);
 		expect((await lstat(runtime)).isDirectory()).toBe(true);
 	}
-});
+}, 15_000);
 
 test("preamble config errors are explicit reports and do not block a local skill", async () => {
 	const { home, path } = await preambleHome();
@@ -393,14 +402,20 @@ test("preamble config errors are explicit reports and do not block a local skill
 	expect(result.out).toContain("OWNER: fail");
 	expect(result.out).toContain("POLICY: fail");
 	expect(result.out).toContain("SIGNER: fail");
-});
+}, 15_000);
 
 test("setup preserves pre-existing matching links and rejects conflicts before build", async () => {
 	const home = await mkdtemp(join(temporary, "existing-"));
 	const dir = join(home, ".claude/skills");
 	await mkdir(dir, { recursive: true });
 	await symlink(join(root, "skills/mob"), join(dir, "mob"));
-	const options = { root, home, build: async () => {}, out: () => {} };
+	const options = {
+		root,
+		home,
+		build: async () => {},
+		showHome: async () => {},
+		out: () => {},
+	};
 	await setup(["--host", "claude"], options);
 	await setup(["--host", "claude", "--uninstall"], options);
 	expect(await readlink(join(dir, "mob"))).toBe(join(root, "skills/mob"));
@@ -413,7 +428,7 @@ test("setup preserves pre-existing matching links and rejects conflicts before b
 			},
 		}),
 	).rejects.toThrow("Refusing to replace");
-});
+}, 15_000);
 
 test("auto setup selects detected hosts and prints each host integration paragraph", async () => {
 	const home = await mkdtemp(join(temporary, "auto-"));
@@ -422,6 +437,7 @@ test("auto setup selects detected hosts and prints each host integration paragra
 		root,
 		home,
 		build: async () => {},
+		showHome: async () => {},
 		out: (s: string) => lines.push(s),
 	};
 	await expect(setup([], options)).rejects.toThrow("No host detected");
@@ -434,7 +450,7 @@ test("auto setup selects detected hosts and prints each host integration paragra
 	await expect(setup(["--host", "unknown"], options)).rejects.toThrow(
 		"host must be",
 	);
-});
+}, 15_000);
 
 test("POSIX shim builds only when missing and keeps build output off stdout", async () => {
 	const home = await mkdtemp(join(temporary, "shim-"));
@@ -476,7 +492,7 @@ fi`,
 			)
 		).err,
 	).toContain("requires Bun");
-});
+}, 15_000);
 
 test.each(["skills", "skills-codex"])(
 	"%s onboarding skills explain public input and ask separately for each signature",
@@ -505,3 +521,107 @@ test.each(["skills", "skills-codex"])(
 		}
 	},
 );
+
+test("router splash is ASCII, delimited and limited to once per hour for both hosts", async () => {
+	const { home, path } = await preambleHome();
+	const claude = preamble(outputs.get("skills/mob/SKILL.md") as string);
+	const codex = preamble(outputs.get("skills-codex/mob/SKILL.md") as string);
+	const first = await command(["/bin/bash", "-c", claude], home, path);
+	const block = /<<<MOB\n([\s\S]*?)\nMOB>>>/.exec(first.out);
+	expect(block).not.toBeNull();
+	expect(block?.[1]).toMatch(/^[ -~\n]+$/);
+	expect(block?.[1]).toContain("##");
+	const stamp = join(home, ".mob/hello-stamp");
+	expect(Number(await readFile(stamp, "utf8"))).toBeGreaterThan(0);
+	expect(
+		(await command(["/bin/bash", "-c", codex], home, path)).out,
+	).not.toContain("<<<MOB");
+	await writeFile(stamp, `${Math.floor(Date.now() / 1000) - 3601}\n`);
+	const concurrent = await Promise.all([
+		command(["/bin/bash", "-c", claude], home, path),
+		command(["/bin/bash", "-c", codex], home, path),
+	]);
+	expect(concurrent.filter((r) => r.out.includes("<<<MOB"))).toHaveLength(1);
+	for (const [file, body] of outputs) {
+		if (file.endsWith("/mob/SKILL.md"))
+			expect(body).toContain(
+				"reproduce it exactly, inside one fenced code block, before anything else.",
+			);
+		else expect(body).not.toContain("hello --compact --ascii");
+	}
+}, 15_000);
+
+test("SessionStart emits one user-visible install message per installation root", async () => {
+	const home = await mkdtemp(join(temporary, "notice-"));
+	const invoke = (pluginRoot: string) =>
+		command(
+			["/bin/bash", join(root, "scripts/install-message.sh")],
+			home,
+			undefined,
+			{ CLAUDE_PLUGIN_ROOT: pluginRoot },
+		);
+	const results = await Promise.all([invoke(root), invoke(root)]);
+	expect(results.every((r) => r.code === 0)).toBe(true);
+	const printed = results.filter((r) => r.out.trim());
+	expect(printed).toHaveLength(1);
+	expect(JSON.parse(printed[0].out)).toEqual({
+		systemMessage: "mstack installed — type /mob to start",
+	});
+	expect((await invoke(root)).out).toBe("");
+	expect((await invoke(`${root}/another-install`)).out).toContain(
+		"systemMessage",
+	);
+}, 15_000);
+
+test("setup runs the fresh binary home after building, then prints three commands", async () => {
+	const home = await mkdtemp(join(temporary, "ending-"));
+	const events: string[] = [];
+	const options = {
+		root,
+		home,
+		build: async () => {
+			events.push("build");
+		},
+		out: (line: string) => events.push(line),
+		showHome: async (binary: string, targetHome: string) => {
+			expect(binary).toBe(join(root, "apps/cli/dist/mob"));
+			expect(targetHome).toBe(home);
+			events.push("home screen");
+		},
+	};
+	await setup(["--host", "codex"], options);
+	expect(events[0]).toBe("build");
+	expect(events.at(-2)).toBe("home screen");
+	expect(events.at(-1)).toBe(
+		"Next commands:\n  mob setup\n  mob scan --size 1000\n  mob doctor",
+	);
+	events.length = 0;
+	await setup(["--host", "codex", "--uninstall"], options);
+	expect(events).not.toContain("home screen");
+	events.length = 0;
+	await setup(["--host", "codex", "-q"], options);
+	expect(events).toEqual(["build"]);
+}, 15_000);
+
+test("setup's default home runner invokes the newly built file with the target HOME", async () => {
+	const home = await mkdtemp(join(temporary, "real-ending-home-"));
+	const checkout = await mkdtemp(join(temporary, "real-ending-checkout-"));
+	await symlink(join(root, "skills-codex"), join(checkout, "skills-codex"));
+	await symlink(join(root, "bin"), join(checkout, "bin"));
+	const lines: string[] = [];
+	await setup(["--host", "codex"], {
+		root: checkout,
+		home,
+		out: (s) => lines.push(s),
+		build: async () => {
+			await script(
+				join(checkout, "apps/cli/dist/mob"),
+				'printf "%s\\n" "$1" "$MOB_HOME" > "$HOME/home-invocation"',
+			);
+		},
+	});
+	expect(await readFile(join(home, "home-invocation"), "utf8")).toBe(
+		`hello\n${join(home, ".mob")}\n`,
+	);
+	expect(lines.at(-1)).toContain("Next commands:");
+}, 15_000);
