@@ -54,7 +54,7 @@ The API base defaults to `https://funding.mob.exchange`. `--api-base` overrides 
 
 `config get|set <key> [value]` uses `~/.mob/config.json`, or `$MOB_HOME/config.json` when set. Writes replace the file atomically with mode 0600. Missing files use documented defaults; malformed files fail. `get` returns the effective value.
 
-Allowed keys are `api_base`, `owner`, `default_size_usd`, `taker_fee_bps.<venue>`, `builder_fee_tenths_bps`, `signer`, and `policy`. Owner must be a 20-byte `0x` address; getting an unset owner prints an empty line. The venue must be one of the seven supported identifiers. Fee values must be finite and nonnegative; the builder setting is an integer in tenths of a basis point. Size must be positive. Config contains no credentials.
+Allowed keys are `api_base`, `owner`, `default_size_usd`, `taker_fee_bps.<venue>`, `builder_fee_tenths_bps`, `signer`, `policy`, `auth_base`, `legal_chain_id`, and `hl_signature_chain_id`. Owner must be a 20-byte `0x` address; getting an unset owner prints an empty line. The venue must be one of the seven supported identifiers. Fee values must be finite and nonnegative; the builder setting is an integer in tenths of a basis point. Size must be positive. Config contains no credentials.
 
 ## MCP server
 
@@ -98,6 +98,16 @@ Proposals expire after 300 seconds. A signed attempt cannot be retried, even aft
 
 Run `bun apps/cli/scripts/smoke-proposals.ts` from the repository root for a disposable-keystore transcript against a loopback fake server. It injects a test-only secret reader, verifies the signer and every request field, and removes its temporary home. It makes no live Mobius or venue requests.
 
+## Setup and binding
+
+`mob setup` prompts for owner, keystore/browser signer, policy, auth base and legal chain. These are public inputs; injectable prompts and stdin never carry secrets. Defaults are `https://auth.mob.exchange` and legal chain 97. Setup prints any keystore creation next step but never executes it. An already accepted legal version needs no Proposal. Otherwise review the staged typed acceptance and authorize its id separately. HTTP 503 reports an unconfigured service; HTTP 409 records the failure and stages current terms for new approval.
+
+`mob bind hl|aster|lighter|lighter-mainnet` reads credentials and pending status, checks rebind permission before a fresh prepare, and stages one next step. After each separately authorized submission, run it again. An existing pending Proposal is reused. Every purpose states the key's capabilities. HL requires a funded owner; Lighter requires an existing account. The Lighter key **can withdraw to your own address, not trade-only**.
+
+HL uses the browser wallet's chain from a connection-only handshake before staging, or `hl_signature_chain_id` (default `0xa4b1`) for keystore. The domain and action are fixed in the Proposal. Aster uses chain 56 with its dynamic ordered EIP-712 schema. Lighter sends chain 466324 for Robinhood or 304 for mainnet, signs the exact server message, then submits the stored `sendTx` payload with `L1Sig`. Only mainnet adds an integrator approval; a refused attempt is recorded and never retried automatically.
+
+Status polling and builder finalization are stored in the approval's submit plan. They stop at expiry, and partial receipts retain the venue answer. A known signature is not resent on re-entry. Existing standalone builder-only repairs fail without preparing a replacement key. The [root setup guide](../../README.md#set-up-and-bind-venues) lists all steps and capabilities. Run `bun run smoke:bind` for the fake auth/funding/venue transcript.
+
 ## Browser signer
 
 The browser backend works from an agent's shell without a secret or TTY. It prints a loopback URL and opens the system browser. Select an EIP-6963 wallet (or the browser's legacy injected wallet), connect the expected owner, compare the digest with the terminal, and approve the exact message. A different account disables signing. A pinned typed-data chain must be selected in the wallet; a refused switch is shown and no chain is added.
@@ -108,7 +118,7 @@ Run `bun run smoke:browser` from the root for the fake wallet and fake funding-s
 
 ## Open and manage
 
-Configure `owner`, `signer`, and manual policy first. Venues must already be bound; setup and binding commands are deferred.
+Configure `owner`, `signer`, and manual policy first. Use `mob setup` for public configuration and legal acceptance, then `mob bind <venue>` for each venue.
 
 ```sh
 mob status --readiness

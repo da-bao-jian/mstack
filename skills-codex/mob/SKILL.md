@@ -86,11 +86,13 @@ Run the preamble first. Use the resolved `$MOB` path for all CLI commands below;
 | Funding, rates, best pair, compare venues | `/mob-scan` |
 | How, why, what is, explain a concept | `/mob-explain` |
 | My positions, PnL, task status | `/mob-status` |
+| Set up Mobius, connect wallet, legal acceptance | `/mob-setup` |
+| Bind HL, Aster, Robinhood Lighter or mainnet Lighter | `/mob-bind` |
 | Open a position | `/mob-open` |
 | Resize, neutralize, protection, auto-close, size mismatch | `/mob-manage` |
 | Close a position | `/mob-close` |
 
-Load the named skill and follow it. Available commands include scan, rates, history, explain, status, config, open, close, resize, neutralize, protect, auto-close, size-mismatch-close, proposals, proposal show, and preview. Setup and binding commands are deferred. Upgrade is installation maintenance only.
+Load the named skill and follow it. Available commands include setup, bind, scan, rates, history, explain, status, config, open, close, resize, neutralize, protect, auto-close, size-mismatch-close, proposals, proposal show, and preview. Setup saves only public choices the user explicitly requests; it never creates a keystore. Binding asks for separate approval for every Proposal. Upgrade is installation maintenance only.
 
 ## Standing rules
 

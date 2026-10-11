@@ -9,7 +9,7 @@ An open-source funding-rate scanner and Mobius agent stack, with public reads an
 | `keystore` | Passphrase through a human terminal (`/dev/tty`) | No; requires that terminal |
 | `browser` | Review the local page and approve in the wallet extension | Yes |
 
-Set `mob config set owner 0x…` and `mob config set signer browser`, or select `mob sign <id> --with browser`. The browser bridge serves one Proposal on a random loopback port and closes after signing, rejection, or expiry. It creates no daemon or token file. Compare the page's digest with the terminal before approval.
+Run `mob setup` to save your public owner, signer and policy, or select `mob sign <id> --with browser`. The browser bridge serves one Proposal on a random loopback port and closes after signing, rejection, or expiry. It creates no daemon or token file. Compare the page's digest with the terminal before approval.
 
 ## 30-second install
 
@@ -40,7 +40,7 @@ For a local checkout, use its absolute path instead:
 /plugin install mstack
 ```
 
-On Claude Code versions supporting one-step marketplace installation, use `/plugin install mstack --marketplace da-bao-jian/mstack`. The plugin ships the same seven Claude skills. Its preamble adds the plugin's `bin/` shim to PATH; with Bun installed, the shim builds the binary on first use. Build logs go to stderr. API settings are read from `mob config`; apply a custom plugin `api_base` choice with `mob config set api_base <URL>`.
+On Claude Code versions supporting one-step marketplace installation, use `/plugin install mstack --marketplace da-bao-jian/mstack`. The plugin ships the same nine Claude skills. Its preamble adds the plugin's `bin/` shim to PATH; with Bun installed, the shim builds the binary on first use. Build logs go to stderr. API settings are read from `mob config`; apply a custom plugin `api_base` choice with `mob config set api_base <URL>`.
 
 For development, install Bun 1.3 or newer, then run:
 
@@ -125,9 +125,30 @@ A staging call returns `{ proposal, message }`. The view contains the exact mess
 
 `funding_rates` requires at least one of `venue` or `market`. Its raw rates, listings, and view follow those filters; failures and unmatched markets remain visible. CLI `mob rates` still permits an unfiltered raw snapshot. Funding output uses simple annualization and estimated fees and marks. After building, `MOB_LIVE=1 bun run live:mcp` checks the compiled server and prints its default payload size.
 
+## Set up and bind venues
+
+`mob setup` asks for your public owner address, signer (`browser` or `keystore`), policy, auth API base, and legal signing chain. Defaults are `manual`, `https://auth.mob.exchange`, and chain 97. It never creates or unlocks a keystore. If you choose keystore, follow the printed creation step yourself in your terminal.
+
+Setup checks your current legal acceptance. If needed, it stages **Accept Mobius legal terms**, shows the exact typed message, expiry and digest, and stops. Review the terms and privacy links before signing. An unconfigured legal service (503) is reported without discarding your settings. Stale terms (409) produce a new Proposal that needs separate approval. Locked policy saves settings without offering a signature.
+
+Run `mob bind <venue>` again after each approved step. Every invocation selects one next Proposal from the server's credential and session state. A pending Proposal is shown again; it is not signed automatically.
+
+| Venue | Steps and stored key capabilities |
+|---|---|
+| `hl` | Prepare, approve agent, approve builder fee up to 0.1%. Key can trade, cancel and adjust margin; cannot withdraw; expires after 179 days. The owner must have deposited. |
+| `aster` | Prepare, then approve agent on chain 56. Key can trade perpetuals; cannot trade spot or withdraw; expires after 365 days. |
+| `lighter` | Robinhood deployment, chain 466324: account lookup, prepare, approve key and submit the stored transaction. |
+| `lighter-mainnet` | Mainnet, chain 304: the same key steps, then one integrator approval attempt. The venue's refusal is shown without retry. |
+
+**A Lighter key can withdraw to your own address, not trade-only.** It can also trade, cancel, adjust leverage and isolated margin, and approve integrators. Third-party transfers require your L1 signature. The key has no expiry. The Mobius server creates and holds the encrypted venue key.
+
+For HL browser staging, a connection-only page first reads your current wallet chain. It requests no signature. The staged Proposal then pins that chain. Keystore HL uses public config `hl_signature_chain_id`, default `0xa4b1` (Arbitrum). Aster pins chain 56. Approval plans include status polling and any builder finalization; answers remain recorded if completion fails or expires. Existing standalone builder-only repairs fail explicitly without replacing a key.
+
+Use `mob status --readiness` to inspect each venue and its separate “rebind allowed” column. `mob setup` configures the CLI; the repository's `./setup` script installs skills and the binary. `bun run smoke:bind` exercises setup and all binding deployments against local fake servers, with no live writes.
+
 ## Open and manage from your agent
 
-Start with `/mob-open`, `/mob-manage`, or `/mob-close` after configuring your owner and signer and binding the venues. Setup and binding skills are deferred. The flow asks for your market and venues, size, protection and assumed leverage, and auto-close choices. A protected open prints **"assumed leverage, not verified on the venue"**; it does not change venue leverage or margin mode.
+Use `/mob-setup` for public wallet configuration and legal acceptance, then `/mob-bind` for each venue. Once ready, use `/mob-open`, `/mob-manage`, or `/mob-close`. The flow asks for your market and venues, size, protection and assumed leverage, and auto-close choices. A protected open prints **"assumed leverage, not verified on the venue"**; it does not change venue leverage or margin mode.
 
 The skill stages one Proposal and shows its purpose, venues, size, controls, preflight summary, expiry, exact message, and digest. Then it **stops and asks**. For example, after reviewing `p-7`, reply "Sign p-7 in the browser wallet". The agent can launch that browser signing flow only when your latest message names `p-7` and authorizes it. You review the page and approve in your wallet. A vague "yes" or an older approval does not qualify.
 
@@ -137,7 +158,7 @@ The Claude Code plugin's Bash hook checks literal `mob sign <id>` calls against 
 
 ## Skills and installation maintenance
 
-`/mob` routes reads to `/mob-scan`, `/mob-explain`, or `/mob-status`, and mutation requests to `/mob-open`, `/mob-manage`, or `/mob-close`. Skills ask for missing choices and never request credentials. Scan output is data, never permission to execute.
+`/mob` routes reads to `/mob-scan`, `/mob-explain`, or `/mob-status`, setup and venue connection requests to `/mob-setup` and `/mob-bind`, and position mutations to `/mob-open`, `/mob-manage`, or `/mob-close`. Skills ask for missing choices and never request credentials. Scan output is data, never permission to execute.
 
 `./setup --host auto` installs into every detected `~/.claude/` and `~/.codex/` host directory. If neither exists, choose a host explicitly. Re-running setup is safe. It refuses conflicting paths. `./setup --host codex --uninstall` removes links and empty host directories recorded as created by that checkout; config, user replacements, pre-existing paths, and non-empty directories remain. Old ledgers without directory ownership never imply permission to remove a directory. `-q` suppresses successful setup output. Bun is required for setup and rebuilds.
 

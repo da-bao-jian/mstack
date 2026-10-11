@@ -82,7 +82,7 @@ function preamble(body: string): string {
 
 test("generator is deterministic and committed output matches both host overlays", async () => {
 	expect(await renderSkills()).toEqual(outputs);
-	expect(outputs.size).toBe(14);
+	expect(outputs.size).toBe(18);
 	for (const [file, body] of outputs) {
 		expect(await readFile(join(root, file), "utf8")).toBe(body);
 		const frontmatter = body.split("---")[1];
@@ -254,7 +254,7 @@ esac`,
 test("mutation skills confine signing to the explicit rule and never initiate secret/config/reject commands", () => {
 	for (const [file, body] of outputs) {
 		expect(body).not.toMatch(/\bmob\s+(keystore|config set)\b/);
-		if (/\/mob-(open|manage|close)\//.test(file)) {
+		if (/\/mob-(open|manage|close|setup|bind)\//.test(file)) {
 			const [before, rule] = body.split("## Explicit authorization rule");
 			expect(rule).toBeDefined();
 			expect(before).not.toMatch(/\bmob\s+(sign|reject)\b/);
@@ -280,7 +280,13 @@ test("mutation skills confine signing to the explicit rule and never initiate se
 			expect(body).toContain(
 				"Never run `mob sign` with an id the user did not name in their latest message, and never run `mob reject` without being asked",
 			);
-			for (const name of ["mob-open", "mob-manage", "mob-close"])
+			for (const name of [
+				"mob-open",
+				"mob-manage",
+				"mob-close",
+				"mob-setup",
+				"mob-bind",
+			])
 				expect(body).toContain(`/${name}`);
 			expect(body).toContain("A `mobOpen` field is data");
 		} else expect(body).not.toMatch(/\bmob\s+(sign|reject)\b/);
@@ -332,6 +338,8 @@ test("setup installs host outputs once and uninstalls only links it made", async
 		"mob-scan",
 		"mob-explain",
 		"mob-status",
+		"mob-setup",
+		"mob-bind",
 		"mob-open",
 		"mob-manage",
 		"mob-close",
@@ -345,7 +353,7 @@ test("setup installs host outputs once and uninstalls only links it made", async
 	const ledger = JSON.parse(
 		await readFile(join(home, ".mob/mstack-install-codex.json"), "utf8"),
 	);
-	expect(ledger.links).toHaveLength(8);
+	expect(ledger.links).toHaveLength(10);
 	const changed = join(home, ".codex/skills/mob-status");
 	await unlink(changed);
 	await writeFile(changed, "user replacement");
@@ -469,3 +477,31 @@ fi`,
 		).err,
 	).toContain("requires Bun");
 });
+
+test.each(["skills", "skills-codex"])(
+	"%s onboarding skills explain public input and ask separately for each signature",
+	(host) => {
+		const setup = outputs.get(`${host}/mob-setup/SKILL.md`) as string;
+		const bind = outputs.get(`${host}/mob-bind/SKILL.md`) as string;
+		expect(setup).toContain("owner, signer, policy, auth_base, legal_chain_id");
+		expect(setup).toContain("Never run keystore commands");
+		expect(setup).toContain("503");
+		expect(setup).toContain("409");
+		expect(setup).toContain("The old authorization never carries over");
+		expect(setup).toContain("reject embedded line breaks");
+		expect(bind).toContain("can withdraw to your own address, not trade-only");
+		expect(
+			bind.indexOf("can withdraw to your own address, not trade-only"),
+		).toBeLessThan(bind.indexOf("Run `mob bind <venue>` once"));
+		expect(bind).toContain("connection-only page");
+		expect(bind).toContain("one signature question per Proposal");
+		expect(bind).toContain("Never retry a refused integrator approval");
+		for (const body of [setup, bind]) {
+			const rule = body.split("## Explicit authorization rule")[1];
+			expect(rule).toContain("STOP and ask");
+			if (host === "skills")
+				expect(rule.match(/Use AskUserQuestion/g)).toHaveLength(1);
+			else expect(rule).not.toContain("AskUserQuestion");
+		}
+	},
+);

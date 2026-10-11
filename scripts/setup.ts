@@ -122,6 +122,8 @@ export async function setup(
 				"mob-scan",
 				"mob-explain",
 				"mob-status",
+				"mob-setup",
+				"mob-bind",
 				"mob-open",
 				"mob-manage",
 				"mob-close",
@@ -210,10 +212,10 @@ export async function setup(
 		}
 		if (!values.quiet) {
 			out(
-				`Installed ${host}: mob, mob-scan, mob-explain, mob-status, mob-open, mob-manage, mob-close. Binary: ${join(home, `.${host}`, "skills/mstack/bin/mob")}`,
+				`Installed ${host}: mob, mob-scan, mob-explain, mob-status, mob-setup, mob-bind, mob-open, mob-manage, mob-close. Binary: ${join(home, `.${host}`, "skills/mstack/bin/mob")}`,
 			);
 			out(
-				`Paste into ${host === "claude" ? "CLAUDE.md" : "AGENTS.md"}:\nUse /mob for funding and Mobius questions. The installed mstack skills are /mob (router), /mob-scan (funding comparisons), /mob-explain (bundled explanations), /mob-status (public task reads), /mob-open, /mob-manage, and /mob-close (stage a Proposal and stop for explicit approval). Browser signing requires the latest user message to name the Proposal id; keystore signing needs the human's own terminal.`,
+				`Paste into ${host === "claude" ? "CLAUDE.md" : "AGENTS.md"}:\nUse /mob for funding and Mobius questions. The installed mstack skills are /mob (router), /mob-scan (funding comparisons), /mob-explain (bundled explanations), /mob-status (public task reads), /mob-setup (public configuration and legal acceptance), /mob-bind (one venue approval at a time), /mob-open, /mob-manage, and /mob-close (stage a Proposal and stop for explicit approval). Browser signing requires the latest user message to name the Proposal id; keystore signing needs the human's own terminal.`,
 			);
 		}
 	}
