@@ -11,6 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { renderLogo } from "@mstack/brand";
 import { ProposalStore } from "@mstack/proposals";
+import pkg from "../package.json";
 import { setConfig } from "../src/config.ts";
 import { collectHome, type HomeData } from "../src/home-data.ts";
 import { type Runtime, run } from "../src/run.ts";
@@ -86,7 +87,7 @@ test("no args home: parallel reads, aligned info, statuses, owner, tasks and Nex
 	const r = await invoke([]);
 	expect(r.code).toBe(0);
 	expect(r.err).toBe("");
-	expect(r.out).toContain("mstack 0.2.0  ·  mob");
+	expect(r.out).toContain(`mstack ${pkg.version}  ·  mob`);
 	expect(r.out).toContain("Owner     0x0000…0001");
 	expect(r.out).toContain("hl ✓  lighter ✓  aster –  lighter-mainnet –");
 	expect(r.out).toContain("Legal     accepted 2026-08-17");
@@ -123,7 +124,7 @@ test("narrow terminal stacks logo above info; plain has no escapes", async () =>
 	expect(out.split("\n").slice(0, 18)).toEqual(
 		renderLogo({ size: 44, mode: "mono" }),
 	);
-	expect(out.split("\n")[19]).toBe("mstack 0.2.0  ·  mob");
+	expect(out.split("\n")[19]).toBe(`mstack ${pkg.version}  ·  mob`);
 	expect(out).not.toContain("\x1b");
 });
 test("big and compact sizes retain Next; offline makes no HTTP calls", async () => {
@@ -328,7 +329,7 @@ test("upgrade and terminal ASCII output; help/version remain plain", async () =>
 	expect(r.out).toMatch(/^[\x20-\x7e\n]*$/);
 	expect(r.out).toContain("available abcdef0");
 	expect((await invoke(["--help"])).out).toContain("mob doctor [--json]");
-	expect((await invoke(["--version"])).out).toBe("0.2.0");
+	expect((await invoke(["--version"])).out).toBe(pkg.version);
 	for (const args of [
 		["hello", "oops"],
 		["hello", "--big", "--compact"],

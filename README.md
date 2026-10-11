@@ -45,6 +45,26 @@ Doctor exits 1 for a failed or unchecked critical item. Unbound venues, Bun avai
 
 The installer ends with the home screen and three next commands; `-q` stays quiet. The `/mob` router shows a compact ASCII splash at most once per hour, shared between hosts. Claude Code shows a one-time install notice for each plugin installation path.
 
+<!-- release-start -->
+## Install (binary)
+
+**Available after the first public release.** No Bun installation is needed for the binary.
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/main/install.sh | sh
+```
+
+The installer verifies SHA-256, saves `~/.mob/bin/mob-<version>`, and links `~/.local/bin/mob`. Add that directory to PATH when prompted. Run `mob` for the home screen, or `mob upgrade` to download and verify the latest release. Checkout installations still use Git and Bun for upgrades. Plugin installations use the version in their manifest; update the plugin to select a newer version.
+
+Release assets cover macOS and Linux on x64/arm64, plus Windows x64 (`mob-windows-x64.exe`). The shell installer needs POSIX sh, curl, and either `shasum` or `sha256sum`. On Windows, use a compatible shell or download the `.exe` and `SHA256SUMS` from GitHub Releases.
+
+The current Claude Code Bash authorization hook still requires Bun and blocks Bash calls without it. The standalone binary and download shim do not need Bun; full Claude Code plugin use still does.
+
+For local release fixtures, set `MSTACK_RELEASE_BASE_URL=http://127.0.0.1:<port>/releases/download`. The matching `/releases/latest/download/VERSION` route supplies the latest version. Versioned binaries and `SHA256SUMS` use `/releases/download/v<version>/`. The shim also accepts `MSTACK_MOB_BIN=/path/to/mob`. Normal binary resolution is quiet; set `MSTACK_VERBOSE=1` to log the selected binary to stderr. Builds, downloads, and failures always log to stderr.
+
+Maintainers can run `bun scripts/release.ts <version> --prepare` in a clean checkout to update all versions and date the Unreleased notes. This runs all gates and leaves changes for review. After committing or merging, `bun scripts/release.ts <version>` runs the gates and tags that commit locally. Without `--prepare`, a new version also gets a release commit. The helper never pushes. Tagging 0.3.0 is deferred until the parallel branches merge.
+<!-- release-end -->
+
 ## 30-second install
 
 Install Bun 1.3 or newer first. The repository is private; cloning and marketplace installation require GitHub access.

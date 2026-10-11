@@ -3,14 +3,14 @@
 	"owner": { "name": "mstack contributors" },
 	"metadata": {
 		"description": "mstack funding and Proposal skills",
-		"version": "0.2.0"
+		"version": "0.3.0"
 	},
 	"plugins": [
 		{
 			"name": "mstack",
 			"source": "./",
 			"description": "Funding reads and Proposal skills with explicit human approval.",
-			"version": "0.2.0"
+			"version": "0.3.0"
 		}
 	]
 }

@@ -19,8 +19,6 @@ test("upgrade with no origin reports no remote and makes no changes", async () =
 	};
 	expect(await upgrade("/fixture", exec)).toBe("no remote configured");
 	expect(seen).toEqual([["git", "remote"]]);
-	expect(await upgrade(null, exec)).toBe("no remote configured");
-	expect(seen).toHaveLength(1);
 });
 
 test("a plugin cache without Git metadata has no upgrade remote", async () => {

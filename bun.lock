@@ -13,7 +13,7 @@
     },
     "apps/cli": {
       "name": "@mstack/cli",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "dependencies": {
         "@modelcontextprotocol/sdk": "1.32.1",
         "@mstack/brand": "workspace:*",
@@ -28,33 +28,33 @@
     },
     "packages/brand": {
       "name": "@mstack/brand",
-      "version": "0.2.0",
+      "version": "0.3.0",
     },
     "packages/funding": {
       "name": "@mstack/funding",
-      "version": "0.2.0",
+      "version": "0.3.0",
     },
     "packages/liquidation": {
       "name": "@mstack/liquidation",
-      "version": "0.2.0",
+      "version": "0.3.0",
     },
     "packages/mobius-client": {
       "name": "@mstack/mobius-client",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "dependencies": {
         "viem": "2.57.4",
       },
     },
     "packages/opportunities": {
       "name": "@mstack/opportunities",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "dependencies": {
         "@mstack/funding": "workspace:*",
       },
     },
     "packages/proposals": {
       "name": "@mstack/proposals",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "dependencies": {
         "@mstack/mobius-client": "workspace:*",
         "@mstack/signers": "workspace:*",
@@ -63,7 +63,7 @@
     },
     "packages/signers": {
       "name": "@mstack/signers",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "dependencies": {
         "@walletconnect/sign-client": "2.25.0",
         "qrcode-terminal": "0.12.0",

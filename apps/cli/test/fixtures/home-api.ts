@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import type { Fetch } from "@mstack/mobius-client";
+import pkg from "../../package.json";
 import task from "./public-task.json";
 
 export const homeOwner = "0x0000000000000000000000000000000000000001";
@@ -31,7 +32,7 @@ export function homeApi() {
 		assert.equal(init?.redirect, "error");
 		assert.equal(
 			new Headers(init?.headers).get("X-Mobius-Client"),
-			"mstack/0.2.0",
+			`mstack/${pkg.version}`,
 		);
 		if (path === "/info") {
 			assert.equal(init?.method, "POST");

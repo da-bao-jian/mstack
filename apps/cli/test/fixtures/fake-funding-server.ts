@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { request } from "node:http";
 import type { Fetch, OpenBody, PublicTask } from "@mstack/mobius-client";
 import { type Address, type Hex, hashMessage, recoverAddress } from "viem";
+import pkg from "../../package.json";
 import task from "./public-task.json";
 
 // Ported from mobius@33ed2ece funding-server/src/server/routes/arbitrage.ts
@@ -80,8 +81,11 @@ export function fakeFundingServer(
 		async fetch(req) {
 			try {
 				const url = new URL(req.url);
-				assert.equal(req.headers.get("X-Mobius-Client"), "mstack/0.2.0");
-				assert.equal(req.headers.get("User-Agent"), "mstack/0.2.0");
+				assert.equal(
+					req.headers.get("X-Mobius-Client"),
+					`mstack/${pkg.version}`,
+				);
+				assert.equal(req.headers.get("User-Agent"), `mstack/${pkg.version}`);
 				if (req.method === "GET" && url.pathname === "/api/arbitrage/task") {
 					assert.equal(url.searchParams.get("owner"), owner);
 					return Response.json({ ...task, owner });
@@ -227,8 +231,11 @@ export function fakePositionServer(owner: Address, now = Date.now) {
 		async fetch(req) {
 			try {
 				const url = new URL(req.url);
-				assert.equal(req.headers.get("X-Mobius-Client"), "mstack/0.2.0");
-				assert.equal(req.headers.get("User-Agent"), "mstack/0.2.0");
+				assert.equal(
+					req.headers.get("X-Mobius-Client"),
+					`mstack/${pkg.version}`,
+				);
+				assert.equal(req.headers.get("User-Agent"), `mstack/${pkg.version}`);
 				if (req.method === "GET") {
 					if (url.pathname === "/api/arbitrage/task") {
 						assert.equal(url.searchParams.get("owner"), owner);

@@ -1,5 +1,6 @@
 import { lstat, readFile, realpath } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
+import { installLatestRelease } from "./release-download.ts";
 
 type Exec = (
 	args: string[],
@@ -47,7 +48,7 @@ export async function upgrade(
 	root: string | null,
 	exec: Exec = execute,
 ): Promise<string> {
-	if (root === null) return "no remote configured";
+	if (root === null) return installLatestRelease();
 	const run = async (args: string[]) => {
 		const result = await exec(args, root);
 		if (result.code !== 0)

@@ -1,6 +1,6 @@
 {
 	"name": "mstack",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"description": "Funding-rate scanner and Mobius agent stack. Scan every perp venue, then open and manage delta-neutral positions from your agent. Your keys never leave your wallet.",
 	"author": { "name": "mstack contributors" },
 	"license": "MIT",

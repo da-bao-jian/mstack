@@ -14,6 +14,7 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import pkg from "../package.json";
 import { renderSkills } from "../scripts/gen-skill-docs.ts";
 import { setup } from "../scripts/setup.ts";
 
@@ -43,6 +44,7 @@ async function command(
 			MOB_HOME: join(home, ".mob"),
 			CLAUDE_PLUGIN_ROOT: "",
 			MSTACK_ROOT: "",
+			MSTACK_VERBOSE: "",
 			PATH: path ?? process.env.PATH,
 			...extra,
 		},
@@ -113,7 +115,7 @@ test.each([...outputs.keys()])(
 		const result = await command(["/bin/bash", "-c", body], home, path);
 		expect(result.code).toBe(0);
 		for (const key of [
-			"MOB_VERSION: 0.2.0",
+			`MOB_VERSION: ${pkg.version}`,
 			"API_BASE: https://funding.mob.exchange",
 			"API_REACHABLE: ok",
 			"OWNER: unset",
@@ -128,8 +130,8 @@ test.each([...outputs.keys()])(
 		expect(calls).toHaveLength(1);
 		expect(calls[0]).toContain("-m 10");
 		expect(calls[0]).toContain("-o /dev/null");
-		expect(calls[0]).toContain("X-Mobius-Client: mstack/0.2.0");
-		expect(calls[0]).toContain("-A mstack/0.2.0");
+		expect(calls[0]).toContain(`X-Mobius-Client: mstack/${pkg.version}`);
+		expect(calls[0]).toContain(`-A mstack/${pkg.version}`);
 		expect(calls[0]).toContain("https://funding.mob.exchange/api/client-ip");
 	},
 	15_000,
@@ -175,7 +177,7 @@ test.each(["claude", "codex"])(
 					path,
 				)
 			).out,
-		).toContain("MOB_VERSION: 0.2.0");
+		).toContain(`MOB_VERSION: ${pkg.version}`);
 	},
 	15_000,
 );
@@ -210,7 +212,7 @@ test("plugin root puts the shipped shim on PATH", async () => {
 		{ CLAUDE_PLUGIN_ROOT: plugin },
 	);
 	expect(result.code).toBe(0);
-	expect(result.out).toContain("MOB_VERSION: 0.2.0");
+	expect(result.out).toContain(`MOB_VERSION: ${pkg.version}`);
 	expect(
 		(await readFile(join(home, "curl-calls"), "utf8")).trim().split("\n"),
 	).toHaveLength(1);
@@ -455,6 +457,12 @@ test("auto setup selects detected hosts and prints each host integration paragra
 test("POSIX shim builds only when missing and keeps build output off stdout", async () => {
 	const home = await mkdtemp(join(temporary, "shim-"));
 	await mkdir(join(home, "bin"));
+	await mkdir(join(home, ".claude-plugin"));
+	await mkdir(join(home, "apps/cli/src"), { recursive: true });
+	await copyFile(
+		join(root, ".claude-plugin/plugin.json"),
+		join(home, ".claude-plugin/plugin.json"),
+	);
 	await copyFile(join(root, "bin/mob"), join(home, "bin/mob"));
 	await chmod(join(home, "bin/mob"), 0o755);
 	await script(
@@ -472,7 +480,12 @@ fi`,
 	expect(first.code).toBe(0);
 	expect(first.out).toBe("binary --version\n");
 	expect(first.err).toContain("build progress");
-	expect((await command(args, home, "/usr/bin:/bin")).out).toBe(first.out);
+	expect(first.err).toContain("mob: building checkout binary with Bun");
+	expect(await command(args, home, "/usr/bin:/bin")).toEqual({
+		code: 0,
+		out: first.out,
+		err: "",
+	});
 	expect(await readFile(join(home, "build-calls"), "utf8")).toBe(
 		"install --frozen-lockfile\nrun build\n",
 	);

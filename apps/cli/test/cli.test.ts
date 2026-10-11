@@ -3,6 +3,7 @@ import { mkdtemp, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fixtureContext } from "../../../packages/funding/test/fixtures.ts";
+import pkg from "../package.json";
 import { configHome } from "../src/config.ts";
 import { knowledge } from "../src/knowledge.ts";
 import { type Runtime, run } from "../src/run.ts";
@@ -216,7 +217,7 @@ test.each(
 });
 
 test("version and help expose only delivered commands", async () => {
-	expect((await invoke(["--version"])).out).toBe("0.2.0");
+	expect((await invoke(["--version"])).out).toBe(pkg.version);
 	const result = await invoke(["--help"]);
 	for (const name of [
 		"scan",
@@ -331,8 +332,8 @@ test("status renders every publicTask fixture field and sends client headers", a
 	);
 	expect(result.out).not.toContain("snapshot age");
 	const headers = new Headers(requests[0].init?.headers);
-	expect(headers.get("X-Mobius-Client")).toBe("mstack/0.2.0");
-	expect(headers.get("User-Agent")).toBe("mstack/0.2.0");
+	expect(headers.get("X-Mobius-Client")).toBe(`mstack/${pkg.version}`);
+	expect(headers.get("User-Agent")).toBe(`mstack/${pkg.version}`);
 	expect(requests[0].url).toContain("taskId=1842");
 });
 

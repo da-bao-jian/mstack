@@ -7,6 +7,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import historyRows from "../../../packages/funding/fixtures/hyperliquid/history.json";
 import { fixtureContext } from "../../../packages/funding/test/fixtures.ts";
+import pkg from "../package.json";
 import type { Runtime } from "../src/commands/runtime.ts";
 import { setConfig } from "../src/config.ts";
 import { createMcpServer } from "../src/mcp.ts";
@@ -320,9 +321,11 @@ test("task_get returns all publicTask fields with the configured owner and clien
 			expect(params.get("owner")).toBe(task.owner);
 			expect(params.get("taskId")).toBe("1842");
 			expect(new Headers(init?.headers).get("X-Mobius-Client")).toBe(
-				"mstack/0.2.0",
+				`mstack/${pkg.version}`,
 			);
-			expect(new Headers(init?.headers).get("User-Agent")).toBe("mstack/0.2.0");
+			expect(new Headers(init?.headers).get("User-Agent")).toBe(
+				`mstack/${pkg.version}`,
+			);
 			return Response.json(task);
 		},
 	});
