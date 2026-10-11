@@ -60,7 +60,7 @@
   <div class="coords right"><span>A</span><span>B</span><span>C</span><span>D</span></div>
 
   <h1>mstack — how the system works</h1>
-  <p class="sub">An open-source funding-rate scanner and Mobius agent stack. <b>P0 (scan) is built and verified.</b> <b>P1 (open) is designed and in progress.</b> Panels marked <span class="tag p1">P1 design</span> describe the plan, not shipped code. File references point at <code>~/dev/mstack</code> at commit <code>c8ac7db</code>.</p>
+  <p class="sub">An open-source funding-rate scanner and Mobius agent stack. <b>P0 (scan) and P1 (open) are built and verified</b> on <code>main</code> at <code>6a41cc9</code>: 677 tests, every mutation exercised end to end against fake Mobius and venue servers (no live trade was placed). Panels marked <span class="tag p1">P1 built</span> were design on 2026-10-10 and shipped on 2026-10-11.</p>
 
   <div class="grid">
 
@@ -71,9 +71,10 @@
 ├── packages/
 │   ├── funding/        venue adapters, snapshot, history
 │   ├── opportunities/  classify + rank (pure math)
-│   ├── mobius-client/  <span class="mut">P1, in progress (W7)</span>
-│   ├── proposals/      <span class="mut">P1, in progress (W7)</span>
-│   └── signers/        <span class="mut">P1, in progress (W7)</span>
+│   ├── mobius-client/  typed routes, byte-exact messages
+│   ├── proposals/      stage → preview → sign, 0600 store
+│   ├── signers/        keystore, browser bridge, walletconnect
+│   └── liquidation/    ported distance + trim math
 ├── apps/cli/           mob binary: commands/, mcp.ts
 ├── skills-src/ hosts/  templates + overlays
 ├── skills/ skills-codex/  generated SKILL.md per host
@@ -202,7 +203,7 @@ MOB_MISSING              <span class="mut">← the one line that stops the skill
     <section class="panel c7">
       <div class="ph"><span class="chip">I</span><h2>The Mobius API as mstack uses it</h2><span class="cap">funding.mob.exchange</span></div>
       <p><b>Reads are public by owner address</b> (P0 uses them): <code>/api/arbitrage/list?owner=</code>, <code>task</code>, <code>liq-trims</code>, <code>resizes</code>, and the binding <code>credential</code> routes. <code>mob status</code> validates all 40 <code>publicTask</code> fields and labels <code>funding_usd</code> an estimate.</p>
-      <p><b>Writes are wallet-signed plain text</b> <span class="tag p1">P1 design</span>: EIP-191 <code>personal_sign</code>, no EIP-712 domain, EOAs only, <code>|now − timestamp| ≤ 300 s</code>, CORS <code>*</code>, no API keys. The open message, byte-exact with the frontend builder:</p>
+      <p><b>Writes are wallet-signed plain text</b> <span class="tag p1">P1 built</span>: EIP-191 <code>personal_sign</code>, no EIP-712 domain, EOAs only, <code>|now − timestamp| ≤ 300 s</code>, CORS <code>*</code>, no API keys. The open message, byte-exact with the frontend builder:</p>
       <pre>Open arbitrage task: long=lighter:HYPE short=hl:HYPE sizeUsd=5000 longPrice=22.17 shortPrice=22.18 minFundingApy=0 nonce=&lt;uuid&gt; timestamp=1791640000
                      └venue:native market    └JS String(n)   └venue marks at staging        └always present └randomUUID  └unix s
 + optional, only when set, in this order: autoClose=on|off longLeverage= shortLeverage= longMarginMode= shortMarginMode= maxSpreadBps= liqProtectionPct= sizeMismatchPct=</pre>
@@ -211,7 +212,7 @@ MOB_MISSING              <span class="mut">← the one line that stops the skill
 
     <!-- J PROPOSALS -->
     <section class="panel c12">
-      <div class="ph"><span class="chip">J</span><h2>Proposals and signing <span class="tag p1">P1 design, W7 in progress</span></h2><span class="cap">PRD §6, BUILD-PLAN P1</span></div>
+      <div class="ph"><span class="chip">J</span><h2>Proposals and signing <span class="tag p1">P1 built</span></h2><span class="cap">PRD §6, BUILD-PLAN P1</span></div>
       <svg viewBox="0 0 1100 120" width="100%" role="img" aria-label="Proposal state machine">
         <rect class="box" x="5" y="30" width="90" height="36"/><text x="14" y="52">staged</text>
         <rect class="box" x="140" y="30" width="100" height="36"/><text x="149" y="52">previewed</text>
@@ -236,12 +237,12 @@ MOB_MISSING              <span class="mut">← the one line that stops the skill
         <div>
           <div class="wrap"><table>
             <tr><th>Signer backend</th><th>Where the key lives</th><th>Agent can launch?</th></tr>
-            <tr><td><code>keystore</code> (W7)</td><td>Encrypted file under <code>~/.mob/keystore</code>, scrypt + AES-256-GCM; passphrase read from <code>/dev/tty</code> only</td><td><span class="bad">✗</span> needs a human terminal</td></tr>
-            <tr><td><code>browser</code> (W8)</td><td>The user's injected wallet, via a localhost page with a one-time token; recovered address must equal owner</td><td><span class="ok">✓</span> the human clicks in the wallet</td></tr>
-            <tr><td><code>walletconnect</code> (W8)</td><td>A mobile wallet; QR in the terminal</td><td><span class="ok">✓</span></td></tr>
+            <tr><td><code>keystore</code></td><td>Encrypted file under <code>~/.mob/keystore</code>, scrypt + AES-256-GCM; passphrase read from <code>/dev/tty</code> only</td><td><span class="bad">✗</span> needs a human terminal</td></tr>
+            <tr><td><code>browser</code></td><td>The user's injected wallet, via a localhost page with a one-time token; recovered address must equal owner</td><td><span class="ok">✓</span> the human clicks in the wallet</td></tr>
+            <tr><td><code>walletconnect</code></td><td>A mobile wallet; QR in the terminal</td><td><span class="ok">✓</span></td></tr>
             <tr><td><code>session</code> (P3)</td><td>A local agent key under a server-verified, scoped, expiring grant</td><td><span class="ok">✓</span> within caps only</td></tr>
           </table></div>
-          <p class="mut">Leverage without server changes: only Hyperliquid can be set, by the owner signing <code>updateLeverage</code>. Lighter and Aster need a venue key the CLI does not hold, so the CLI warns and never writes an unverified leverage or margin mode into the signed message.</p>
+          <p class="mut"><b>Shipped flow:</b> <code>mob setup</code> (legal acceptance via the existing auth-server routes) → <code>mob bind hl|aster|lighter|lighter-mainnet</code> (one Proposal per signature, re-entrant) → <code>mob open</code> with a 14-check client preflight → <code>mob sign &lt;id&gt;</code>. Leverage without server changes: only Hyperliquid can be set, by the owner signing <code>updateLeverage</code>. Lighter and Aster need a venue key the CLI does not hold, so the CLI warns and never writes an unverified leverage or margin mode into the signed message.</p>
         </div>
       </div>
     </section>
@@ -276,7 +277,7 @@ MOB_MISSING              <span class="mut">← the one line that stops the skill
         <tr><td>MCP tool deadline</td><td>60 s</td><td>cancellation reaches outstanding fetches</td></tr>
         <tr><td>thin gate</td><td>$1M 24h volume per leg</td><td>mark-based entry cost on thin markets is noise</td></tr>
         <tr><td><code>top</code>, <code>topExec</code></td><td>≤ 200</td><td>agent context</td></tr>
-        <tr><td>Proposal expiry <span class="tag p1">P1</span></td><td>300 s</td><td>equals the server's timestamp window</td></tr>
+        <tr><td>Proposal expiry <span class="tag p1">P1 built</span></td><td>300 s</td><td>equals the server's timestamp window</td></tr>
         <tr><td>default fees</td><td>hl 4.5 · lighter 0 · aster 3.5 · binance 5 · bybit 5.5 · okx 5 bps; builder 1.5 bp</td><td>estimates; override with <code>mob config</code></td></tr>
       </table></div>
     </section>
@@ -286,7 +287,7 @@ MOB_MISSING              <span class="mut">← the one line that stops the skill
       <div class="ph"><span class="chip">M</span><h2>How it was built, and what only live data showed</h2><span class="cap">docs/reports, docs/prompts</span></div>
       <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
         <div>
-          <p><b>Timeline, all 2026-10-10.</b> PRD 014 written (repo <code>mobius</code>) → P0 packages W0–W5 built by Codex (<code>gpt-6-astra</code>) with Fable as coordinator and QA, five fix rounds → repo moved to <code>da-bao-jian/mstack</code>, renamed, CI green → P1 plan written client-only because the Mobius server cannot change now → W7 started 15:01 UTC.</p>
+          <p><b>Timeline, all 2026-10-10.</b> PRD 014 written (repo <code>mobius</code>) → P0 packages W0–W5 built by Codex (<code>gpt-6-astra</code>) with Fable as coordinator and QA, five fix rounds → repo moved to <code>da-bao-jian/mstack</code>, renamed, CI green → P1 plan written client-only because the Mobius server cannot change now → P1 built 2026-10-11 (W7 proposals, W8 browser + WalletConnect, W9 setup/legal/bind, W10 open/manage, W11 skills + MCP + sign-guard hook), through a 13-hour npm/GitHub outage that forced the Hyperliquid approvals to be ported from SDK sources instead of installed.</p>
           <p><b>The loop.</b> <code>AGENTS.md</code> fixes the rules, <code>docs/BUILD-PLAN.md</code> the packages. Each brief goes to one Codex thread; Codex commits and writes <code>docs/reports/Wn.md</code>; Fable reruns every gate, runs the binary on live venues, reads the code, and answers with APPROVED or a numbered fix list. Codex never pushes.</p>
           <p><b>Gates on every commit:</b> <code>tsc --build</code>, Biome with zero warnings, 379 tests on recorded fixtures with the network blocked, knip dead-code, build, <code>claude plugin validate</code>, skill regeneration diff.</p>
         </div>
@@ -308,8 +309,8 @@ MOB_MISSING              <span class="mut">← the one line that stops the skill
 
   <div class="tb"><table>
     <tr><td><b>Title</b></td><td>mstack — how the system works (P0 built, P1 designed)</td></tr>
-    <tr><td><b>Source</b></td><td>github.com/da-bao-jian/mstack @ c8ac7db · docs/PRD.md · docs/BUILD-PLAN.md · docs/reports/W0–W6</td></tr>
-    <tr><td><b>Owner</b></td><td>Harry (Luban Protocol) · written by Fable, coordinator/QA · 2026-10-10</td></tr>
+    <tr><td><b>Source</b></td><td>github.com/da-bao-jian/mstack @ 6a41cc9 · docs/PRD.md · docs/BUILD-PLAN.md · docs/reports/W0–W11</td></tr>
+    <tr><td><b>Owner</b></td><td>Harry (Luban Protocol) · written by Fable, coordinator/QA · 2026-10-10, updated 2026-10-11</td></tr>
     <tr><td><b>Sheet</b></td><td>1 of 1</td></tr>
   </table></div>
 </div>
