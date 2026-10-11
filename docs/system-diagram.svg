@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 640" width="1180" height="640" role="img" aria-labelledby="t d">
+  <title id="t">mstack system diagram</title>
+  <desc id="d">An agent runs the mob CLI. The CLI scans venue public APIs keylessly, stages Proposals, and asks the user's own wallet to sign. Signed text goes to the Mobius funding-server, whose worker trades with trade-only venue keys in the user's own venue accounts. Legal acceptance goes to the auth-server. Nothing in the agent, the CLI or the MCP server can sign.</desc>
+  <defs>
+    <filter id="rough"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="1.6"/></filter>
+    <marker id="ah" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M1,1 L9,5 L1,9" fill="none" stroke="#1b1b1b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <style>
+      .box{fill:#fff;stroke:#1b1b1b;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;filter:url(#rough)}
+      .mint{fill:#eaf4ea}.sky{fill:#e9f0fb}.sand{fill:#fbf3e4}.rose{fill:#fbe9e9}
+      .arrow{fill:none;stroke:#1b1b1b;stroke-width:2;stroke-linecap:round;marker-end:url(#ah);filter:url(#rough)}
+      .accent{stroke:#1452d6}
+      text{font-family:Caveat,Kalam,"Comic Sans MS","Segoe Print",sans-serif;fill:#1b1b1b}
+      .h{font-size:22px;font-weight:700}.s{font-size:16px;fill:#555}.l{font-size:16px;fill:#333}
+      .note{font-size:15px;fill:#555}
+    </style>
+  </defs>
+  <rect width="1180" height="640" fill="#fff"/>
+  <text x="24" y="36" class="h" style="font-size:26px">mstack — how a scan and an open flow today</text>
+  <text x="24" y="60" class="s">keys stay in your wallet · the agent and the MCP server can only stage · the Mobius worker trades with trade-only venue keys</text>
+
+  <!-- Agent -->
+  <rect class="box sky" x="40" y="110" width="220" height="90" rx="14"/>
+  <text x="60" y="145" class="h">Agent</text>
+  <text x="60" y="170" class="s">Claude Code · Codex · MCP client</text>
+  <text x="60" y="190" class="s">skills /mob-*  ·  propose_* tools</text>
+
+  <!-- mob CLI -->
+  <rect class="box sand" x="400" y="95" width="300" height="120" rx="14"/>
+  <text x="420" y="130" class="h">mob CLI</text>
+  <text x="420" y="155" class="s">one binary: scan, rank, preflight</text>
+  <text x="420" y="177" class="s">Proposals in ~/.mob (0600), signed once</text>
+  <text x="420" y="199" class="s">mob mcp = same code, no sign tool</text>
+
+  <!-- Wallet -->
+  <rect class="box mint" x="860" y="95" width="280" height="120" rx="14"/>
+  <text x="880" y="130" class="h">Your wallet</text>
+  <text x="880" y="155" class="s">browser (MetaMask / Rabby) via a</text>
+  <text x="880" y="177" class="s">localhost sign page · keystore (TTY)</text>
+  <text x="880" y="199" class="s">· WalletConnect — never leaves you</text>
+
+  <!-- Venue public APIs -->
+  <rect class="box" x="40" y="300" width="300" height="110" rx="14"/>
+  <text x="60" y="335" class="h">Venue public APIs</text>
+  <text x="60" y="360" class="s">Hyperliquid · Lighter · Aster</text>
+  <text x="60" y="382" class="s">Binance · Bybit · OKX  (keyless)</text>
+
+  <!-- funding-server -->
+  <rect class="box rose" x="400" y="300" width="300" height="110" rx="14"/>
+  <text x="420" y="335" class="h">Mobius funding-server</text>
+  <text x="420" y="360" class="s">funding.mob.exchange</text>
+  <text x="420" y="382" class="s">reads public by address · writes = signed text</text>
+
+  <!-- auth-server -->
+  <rect class="box rose" x="860" y="300" width="280" height="110" rx="14"/>
+  <text x="880" y="335" class="h">Mobius auth-server</text>
+  <text x="880" y="360" class="s">auth.mob.exchange</text>
+  <text x="880" y="382" class="s">legal acceptance (EIP-712, chain 97)</text>
+
+  <!-- worker -->
+  <rect class="box rose" x="400" y="480" width="300" height="110" rx="14"/>
+  <text x="420" y="515" class="h">Mobius worker</text>
+  <text x="420" y="540" class="s">holds encrypted venue bot keys:</text>
+  <text x="420" y="562" class="s">trade · cancel · trim · close — not withdraw*</text>
+
+  <!-- venue accounts -->
+  <rect class="box mint" x="860" y="480" width="280" height="110" rx="14"/>
+  <text x="880" y="515" class="h">Your venue accounts</text>
+  <text x="880" y="540" class="s">funds stay here, in your name</text>
+  <text x="880" y="562" class="s">keys revocable at the venue any time</text>
+
+  <!-- arrows -->
+  <path class="arrow" d="M260,155 C330,155 330,155 398,155"/>
+  <text x="285" y="145" class="l">runs</text>
+
+  <path class="arrow accent" d="M700,135 C780,135 780,135 858,135"/>
+  <text x="730" y="125" class="l" fill="#1452d6">sign p-7?</text>
+  <path class="arrow accent" d="M858,185 C780,185 780,185 702,185"/>
+  <text x="735" y="208" class="l" fill="#1452d6">signature</text>
+
+  <path class="arrow" d="M400,185 C300,185 250,250 190,298"/>
+  <text x="235" y="240" class="l">scan, rates, marks</text>
+
+  <path class="arrow" d="M550,215 L550,298"/>
+  <text x="562" y="262" class="l">signed open / close</text>
+
+  <path class="arrow" d="M700,175 C790,175 860,230 940,298"/>
+  <text x="790" y="262" class="l">accept terms</text>
+
+  <path class="arrow" d="M550,410 L550,478"/>
+  <text x="562" y="450" class="l">task</text>
+
+  <path class="arrow" d="M700,535 L858,535"/>
+  <text x="735" y="525" class="l">orders</text>
+
+  <text x="40" y="470" class="note">* Hyperliquid and Aster keys cannot withdraw. The Lighter key can withdraw only to your own address.</text>
+  <text x="40" y="495" class="note">The preflight on the CLI stands in for the server preview that does not exist yet; the server's own create validation is the final gate.</text>
+  <text x="40" y="520" class="note">The agent never signs: skills stop and ask, the MCP server has no sign tool, and the plugin hook refuses a sign whose id you did not name.</text>
+  <text x="40" y="600" class="note">Source: docs/how-it-works.html panels B, G, I, J, K · main @ feb1df3 · 2026-10-11</text>
+</svg>
