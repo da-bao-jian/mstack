@@ -8,7 +8,15 @@ import { walletConnectFlow } from "./fixtures/walletconnect-flow.ts";
 test.each([false, true])(
 	"CLI WalletConnect Proposal flow (override=%s)",
 	async (override) => {
-		await walletConnectFlow(() => {}, override);
+		const lines: string[] = [];
+		await walletConnectFlow((line) => lines.push(line), override);
+		const index = lines.findIndex((line) => line.startsWith("wc:"));
+		expect(index).toBeGreaterThan(0);
+		expect(lines[index + 1]).toStartWith("p-1: submitted · Server answer:");
+		expect(lines[index + 1]).not.toContain("\n");
+		expect(lines[index + 2]).toBe("exit=0");
+		expect(lines.join("\n")).not.toContain("Waiting for your wallet");
+		expect(lines.join("\n")).not.toContain("If no page opened");
 	},
 );
 test("WalletConnect project ID has no default and rejects malformed IDs", async () => {

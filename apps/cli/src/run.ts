@@ -34,7 +34,8 @@ Usage:
   mob status [--owner 0x…] [--task ID] [--trims] [--resizes] [--api-base URL] [--json]
   mob config get <key>
   mob config set <key> <value>
-  mob setup
+  mob setup [--owner 0x… --signer keystore|browser|walletconnect --policy manual|locked]
+            [--auth-base URL] [--legal-chain-id N] [--walletconnect-project-id ID] [--no-legal]
   mob bind <hl|aster|lighter|lighter-mainnet>
   mob keystore create | import | list
   mob proposals
@@ -86,7 +87,16 @@ const definitions: Record<string, ParseArgsConfig["options"]> = {
 		json: flag("boolean"),
 	},
 	doctor: { help: flag("boolean"), json: flag("boolean") },
-	setup: { help: flag("boolean") },
+	setup: {
+		help: flag("boolean"),
+		owner: flag("string"),
+		signer: flag("string"),
+		policy: flag("string"),
+		"auth-base": flag("string"),
+		"legal-chain-id": flag("string"),
+		"walletconnect-project-id": flag("string"),
+		"no-legal": flag("boolean"),
+	},
 	bind: { help: flag("boolean") },
 	open: {
 		help: flag("boolean"),
@@ -154,6 +164,9 @@ export interface Runtime extends CommandRuntime {
 	isTTY?: boolean;
 	columns?: number;
 	homeServices?: HomeServices;
+	stdinIsTTY?: boolean;
+	stdoutIsTTY?: boolean;
+	writeStatus?: (text: string) => void;
 	prompt?: (question: string, defaultValue: string) => Promise<string>;
 	readSecret?: SecretReader;
 	openUrl?: (url: string) => Promise<void>;
@@ -183,6 +196,11 @@ export async function run(
 		home: configHome(),
 		out: console.log,
 		err: console.error,
+		stdinIsTTY: supplied.prompt !== undefined || !!process.stdin.isTTY,
+		stdoutIsTTY: !!process.stdout.isTTY,
+		writeStatus: (text) => {
+			process.stdout.write(text);
+		},
 		...supplied,
 	};
 	try {
@@ -271,7 +289,7 @@ export async function run(
 		if (command === "setup") {
 			if (positionals.length) throw new UsageError("Usage: mob setup");
 			const { setupCommand } = await import("./setup-command.ts");
-			await setupCommand(rt);
+			await setupCommand(rt, values);
 			return 0;
 		}
 		if (command === "bind") {

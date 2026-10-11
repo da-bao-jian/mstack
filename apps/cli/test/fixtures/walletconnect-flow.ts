@@ -35,6 +35,7 @@ export async function walletConnectFlow(
 	const command = async (args: string[], expected = 0) => {
 		out(`$ mob ${args.join(" ")}`);
 		const code = await run(args, {
+			stdoutIsTTY: false,
 			home,
 			out,
 			err: out,

@@ -1,4 +1,5 @@
 import { type ProposalInput, ProposalStore } from "@mstack/proposals";
+import { bindingCeremony } from "./bind-ceremony.ts";
 import { readConfig } from "./config.ts";
 import { Checks, configChecks } from "./preflight/checks.ts";
 import { showProposal } from "./proposal-view.ts";
@@ -27,6 +28,7 @@ export function printStaged(
 	p: Awaited<ReturnType<ProposalStore["get"]>>,
 	rt: Runtime,
 ) {
+	if (p.submit.binding) rt.out(bindingCeremony(p));
 	rt.out(showProposal(p));
 	rt.out(
 		`Stopped before signing. To authorize, name ${p.id} and run mob sign ${p.id}.`,

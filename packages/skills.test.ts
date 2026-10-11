@@ -499,7 +499,18 @@ test.each(["skills", "skills-codex"])(
 	(host) => {
 		const setup = outputs.get(`${host}/mob-setup/SKILL.md`) as string;
 		const bind = outputs.get(`${host}/mob-bind/SKILL.md`) as string;
-		expect(setup).toContain("owner, signer, policy, auth_base, legal_chain_id");
+		for (const flag of [
+			"--owner",
+			"--signer",
+			"--policy",
+			"--auth-base",
+			"--legal-chain-id",
+			"--walletconnect-project-id",
+			"--no-legal",
+		])
+			expect(setup).toContain(flag);
+		expect(setup).toContain("Do not pipe answers on stdin");
+		expect(setup.split("# Set up the wallet")[1]).not.toContain("printf");
 		expect(setup).toContain("Never run keystore commands");
 		expect(setup).toContain("503");
 		expect(setup).toContain("409");

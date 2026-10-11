@@ -3,35 +3,137 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>mstack — Review Proposal</title>
+<title>mstack — Review signature</title>
 <style nonce="_MSTACK_NONCE_">
-  body { max-width: 54rem; margin: 3rem auto; padding: 0 1.2rem; font: 17px/1.5 system-ui, sans-serif; color: #18242d; background: #f6f7f5; }
-  h1 { font-size: 1.8rem; } pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 1rem; background: #fff; border: 1px solid #ccd4d6; }
-  .address, #digest { overflow-wrap: anywhere; font-family: monospace; }
-  .error { color: #b01823; } button, select { padding: .6rem; margin: .3rem .3rem .3rem 0; font: inherit; }
-  button:disabled { opacity: .5; } #sign { background: #163e31; color: white; border: 1px solid #163e31; }
+  :root { color-scheme: light dark; --paper: #e9e3d5; --ink: #171b1d; --panel: #f8f4eb; --line: #86857d; --sky: #7fd8ff; --orange: #f66047; --navy: #027bb0; --good: #146039; --bad: #a52222; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 2rem 1.25rem; background: var(--paper); color: var(--ink); font: 17px/1.5 "Helvetica Neue", Helvetica, sans-serif; }
+  main { max-width: 48rem; margin: auto; }
+  header { display: flex; align-items: center; gap: 1rem; border-bottom: 2px solid var(--ink); padding-bottom: 1.25rem; }
+  #logo { width: 176px; height: 144px; flex: none; }
+  .wordmark { font-size: 2rem; font-weight: 800; letter-spacing: -.08em; }
+  .eyebrow { font: .8rem/1.5 monospace; text-transform: uppercase; letter-spacing: .12em; margin: 1.5rem 0 .5rem; }
+  h1 { font-size: clamp(1.8rem, 5vw, 2.8rem); font-weight: 600; line-height: 1.15; letter-spacing: -.035em; overflow-wrap: anywhere; margin: .5rem 0 1rem; }
+  .scope { margin: 0 0 1.5rem; font-size: 1.15rem; }
+  section { border-top: 1px solid var(--line); padding: 1.2rem 0; }
+  h2, legend { font: 600 1rem/1.5 "Helvetica Neue", Helvetica, sans-serif; margin: 0 0 .5rem; }
+  dl { margin: 0; } dt { font-size: .85rem; } dd { margin: .2rem 0 .8rem; }
+  .address, pre { font: .9rem/1.6 "SFMono-Regular", Consolas, monospace; overflow-wrap: anywhere; }
+  .match { color: var(--good); } .error { color: var(--bad); }
+  #account-match { margin: 0; font-weight: 600; }
+  fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+  #wallet { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .75rem; }
+  button { font: inherit; border: 1px solid var(--ink); border-radius: 4px; padding: .65rem 1rem; min-height: 44px; cursor: pointer; background: var(--panel); color: var(--ink); }
+  button:hover:enabled { box-shadow: 0 2px 0 var(--ink); }
+  button:focus-visible, .message-box:focus-visible { outline: 3px solid var(--navy); outline-offset: 4px; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .wallet-option { display: flex; align-items: center; gap: .5rem; overflow-wrap: anywhere; text-align: left; }
+  .wallet-option[aria-pressed="true"] { background: var(--sky); color: #171b1d; border-width: 2px; }
+  .wallet-option img { width: 28px; height: 28px; object-fit: contain; }
+  .section-title { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  pre { white-space: pre-wrap; background: var(--panel); border: 1px solid var(--line); padding: 1rem; margin: .75rem 0 0; }
+  .message-box { padding: 0; margin: .75rem 0 0; border: 1px solid var(--line); max-height: 22rem; overflow: auto; }
+  .message-box pre { margin: 0; border: 0; }
+  #digest { max-height: none; border-left: 4px solid var(--navy); }
+  .note { font-size: .85rem; margin: .4rem 0; }
+  #countdown { font-variant-numeric: tabular-nums; margin: 0 0 .5rem; }
+  progress { display: block; width: 100%; height: 8px; border: 0; background: var(--panel); accent-color: var(--navy); }
+  progress::-webkit-progress-bar { background: var(--panel); } progress::-webkit-progress-value { background: var(--navy); }
+  progress::-moz-progress-bar { background: var(--navy); }
+  .actions { display: flex; gap: .75rem; margin-top: 1.5rem; }
+  #sign { background: var(--sky); color: #171b1d; font-weight: 700; flex: 1; }
+  #reject { border-bottom: 3px solid var(--orange); }
+  #status { min-height: 3rem; padding-left: .75rem; border-left: 4px solid var(--navy); }
+  #status.error { border-color: var(--orange); }
+  [hidden] { display: none; }
+  @media (prefers-color-scheme: dark) {
+    :root { --paper: #171b1d; --ink: #eee9dd; --panel: #232b30; --line: #717c80; --good: #86dfaa; --bad: #ff9685; }
+    button:focus-visible, .message-box:focus-visible { outline-color: var(--sky); }
+  }
+  @media (max-width: 420px) { body { padding: 1rem; } .wallet-option { width: 100%; } .actions { flex-wrap: wrap; } #sign { flex-basis: 100%; } #reject { width: 100%; } }
 </style>
 </head>
 <body>
-<h1>Review Proposal <span id="id"></span></h1>
-<p id="purpose"></p>
-<p>Expected owner: <span class="address" id="owner"></span></p>
-<p>Selected account: <span class="address" id="account">Not connected</span></p>
-<p id="countdown" role="status"></p>
-<h2>Exact message</h2><pre id="message"></pre>
-<h2>Digest</h2><pre id="digest"></pre>
-<p>compare this digest with your terminal</p>
-<label for="wallet">Wallet</label> <select id="wallet"></select>
-<button type="button" id="connect">Connect wallet</button>
-<button type="button" id="sign" disabled>Sign this Proposal</button>
-<button type="button" id="reject">Reject Proposal</button>
-<p id="status" role="status"></p>
+<main>
+<header><svg id="logo" viewBox="0 0 176 144" width="176" height="144" role="img" aria-label="MoB logo" shape-rendering="crispEdges"></svg><span class="wordmark">mstack</span></header>
+<p class="eyebrow">Review signature · <span id="id"></span></p>
+<h1><span id="intent">This signature authorizes:</span> <span id="purpose">Loading Proposal…</span></h1>
+<p class="scope">It cannot move funds.</p>
+<section aria-label="Account check">
+<dl><dt>Expected owner</dt><dd class="address" id="owner"></dd><dt>Connected account</dt><dd class="address" id="account">Not connected</dd></dl>
+<p id="account-match" aria-live="polite">Connect your wallet to check the owner.</p>
+</section>
+<section>
+<fieldset><legend>Choose your wallet</legend><div id="wallet"></div></fieldset>
+<button type="button" id="connect" disabled>Connect wallet</button>
+</section>
+<section>
+<div class="section-title"><h2 id="message-title">Exact message</h2><button type="button" id="copy" disabled>Copy</button></div>
+<p class="note" id="copy-status" role="status"></p>
+<!-- biome-ignore lint/a11y/noNoninteractiveTabindex: The exact message scrolls and must be reachable with the keyboard. -->
+<section class="message-box" tabindex="0" aria-labelledby="message-title"><pre id="message"></pre></section>
+</section>
+<section>
+<h2>Digest</h2><p class="note">compare with your terminal</p><pre id="digest"></pre>
+</section>
+<section aria-label="Time remaining">
+<p id="countdown" role="timer"></p><progress id="expiry" max="100" value="100" aria-label="Time remaining before expiry"></progress>
+<div class="actions"><button type="button" id="sign" disabled>Sign in wallet</button><button type="button" id="reject">Reject</button></div>
+<p id="status" role="status" aria-live="polite">Loading Proposal…</p>
+</section>
+</main>
 <script nonce="_MSTACK_NONCE_">
 "use strict";
 const el = id => document.getElementById(id);
+// 44-wide grid from assets/logo.json; each opaque pixel is a 4 × 4 SVG rect.
+const logoRows = [
+  "00000000000000000000000000000000000000000000",
+  "00000000000000000000000001111111111111111110",
+  "00000000000000000000000013111111111111111110",
+  "00000000000000000000000133111111111111111110",
+  "00000000000000000000001333111111111111111110",
+  "00000000000000000000013333111111111111111110",
+  "00000000000000000000133333111111111111111110",
+  "00000000000000000000333333111111111111111110",
+  "00000000000000000003333333111111111111111110",
+  "00000000002222222233333333111111111111111110",
+  "00000000222222222233333333111111111111111110",
+  "00000002222222222233333333111111111111111110",
+  "00000022222222222233333333111111111111111110",
+  "00000222222222222233333333111111111111111110",
+  "00002222222222222233333333111111111111111110",
+  "00022222222222222233333333111111111111111110",
+  "00222222222222222233333333111111111111111110",
+  "02222222222222222233333333111111111111111110",
+  "01111111111111111133333333222222222222222220",
+  "01111111111111111133333333222222222222222200",
+  "01111111111111111133333333222222222222222000",
+  "01111111111111111133333333222222222222220000",
+  "01111111111111111133333333222222222222200000",
+  "01111111111111111133333333222222222222000000",
+  "01111111111111111133333333222222222220000000",
+  "01111111111111111133333333222222222200000000",
+  "01111111111111111133333333222222222000000000",
+  "01111111111111111133333331000000000000000000",
+  "01111111111111111133333310000000000000000000",
+  "01111111111111111133333100000000000000000000",
+  "01111111111111111133333000000000000000000000",
+  "01111111111111111133330000000000000000000000",
+  "01111111111111111133300000000000000000000000",
+  "01111111111111111133000000000000000000000000",
+  "01111111111111111130000000000000000000000000",
+  "00000000000000000000000000000000000000000000"
+];
+const logoColors = { "1": "#7fd8ff", "2": "#f66047", "3": "#027bb0" };
+logoRows.forEach((row, y) => { Array.from(row).forEach((pixel, x) => {
+  if (pixel === "0") return;
+  const rect = document.createElementNS(el("logo").namespaceURI, "rect");
+  for (const [key, value] of Object.entries({ x: x * 4, y: y * 4, width: 4, height: 4, fill: logoColors[pixel] })) rect.setAttribute(key, String(value));
+  el("logo").append(rect);
+}); });
 const token = new URL(location.href).searchParams.get("t");
 const wallets = [];
-let proposal, provider, address, chainId, ready = false, busy = false, done = false;
+let proposal, provider, address, chainId, loadedAt, selectedIndex = 0, ready = false, busy = false, submitting = false, done = false;
 const api = async (path, body) => {
   const response = await fetch(`${path}?t=${encodeURIComponent(token)}`, body === undefined ? {} : {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
@@ -40,102 +142,162 @@ const api = async (path, body) => {
   if (!response.ok) throw new Error(result.error || "Bridge request failed");
   return result;
 };
-const status = (text, error = false) => { el("status").textContent = text; el("status").className = error ? "error" : ""; };
+const status = (state, text, error = false) => {
+  el("status").textContent = text; el("status").className = error ? "error" : ""; el("status").setAttribute("data-state", state);
+};
 const matches = () => address && proposal && address.toLowerCase() === proposal.owner.toLowerCase();
 const pinned = () => proposal?.signing.type === "typed" ? proposal.signing.typedData.domain?.chainId : undefined;
+const wrongChain = () => pinned() !== undefined && Number(pinned()) !== chainId;
+const chainName = () => ({ 1: "Ethereum", 56: "BNB Smart Chain", 97: "BNB Smart Chain Testnet", 42161: "Arbitrum One" })[Number(pinned())] || `chain ${pinned()}`;
 function refresh() {
   const expired = proposal && Date.now() >= proposal.expiresAt;
+  if (expired && !done) { done = true; status("expired", "Expired. Return to your terminal to stage a new Proposal.", true); }
   el("account").textContent = address || "Not connected";
-  el("account").className = address && !matches() ? "address error" : "address";
-  el("sign").disabled = done || busy || expired || !ready || !matches() || (pinned() !== undefined && Number(pinned()) !== chainId);
-  el("connect").disabled = done || busy || expired;
-  if (proposal) el("countdown").textContent = expired ? "Proposal expired" : `Expires in ${Math.max(0, Math.ceil((proposal.expiresAt - Date.now()) / 1000))} seconds`;
-  if (expired) { done = true; el("reject").disabled = true; }
+  el("account").className = address ? (matches() ? "address match" : "address error") : "address";
+  el("account-match").textContent = address ? (matches() ? "✓ Account matches the expected owner." : "Account mismatch. Signing is disabled.") : "Connect your wallet to check the owner.";
+  el("account-match").className = address ? (matches() ? "match" : "error") : "";
+  el("sign").disabled = done || busy || !ready || !matches() || wrongChain();
+  el("connect").disabled = done || busy || !proposal;
+  el("reject").disabled = done || submitting;
+  for (const wallet of wallets) wallet.button.disabled = done || busy;
+  if (proposal && !done) {
+    const seconds = Math.max(0, Math.ceil((proposal.expiresAt - Date.now()) / 1000));
+    el("countdown").textContent = `Expires in ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+    el("expiry").value = Math.max(0, Math.min(100, 100 * (proposal.expiresAt - Date.now()) / (proposal.expiresAt - loadedAt)));
+  } else if (expired && el("status").getAttribute("data-state") === "expired") {
+    el("countdown").textContent = "Proposal expired"; el("expiry").value = 0;
+  }
 }
-function addWallet(name, candidate) {
+function active() { refresh(); return !done; }
+function accountStatus() {
+  if (!active()) return;
+  if (!matches()) status("mismatch", "Connected account does not match the expected owner.", true);
+  else if (wrongChain()) status("chain", `Chain switch needed. Switch to ${chainName()} in your wallet.`, true);
+  else status("ready", "Connected. Review the message and digest before signing.");
+}
+function addWallet(info, candidate) {
   if (!candidate?.request || wallets.some(wallet => wallet.provider === candidate)) return;
-  wallets.push({ name, provider: candidate });
-  const option = document.createElement("option");
-  option.value = String(wallets.length - 1); option.textContent = name;
-  el("wallet").append(option);
+  const index = wallets.length;
+  const button = document.createElement("button");
+  button.type = "button"; button.className = "wallet-option"; button.setAttribute("aria-pressed", String(index === selectedIndex));
+  // EIP-6963 icons are untrusted data URIs. Use an image, never inline their SVG or load a remote URL.
+  if (typeof info.icon === "string" && /^data:image\/(?:png|jpeg|gif|webp|svg\+xml)[;,]/i.test(info.icon)) {
+    const icon = document.createElement("img"); icon.src = info.icon; icon.alt = ""; button.append(icon);
+  }
+  const label = document.createElement("span"); label.textContent = info.name; button.append(label);
+  button.onclick = () => {
+    if (done || busy) return;
+    selectedIndex = index; provider = undefined; address = undefined; chainId = undefined;
+    for (let i = 0; i < wallets.length; i++) wallets[i].button.setAttribute("aria-pressed", String(i === index));
+    status("ready", "Connect your wallet to review this Proposal."); refresh();
+  };
+  wallets.push({ provider: candidate, button }); el("wallet").append(button); refresh();
 }
 window.addEventListener("eip6963:announceProvider", event => {
-  if (typeof event.detail?.info?.name === "string") addWallet(event.detail.info.name, event.detail.provider);
+  if (typeof event.detail?.info?.name === "string") addWallet(event.detail.info, event.detail.provider);
 });
 window.dispatchEvent(new Event("eip6963:requestProvider"));
-setTimeout(() => { if (!wallets.length && window.ethereum) addWallet("Browser wallet", window.ethereum); }, 300);
+setTimeout(() => { if (!wallets.length && window.ethereum) addWallet({ name: "Browser wallet" }, window.ethereum); }, 300);
 async function reportAccount() {
-  refresh();
-  if (!matches()) { status("Selected account does not match the expected owner.", true); return; }
+  if (!active() || !matches()) return;
   await api("/api/account", { address, chainId });
 }
 el("connect").onclick = async () => {
-  busy = true; refresh();
+  if (el("connect").disabled) return;
+  busy = true; status("connecting", "Connecting. Choose the expected owner in your wallet."); refresh();
   try {
-    const selected = wallets[Number(el("wallet").value)]?.provider;
+    const selected = wallets[selectedIndex]?.provider;
     if (!selected) throw new Error("No wallet found. Enable a wallet extension and reload.");
     provider = selected;
     const accounts = await provider.request({ method: "eth_requestAccounts" });
+    if (!active()) return;
     address = accounts[0];
     chainId = Number(await provider.request({ method: "eth_chainId" }));
-    refresh();
-    if (!matches()) { status("Selected account does not match the expected owner.", true); return; }
-    if (pinned() !== undefined && chainId !== Number(pinned())) {
+    if (!active()) return;
+    if (!matches()) { accountStatus(); return; }
+    if (wrongChain()) {
+      status("chain", `Chain switch needed. Switch to ${chainName()} in your wallet.`);
       await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: `0x${Number(pinned()).toString(16)}` }] });
+      if (!active()) return;
       chainId = Number(await provider.request({ method: "eth_chainId" }));
-      if (chainId !== Number(pinned())) throw new Error("Wallet did not switch to the Proposal chain.");
+      if (wrongChain()) throw new Error(`Wallet did not switch to ${chainName()}.`);
     }
     await reportAccount();
-    provider.on?.("accountsChanged", accounts => { if (provider !== selected) return; address = accounts[0]; void reportAccount().catch(error => status(error.message, true)); });
-    provider.on?.("chainChanged", chain => { if (provider !== selected) return; chainId = Number(chain); void reportAccount().catch(error => status(error.message, true)); });
-    if (proposal.connectionOnly) { done = true; status("Wallet chain received. Return to your terminal. No signature requested."); }
-    else status("Connected. Review the message and digest before signing.");
-  } catch (error) { status(error.message, true); }
-  finally { busy = false; refresh(); }
+    if (!active()) return;
+    provider.on?.("accountsChanged", accounts => {
+      if (done || provider !== selected) return;
+      address = accounts[0]; accountStatus(); void reportAccount().catch(fail);
+    });
+    provider.on?.("chainChanged", chain => {
+      if (done || provider !== selected) return;
+      chainId = Number(chain); accountStatus(); void reportAccount().catch(fail);
+    });
+    if (proposal.connectionOnly) { done = true; status("connected", "Wallet chain received. Return to your terminal. No signature requested."); }
+    else accountStatus();
+  } catch (error) {
+    if (!active()) return;
+    if (wrongChain() && matches()) status("chain", `Chain switch needed. Switch to ${chainName()} in your wallet. ${error.message}`, true);
+    else fail(error);
+  } finally { busy = false; refresh(); }
 };
-el("wallet").onchange = () => { provider = undefined; address = undefined; chainId = undefined; refresh(); };
+function fail(error) { if (active()) status("error", `Error. ${error.message}`, true); }
+el("copy").onclick = async () => {
+  try { await navigator.clipboard.writeText(el("message").textContent); el("copy-status").textContent = "Copied exact message."; }
+  catch { el("copy-status").textContent = "Copy failed. Select the exact message and copy it manually."; }
+};
 el("sign").onclick = async () => {
-  if (el("sign").disabled) return;
-  busy = true; refresh();
+  if (!active() || el("sign").disabled) return;
+  busy = true; status("waiting", "Waiting for wallet. Review and approve the signature in your wallet."); refresh();
   try {
     const current = await provider.request({ method: "eth_accounts" });
+    if (!active()) return;
     address = current[0];
     chainId = Number(await provider.request({ method: "eth_chainId" }));
-    if (!matches()) throw new Error("Selected account does not match the expected owner.");
-    if (pinned() !== undefined && chainId !== Number(pinned())) throw new Error("Wallet chain changed. Connect again to switch to the Proposal chain.");
+    if (!active()) return;
+    if (!matches()) { accountStatus(); return; }
+    if (wrongChain()) { accountStatus(); return; }
     await reportAccount();
-    if (Date.now() >= proposal.expiresAt) throw new Error("Proposal expired");
+    if (!active()) return;
     const signing = proposal.signing;
     const messageHex = signing.type === "text" ? `0x${Array.from(new TextEncoder().encode(signing.message), byte => byte.toString(16).padStart(2, "0")).join("")}` : undefined;
     const signature = await provider.request(signing.type === "text"
       ? { method: "personal_sign", params: [messageHex, address] }
       : { method: "eth_signTypedData_v4", params: [address, JSON.stringify(signing.typedData)] });
+    if (!active()) return;
+    submitting = true; refresh();
     await api("/api/signature", { address, signature });
-    done = true; status("Signature accepted. Return to your terminal for the submission result.");
-    el("reject").disabled = true;
+    if (!active()) return;
+    done = true; status("accepted", "Done. You can close this tab.");
   } catch (error) {
-    status(error.message, true);
-    if (error.code === 4001) { done = true; await api("/api/reject", {}).catch(() => {}); }
-  } finally { busy = false; refresh(); }
+    if (!active()) return;
+    if (error.code === 4001) {
+      done = true; status("rejected", "Rejected in wallet. No signature was submitted.");
+      await api("/api/reject", {}).catch(() => {});
+    } else fail(error);
+  } finally { busy = false; submitting = false; refresh(); }
 };
 el("reject").onclick = async () => {
+  if (!active() || el("reject").disabled) return;
   done = true; refresh();
-  try { await api("/api/reject", {}); status("Proposal rejected."); }
-  catch (error) { status(error.message, true); }
-  el("reject").disabled = true;
+  try { await api("/api/reject", {}); status("rejected", "Rejected. No signature was submitted."); }
+  catch (error) { status("error", `Error. ${error.message}`, true); }
 };
 async function poll() {
   if (done) return;
   try {
     const view = await api("/api/proposal");
+    if (done) return;
     if (!proposal) {
-      proposal = view;
-      if (view.connectionOnly) { el("sign").hidden = true; }
+      proposal = view; loadedAt = Date.now();
+      if (view.connectionOnly) { el("sign").hidden = true; el("intent").textContent = "This connection checks:"; }
       for (const key of ["id", "purpose", "owner", "digest"]) el(key).textContent = view[key];
       el("message").textContent = view.signing.type === "text" ? view.signing.message : JSON.stringify(view.signing.typedData, null, 2);
+      if (view.signing.type === "typed") el("message-title").textContent = "Exact typed data JSON";
+      el("copy").disabled = false;
+      status("ready", "Connect your wallet to review this Proposal.");
     }
     ready = view.ready; refresh();
-  } catch (error) { if (!done && !busy) { done = true; status(error.message, true); refresh(); } }
+  } catch (error) { if (!done && !busy) { fail(error); done = true; refresh(); } }
   if (!done) setTimeout(poll, 350);
 }
 setInterval(refresh, 200);

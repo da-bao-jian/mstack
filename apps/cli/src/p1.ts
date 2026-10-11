@@ -5,7 +5,6 @@ import {
 	createKeystore,
 	importKeystore,
 	listKeystores,
-	pairingQr,
 	readSecretFromTty,
 	type SecretReader,
 	type Signer,
@@ -19,6 +18,7 @@ import { submitPlan } from "./onboarding-http.ts";
 import { CheckFailure, Checks, configChecks } from "./preflight/checks.ts";
 import { showProposal } from "./proposal-view.ts";
 import type { Runtime } from "./run.ts";
+import { walletWait } from "./wallet-wait.ts";
 
 export async function p1(
 	command: string,
@@ -115,6 +115,7 @@ export async function p1(
 	if (!config.owner)
 		throw new UsageError("Set owner with mob config set owner 0x…");
 	let close: (() => Promise<void>) | undefined;
+	let waiting: ReturnType<typeof walletWait> | undefined;
 	const checkConfig = async () => {
 		const latest = await readConfig(rt.home);
 		if (
@@ -129,15 +130,17 @@ export async function p1(
 		const result = await store.sign(id, {
 			owner: getAddress(config.owner),
 			policy: config.policy ?? "manual",
-			display: (p) => rt.out(showProposal(p)),
+			display: (p) => {
+				if (backend === "keystore" || rt.stdoutIsTTY) rt.out(showProposal(p));
+			},
 			connect: async (proposal) => {
+				waiting = walletWait(rt, proposal.expiresAt);
 				let signer: Signer;
 				if (backend === "browser") {
 					const browser = browserSigner(proposal, {
 						openUrl: rt.openUrl,
 						now: rt.now,
-						onUrl: (url) =>
-							rt.out(`Open this URL in your wallet browser: ${url}`),
+						onUrl: (url) => waiting?.show(url, "browser"),
 					});
 					close = () => browser.close();
 					signer = browser;
@@ -146,10 +149,7 @@ export async function p1(
 						projectId: config.walletconnect_project_id as string,
 						now: rt.now,
 						createClient: rt.walletConnectClientFactory,
-						onPairing: (uri) =>
-							rt.out(
-								`Scan with your WalletConnect wallet:\n${pairingQr(uri)}\n${uri}\nApprove only the owner and message shown above. Expires: ${new Date(proposal.expiresAt).toISOString()}`,
-							),
+						onPairing: (uri) => waiting?.show(uri, "walletconnect"),
 					});
 					close = () => wallet.close();
 					signer = wallet;
@@ -172,6 +172,7 @@ export async function p1(
 				};
 			},
 			submit: async (p, body) => {
+				waiting?.stop();
 				await checkConfig();
 				if (rt.now() >= p.expiresAt)
 					throw new Error("Proposal expired before submission");
@@ -179,9 +180,10 @@ export async function p1(
 			},
 		});
 		rt.out(
-			`${result.id}: ${result.status}\nServer answer: ${JSON.stringify(result.answer)}\nSubmission is acknowledged; execution is not confirmed.`,
+			`${result.id}: ${result.status} · Server answer: ${JSON.stringify(result.answer)} · Submission is acknowledged; execution is not confirmed.`,
 		);
 	} catch (error) {
+		waiting?.stop();
 		if (
 			error instanceof ApiError &&
 			error.status === 409 &&
@@ -195,6 +197,7 @@ export async function p1(
 		}
 		throw error;
 	} finally {
+		waiting?.stop();
 		await close?.();
 	}
 }

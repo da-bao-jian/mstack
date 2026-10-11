@@ -65,7 +65,22 @@ async function harness() {
 	};
 }
 test("setup, legal and all binding deployments recover signatures with exact bodies and re-entry", async () => {
-	const result = await bindFlow();
+	const lines: string[] = [];
+	const result = await bindFlow((line) => lines.push(line));
+	const output = lines.join("\n");
+	for (const [venue, second, third] of [
+		["Hyperliquid", "approve agent", "approve builder fee"],
+		["Aster", "approve agent", "confirm binding"],
+		["Robinhood Lighter", "approve key", "confirm binding"],
+		["Lighter mainnet", "approve key", "approve integrator"],
+	]) {
+		expect(output).toContain(
+			`${venue} binding · step 2 of 3 · ${second}\n✓ prepare binding\n▶ ${second}\n· ${third}`,
+		);
+		expect(output).toContain(
+			`${venue} binding · step 3 of 3 · complete\n✓ prepare binding\n✓ ${second}\n✓ ${third}`,
+		);
+	}
 	expect(result.writes).toBe(13);
 	expect(result.proposals).toHaveLength(11);
 	expect(
@@ -398,3 +413,250 @@ test("HL WalletConnect binding pins the configured signing chain without opening
 		await h.close();
 	}
 }, 20_000);
+
+test.each(["keystore", "browser", "walletconnect"])(
+	"setup flags configure %s without prompts or legal requests when skipped",
+	async (signer) => {
+		const h = await harness();
+		try {
+			h.rt.stdinIsTTY = false;
+			h.rt.prompt = async () => {
+				throw new Error("Unexpected prompt");
+			};
+			h.rt.fetch = async () => {
+				throw new Error("Unexpected legal request");
+			};
+			expect(
+				await h.invoke([
+					"setup",
+					"--owner",
+					wallet.address,
+					"--signer",
+					signer,
+					"--policy",
+					"locked",
+					"--auth-base",
+					"https://auth.mob.exchange",
+					"--legal-chain-id",
+					"56",
+					"--no-legal",
+					...(signer === "walletconnect"
+						? ["--walletconnect-project-id", "b".repeat(32)]
+						: []),
+				]),
+			).toBe(0);
+			const config = await readConfig(h.home);
+			expect(config).toMatchObject({
+				owner: wallet.address,
+				signer,
+				policy: "locked",
+				auth_base: "https://auth.mob.exchange",
+				legal_chain_id: 56,
+			});
+			if (signer === "walletconnect")
+				expect(config.walletconnect_project_id).toBe("b".repeat(32));
+			expect(h.lines.join("\n")).toContain(
+				"Legal acceptance skipped (--no-legal).",
+			);
+			expect(await listKeystores(h.home)).toEqual([]);
+			expect(await h.store.list()).toEqual([]);
+		} finally {
+			await h.close();
+		}
+	},
+);
+test("non-interactive setup lists missing flags even with saved config and never prompts", async () => {
+	const h = await harness();
+	try {
+		h.rt.stdinIsTTY = false;
+		h.rt.prompt = async () => {
+			throw new Error("Unexpected prompt");
+		};
+		const before = await readConfig(h.home);
+		expect(await h.invoke(["setup"])).toBe(1);
+		expect(h.lines.at(-1)).toContain("--owner, --signer, --policy");
+		expect(
+			await h.invoke([
+				"setup",
+				"--owner",
+				wallet.address,
+				"--signer",
+				"walletconnect",
+			]),
+		).toBe(1);
+		expect(h.lines.at(-1)).toContain("--policy, --walletconnect-project-id");
+		expect(await readConfig(h.home)).toEqual(before);
+	} finally {
+		await h.close();
+	}
+});
+test("complete flags avoid prompts on a TTY and use defaults; saved WalletConnect ID can be reused", async () => {
+	const h = await harness();
+	try {
+		h.rt.stdinIsTTY = true;
+		h.rt.prompt = async () => {
+			throw new Error("Unexpected prompt");
+		};
+		await setConfig("walletconnect_project_id", "a".repeat(32), h.home);
+		expect(
+			await h.invoke([
+				"setup",
+				"--owner",
+				wallet.address,
+				"--signer",
+				"walletconnect",
+				"--policy",
+				"manual",
+				"--no-legal",
+			]),
+		).toBe(0);
+		expect((await readConfig(h.home)).legal_chain_id).toBe(97);
+		expect((await readConfig(h.home)).walletconnect_project_id).toBe(
+			"a".repeat(32),
+		);
+	} finally {
+		await h.close();
+	}
+});
+test("interactive setup numbers the five prompts and preserves defaults, including WalletConnect detail", async () => {
+	const h = await harness();
+	try {
+		const questions: string[] = [];
+		h.rt.prompt = async (question, fallback) => {
+			questions.push(`${question} [${fallback}]`);
+			return fallback;
+		};
+		expect(await h.invoke(["setup", "--no-legal"])).toBe(0);
+		expect(questions).toEqual([
+			`Setup · 1 of 5 · Owner [${wallet.address}]`,
+			"Setup · 2 of 5 · Signer (keystore | browser | walletconnect) [browser]",
+			"Setup · 3 of 5 · Policy (manual | locked) [manual]",
+			`Setup · 4 of 5 · Auth API base [${h.server.base}]`,
+			"Setup · 5 of 5 · Legal signing chain id [97]",
+		]);
+		questions.length = 0;
+		h.rt.prompt = async (question, fallback) => {
+			questions.push(question);
+			return question.includes("Signer (")
+				? "walletconnect"
+				: question.includes("project ID")
+					? "f".repeat(32)
+					: fallback;
+		};
+		expect(
+			await h.invoke(["setup", "--owner", wallet.address, "--no-legal"]),
+		).toBe(0);
+		expect(questions).not.toContain("Setup · 1 of 5 · Owner");
+		expect(questions).toContain("Setup · 2 of 5 · WalletConnect project ID");
+	} finally {
+		await h.close();
+	}
+});
+test.each([
+	["--owner", "bad"],
+	["--signer", "auto"],
+	["--policy", "auto"],
+	["--auth-base", "https://name:password@auth.mob.exchange"],
+	["--legal-chain-id", "0"],
+	["--walletconnect-project-id", "not-an-id"],
+])("invalid setup %s fails before any config is saved", async (flag, value) => {
+	const h = await harness();
+	try {
+		const before = await readConfig(h.home);
+		const values = new Map([
+			["--owner", wallet.address],
+			["--signer", "browser"],
+			["--policy", "manual"],
+			[flag, value],
+		]);
+		expect(
+			await h.invoke(["setup", ...Array.from(values).flat(), "--no-legal"]),
+		).toBe(1);
+		expect(await readConfig(h.home)).toEqual(before);
+		expect(h.server.writes).toHaveLength(0);
+	} finally {
+		await h.close();
+	}
+});
+test("non-interactive setup still stages legal acceptance and stops before signing", async () => {
+	const h = await harness();
+	try {
+		h.rt.stdinIsTTY = false;
+		h.rt.prompt = async () => {
+			throw new Error("Unexpected prompt");
+		};
+		expect(
+			await h.invoke([
+				"setup",
+				"--owner",
+				wallet.address,
+				"--signer",
+				"browser",
+				"--policy",
+				"manual",
+			]),
+		).toBe(0);
+		expect((await h.store.list()).map((p) => p.status)).toEqual([
+			"awaiting-signature",
+		]);
+		expect(h.lines.join("\n")).toContain("Stopped before signing.");
+		expect(h.server.writes).toHaveLength(0);
+	} finally {
+		await h.close();
+	}
+});
+test("binding indicators show the next action before preview, including pending re-entry", async () => {
+	const h = await harness();
+	try {
+		for (let i = 0; i < 2; i++) {
+			h.lines.length = 0;
+			expect(await h.invoke(["bind", "hl"])).toBe(0);
+			const output = h.lines.join("\n");
+			expect(output).toStartWith(
+				"Hyperliquid binding · step 1 of 3 · prepare binding\n▶ prepare binding\n· approve agent\n· approve builder fee",
+			);
+			expect(output.indexOf("This signature asks Mobius")).toBeLessThan(
+				output.indexOf("Purpose:"),
+			);
+			expect(output).toContain("After submission, run mob bind hl");
+			expect(output).toContain("Stopped before signing.");
+		}
+		await h.sign("p-1");
+		h.lines.length = 0;
+		expect(await h.invoke(["bind", "hl"])).toBe(0);
+		expect(h.lines.join("\n")).toContain(
+			"Hyperliquid binding · step 2 of 3 · approve agent\n✓ prepare binding\n▶ approve agent\n· approve builder fee",
+		);
+	} finally {
+		await h.close();
+	}
+}, 15_000);
+
+test("setup exits with open piped stdin instead of waiting for answers", async () => {
+	const home = await mkdtemp(join(tmpdir(), "mstack-w15-stdin-"));
+	const child = Bun.spawn(
+		[
+			process.execPath,
+			"run",
+			new URL("../src/main.ts", import.meta.url).pathname,
+			"setup",
+		],
+		{
+			stdin: "pipe",
+			stdout: "pipe",
+			stderr: "pipe",
+			env: { ...process.env, MOB_HOME: home },
+		},
+	);
+	const timeout = setTimeout(() => child.kill(), 5_000);
+	try {
+		expect(await child.exited).toBe(1);
+		expect(await new Response(child.stderr).text()).toContain(
+			"--owner, --signer, --policy",
+		);
+	} finally {
+		clearTimeout(timeout);
+		child.stdin.end();
+		await rm(home, { recursive: true, force: true });
+	}
+}, 10_000);

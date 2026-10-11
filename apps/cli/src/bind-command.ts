@@ -18,6 +18,7 @@ import {
 import { browserSigner } from "@mstack/signers";
 import { type Address, getAddress, type TypedDataDefinition } from "viem";
 import pkg from "../package.json";
+import { bindingSteps } from "./bind-ceremony.ts";
 import { getConfig, readConfig } from "./config.ts";
 import { object, request, textField } from "./onboarding-http.ts";
 import { printStaged, stageOnboarding } from "./onboarding-stage.ts";
@@ -131,9 +132,6 @@ export async function bindCommand(
 			p.submit.binding?.venue === venue &&
 			p.submit.binding.apiBase === base,
 	);
-	rt.out(
-		`${venue}: ${capabilities[venue]}. The Mobius server creates and holds this venue key.`,
-	);
 	const credential = await client.read(`/api/binding/${group}/credential`, {
 		ownerAddress: owner,
 		...(venue === "lighter-mainnet" ? { venue } : {}),
@@ -208,6 +206,7 @@ export async function bindCommand(
 				throw new Error(
 					"Venue key is bound but builder approval is missing. The server must return a repair session before binding can continue.",
 				);
+			rt.out(bindingSteps(venue, "complete"));
 			rt.out(
 				`${venue}: bound${venue === "lighter-mainnet" ? "; integrator approved" : ""}. No Proposal needed.`,
 			);
@@ -225,6 +224,7 @@ export async function bindCommand(
 				p.signatureAttemptedAt !== undefined,
 		);
 		if (attempted) {
+			rt.out(bindingSteps(venue, "approve-integrator"));
 			rt.out(
 				`Integrator approval already attempted in ${attempted.id}; venue answer: ${JSON.stringify(attempted.answer ?? attempted.error)}. No automatic repeat.`,
 			);
@@ -372,6 +372,7 @@ export async function bindCommand(
 			return;
 		}
 		if (alreadySubmitted(step)) {
+			rt.out(bindingSteps(venue, step));
 			rt.out(
 				`${venue}: ${step} was already attempted; waiting for the server's status. No repeat signature requested.`,
 			);
@@ -415,6 +416,7 @@ export async function bindCommand(
 		);
 	} else if (group === "aster") {
 		if (alreadySubmitted("approve-agent")) {
+			rt.out(bindingSteps(venue, "confirm"));
 			rt.out(
 				"aster: approval was already attempted; waiting for server status. No repeat signature requested.",
 			);
@@ -459,6 +461,7 @@ export async function bindCommand(
 		);
 	} else {
 		if (alreadySubmitted("approve-key")) {
+			rt.out(bindingSteps(venue, "confirm"));
 			rt.out(
 				`${venue}: key approval was already attempted; waiting for server status. No repeat signature requested.`,
 			);

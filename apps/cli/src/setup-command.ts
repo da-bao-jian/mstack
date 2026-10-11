@@ -129,20 +129,40 @@ export async function stageLegal(rt: Runtime, fresh = false) {
 		throw error;
 	}
 }
-export async function setupCommand(rt: Runtime) {
+export async function setupCommand(
+	rt: Runtime,
+	flags: Record<string, string | boolean | undefined> = {},
+) {
 	const current = await readConfig(rt.home);
-	const terminal = rt.prompt
-		? undefined
-		: createInterface({
-				input: process.stdin,
-				crlfDelay: Infinity,
-				terminal: false,
-			});
+	const required = ["owner", "signer", "policy"];
+	const missing = required.filter((key) => flags[key] === undefined);
+	const interactive = !!rt.stdinIsTTY && missing.length > 0;
+	const needsProject = (flags.signer ?? current.signer) === "walletconnect";
+	if (!rt.stdinIsTTY) {
+		if (
+			needsProject &&
+			!flags["walletconnect-project-id"] &&
+			!current.walletconnect_project_id
+		)
+			missing.push("walletconnect-project-id");
+		if (missing.length)
+			throw new Error(
+				`Non-interactive setup requires: ${missing.map((key) => `--${key}`).join(", ")}`,
+			);
+	}
+	const terminal =
+		interactive && !rt.prompt
+			? createInterface({
+					input: process.stdin,
+					crlfDelay: Infinity,
+					terminal: false,
+				})
+			: undefined;
 	const lines = terminal?.[Symbol.asyncIterator]();
 	const ask =
 		rt.prompt ??
 		(async (question: string, value: string) => {
-			process.stderr.write(`${question}${value ? ` [${value}]` : ""}: `);
+			process.stderr.write(`${question} [${value || "required"}]: `);
 			const next = await lines?.next();
 			if (!next || next.done)
 				throw new Error("Setup input ended before all answers were supplied");
@@ -150,20 +170,49 @@ export async function setupCommand(rt: Runtime) {
 		});
 	try {
 		const answers: [string, string][] = [];
-		for (const [key, question] of [
-			["owner", "Public owner address"],
-			["signer", "Signer (keystore | browser)"],
+		const fields = [
+			["owner", "Owner"],
+			["signer", "Signer (keystore | browser | walletconnect)"],
 			["policy", "Policy (manual | locked)"],
 			["auth_base", "Auth API base"],
 			["legal_chain_id", "Legal signing chain id"],
-		]) {
+		];
+		for (const [index, [key, label]] of fields.entries()) {
 			const fallback = String(getConfig(current, key));
-			const answer = (await ask(question, fallback)).trim() || fallback;
+			const supplied = flags[key.replaceAll("_", "-")];
+			const answer =
+				supplied !== undefined
+					? String(supplied)
+					: interactive
+						? (
+								await ask(`Setup · ${index + 1} of 5 · ${label}`, fallback)
+							).trim() || fallback
+						: fallback;
 			parsedValue(key, answer);
 			if (key === "owner") getAddress(answer);
-			if (key === "signer" && !["keystore", "browser"].includes(answer))
-				throw new Error("Setup signer must be keystore or browser");
 			answers.push([key, answer]);
+			if (key === "signer" && answer === "walletconnect") {
+				const project =
+					flags["walletconnect-project-id"] ??
+					(interactive
+						? await ask(
+								"Setup · 2 of 5 · WalletConnect project ID",
+								current.walletconnect_project_id ?? "",
+							)
+						: current.walletconnect_project_id);
+				if (!project)
+					throw new Error("Setup requires: --walletconnect-project-id");
+				parsedValue("walletconnect_project_id", String(project));
+				answers.push(["walletconnect_project_id", String(project)]);
+			}
+		}
+		if (
+			flags["walletconnect-project-id"] !== undefined &&
+			!answers.some(([key]) => key === "walletconnect_project_id")
+		) {
+			const project = String(flags["walletconnect-project-id"]);
+			parsedValue("walletconnect_project_id", project);
+			answers.push(["walletconnect_project_id", project]);
 		}
 		for (const [key, value] of answers) await setConfig(key, value, rt.home);
 		rt.out("Setup saved. No keystore was created.");
@@ -171,7 +220,8 @@ export async function setupCommand(rt: Runtime) {
 			answers.some(([key, value]) => key === "signer" && value === "keystore")
 		)
 			rt.out("Next step in your own terminal: mob keystore create");
-		await stageLegal(rt);
+		if (flags["no-legal"]) rt.out("Legal acceptance skipped (--no-legal).");
+		else await stageLegal(rt);
 	} finally {
 		terminal?.close();
 	}

@@ -40,7 +40,7 @@ export function browserSigner(
 	let origin = "";
 	let closing: Promise<void> = Promise.resolve();
 	const headers = {
-		"Content-Security-Policy": `default-src 'none'; script-src 'nonce-${nonce}'; style-src 'nonce-${nonce}'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`,
+		"Content-Security-Policy": `default-src 'none'; script-src 'nonce-${nonce}'; style-src 'nonce-${nonce}'; img-src data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`,
 		"Cache-Control": "no-store",
 		Connection: "close",
 		"Referrer-Policy": "no-referrer",
