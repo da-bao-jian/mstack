@@ -1,9 +1,88 @@
 import assert from "node:assert/strict";
 import { request } from "node:http";
-import type { Fetch, OpenBody, PublicTask } from "@mstack/mobius-client";
+import {
+	type ApiKeyRecord,
+	apiKeyMessage,
+	type Fetch,
+	type OpenBody,
+	type PublicTask,
+} from "@mstack/mobius-client";
 import { type Address, type Hex, hashMessage, recoverAddress } from "viem";
 import pkg from "../../package.json";
 import task from "./public-task.json";
+
+interface FakeApiKeyState {
+	records: ApiKeyRecord[];
+}
+
+async function handleApiKeys(
+	req: Request,
+	url: URL,
+	owner: Address,
+	state: FakeApiKeyState,
+): Promise<Response | undefined> {
+	const action = url.pathname.match(
+		/^\/api\/keys\/(list|create|revoke)$/,
+	)?.[1] as "list" | "create" | "revoke" | undefined;
+	if (!action) return undefined;
+	assert.equal(req.method, "POST");
+	const body = (await req.json()) as Record<string, unknown> & {
+		signature: Hex;
+		timestamp: number;
+	};
+	assert.equal(String(body.owner).toLowerCase(), owner.toLowerCase());
+	const recovered = await recoverAddress({
+		hash: hashMessage(
+			apiKeyMessage(action, {
+				owner: String(body.owner),
+				timestamp: body.timestamp,
+				...(action === "create"
+					? {
+							name: String(body.name),
+							venues: body.venues as (
+								| "aster"
+								| "hl"
+								| "lighter"
+								| "lighter-mainnet"
+							)[],
+							nonce: String(body.nonce),
+							...(body.maxSizeUsd === undefined
+								? {}
+								: { maxSizeUsd: Number(body.maxSizeUsd) }),
+						}
+					: {}),
+				...(action === "revoke" ? { id: String(body.id) } : {}),
+			}),
+		),
+		signature: body.signature,
+	});
+	assert.equal(recovered.toLowerCase(), owner.toLowerCase());
+	if (action === "list") return Response.json(state.records);
+	if (action === "revoke") {
+		const record = state.records.find((item) => item.id === body.id);
+		assert.ok(record);
+		record.revoked_at = new Date().toISOString();
+		return Response.json({ ok: true });
+	}
+	const id = "00000000-0000-4000-8000-000000000018";
+	const record: ApiKeyRecord = {
+		id,
+		name: String(body.name),
+		venues: body.venues as ApiKeyRecord["venues"],
+		max_size_usd: String(body.maxSizeUsd ?? 10_000),
+		key_prefix: `mobius_${id}…`,
+		created_at: new Date().toISOString(),
+		revoked_at: null,
+	};
+	state.records.unshift(record);
+	return Response.json(
+		{
+			key: `mobius_${id}.${"a".repeat(64)}`,
+			record,
+		},
+		{ status: 201 },
+	);
+}
 
 // Ported from mobius@33ed2ece funding-server/src/server/routes/arbitrage.ts
 // Independent server-side builder, not an import of the client message builder.
@@ -74,6 +153,7 @@ export function fakeFundingServer(
 	options: { readinessFailure?: boolean } = {},
 ) {
 	let writes = 0;
+	const apiKeys: FakeApiKeyState = { records: [] };
 	const errors: Error[] = [];
 	const server = Bun.serve({
 		hostname: "127.0.0.1",
@@ -86,6 +166,8 @@ export function fakeFundingServer(
 					`mstack/${pkg.version}`,
 				);
 				assert.equal(req.headers.get("User-Agent"), `mstack/${pkg.version}`);
+				const apiKeyResponse = await handleApiKeys(req, url, owner, apiKeys);
+				if (apiKeyResponse) return apiKeyResponse;
 				if (req.method === "GET" && url.pathname === "/api/arbitrage/task") {
 					assert.equal(url.searchParams.get("owner"), owner);
 					return Response.json({ ...task, owner });
@@ -223,6 +305,7 @@ export function fakePositionServer(owner: Address, now = Date.now) {
 	const writes: { route: string; recovered: string }[] = [];
 	const credentials: Record<string, unknown> = readyCredentials(owner, now());
 	const rebindBlocked = new Set<string>();
+	const apiKeys: FakeApiKeyState = { records: [] };
 	let current: PublicTask | undefined;
 	let readinessFailure: string | undefined;
 	const server = Bun.serve({
@@ -231,6 +314,8 @@ export function fakePositionServer(owner: Address, now = Date.now) {
 		async fetch(req) {
 			try {
 				const url = new URL(req.url);
+				const apiKeyResponse = await handleApiKeys(req, url, owner, apiKeys);
+				if (apiKeyResponse) return apiKeyResponse;
 				assert.equal(
 					req.headers.get("X-Mobius-Client"),
 					`mstack/${pkg.version}`,

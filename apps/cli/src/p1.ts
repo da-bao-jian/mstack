@@ -1,5 +1,11 @@
 import { isApiKey, type KeyMeta, prefixOf, redactKey } from "@mstack/keys";
-import { ApiError, MobiusClient } from "@mstack/mobius-client";
+import {
+	ApiError,
+	type ApiKeyCreateBody,
+	type ApiKeyListBody,
+	type ApiKeyRevokeBody,
+	MobiusClient,
+} from "@mstack/mobius-client";
 import {
 	type Json,
 	ProposalStore,
@@ -22,7 +28,7 @@ import pkg from "../package.json";
 import { readConfig, SETUP_FIRST, UsageError } from "./config.ts";
 import { cliKeyStore } from "./key-store.ts";
 import { keyListTable } from "./keys-command.ts";
-import { object, request, submitPlan } from "./onboarding-http.ts";
+import { object, submitPlan } from "./onboarding-http.ts";
 import { CheckFailure, Checks, configChecks } from "./preflight/checks.ts";
 import { proposalTiming, proposalView, showProposal } from "./proposal-view.ts";
 import { refreshExpired } from "./refresh-proposal.ts";
@@ -228,13 +234,32 @@ export async function p1(
 					return submitPlan(p, body, rt);
 				let answer: Json;
 				try {
-					answer = await request(
-						rt.fetch,
-						`${p.submit.base}${p.submit.route}`,
-						"POST",
-						body,
-						AbortSignal.timeout(Math.max(1, p.expiresAt - rt.now())),
+					const client = new MobiusClient({
+						base: p.submit.base,
+						version: pkg.version,
+						fetch: rt.fetch,
+					});
+					const signal = AbortSignal.timeout(
+						Math.max(1, p.expiresAt - rt.now()),
 					);
+					if (p.submit.route === "/api/keys/create")
+						answer = (await client.write(
+							"/api/keys/create",
+							body as unknown as ApiKeyCreateBody,
+							signal,
+						)) as unknown as Json;
+					else if (p.submit.route === "/api/keys/list")
+						answer = (await client.write(
+							"/api/keys/list",
+							body as unknown as ApiKeyListBody,
+							signal,
+						)) as unknown as Json;
+					else
+						answer = await client.write(
+							"/api/keys/revoke",
+							body as unknown as ApiKeyRevokeBody,
+							signal,
+						);
 				} catch (error) {
 					throw new Error(
 						redactKey(error instanceof Error ? error.message : String(error)),

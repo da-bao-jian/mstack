@@ -81,6 +81,46 @@ const auth = { timestamp: 1787555739, signature: "0x1234" as const };
 const writes: {
 	[R in keyof WriteRoutes]: { body: WriteRoutes[R]["body"]; result: unknown };
 } = {
+	"/api/keys/list": {
+		body: {
+			owner,
+			timestamp: 1787555739,
+			signature: `0x${"1".repeat(130)}`,
+		},
+		result: [],
+	},
+	"/api/keys/create": {
+		body: {
+			owner,
+			name: "terminal",
+			venues: ["hl"],
+			maxSizeUsd: 5000,
+			nonce: "00000000-0000-4000-8000-000000000001",
+			timestamp: 1787555739,
+			signature: `0x${"1".repeat(130)}`,
+		},
+		result: {
+			key: `mobius_00000000-0000-4000-8000-000000000002.${"a".repeat(64)}`,
+			record: {
+				id: "00000000-0000-4000-8000-000000000002",
+				name: "terminal",
+				venues: ["hl"],
+				max_size_usd: "5000",
+				key_prefix: "mobius_00000000-0000-4000-8000-000000000002…",
+				created_at: "2026-10-12T00:00:00.000Z",
+				revoked_at: null,
+			},
+		},
+	},
+	"/api/keys/revoke": {
+		body: {
+			owner,
+			id: "00000000-0000-4000-8000-000000000002",
+			timestamp: 1787555739,
+			signature: `0x${"1".repeat(130)}`,
+		},
+		result: { ok: true },
+	},
 	"/legal/acceptance": {
 		body: {
 			wallet: owner,

@@ -5,6 +5,7 @@ import {
 	redactKey,
 	verifyApiKey,
 } from "@mstack/keys";
+import { apiKeyMessage } from "@mstack/mobius-client";
 import type { JsonObject, ProposalInput } from "@mstack/proposals";
 import { readSecretFromTty, type SecretReader } from "@mstack/signers";
 import { getAddress } from "viem";
@@ -26,16 +27,6 @@ const uuidPattern =
 	/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 type KeyAction = "create" | "list" | "revoke";
-
-/** Local W19 copy. Replace with @mstack/mobius-client apiKeyMessage when W18 lands. */
-export function apiKeyMessage(action: KeyAction, body: JsonObject): string {
-	const base = `Mobius API keys: ${action} owner=${String(body.owner).toLowerCase()}`;
-	if (action === "create")
-		return `${base} name=${JSON.stringify(body.name)} venues=${(body.venues as string[]).join(",")}${body.maxSizeUsd === undefined ? "" : ` maxSizeUsd=${body.maxSizeUsd}`} nonce=${body.nonce} timestamp=${body.timestamp}`;
-	if (action === "revoke")
-		return `${base} id=${body.id} timestamp=${body.timestamp}`;
-	return `${base} timestamp=${body.timestamp}`;
-}
 
 function cleanName(value: string): string {
 	const name = value.trim();
@@ -240,7 +231,28 @@ async function stage(
 		kind: "sign-text",
 		owner,
 		purpose,
-		signing: { type: "text", message: apiKeyMessage(action, body) },
+		signing: {
+			type: "text",
+			message: apiKeyMessage(action, {
+				owner: String(body.owner),
+				timestamp: Number(body.timestamp),
+				...(action === "create"
+					? {
+							name: String(body.name),
+							venues: body.venues as (
+								| "aster"
+								| "hl"
+								| "lighter"
+								| "lighter-mainnet"
+							)[],
+							maxSizeUsd: Number(body.maxSizeUsd),
+							nonce: String(body.nonce),
+						}
+					: action === "revoke"
+						? { id: String(body.id) }
+						: {}),
+			}),
+		},
 		submit: {
 			base,
 			route: `/api/keys/${action}`,

@@ -1,0 +1,3515 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "M\u00f6B Trading API",
+    "version": "1.2.0",
+    "description": "Create and manage paired positions through your bound venue accounts.\n\nCreate an API key in this environment and pass it as a Bearer token. Keys grant specific venues and a maximum USD size per leg; they cannot withdraw funds. Local and demo deployments can execute real trades.\n\nTrading POST requests and binding submit require a persisted Idempotency-Key. Binding prepare uses a signed nonce. Reuse the same key, method, path and equivalent JSON when retrying an uncertain result. Keys are scoped to the wallet owner across API keys. HTTP 202 acknowledges a command; poll the task to observe execution.\n\nAuthenticated requests are limited to 120 per minute per key. Respect Retry-After on 429. Numeric database fields in task responses are decimal strings.\n\nDirect perpetual orders are available on /v1/perp/orders for Hyperliquid, Robinhood Lighter, and canonical Lighter. Use market IOC orders for taker execution or limit GTC/post-only orders for quoting. Side long means buy; short means sell. Positions net at the venue. Use an opposite-side reduceOnly order to close exposure. HTTP 202 only confirms queue acceptance. Orders are asynchronous. Direct order routes run in the same API service as strategy routes and have their own 120 requests/minute/key budget, request logs, and owner-scoped idempotency namespace. Serve /v1/perp/* and strategy paths through the same API service and port.\n\nVenue binding uses wallet signatures independently of API keys: prepare one or several explicit venue targets, sign the returned payloads, submit signatures, and poll the binding status. Funding-server executes persisted binding jobs. Private keys never leave the client wallet."
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Current API deployment"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Service"
+    },
+    {
+      "name": "Tasks"
+    },
+    {
+      "name": "Request logs"
+    },
+    {
+      "name": "Perpetual orders"
+    },
+    {
+      "name": "Venue bindings"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "Service"
+        ],
+        "summary": "Check service health",
+        "operationId": "getHealth",
+        "security": [],
+        "description": "Checks the service only; does not validate credentials or venue readiness.",
+        "responses": {
+          "200": {
+            "description": "Service is available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ]
+                },
+                "example": {
+                  "ok": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "tags": [
+          "Service"
+        ],
+        "summary": "Get the OpenAPI contract",
+        "operationId": "getOpenApi",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OpenAPI 3.1.1 document.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/delta-neutral/tasks": {
+      "get": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "List tasks",
+        "operationId": "listTasks",
+        "description": "Owner tasks visible to both venue grants, newest first. Unknown or repeated query parameters are rejected. Follow nextCursor with the same status and updatedSince filters.",
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskList"
+                },
+                "example": {
+                  "tasks": [],
+                  "nextCursor": null
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Support correlation ID."
+              },
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer",
+                  "const": 120
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20,
+              "default": 20
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{0,63}$"
+            }
+          },
+          {
+            "name": "updatedSince",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{1,6}Z$",
+              "description": "UTC timestamp with fractional seconds and Z.",
+              "example": "2026-09-28T00:00:00.000Z"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Create a task",
+        "operationId": "createTask",
+        "description": "Queues a new paired position. Both venues must be different, granted by the key and bound by its owner.",
+        "responses": {
+          "202": {
+            "description": "Command accepted. Inspect task status for execution.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "taskId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "const": "pending"
+                    }
+                  },
+                  "required": [
+                    "taskId",
+                    "status"
+                  ]
+                },
+                "example": {
+                  "taskId": "00000000-0000-4000-8000-000000000001",
+                  "status": "pending"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Support correlation ID."
+              },
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer",
+                  "const": 120
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTask"
+              },
+              "example": {
+                "longVenue": "hl",
+                "shortVenue": "lighter",
+                "longMarket": "ETH",
+                "shortMarket": "ETH",
+                "sizeUsd": 100
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/delta-neutral/tasks/{taskId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/TaskId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Get a task",
+        "operationId": "getTask",
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "task": {
+                      "$ref": "#/components/schemas/Task"
+                    }
+                  },
+                  "required": [
+                    "task"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Support correlation ID."
+              },
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer",
+                  "const": 120
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/v1/delta-neutral/tasks/{taskId}/cancel": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/TaskId"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Cancel a pending task",
+        "operationId": "cancelTask",
+        "description": "Only pending tasks can be cancelled.",
+        "responses": {
+          "202": {
+            "description": "Command accepted. Inspect task status for execution.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "taskId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "const": "cancelled"
+                    }
+                  },
+                  "required": [
+                    "taskId",
+                    "status"
+                  ]
+                },
+                "example": {
+                  "taskId": "00000000-0000-4000-8000-000000000001",
+                  "status": "cancelled"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Support correlation ID."
+              },
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer",
+                  "const": 120
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmptyCommand"
+              },
+              "example": {}
+            }
+          }
+        }
+      }
+    },
+    "/v1/delta-neutral/tasks/{taskId}/close": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/TaskId"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Close a running task",
+        "operationId": "closeTask",
+        "description": "Queues a close request. Task status may remain running until the worker begins closing.",
+        "responses": {
+          "202": {
+            "description": "Command accepted. Inspect task status for execution.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "taskId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "const": "close_queued"
+                    }
+                  },
+                  "required": [
+                    "taskId",
+                    "status"
+                  ]
+                },
+                "example": {
+                  "taskId": "00000000-0000-4000-8000-000000000001",
+                  "status": "close_queued"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Support correlation ID."
+              },
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer",
+                  "const": 120
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmptyCommand"
+              },
+              "example": {}
+            }
+          }
+        }
+      }
+    },
+    "/v1/delta-neutral/tasks/{taskId}/resize": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/TaskId"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Resize a running task",
+        "operationId": "resizeTask",
+        "description": "Requires a running task with no queued close or conflicting owner operation. Total target quantities are checked against the key\u2019s USD cap at fresh marks.",
+        "responses": {
+          "202": {
+            "description": "Command accepted. Inspect task status for execution.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "taskId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "const": "resizing"
+                    }
+                  },
+                  "required": [
+                    "taskId",
+                    "status"
+                  ]
+                },
+                "example": {
+                  "taskId": "00000000-0000-4000-8000-000000000001",
+                  "status": "resizing"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Support correlation ID."
+              },
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer",
+                  "const": 120
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResizeTask"
+              },
+              "example": {
+                "longTargetBase": 0.05,
+                "shortTargetBase": 0.05
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/requests": {
+      "get": {
+        "tags": [
+          "Request logs"
+        ],
+        "summary": "List request logs",
+        "operationId": "listRequests",
+        "description": "The current API key\u2019s latest 100 request logs, newest first.",
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requests": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "$ref": "#/components/schemas/RequestLog"
+                      }
+                    }
+                  },
+                  "required": [
+                    "requests"
+                  ]
+                },
+                "example": {
+                  "requests": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Support correlation ID."
+              },
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer",
+                  "const": 120
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/v1/perp/orders": {
+      "get": {
+        "tags": [
+          "Perpetual orders"
+        ],
+        "operationId": "listPerpOrders",
+        "summary": "List direct perpetual orders",
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Support correlation ID."
+              },
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer",
+                  "const": 120
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerpOrderList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20,
+              "default": 20
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{0,63}$"
+            }
+          },
+          {
+            "name": "updatedSince",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{1,6}Z$",
+              "description": "UTC timestamp with fractional seconds and Z.",
+              "example": "2026-09-28T00:00:00.000Z"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          }
+        ],
+        "description": "Owner orders within the current venue grant. Newest first. Same limit, status, updatedSince, and cursor rules as task listing. Keep filters unchanged across pages. Numeric values are decimal strings. observedAt identifies the latest confirmed venue observation."
+      },
+      "post": {
+        "tags": [
+          "Perpetual orders"
+        ],
+        "operationId": "createPerpOrder",
+        "summary": "Place a long or short perpetual order",
+        "responses": {
+          "202": {
+            "description": "Command accepted; poll the order for execution.",
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Support correlation ID."
+              },
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer",
+                  "const": 120
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "orderId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "const": "pending"
+                    }
+                  },
+                  "required": [
+                    "orderId",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePerpOrder"
+              },
+              "example": {
+                "venue": "lighter-mainnet",
+                "market": "ETH",
+                "side": "long",
+                "orderType": "limit",
+                "sizeBase": 0.1,
+                "limitPrice": 2000,
+                "timeInForce": "post_only"
+              }
+            }
+          }
+        },
+        "description": "Persist an independent order for the funding worker. Requires a scoped key and approved venue binding. No cross-venue atomicity or automatic hedge. Unknown fields are rejected. Key notional limits are checked at acceptance and before execution. Configure venue leverage and margin mode before trading. Reuse the Idempotency-Key for uncertain request results."
+      }
+    },
+    "/v1/perp/orders/{orderId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/OrderId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Perpetual orders"
+        ],
+        "operationId": "getPerpOrder",
+        "summary": "Read a direct perpetual order",
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Support correlation ID."
+              },
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer",
+                  "const": 120
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "order": {
+                      "$ref": "#/components/schemas/PerpOrder"
+                    }
+                  },
+                  "required": [
+                    "order"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "description": "Filled and cancelled are order states, not position states. A cancelled order can have filledBase greater than zero. unknown means submission may have succeeded; do not place a replacement until reconciled. A venue history limit or outage can require manual reconciliation."
+      }
+    },
+    "/v1/perp/orders/{orderId}/cancel": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/OrderId"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Perpetual orders"
+        ],
+        "operationId": "cancelPerpOrder",
+        "summary": "Cancel a direct perpetual order",
+        "responses": {
+          "202": {
+            "description": "Command accepted; poll the order for execution.",
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Support correlation ID."
+              },
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer",
+                  "const": 120
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "orderId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "cancelled",
+                        "cancel_queued"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "orderId",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false
+              },
+              "example": {}
+            }
+          }
+        },
+        "description": "Pending orders cancel locally. Submitted orders queue a venue cancellation. Poll until terminal: cancel_queued is not a fill/cancel confirmation. Existing fills remain and cancellation does not close a position."
+      }
+    },
+    "/v1/perp/requests": {
+      "get": {
+        "tags": [
+          "Request logs"
+        ],
+        "summary": "List direct order request logs",
+        "operationId": "listPerpRequests",
+        "description": "The current API key\u2019s latest 100 direct order request logs, newest first. These logs and the direct API rate budget are separate from strategy traffic.",
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requests": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "$ref": "#/components/schemas/RequestLog"
+                      }
+                    }
+                  },
+                  "required": [
+                    "requests"
+                  ]
+                },
+                "example": {
+                  "requests": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Support correlation ID."
+              },
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer",
+                  "const": 120
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/v1/perp/orders/{orderId}/resolve": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/OrderId"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Perpetual orders"
+        ],
+        "operationId": "resolvePerpOrder",
+        "summary": "Record verified operator reconciliation for an expired unknown order",
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          },
+          "200": {
+            "description": "Operator reconciliation committed. Read the order for its permanent audit record.",
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Support correlation ID."
+              },
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer",
+                  "const": 120
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "orderId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "filled",
+                        "cancelled",
+                        "expired",
+                        "rejected"
+                      ]
+                    },
+                    "resolution": {
+                      "type": "object",
+                      "description": "Operator evidence, confirmations, actor key ID, timestamp, and prior accounting."
+                    }
+                  },
+                  "required": [
+                    "orderId",
+                    "status",
+                    "resolution"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolvePerpOrder"
+              },
+              "example": {
+                "status": "cancelled",
+                "filledBase": 0.4,
+                "averagePrice": 105,
+                "evidence": "Venue order 987 cancelled; trades 1 and 2 total 0.4 ETH at average 105. All perp workers stopped.",
+                "confirmNoOpenOrder": true,
+                "confirmWorkersStopped": true
+              }
+            }
+          }
+        },
+        "description": "Stop and fence every perp worker, verify the exact venue order is no longer live, and reconstruct its final fills. Only expired unknown orders with no active lease can be resolved. This records an operator attestation, not a venue confirmation. Previously recorded fills cannot decrease. The same owner and venue grant are required; retry with the original idempotency key."
+      }
+    },
+    "/v1/venue-bindings/prepare": {
+      "post": {
+        "tags": [
+          "Venue bindings"
+        ],
+        "security": [],
+        "operationId": "prepareVenueBindings",
+        "summary": "Prepare one or several venue bindings",
+        "description": "Wallet EIP-191 message: `Mobius venue binding v1\\ndomain=<BINDING_AUTH_DOMAIN or mobius-api>\\naction=<prepare or read>\\npayload=<canonical JSON>`, with actual newline characters and no trailing newline. Canonical JSON recursively sorts object keys, preserves array order, and contains no whitespace. Lowercase the owner. Sign the exact message; ECDSA wallets only. Prepare payload is {owner,venues,nonce,expiresAt}. Nonce is idempotent per owner: identical requests return the same sessions; changed content conflicts. Signature is valid at most 300 seconds; binding sessions last 10 minutes. Existing usable bindings return already_bound. Explicit rebind is required for unusable credentials, and active strategies/orders block it. Preparation is atomic; venue execution later permits partial success. This route uses wallet authorization in the JSON body and does not use Bearer authentication. Fee approval is included when server configuration enables it: HL uses a separate approveBuilderFee signature; Aster includes Builder/MaxFeeRate/BuilderName in ApproveAgent; both Lighter deployments use a wallet Mobius authorization followed by an L2 integrator transaction with four zero caps. Example base HL/Aster builder fee is 15 tenths bps (0.015%), doubled to 30 (0.03%) on strategy legs paired with Lighter; the approval cap is 0.1%, represented as \"0.001\" for Aster. Lighter indexes 994 and 735705 have zero extra integrator fee. See venue-bindings.md for configured builder addresses and full rules. Sign live prepare payloads; the response example contains illustrative values. Known Lighter integrator addresses: Robinhood index 994 maps to 0x494c2E39910a6d1929b65F06c734f4d873d733D6; canonical index 735705 maps to 0x327F0cBa516CA1B343978a3AC60448b33d95131c. Authorization targets the index, not the address. New requests check HL and Lighter target accounts before generating keys or saving a batch. HL uses userRole; Lighter uses accountsByL1Address and verifies ownership of the supplied accountIndex. Missing accounts return 422 venue_account_not_found; invalid Lighter ownership returns 403 account_not_owned. Lookup failure returns 503 venue_account_check_unavailable. Aster skips account-existence preflight. The worker submits its native signed agent/builder authorization and confirms both before storing a bound credential. First-time Aster preparation is permitted; existing credentials still require live verification for already_bound. Identical nonce replays reuse the original batch without repeating preflight. Lighter WASM signer chain IDs: Robinhood production 466324, canonical production 304, testnet 300. They are not settlement chain IDs. Incorrect prepared signing domains fail with invalid_signing_chain and require a new binding. Server-generated Lighter API-key slots use 5-254 excluding reserved slot 157; 0-3 are reserved and 4 is retained for legacy Mobius keys. API and funding servers must share DATABASE_URL, BOT_CREDENTIAL_KEY and venue/builder configuration. BINDING_AUTH_DOMAIN is a public prepare/read signing label that must match the client. Restart both servers after configuration or binding-code updates.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrepareVenueBindings"
+              },
+              "example": {
+                "owner": "0x0000000000000000000000000000000000000001",
+                "venues": [
+                  {
+                    "venue": "hl"
+                  },
+                  {
+                    "venue": "aster"
+                  }
+                ],
+                "authorization": {
+                  "nonce": "replace-with-random-uuid",
+                  "expiresAt": 1791800000,
+                  "signature": "0x<prepare-wallet-signature>"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Immutable signing requests and current per-venue state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueBindingBatch"
+                },
+                "example": {
+                  "bindingId": "00000000-0000-4000-8000-000000000001",
+                  "owner": "0x1111111111111111111111111111111111111111",
+                  "expiresAt": "2026-10-12T10:23:20.000Z",
+                  "status": "awaiting_signatures",
+                  "results": [
+                    {
+                      "venue": "hl",
+                      "sessionId": "00000000-0000-4000-8000-000000000002",
+                      "status": "awaiting_signatures"
+                    },
+                    {
+                      "venue": "aster",
+                      "sessionId": "00000000-0000-4000-8000-000000000003",
+                      "status": "awaiting_signatures"
+                    },
+                    {
+                      "venue": "lighter",
+                      "sessionId": "00000000-0000-4000-8000-000000000004",
+                      "status": "awaiting_signatures"
+                    },
+                    {
+                      "venue": "lighter-mainnet",
+                      "sessionId": "00000000-0000-4000-8000-000000000005",
+                      "status": "awaiting_signatures"
+                    }
+                  ],
+                  "signRequests": [
+                    {
+                      "requestId": "hl:approveAgent",
+                      "venue": "hl",
+                      "action": "approveAgent",
+                      "method": "eth_signTypedData_v4",
+                      "payload": {
+                        "domain": {
+                          "name": "HyperliquidSignTransaction",
+                          "version": "1",
+                          "chainId": 42161,
+                          "verifyingContract": "0x0000000000000000000000000000000000000000"
+                        },
+                        "types": {
+                          "HyperliquidTransaction:ApproveAgent": [
+                            {
+                              "name": "hyperliquidChain",
+                              "type": "string"
+                            },
+                            {
+                              "name": "agentAddress",
+                              "type": "address"
+                            },
+                            {
+                              "name": "agentName",
+                              "type": "string"
+                            },
+                            {
+                              "name": "nonce",
+                              "type": "uint64"
+                            }
+                          ]
+                        },
+                        "primaryType": "HyperliquidTransaction:ApproveAgent",
+                        "message": {
+                          "signatureChainId": "0xa4b1",
+                          "hyperliquidChain": "Mainnet",
+                          "type": "approveAgent",
+                          "agentAddress": "0x2222222222222222222222222222222222222222",
+                          "agentName": "mobius-bot valid_until 1807265600000",
+                          "nonce": 1791800000000
+                        }
+                      }
+                    },
+                    {
+                      "requestId": "hl:approveBuilderFee",
+                      "venue": "hl",
+                      "action": "approveBuilderFee",
+                      "method": "eth_signTypedData_v4",
+                      "payload": {
+                        "domain": {
+                          "name": "HyperliquidSignTransaction",
+                          "version": "1",
+                          "chainId": 42161,
+                          "verifyingContract": "0x0000000000000000000000000000000000000000"
+                        },
+                        "types": {
+                          "HyperliquidTransaction:ApproveBuilderFee": [
+                            {
+                              "name": "hyperliquidChain",
+                              "type": "string"
+                            },
+                            {
+                              "name": "maxFeeRate",
+                              "type": "string"
+                            },
+                            {
+                              "name": "builder",
+                              "type": "address"
+                            },
+                            {
+                              "name": "nonce",
+                              "type": "uint64"
+                            }
+                          ]
+                        },
+                        "primaryType": "HyperliquidTransaction:ApproveBuilderFee",
+                        "message": {
+                          "signatureChainId": "0xa4b1",
+                          "hyperliquidChain": "Mainnet",
+                          "type": "approveBuilderFee",
+                          "builder": "0x1eda138b7de2bd6628217fe143c499365367de84",
+                          "maxFeeRate": "0.1%",
+                          "nonce": 1791800000001
+                        }
+                      }
+                    },
+                    {
+                      "requestId": "aster:approveAgent",
+                      "venue": "aster",
+                      "action": "approveAgent",
+                      "method": "eth_signTypedData_v4",
+                      "payload": {
+                        "domain": {
+                          "name": "AsterSignTransaction",
+                          "version": "1",
+                          "verifyingContract": "0x0000000000000000000000000000000000000000",
+                          "chainId": 56
+                        },
+                        "types": {
+                          "ApproveAgent": [
+                            {
+                              "name": "AgentName",
+                              "type": "string"
+                            },
+                            {
+                              "name": "AgentAddress",
+                              "type": "string"
+                            },
+                            {
+                              "name": "IpWhitelist",
+                              "type": "string"
+                            },
+                            {
+                              "name": "Expired",
+                              "type": "uint256"
+                            },
+                            {
+                              "name": "CanSpotTrade",
+                              "type": "bool"
+                            },
+                            {
+                              "name": "CanPerpTrade",
+                              "type": "bool"
+                            },
+                            {
+                              "name": "CanWithdraw",
+                              "type": "bool"
+                            },
+                            {
+                              "name": "Builder",
+                              "type": "string"
+                            },
+                            {
+                              "name": "MaxFeeRate",
+                              "type": "string"
+                            },
+                            {
+                              "name": "BuilderName",
+                              "type": "string"
+                            },
+                            {
+                              "name": "AsterChain",
+                              "type": "string"
+                            },
+                            {
+                              "name": "User",
+                              "type": "string"
+                            },
+                            {
+                              "name": "Nonce",
+                              "type": "uint256"
+                            }
+                          ]
+                        },
+                        "primaryType": "ApproveAgent",
+                        "message": {
+                          "AgentName": "mobius-bot",
+                          "AgentAddress": "0x2222222222222222222222222222222222222222",
+                          "IpWhitelist": "",
+                          "Expired": 1823336000000,
+                          "CanSpotTrade": false,
+                          "CanPerpTrade": true,
+                          "CanWithdraw": false,
+                          "Builder": "0xca267a715d2fc07e4a6b59c13b156f9c0cb14512",
+                          "MaxFeeRate": "0.001",
+                          "BuilderName": "Mobius",
+                          "AsterChain": "Mainnet",
+                          "User": "0x1111111111111111111111111111111111111111",
+                          "Nonce": 1791800000000000
+                        }
+                      }
+                    },
+                    {
+                      "requestId": "lighter:changePubKey",
+                      "venue": "lighter",
+                      "action": "changePubKey",
+                      "method": "personal_sign",
+                      "payload": {
+                        "message": "Register Lighter Account\n\npubkey: 0xe0a28d3d4ca778be1b68905f6ed86402999c9e2c57941c82931b5f77bf50d0f084c0e2d5eff717d5\nnonce: 0x0000000000000000\naccount index: 0x000000000000007b\napi key index: 0x000000000000002a\nOnly sign this message for a trusted client!"
+                      }
+                    },
+                    {
+                      "requestId": "lighter:approveIntegrator",
+                      "venue": "lighter",
+                      "action": "approveIntegrator",
+                      "method": "personal_sign",
+                      "payload": {
+                        "message": "Approve zero-fee Lighter integrator owner=0x1111111111111111111111111111111111111111 venue=lighter integratorIndex=994 nonce=00000000-0000-4000-8000-000000000001 timestamp=1791800000"
+                      }
+                    },
+                    {
+                      "requestId": "lighter-mainnet:changePubKey",
+                      "venue": "lighter-mainnet",
+                      "action": "changePubKey",
+                      "method": "personal_sign",
+                      "payload": {
+                        "message": "Register Lighter Account\n\npubkey: 0xb354050ee6f8ddfbe27df27b5b2805843641dc73d5ca740ff439ba5bd068d295a38252fcee8de140\nnonce: 0x0000000000000000\naccount index: 0x00000000000001c8\napi key index: 0x000000000000002a\nOnly sign this message for a trusted client!"
+                      }
+                    },
+                    {
+                      "requestId": "lighter-mainnet:approveIntegrator",
+                      "venue": "lighter-mainnet",
+                      "action": "approveIntegrator",
+                      "method": "personal_sign",
+                      "payload": {
+                        "message": "Approve zero-fee Lighter integrator owner=0x1111111111111111111111111111111111111111 venue=lighter-mainnet integratorIndex=735705 nonce=00000000-0000-4000-8000-000000000001 timestamp=1791800000"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or signature encoding.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired wallet authorization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Wrong wallet or account owner.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Binding/route not found or inaccessible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Unsupported method.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Binding, nonce, idempotency, signature or rebind conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Binding session expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request exceeds 16 KiB.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Content-Type must be application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Prepare limit: 20 batches per owner per 10 minutes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage/configuration unavailable, or venue_account_check_unavailable: HL/Lighter account lookup could not be completed. This does not mean that the account is absent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A selected venue confirms that the wallet has no account. Create it on the venue official website before binding. No batch or venue keys were prepared.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                },
+                "example": {
+                  "code": "venue_account_not_found",
+                  "error": "No lighter account found for this wallet. Create an account on the venue official website before binding."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/venue-bindings/{bindingId}/submit": {
+      "post": {
+        "tags": [
+          "Venue bindings"
+        ],
+        "security": [],
+        "operationId": "submitVenueBindingSignatures",
+        "summary": "Submit a list of venue authorization signatures",
+        "description": "Sign each returned payload exactly and map it by requestId. An incomplete subset is accepted; a venue queues only when its required signatures are complete. All signatures must recover the batch owner. They authenticate this operation without Bearer authentication or an additional wallet signature. Persist and reuse the submission body and Idempotency-Key. Keys are scoped to bindingId; replay returns current state and still verifies signatures. Unknown/duplicate request IDs and signature replacement are rejected. Worker confirms external authorization before saving credentials; uncertain outcomes remain confirming, with no signed resubmission after session expiry.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bindingId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitVenueBindings"
+              },
+              "example": {
+                "signatures": [
+                  {
+                    "requestId": "hl:approveAgent",
+                    "signature": "0x<venue-wallet-signature>"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Signatures durably accepted; poll to observe venue execution.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueBindingBatch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or signature encoding.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired wallet authorization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Wrong wallet or account owner.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Binding/route not found or inaccessible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Unsupported method.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Binding, nonce, idempotency, signature or rebind conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Binding session expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request exceeds 16 KiB.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Content-Type must be application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Prepare limit: 20 batches per owner per 10 minutes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Binding storage, venue or configuration unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/venue-bindings/{bindingId}": {
+      "get": {
+        "tags": [
+          "Venue bindings"
+        ],
+        "security": [],
+        "operationId": "getVenueBinding",
+        "summary": "Read a binding batch with wallet authorization",
+        "description": "Wallet EIP-191 message: `Mobius venue binding v1\\ndomain=<BINDING_AUTH_DOMAIN or mobius-api>\\naction=<prepare or read>\\npayload=<canonical JSON>`, with actual newline characters and no trailing newline. Canonical JSON recursively sorts object keys, preserves array order, and contains no whitespace. Lowercase the owner. Sign the exact message; ECDSA wallets only. Read payload is {owner,bindingId,expiresAt}. Pass its personal_sign signature using the wallet headers. A different authenticated wallet receives 404. This GET only reads persisted state. A read signature can be reused until its short expiry for the same binding. Batch results retain successful venues when others fail/expire. confirming may persist after expiry for uncertain external outcomes; continue polling or reconcile operationally.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bindingId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Wallet-Address",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{40}$"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Wallet-Expires-At",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Unix seconds between now and now + 300 seconds."
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Wallet-Signature",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{130}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current status, per-venue outcomes and outstanding signing requests.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueBindingBatch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or signature encoding.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired wallet authorization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Wrong wallet or account owner.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Binding/route not found or inaccessible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Unsupported method.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Binding, nonce, idempotency, signature or rebind conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Binding session expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request exceeds 16 KiB.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Content-Type must be application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Prepare limit: 20 batches per owner per 10 minutes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Binding storage, venue or configuration unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API key created in this environment: mobius_<uuid>.<secret>. Keep it in a local environment variable; never commit it."
+      }
+    },
+    "parameters": {
+      "TaskId": {
+        "name": "taskId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        }
+      },
+      "IdempotencyKey": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "description": "Persist one ID per intended mutation before sending. Reuse it with the same request for retries; different content returns 409.",
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[!-~]+$"
+        }
+      },
+      "OrderId": {
+        "name": "orderId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        }
+      }
+    },
+    "schemas": {
+      "Venue": {
+        "type": "string",
+        "enum": [
+          "hl",
+          "lighter",
+          "lighter-mainnet",
+          "aster"
+        ],
+        "description": "hl = Hyperliquid; lighter = Lighter RH (Robinhood); lighter-mainnet = canonical Lighter; aster = Aster."
+      },
+      "Market": {
+        "type": "string",
+        "description": "Exact listed venue symbol. Examples: ETH; Hyperliquid xyz:NVDA or io:ANTH; Aster USD1:XAU or U:BTC. Check current listings.",
+        "examples": [
+          "ETH",
+          "xyz:NVDA",
+          "USD1:XAU"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "code"
+        ],
+        "additionalProperties": true
+      },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "longVenue": {
+            "$ref": "#/components/schemas/Venue"
+          },
+          "shortVenue": {
+            "$ref": "#/components/schemas/Venue"
+          },
+          "longMarket": {
+            "$ref": "#/components/schemas/Market"
+          },
+          "shortMarket": {
+            "$ref": "#/components/schemas/Market"
+          },
+          "sizeUsd": {
+            "type": "string",
+            "description": "USD per leg as a decimal string."
+          },
+          "status": {
+            "type": "string",
+            "description": "Worker state, for example pending, running, closing, closed, cancelled or failed. A command acknowledgement is not the worker state."
+          },
+          "longSize": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Decimal string, or null before available."
+          },
+          "shortSize": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Decimal string, or null before available."
+          },
+          "longEntry": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Decimal string, or null before available."
+          },
+          "shortEntry": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Decimal string, or null before available."
+          },
+          "longPrice": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Decimal string, or null before available."
+          },
+          "shortPrice": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Decimal string, or null before available."
+          },
+          "longLeverage": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Decimal string, or null before available."
+          },
+          "shortLeverage": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Decimal string, or null before available."
+          },
+          "liqProtectionPct": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Decimal string, or null before available."
+          },
+          "sizeMismatchPct": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Decimal string, or null before available."
+          },
+          "fundingUsd": {
+            "type": "string",
+            "description": "Accrued funding in USD as a decimal string."
+          },
+          "longMarginMode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "shortMarginMode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "closeReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "closeRequestedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "taskId",
+          "longVenue",
+          "shortVenue",
+          "longMarket",
+          "shortMarket",
+          "sizeUsd",
+          "status",
+          "longSize",
+          "shortSize",
+          "longEntry",
+          "shortEntry",
+          "longPrice",
+          "shortPrice",
+          "longLeverage",
+          "shortLeverage",
+          "liqProtectionPct",
+          "sizeMismatchPct",
+          "fundingUsd",
+          "longMarginMode",
+          "shortMarginMode",
+          "closeReason",
+          "error",
+          "createdAt",
+          "updatedAt",
+          "closeRequestedAt"
+        ]
+      },
+      "TaskList": {
+        "type": "object",
+        "properties": {
+          "tasks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Task"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Opaque cursor. Keep filters unchanged when requesting the next page."
+          }
+        },
+        "required": [
+          "tasks",
+          "nextCursor"
+        ]
+      },
+      "CreateTask": {
+        "type": "object",
+        "properties": {
+          "longVenue": {
+            "$ref": "#/components/schemas/Venue"
+          },
+          "shortVenue": {
+            "$ref": "#/components/schemas/Venue"
+          },
+          "longMarket": {
+            "$ref": "#/components/schemas/Market"
+          },
+          "shortMarket": {
+            "$ref": "#/components/schemas/Market"
+          },
+          "sizeUsd": {
+            "type": "number",
+            "minimum": 10,
+            "maximum": 99999999999999,
+            "description": "USD per leg, within this key\u2019s maximum and venue minimums."
+          },
+          "minFundingApy": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 999999,
+            "default": 0
+          },
+          "autoClose": {
+            "type": "boolean",
+            "default": true
+          },
+          "maxSpreadBps": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 99999999999999
+          },
+          "liqProtectionPct": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100
+          },
+          "sizeMismatchPct": {
+            "type": "number",
+            "minimum": 0.5,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "longVenue",
+          "shortVenue",
+          "longMarket",
+          "shortMarket",
+          "sizeUsd"
+        ],
+        "additionalProperties": false,
+        "description": "Use two different, granted and bound venues. Leverage and margin mode are configured on venue accounts, not through this API."
+      },
+      "ResizeTask": {
+        "type": "object",
+        "properties": {
+          "longTargetBase": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 99999999999999,
+            "description": "Total target base-asset quantity, not a delta or USD."
+          },
+          "shortTargetBase": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 99999999999999,
+            "description": "Total target base-asset quantity, not a delta or USD."
+          },
+          "disableSizeMismatchAutoClose": {
+            "type": "boolean"
+          }
+        },
+        "required": [],
+        "additionalProperties": false,
+        "anyOf": [
+          {
+            "required": [
+              "longTargetBase"
+            ]
+          },
+          {
+            "required": [
+              "shortTargetBase"
+            ]
+          }
+        ]
+      },
+      "EmptyCommand": {
+        "type": "object",
+        "additionalProperties": false
+      },
+      "RequestLog": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "action": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "task_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "http_status": {
+            "type": "integer"
+          },
+          "error_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "replayed": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "order_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "request_id",
+          "action",
+          "path",
+          "task_id",
+          "http_status",
+          "error_code",
+          "replayed",
+          "created_at",
+          "order_id"
+        ]
+      },
+      "CreatePerpOrder": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "venue",
+          "market",
+          "side",
+          "orderType",
+          "sizeBase"
+        ],
+        "properties": {
+          "venue": {
+            "type": "string",
+            "enum": [
+              "aster",
+              "hl",
+              "lighter",
+              "lighter-mainnet"
+            ],
+            "description": "aster = Aster, hl = Hyperliquid, lighter = Robinhood Lighter, lighter-mainnet = canonical Lighter."
+          },
+          "market": {
+            "type": "string",
+            "description": "Exact venue market symbol, for example ETH or Hyperliquid xyz:NVDA."
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "long",
+              "short"
+            ],
+            "description": "long buys, short sells. Existing positions net at the venue."
+          },
+          "orderType": {
+            "type": "string",
+            "enum": [
+              "market",
+              "limit"
+            ]
+          },
+          "sizeBase": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 99999999999999,
+            "description": "Base asset quantity. Worker rounds down to venue precision. Opening orders need at least $10 and venue minimums. USD risk at the larger of mark and protection/limit price cannot exceed key maxSizeUsd."
+          },
+          "limitPrice": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 99999999999999,
+            "description": "Required for limit orders; forbidden for market orders. Must match the venue tick."
+          },
+          "timeInForce": {
+            "type": "string",
+            "enum": [
+              "ioc",
+              "gtc",
+              "post_only"
+            ],
+            "description": "Market defaults to ioc and only accepts ioc. Limit defaults to gtc. post_only must not take liquidity."
+          },
+          "slippageBps": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5000,
+            "default": 100,
+            "description": "Market orders only. Protection around the fresh execution mark, in basis points."
+          },
+          "reduceOnly": {
+            "type": "boolean",
+            "default": false,
+            "description": "Only reduce existing exposure. To reduce a long, use side short; to reduce a short, use side long."
+          },
+          "expirySeconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 86400,
+            "description": "Queue deadline and resting-order lifetime from acceptance. Default 60 for IOC, 3600 otherwise. Hyperliquid resting-order expiry requires the worker to cancel; it is not a venue-native GTT."
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "orderType": {
+                  "const": "limit"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "limitPrice"
+              ],
+              "not": {
+                "required": [
+                  "slippageBps"
+                ]
+              }
+            },
+            "else": {
+              "not": {
+                "required": [
+                  "limitPrice"
+                ]
+              },
+              "properties": {
+                "timeInForce": {
+                  "const": "ioc"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "PerpOrder": {
+        "type": "object",
+        "properties": {
+          "venue": {
+            "type": "string",
+            "enum": [
+              "aster",
+              "hl",
+              "lighter",
+              "lighter-mainnet"
+            ],
+            "description": "aster = Aster, hl = Hyperliquid, lighter = Robinhood Lighter, lighter-mainnet = canonical Lighter."
+          },
+          "market": {
+            "type": "string",
+            "description": "Exact venue market symbol, for example ETH or Hyperliquid xyz:NVDA."
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "long",
+              "short"
+            ],
+            "description": "long buys, short sells. Existing positions net at the venue."
+          },
+          "orderType": {
+            "type": "string",
+            "enum": [
+              "market",
+              "limit"
+            ]
+          },
+          "sizeBase": {
+            "type": "string",
+            "description": "PostgreSQL decimal string."
+          },
+          "limitPrice": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "PostgreSQL decimal string, or null before execution."
+          },
+          "timeInForce": {
+            "type": "string",
+            "enum": [
+              "ioc",
+              "gtc",
+              "post_only"
+            ],
+            "description": "Market defaults to ioc and only accepts ioc. Limit defaults to gtc. post_only must not take liquidity."
+          },
+          "slippageBps": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5000,
+            "default": 100
+          },
+          "reduceOnly": {
+            "type": "boolean",
+            "default": false,
+            "description": "Only reduce existing exposure. To reduce a long, use side short; to reduce a short, use side long."
+          },
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "submitting",
+              "open",
+              "partially_filled",
+              "filled",
+              "cancelled",
+              "rejected",
+              "expired",
+              "unknown"
+            ]
+          },
+          "requestedBase": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "PostgreSQL decimal string, or null before execution."
+          },
+          "filledBase": {
+            "type": "string",
+            "description": "PostgreSQL decimal string."
+          },
+          "averagePrice": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "PostgreSQL decimal string, or null before execution."
+          },
+          "clientOrderId": {
+            "type": "string"
+          },
+          "venueStatus": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cancelRequestedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "submittedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "observedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resolution": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Permanent operator reconciliation audit, or null for automated reconciliation. Includes the prior accounting, final reported fills, evidence, actor key ID, and timestamp."
+          }
+        },
+        "required": [
+          "venue",
+          "market",
+          "side",
+          "orderType",
+          "sizeBase",
+          "limitPrice",
+          "timeInForce",
+          "slippageBps",
+          "reduceOnly",
+          "orderId",
+          "status",
+          "requestedBase",
+          "filledBase",
+          "averagePrice",
+          "clientOrderId",
+          "venueStatus",
+          "error",
+          "cancelRequestedAt",
+          "submittedAt",
+          "observedAt",
+          "expiresAt",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "PerpOrderList": {
+        "type": "object",
+        "properties": {
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PerpOrder"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "orders",
+          "nextCursor"
+        ]
+      },
+      "ResolvePerpOrder": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "filledBase",
+          "averagePrice",
+          "evidence",
+          "confirmNoOpenOrder",
+          "confirmWorkersStopped"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "filled",
+              "cancelled",
+              "expired",
+              "rejected"
+            ]
+          },
+          "filledBase": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Total verified filled base quantity, including all previously recorded fills."
+          },
+          "averagePrice": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "exclusiveMinimum": 0,
+            "description": "Weighted average execution price; null exactly when filledBase is zero."
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 2000,
+            "description": "Exact venue checks and trade references supporting the final result."
+          },
+          "confirmNoOpenOrder": {
+            "type": "boolean",
+            "const": true
+          },
+          "confirmWorkersStopped": {
+            "type": "boolean",
+            "const": true
+          }
+        }
+      },
+      "BindingTarget": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "venue": {
+                "const": "hl"
+              },
+              "signatureChainId": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991,
+                "default": 42161
+              },
+              "rebind": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "venue"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "venue": {
+                "const": "aster"
+              },
+              "rebind": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "venue"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "venue": {
+                "type": "string",
+                "enum": [
+                  "lighter",
+                  "lighter-mainnet"
+                ]
+              },
+              "accountIndex": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "rebind": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "venue",
+              "accountIndex"
+            ]
+          }
+        ]
+      },
+      "PrepareVenueBindings": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "owner": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{40}$"
+          },
+          "venues": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "items": {
+              "$ref": "#/components/schemas/BindingTarget"
+            },
+            "description": "Explicit distinct venue targets; all four must be listed to bind all. Array order is signed."
+          },
+          "authorization": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "nonce": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{16,128}$"
+              },
+              "expiresAt": {
+                "type": "integer",
+                "description": "Unix seconds between now and now + 300 seconds."
+              },
+              "signature": {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{130}$"
+              }
+            },
+            "required": [
+              "nonce",
+              "expiresAt",
+              "signature"
+            ]
+          }
+        },
+        "required": [
+          "owner",
+          "venues",
+          "authorization"
+        ]
+      },
+      "SubmitVenueBindings": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "signatures": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 8,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "requestId": {
+                  "type": "string"
+                },
+                "signature": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-fA-F]{130}$"
+                }
+              },
+              "required": [
+                "requestId",
+                "signature"
+              ]
+            }
+          }
+        },
+        "required": [
+          "signatures"
+        ]
+      },
+      "BindingSignRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "requestId": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string",
+            "enum": [
+              "aster",
+              "hl",
+              "lighter",
+              "lighter-mainnet"
+            ]
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "approveAgent",
+              "approveBuilderFee",
+              "changePubKey",
+              "approveIntegrator"
+            ]
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "personal_sign",
+              "eth_signTypedData_v4"
+            ]
+          },
+          "payload": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "message": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "message"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "domain": {
+                    "type": "object"
+                  },
+                  "types": {
+                    "type": "object"
+                  },
+                  "primaryType": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "domain",
+                  "types",
+                  "primaryType",
+                  "message"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "requestId",
+          "venue",
+          "action",
+          "method",
+          "payload"
+        ],
+        "description": "Sign the exact live payload using method. EIP-712 types preserve venue-specific field order and capitalization. personal_sign signs payload.message as UTF-8, including decoded newlines. HL fee approval is separate; Aster fee approval is embedded; Lighter approveIntegrator is Mobius consent for a zero-cap L2 approval."
+      },
+      "VenueBindingResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "venue": {
+            "type": "string",
+            "enum": [
+              "aster",
+              "hl",
+              "lighter",
+              "lighter-mainnet"
+            ]
+          },
+          "sessionId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "awaiting_signatures",
+              "queued",
+              "confirming",
+              "bound",
+              "already_bound",
+              "failed",
+              "expired"
+            ]
+          },
+          "code": {
+            "type": "string"
+          },
+          "retryable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "venue",
+          "sessionId",
+          "status"
+        ]
+      },
+      "VenueBindingBatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "bindingId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "owner": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{40}$"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "awaiting_signatures",
+              "processing",
+              "bound",
+              "partial_success",
+              "failed"
+            ]
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VenueBindingResult"
+            }
+          },
+          "signRequests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BindingSignRequest"
+            },
+            "description": "Only outstanding unexpired signature requests; accepted signatures are never returned."
+          }
+        },
+        "required": [
+          "bindingId",
+          "owner",
+          "expiresAt",
+          "status",
+          "results",
+          "signRequests"
+        ]
+      },
+      "BindingError": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "Error400": {
+        "description": "Invalid fields, query, JSON or idempotency key.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "headers": {
+          "X-Request-Id": {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Support correlation ID."
+          },
+          "X-RateLimit-Limit": {
+            "schema": {
+              "type": "integer",
+              "const": 120
+            }
+          },
+          "X-RateLimit-Remaining": {
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      },
+      "Error401": {
+        "description": "Missing, invalid or revoked API key.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "headers": {
+          "X-Request-Id": {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Support correlation ID."
+          },
+          "X-RateLimit-Limit": {
+            "schema": {
+              "type": "integer",
+              "const": 120
+            }
+          },
+          "X-RateLimit-Remaining": {
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      },
+      "Error404": {
+        "description": "Task not found or inaccessible.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "headers": {
+          "X-Request-Id": {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Support correlation ID."
+          },
+          "X-RateLimit-Limit": {
+            "schema": {
+              "type": "integer",
+              "const": 120
+            }
+          },
+          "X-RateLimit-Remaining": {
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      },
+      "Error429": {
+        "description": "120 requests per minute per key exceeded.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "headers": {
+          "X-Request-Id": {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Support correlation ID."
+          },
+          "X-RateLimit-Limit": {
+            "schema": {
+              "type": "integer",
+              "const": 120
+            }
+          },
+          "X-RateLimit-Remaining": {
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "Retry-After": {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Seconds to wait before retrying."
+          }
+        }
+      },
+      "Error503": {
+        "description": "Storage, market data or worker feature unavailable.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "headers": {
+          "X-Request-Id": {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Support correlation ID."
+          },
+          "X-RateLimit-Limit": {
+            "schema": {
+              "type": "integer",
+              "const": 120
+            }
+          },
+          "X-RateLimit-Remaining": {
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      },
+      "Error403": {
+        "description": "Key does not grant the required venues.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "headers": {
+          "X-Request-Id": {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Support correlation ID."
+          },
+          "X-RateLimit-Limit": {
+            "schema": {
+              "type": "integer",
+              "const": 120
+            }
+          },
+          "X-RateLimit-Remaining": {
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      },
+      "Error409": {
+        "description": "Conflicting state, owner operation, binding or idempotency key.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "headers": {
+          "X-Request-Id": {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Support correlation ID."
+          },
+          "X-RateLimit-Limit": {
+            "schema": {
+              "type": "integer",
+              "const": 120
+            }
+          },
+          "X-RateLimit-Remaining": {
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      },
+      "Error413": {
+        "description": "JSON body exceeds 16,384 bytes.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "headers": {
+          "X-Request-Id": {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Support correlation ID."
+          },
+          "X-RateLimit-Limit": {
+            "schema": {
+              "type": "integer",
+              "const": 120
+            }
+          },
+          "X-RateLimit-Remaining": {
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      },
+      "Error415": {
+        "description": "Content-Type must be application/json.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "headers": {
+          "X-Request-Id": {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Support correlation ID."
+          },
+          "X-RateLimit-Limit": {
+            "schema": {
+              "type": "integer",
+              "const": 120
+            }
+          },
+          "X-RateLimit-Remaining": {
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -2,11 +2,12 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { apiKeyMessage } from "@mstack/mobius-client";
 import { ProposalStore } from "@mstack/proposals";
 import { privateKeyToAccount } from "viem/accounts";
 import { fakeBrowserWallet } from "../../../packages/signers/test/fake-browser-wallet.ts";
 import { setConfig } from "../src/config.ts";
-import { apiKeyMessage, keyListTable } from "../src/keys-command.ts";
+import { keyListTable } from "../src/keys-command.ts";
 import { type Runtime, run } from "../src/run.ts";
 
 const owner = "0x0000000000000000000000000000000000000001";
@@ -41,7 +42,8 @@ async function invoke(
 		now: () => now,
 		out: (line) => out.push(line),
 		err: (line) => err.push(line),
-		fetch: async () => Response.json([], { status: 200 }),
+		fetch: async () =>
+			Response.json({ tasks: [], nextCursor: null }, { status: 200 }),
 		...overrides,
 	});
 	return { code, out: out.join("\n"), err: err.join("\n") };
@@ -102,7 +104,7 @@ test("keys import --stdin accepts agent metadata and leaks only into the key sto
 			},
 			fetch: async (_input, init) => {
 				authorization = new Headers(init?.headers).get("authorization") ?? "";
-				return Response.json([], { status: 200 });
+				return Response.json({ tasks: [], nextCursor: null }, { status: 200 });
 			},
 		},
 	);
@@ -378,14 +380,30 @@ test("sign stores a create answer but persists and prints only its prefix", asyn
 		},
 	);
 	const wallets: Promise<void>[] = [];
+	let clientHeader = "";
 	const result = await invoke(home, ["sign", "p-1"], {
 		openUrl: async (url) => {
 			wallets.push(fakeBrowserWallet(url, wallet));
 		},
-		fetch: async () => Response.json({ key, createdAt: "2030-01-01" }),
+		fetch: async (_input, init) => {
+			clientHeader = new Headers(init?.headers).get("X-Mobius-Client") ?? "";
+			return Response.json({
+				key,
+				record: {
+					id: "01234567-89ab-cdef-0123-456789abcdef",
+					name: "desk",
+					venues: ["hl", "lighter"],
+					max_size_usd: "5000",
+					key_prefix: "mobius_01234567-89ab-cdef-0123-456789abcdef…",
+					created_at: "2030-01-01T00:00:00Z",
+					revoked_at: null,
+				},
+			});
+		},
 	});
 	await Promise.all(wallets);
 	expect(result.code).toBe(0);
+	expect(clientHeader).toBe("mstack/0.3.0");
 	expect(`${result.out}\n${result.err}`).not.toContain(key);
 	expect(result.out).toContain("stored in file");
 	const proposalBytes = await readFile(

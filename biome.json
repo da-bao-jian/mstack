@@ -65,7 +65,10 @@
 			}
 		},
 		{
-			"includes": ["assets/logo.json"],
+			"includes": [
+				"assets/logo.json",
+				"packages/mobius-api/src/openapi-1.2.0.json"
+			],
 			"formatter": {
 				"enabled": false
 			}

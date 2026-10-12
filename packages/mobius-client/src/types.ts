@@ -1,5 +1,12 @@
 import type { Hex } from "viem";
 import type {
+	ApiKeyCreateBody,
+	ApiKeyListBody,
+	ApiKeyRecord,
+	ApiKeyRevokeBody,
+	Secret,
+} from "./apiKeys.ts";
+import type {
 	AsterCredentialResp,
 	AsterPrepareResp,
 	AsterStatusResp,
@@ -96,6 +103,12 @@ export interface ReadRoutes {
 	};
 }
 export interface WriteRoutes {
+	"/api/keys/list": { body: ApiKeyListBody; result: ApiKeyRecord[] };
+	"/api/keys/create": {
+		body: ApiKeyCreateBody;
+		result: { key: Secret<string>; record: ApiKeyRecord };
+	};
+	"/api/keys/revoke": { body: ApiKeyRevokeBody; result: { ok: true } };
 	"/legal/acceptance": {
 		body: {
 			wallet: string;

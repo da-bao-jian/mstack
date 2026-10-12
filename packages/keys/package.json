@@ -7,6 +7,9 @@
 	"exports": {
 		".": "./src/index.ts"
 	},
+	"dependencies": {
+		"@mstack/mobius-api": "workspace:*"
+	},
 	"scripts": {
 		"check": "tsc --build",
 		"lint": "biome check . --error-on-warnings",

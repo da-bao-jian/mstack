@@ -17,6 +17,9 @@ export const readRoutes: { [R in keyof ReadRoutes]: true } = {
 	"/api/binding/rebind-check": true,
 };
 export const writeRoutes: { [R in keyof WriteRoutes]: true } = {
+	"/api/keys/list": true,
+	"/api/keys/create": true,
+	"/api/keys/revoke": true,
 	"/legal/acceptance": true,
 	"/api/arbitrage/create": true,
 	"/api/arbitrage/close": true,

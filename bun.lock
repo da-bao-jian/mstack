@@ -38,10 +38,20 @@
     "packages/keys": {
       "name": "@mstack/keys",
       "version": "0.3.0",
+      "dependencies": {
+        "@mstack/mobius-api": "workspace:*",
+      },
     },
     "packages/liquidation": {
       "name": "@mstack/liquidation",
       "version": "0.3.0",
+    },
+    "packages/mobius-api": {
+      "name": "@mstack/mobius-api",
+      "version": "0.3.0",
+      "dependencies": {
+        "viem": "2.57.4",
+      },
     },
     "packages/mobius-client": {
       "name": "@mstack/mobius-client",
@@ -124,6 +134,8 @@
     "@mstack/keys": ["@mstack/keys@workspace:packages/keys"],
 
     "@mstack/liquidation": ["@mstack/liquidation@workspace:packages/liquidation"],
+
+    "@mstack/mobius-api": ["@mstack/mobius-api@workspace:packages/mobius-api"],
 
     "@mstack/mobius-client": ["@mstack/mobius-client@workspace:packages/mobius-client"],
 

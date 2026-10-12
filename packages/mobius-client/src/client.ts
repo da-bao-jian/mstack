@@ -1,3 +1,4 @@
+import { validateApiKeyBody, validateApiKeyResponse } from "./apiKeys.ts";
 import { isVenueReadinessError } from "./binding.ts";
 import { limitHost } from "./rate-limit.ts";
 import { readRoutes, writeRoutes } from "./routes.ts";
@@ -28,7 +29,18 @@ export class ApiError extends Error {
 		this.name = "ApiError";
 	}
 }
-const clean = (text: string) => text.replace(/[\p{Cc}\p{Cf}]/gu, " ");
+const keyPattern = /mobius_([0-9a-fA-F-]{36})\.[0-9a-fA-F]{64}/g;
+const redact = (text: string) => text.replace(keyPattern, "mobius_$1…");
+const clean = (text: string) => redact(text).replace(/[\p{Cc}\p{Cf}]/gu, " ");
+function safe(value: unknown): unknown {
+	if (typeof value === "string") return clean(value);
+	if (Array.isArray(value)) return value.map(safe);
+	if (value && typeof value === "object")
+		return Object.fromEntries(
+			Object.entries(value).map(([key, item]) => [key, safe(item)]),
+		);
+	return value;
+}
 function required(
 	body: Record<string, unknown>,
 	field: string,
@@ -118,6 +130,11 @@ function validateRead(route: keyof ReadRoutes, value: unknown): unknown {
 	return body;
 }
 function validateWrite(route: keyof WriteRoutes, value: unknown): unknown {
+	if (route.startsWith("/api/keys/"))
+		return validateApiKeyResponse(
+			route.slice("/api/keys/".length) as "list" | "create" | "revoke",
+			value,
+		);
 	const body = record(value);
 	if (route === "/api/arbitrage/create") required(body, "taskId", "string");
 	else if (route.endsWith("/prepare")) {
@@ -194,7 +211,7 @@ export class MobiusClient {
 			new ApiError(
 				`${label}: HTTP ${response.status}: ${reason}; body: ${clean(raw.slice(0, 240))}`,
 				response.status,
-				value,
+				safe(value),
 			);
 		let body: unknown;
 		try {
@@ -208,7 +225,7 @@ export class MobiusClient {
 				response.status !== 429 &&
 				isVenueReadinessError(body)
 			)
-				throw new ApiError(raw, response.status, body);
+				throw new ApiError(redact(raw), response.status, safe(body));
 			throw fail("request failed", body);
 		}
 		try {
@@ -238,6 +255,11 @@ export class MobiusClient {
 		body: WriteRoutes[R]["body"],
 		signal?: AbortSignal,
 	): Promise<WriteRoutes[R]["result"]> {
+		if (route.startsWith("/api/keys/"))
+			validateApiKeyBody(
+				route.slice("/api/keys/".length) as "list" | "create" | "revoke",
+				body,
+			);
 		return (await this.request(
 			route,
 			"POST",
