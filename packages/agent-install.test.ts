@@ -116,5 +116,10 @@ test("raw install URLs and release placeholder rewrites stay pinned", async () =
 		expect(rewritten.body).not.toContain("<tag>");
 	}
 	expect(replacements).toBe(placeholders);
-	expect(placeholders).toBeGreaterThan(0);
+	// Before a release the surfaces carry the placeholder; after the release
+	// script has run they all carry the released tag. Both trees must pass.
+	if (placeholders === 0) {
+		const pkg = JSON.parse(await readFile(resolve(root, "package.json"), "utf8"));
+		for (const url of rawUrls) expect(url).toContain(`/v${pkg.version}/`);
+	}
 });
