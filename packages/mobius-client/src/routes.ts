@@ -15,6 +15,7 @@ export const readRoutes: { [R in keyof ReadRoutes]: true } = {
 	"/api/binding/aster/status": true,
 	"/api/binding/lighter/status": true,
 	"/api/binding/rebind-check": true,
+	"/api/binding/readiness": true,
 };
 export const writeRoutes: { [R in keyof WriteRoutes]: true } = {
 	"/api/keys/list": true,

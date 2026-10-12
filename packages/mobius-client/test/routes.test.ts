@@ -76,6 +76,13 @@ const reads: {
 		params: { ownerAddress: owner, venue: "hl" },
 		result: { allowed: true },
 	},
+	"/api/binding/readiness": {
+		params: { ownerAddress: owner },
+		result: {
+			ready: false,
+			venues: [{ venue: "hl", ready: false, issue: "not_bound" }],
+		},
+	},
 };
 const auth = { timestamp: 1787555739, signature: "0x1234" as const };
 const writes: {

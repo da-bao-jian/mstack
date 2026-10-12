@@ -9,6 +9,7 @@
 	},
 	"dependencies": {
 		"@mstack/keys": "workspace:*",
+		"@mstack/mobius-api": "workspace:*",
 		"viem": "2.57.4",
 		"@mstack/mobius-client": "workspace:*",
 		"@mstack/signers": "workspace:*"

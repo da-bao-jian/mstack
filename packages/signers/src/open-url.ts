@@ -13,12 +13,20 @@ export function openSuppressed(env: NodeJS.ProcessEnv = process.env): boolean {
 }
 
 /** No shell interpolation. The bridge supplies a fixed loopback URL with a hex token. */
-export async function openUrl(url: string): Promise<void> {
-	if (openSuppressed()) return;
-	const [command, ...args] =
-		process.platform === "darwin"
+export async function openUrl(
+	url: string,
+	env: NodeJS.ProcessEnv = process.env,
+	platform: NodeJS.Platform = process.platform,
+): Promise<void> {
+	if (openSuppressed(env)) return;
+	const configured = env.BROWSER?.trim();
+	if (configured && /[\r\n\0]/.test(configured))
+		throw new Error("BROWSER contains invalid control characters");
+	const [command, ...args] = configured
+		? [...configured.split(/\s+/), url]
+		: platform === "darwin"
 			? ["open", url]
-			: process.platform === "win32"
+			: platform === "win32"
 				? ["cmd", "/c", "start", "", url]
 				: ["xdg-open", url];
 	await new Promise<void>((resolve, reject) => {

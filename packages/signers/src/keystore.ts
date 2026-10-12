@@ -171,6 +171,7 @@ export async function unlockKeystore(
 	home: string,
 	address: string,
 	read: SecretReader = readSecretFromTty,
+	options: { reusable?: boolean } = {},
 ): Promise<Signer> {
 	const value = await readStore(home, address);
 	const key = await derive(
@@ -200,7 +201,7 @@ export async function unlockKeystore(
 			if (!account)
 				throw new Error("Keystore signer is closed or already used");
 			const active = account;
-			account = undefined;
+			if (!options.reusable) account = undefined;
 			return active;
 		};
 		return {

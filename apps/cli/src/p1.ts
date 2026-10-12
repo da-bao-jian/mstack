@@ -7,6 +7,7 @@ import {
 	MobiusClient,
 } from "@mstack/mobius-client";
 import {
+	CeremonyStore,
 	type Json,
 	ProposalStore,
 	publicText,
@@ -42,6 +43,11 @@ export async function p1(
 	rt: Runtime,
 	read: SecretReader = readSecretFromTty,
 ): Promise<void> {
+	if (command === "sign" && args.length === 1 && /^c-[1-9]\d*$/.test(args[0])) {
+		const { signCeremony } = await import("./ceremony-command.ts");
+		await signCeremony(args[0], values, rt, read);
+		return;
+	}
 	const store = new ProposalStore(rt.home, rt.now, rt.err);
 	const show = (p: Awaited<ReturnType<ProposalStore["get"]>>) =>
 		values.json
@@ -61,17 +67,38 @@ export async function p1(
 	if (command === "proposals") {
 		if (args.length) throw new UsageError("Usage: mob proposals");
 		const proposals = await store.list();
+		const ceremonies = await new CeremonyStore(rt.home, rt.now, rt.err).list();
 		if (values.json) {
-			rt.out(JSON.stringify(proposals.map(proposalView), null, 2));
+			rt.out(
+				JSON.stringify(
+					[
+						...proposals.map(proposalView),
+						...ceremonies.map((ceremony) => ({
+							id: ceremony.id,
+							kind: "ceremony",
+							status: ceremony.status,
+							owner: ceremony.owner,
+							venues: ceremony.venues,
+							expiresAt: ceremony.expiresAt,
+						})),
+					],
+					null,
+					2,
+				),
+			);
 			return;
 		}
 		rt.out(
-			proposals
-				.map(
+			[
+				...proposals.map(
 					(p) =>
 						`${p.id}\t${p.kind === "api-submit" ? "api" : "wallet"}\t${p.status}\t${proposalTiming(p, rt.now())}\t${p.purpose}`,
-				)
-				.join("\n") || "No proposals.",
+				),
+				...ceremonies.map(
+					(ceremony) =>
+						`${ceremony.id}\tceremony\t${ceremony.status}\t${ceremony.venues.map((venue) => venue.venue).join(", ")}`,
+				),
+			].join("\n") || "No proposals.",
 		);
 		return;
 	}

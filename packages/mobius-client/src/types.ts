@@ -7,6 +7,7 @@ import type {
 	Secret,
 } from "./apiKeys.ts";
 import type {
+	ArbitrageVenueReadinessResp,
 	AsterCredentialResp,
 	AsterPrepareResp,
 	AsterStatusResp,
@@ -100,6 +101,10 @@ export interface ReadRoutes {
 	"/api/binding/rebind-check": {
 		params: { ownerAddress: string; venue: ArbitrageVenue };
 		result: { allowed: true };
+	};
+	"/api/binding/readiness": {
+		params: { ownerAddress: string };
+		result: ArbitrageVenueReadinessResp;
 	};
 }
 export interface WriteRoutes {

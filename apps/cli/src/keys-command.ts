@@ -5,10 +5,11 @@ import {
 	redactKey,
 	verifyApiKey,
 } from "@mstack/keys";
-import { apiKeyMessage } from "@mstack/mobius-client";
+import { apiKeyMessage, MobiusClient } from "@mstack/mobius-client";
 import type { JsonObject, ProposalInput } from "@mstack/proposals";
 import { readSecretFromTty, type SecretReader } from "@mstack/signers";
 import { getAddress } from "viem";
+import pkg from "../package.json";
 import {
 	getConfig,
 	numberFlag,
@@ -17,7 +18,7 @@ import {
 	UsageError,
 } from "./config.ts";
 import { cliKeyStore } from "./key-store.ts";
-import { object, request } from "./onboarding-http.ts";
+import { object } from "./onboarding-http.ts";
 import { stageOnboarding } from "./onboarding-stage.ts";
 import { table } from "./render.ts";
 import type { Runtime } from "./run.ts";
@@ -154,11 +155,11 @@ async function requireReadiness(
 	venues: string[],
 	rt: Runtime,
 ): Promise<string> {
-	const result = await request(
-		rt.fetch,
-		`${base}/api/binding/readiness?ownerAddress=${encodeURIComponent(owner)}`,
-		"GET",
-	);
+	const result = await new MobiusClient({
+		base,
+		version: pkg.version,
+		fetch: rt.fetch,
+	}).read("/api/binding/readiness", { ownerAddress: owner });
 	const rows = readinessRows(result);
 	for (const venue of venues) {
 		const row = rows.find((item) => item.venue === venue);

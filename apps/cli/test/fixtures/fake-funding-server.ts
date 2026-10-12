@@ -305,6 +305,7 @@ export function fakePositionServer(owner: Address, now = Date.now) {
 	const writes: { route: string; recovered: string }[] = [];
 	const credentials: Record<string, unknown> = readyCredentials(owner, now());
 	const rebindBlocked = new Set<string>();
+	const readinessUnbound = new Set<string>();
 	const apiKeys: FakeApiKeyState = { records: [] };
 	let current: PublicTask | undefined;
 	let readinessFailure: string | undefined;
@@ -322,6 +323,17 @@ export function fakePositionServer(owner: Address, now = Date.now) {
 				);
 				assert.equal(req.headers.get("User-Agent"), `mstack/${pkg.version}`);
 				if (req.method === "GET") {
+					if (url.pathname === "/api/binding/readiness") {
+						assert.equal(url.searchParams.get("ownerAddress"), owner);
+						return Response.json({
+							ready: [...readinessUnbound].length === 0,
+							venues: Object.keys(credentials).map((venue) => ({
+								venue,
+								ready: !readinessUnbound.has(venue),
+								...(readinessUnbound.has(venue) ? { issue: "not_bound" } : {}),
+							})),
+						});
+					}
 					if (url.pathname === "/api/arbitrage/task") {
 						assert.equal(url.searchParams.get("owner"), owner);
 						return current && url.searchParams.get("taskId") === current.task_id
@@ -428,6 +440,7 @@ export function fakePositionServer(owner: Address, now = Date.now) {
 		base: `http://127.0.0.1:${server.port}`,
 		credentials,
 		rebindBlocked,
+		readinessUnbound,
 		errors,
 		writes,
 		expect: (route: string, body: Record<string, unknown>) =>

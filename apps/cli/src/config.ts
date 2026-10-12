@@ -10,6 +10,7 @@ export interface Config {
 	api_base?: string;
 	strategy_api_base?: string;
 	auth_base?: string;
+	app_base?: string;
 	legal_chain_id?: number;
 	hl_signature_chain_id?: string;
 	owner?: string;
@@ -76,6 +77,7 @@ function knownKey(key: string): void {
 			"api_base",
 			"strategy_api_base",
 			"auth_base",
+			"app_base",
 			"legal_chain_id",
 			"hl_signature_chain_id",
 			"owner",
@@ -116,7 +118,12 @@ export function parsedValue(
 			throw new UsageError(`Invalid ${key}: expected ${allowed.join(" | ")}`);
 		return String(value);
 	}
-	if (key === "api_base" || key === "strategy_api_base" || key === "auth_base")
+	if (
+		key === "api_base" ||
+		key === "strategy_api_base" ||
+		key === "auth_base" ||
+		key === "app_base"
+	)
 		return apiBase(String(value), key);
 	if (key === "legal_chain_id") return numberFlag(value, key, 1, true);
 	if (key === "hl_signature_chain_id") {
@@ -173,6 +180,7 @@ export async function readConfig(home = configHome()): Promise<Config> {
 					"api_base",
 					"strategy_api_base",
 					"auth_base",
+					"app_base",
 					"hl_signature_chain_id",
 					"owner",
 					"signer",
@@ -194,6 +202,7 @@ export function getConfig(config: Config, key: string): string | number {
 	knownKey(key);
 	if (key === "auth_base")
 		return config.auth_base ?? "https://auth.mob.exchange";
+	if (key === "app_base") return config.app_base ?? "https://app.mob.exchange";
 	if (key === "legal_chain_id") return config.legal_chain_id ?? 97;
 	if (key === "hl_signature_chain_id")
 		return config.hl_signature_chain_id ?? "0xa4b1";

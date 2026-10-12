@@ -7,6 +7,10 @@ export interface Signer {
 	signTypedData(args: TypedDataDefinition): Promise<Hex>;
 }
 export { type BrowserOptions, browserSigner } from "./browser.ts";
+export {
+	type BrowserCeremonyOptions,
+	browserCeremonySigner,
+} from "./browser-ceremony.ts";
 export type { InteractiveSigner, SigningView } from "./interactive.ts";
 export {
 	createKeystore,
@@ -14,8 +18,12 @@ export {
 	listKeystores,
 	unlockKeystore,
 } from "./keystore.ts";
-export { openUrl } from "./open-url.ts";
+export { openSuppressed, openUrl } from "./open-url.ts";
 export { readSecretFromTty, type SecretReader } from "./tty.ts";
 export { walletConnectSigner } from "./walletconnect.ts";
+export {
+	type WalletConnectCeremonyOptions,
+	walletConnectCeremonySigner,
+} from "./walletconnect-ceremony.ts";
 export type { WalletConnectFactory } from "./walletconnect-client.ts";
 export { pairingQr } from "./walletconnect-qr.ts";

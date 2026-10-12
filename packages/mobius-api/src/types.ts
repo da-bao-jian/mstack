@@ -18,7 +18,7 @@ export type BindingTarget =
 	| { venue: "aster"; rebind?: boolean }
 	| {
 			venue: "lighter" | "lighter-mainnet";
-			accountIndex: number;
+			accountIndex?: number;
 			rebind?: boolean;
 	  };
 

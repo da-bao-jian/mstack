@@ -82,8 +82,11 @@ async function check(raw: string, home: string): Promise<void> {
 				}
 				unexpected(i);
 			}
-			if (!/^p-[1-9]\d*$/.test(token))
-				deny("use one literal Proposal id in each sign command");
+			const validId =
+				match[1] === "sign"
+					? /^[pc]-[1-9]\d*$/.test(token)
+					: /^p-[1-9]\d*$/.test(token);
+			if (!validId) deny("use one literal Proposal id in each sign command");
 			ids.push(token);
 		}
 		if (ids.length !== 1)

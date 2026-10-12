@@ -53,6 +53,41 @@ function required(
 		throw new Error(`invalid ${field}`);
 }
 function validateRead(route: keyof ReadRoutes, value: unknown): unknown {
+	if (route === "/api/binding/readiness") {
+		const root = Array.isArray(value) ? undefined : record(value);
+		const raw = Array.isArray(value) ? value : root?.venues;
+		if (!Array.isArray(raw)) throw new Error("invalid venues");
+		const venues = raw.map((item) => {
+			const venue = record(item);
+			required(venue, "venue", "string");
+			if (
+				!["aster", "hl", "lighter", "lighter-mainnet"].includes(
+					String(venue.venue),
+				) ||
+				(venue.issue !== undefined &&
+					(typeof venue.issue !== "string" ||
+						!/\S/.test(venue.issue) ||
+						/[\p{Cc}\p{Cf}]/u.test(venue.issue)))
+			)
+				throw new Error("invalid venue readiness");
+			const ready =
+				venue.ready === true ||
+				(venue.ready === undefined && venue.bound === true);
+			if (venue.ready !== undefined && typeof venue.ready !== "boolean")
+				throw new Error("invalid venue readiness");
+			return { ...venue, ready };
+		});
+		if (root?.ready !== undefined && typeof root.ready !== "boolean")
+			throw new Error("invalid readiness");
+		return {
+			...root,
+			ready:
+				typeof root?.ready === "boolean"
+					? root.ready
+					: venues.every((venue) => venue.ready),
+			venues,
+		};
+	}
 	if (route === "/api/arbitrage/list") {
 		if (!Array.isArray(value)) throw new Error("expected task array");
 		return value.map(validateTask);

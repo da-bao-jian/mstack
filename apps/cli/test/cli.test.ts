@@ -215,6 +215,7 @@ test.each(
 		["scan", "--top-exec", "1.5"],
 		["config", "set", "default_size_usd", "NaN"],
 		["config", "set", "api_base", "file:///tmp"],
+		["config", "set", "app_base", "file:///tmp"],
 		["scan", "extra"],
 	].map((args) => ({ args })),
 )("usage fails before any network: %j", async ({ args }) => {
@@ -246,6 +247,7 @@ test("version and help expose only delivered commands", async () => {
 	])
 		expect(result.out).toContain(`mob ${name}`);
 	expect(result.out).toContain("mob setup");
+	expect(result.out).toContain("mob onboard");
 	expect(result.out).toContain("mob bind <hl|aster|lighter|lighter-mainnet>");
 	expect(result.out).not.toContain("--leverage");
 	expect(result.out).not.toContain("--margin");

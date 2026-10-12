@@ -40,6 +40,7 @@ Usage:
   mob config set <key> <value>
   mob setup [--owner 0x… --signer keystore|browser|walletconnect --policy manual|locked|auto]
             [--auth-base URL] [--legal-chain-id N] [--walletconnect-project-id ID] [--no-legal]
+  mob onboard [--owner 0x…] [--app-base URL] [--watch] [--native] [--venues a,b]
   mob bind <hl|aster|lighter|lighter-mainnet>
   mob keys import [--stdin] [--unverified] [--name <n>] [--venues a,b] [--max-size <usd>]
   mob keys create --name <n> --venues a,b[,c,d] --max-size <usd>
@@ -69,7 +70,7 @@ Usage:
   mob --help
 
 Venues: hl,lighter,lighter-mainnet,aster,binance,bybit,okx
-Config keys: api_base, strategy_api_base, auth_base, legal_chain_id, hl_signature_chain_id, owner, signer, policy, key_store, walletconnect_project_id, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps
+Config keys: api_base, strategy_api_base, auth_base, app_base, legal_chain_id, hl_signature_chain_id, owner, signer, policy, key_store, walletconnect_project_id, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps
 Keystore secrets are read only from /dev/tty. Mutation commands stage, preview, and stop before signing.
 MCP tools stage Proposals; no sign, reject, or config-set tool is exposed.
 Protection at open requires assumed leverage, not verified on the venue. Leverage and margin mode are never set by these commands.
@@ -108,7 +109,23 @@ export const definitions: Record<string, ParseArgsConfig["options"]> = {
 		"walletconnect-project-id": flag("string"),
 		"no-legal": flag("boolean"),
 	},
-	bind: { help: flag("boolean") },
+	onboard: {
+		help: flag("boolean"),
+		owner: flag("string"),
+		"app-base": flag("string"),
+		watch: flag("boolean"),
+		native: flag("boolean"),
+		venues: flag("string"),
+		"lighter-account": flag("string"),
+		rebind: flag("boolean"),
+	},
+	bind: {
+		help: flag("boolean"),
+		all: flag("boolean"),
+		venues: flag("string"),
+		"lighter-account": flag("string"),
+		rebind: flag("boolean"),
+	},
 	keys: {
 		help: flag("boolean"),
 		json: flag("boolean"),
@@ -210,6 +227,7 @@ export interface Runtime extends CommandRuntime {
 	stdinIsTTY?: boolean;
 	stdoutIsTTY?: boolean;
 	writeStatus?: (text: string) => void;
+	sleep?: (ms: number) => Promise<void>;
 	prompt?: (question: string, defaultValue: string) => Promise<string>;
 	readSecret?: SecretReader;
 	openUrl?: (url: string) => Promise<void>;
@@ -363,7 +381,20 @@ export async function run(
 			await setupCommand(rt, values);
 			return 0;
 		}
+		if (command === "onboard") {
+			if (positionals.length) throw new UsageError("Usage: mob onboard");
+			const { onboard } = await import("./onboard.ts");
+			await onboard(values, rt);
+			return 0;
+		}
 		if (command === "bind") {
+			if (values.all === true) {
+				if (positionals.length)
+					throw new UsageError("Usage: mob bind --all [--venues a,b]");
+				const { stageCeremony } = await import("./ceremony-command.ts");
+				await stageCeremony(values, rt);
+				return 0;
+			}
 			if (positionals.length !== 1)
 				throw new UsageError(
 					"Usage: mob bind <hl|aster|lighter|lighter-mainnet>",

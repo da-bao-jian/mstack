@@ -27,6 +27,8 @@
 		"live:mcp": "bun run --filter @mstack/cli live:mcp",
 		"smoke:open": "bun run --filter @mstack/cli smoke:open",
 		"smoke:bind": "bun run --filter @mstack/cli smoke:bind",
+		"smoke:onboard": "bun run --filter @mstack/cli smoke:onboard",
+		"smoke:ceremony": "bun run --filter @mstack/cli smoke:ceremony",
 		"smoke:home": "bun run --cwd apps/cli smoke:home",
 		"smoke:submit": "bun run --cwd apps/cli smoke:submit"
 	},

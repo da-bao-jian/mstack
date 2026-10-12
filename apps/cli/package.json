@@ -6,8 +6,8 @@
 	"license": "MIT",
 	"dependencies": {
 		"@mstack/keys": "workspace:*",
-		"@mstack/mobius-client": "workspace:*",
 		"@mstack/mobius-api": "workspace:*",
+		"@mstack/mobius-client": "workspace:*",
 		"@mstack/proposals": "workspace:*",
 		"@mstack/signers": "workspace:*",
 		"viem": "2.57.4",
@@ -30,6 +30,8 @@
 		"live:mcp": "bun run scripts/live-mcp.ts",
 		"smoke:open": "bun scripts/smoke-open.ts",
 		"smoke:bind": "bun scripts/smoke-bind.ts",
+		"smoke:onboard": "bun scripts/smoke-onboard.ts",
+		"smoke:ceremony": "bun scripts/smoke-ceremony.ts",
 		"smoke:home": "bun scripts/smoke-home.ts",
 		"smoke:submit": "bun scripts/smoke-submit.ts"
 	}
