@@ -95,3 +95,17 @@ Decided 2026-10-11. Goal: ship something that feels like a finished product from
 | **W15 sign page + ceremonies** | The browser sign page in brand style with the logo, a plain "this authorizes" sentence, countdown, phone width; step indicators for setup and bind. |
 | **W16 release engineering** | GitHub Actions release matrix (macOS arm64/x64, Linux x64/arm64) with SHA-256 sums, `bin/mob` download fallback for users without Bun, CHANGELOG, tag 0.3.0, README refresh. |
 | **W17 final sweep** | Security review of the signing surfaces, argument-parsing fuzz tests, dependency audit, a production-readiness report listing what only a human can do (live run, public repo, license decision). |
+
+---
+
+# Session program (after 0.3.0)
+
+Decided 2026-10-12, design in `docs/SESSION-ONBOARDING.md`, Mobius-side asks in `docs/MOBIUS-ASKS.md`. Goal: onboarding in one browser visit on the Mobius API page, the API key as the session key, trading without a wallet popup, native signing kept for terminals without a browser.
+
+| Package | Scope | Depends on |
+|---|---|---|
+| **W18 Strategy API client** | `@mstack/mobius-api`: typed client from the pinned OpenAPI 1.2.0 (tasks, requests, venue bindings), bearer + Idempotency-Key + 429, byte-exact `bindingMessage`/`canonical` port, funding-server key routes with the byte-exact `apiKeyMessage`, a fake Strategy API server for tests. | — |
+| **W19 key custody** | `@mstack/keys`: env → keychain → secret-tool → 0600 file; `mob keys import|create|list|revoke|show`; the key never printed, never in a Proposal file, redacted from errors; home screen and doctor lines. | — |
+| **W20 onboarding ceremony** | `mob onboard`: one-shot receiver + Mobius API page + polling checklist + hidden paste fallback; `--native`: legal, batch venue binding through the API, key creation Proposal; the browser sign page serves a multi-request session (one tab, one connection). | W18, W19 |
+| **W21 trading via submit** | Proposal kind `api-submit`, `mob submit`, policy `auto`, `mob status` with the key, sign-guard covers submit, manage edits stay wallet-signed with a clear message. | W18, W19 |
+| **W22 skills, MCP, docs, QA, 0.4.0** | `/mob-setup` → onboard, `/mob-open` → submit, `/mob-keys`, MCP `propose_*` unchanged, README/READINESS/ARCHITECTURE, journeys E and F, CHANGELOG 0.4.0. | W20, W21 |
