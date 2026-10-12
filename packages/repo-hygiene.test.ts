@@ -11,18 +11,19 @@ test("every skill description starts with its task and quotes trigger phrases, i
 	const tasks: Record<string, string> = {
 		mob: "Start here for mstack and Mobius.",
 		"mob-scan": "Compare perpetual funding rates",
-		"mob-setup": "Set up public wallet settings",
+		"mob-setup": "Onboard to API-key trading",
 		"mob-status": "Read Mobius position status",
-		"mob-bind": "Connect a venue",
+		"mob-bind": "Repair venue binding or use native onboarding",
 		"mob-explain": "Explain funding and Mobius mechanics",
-		"mob-open": "Stage a delta-neutral position",
-		"mob-manage": "Stage one position management change",
-		"mob-close": "Stage a position close",
+		"mob-open": "Open a position with a scoped API key",
+		"mob-manage": "Manage a position with the API key when supported",
+		"mob-close": "Close a position with a scoped API key",
+		"mob-keys": "Manage the scoped Mobius API key safely",
 	};
 	const everyday: Record<string, string> = {
 		mob: "what can you do",
 		"mob-scan": "where is the best funding right now",
-		"mob-setup": "set up my wallet",
+		"mob-setup": "set me up",
 		"mob-status": "what positions do I have",
 	};
 	for (const [file, content] of generated) {

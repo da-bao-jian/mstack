@@ -54,6 +54,7 @@ try {
 		"mob-open",
 		"mob-manage",
 		"mob-close",
+		"mob-keys",
 	];
 	for (const host of ["claude", "codex"]) {
 		console.log(`$ HOME=<temporary> ./setup --host ${host} -q`);

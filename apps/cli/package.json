@@ -1,6 +1,6 @@
 {
 	"name": "@mstack/cli",
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"private": true,
 	"type": "module",
 	"license": "MIT",
@@ -33,6 +33,7 @@
 		"smoke:onboard": "bun scripts/smoke-onboard.ts",
 		"smoke:ceremony": "bun scripts/smoke-ceremony.ts",
 		"smoke:home": "bun scripts/smoke-home.ts",
-		"smoke:submit": "bun scripts/smoke-submit.ts"
+		"smoke:submit": "bun scripts/smoke-submit.ts",
+		"smoke:journey-e": "bun scripts/smoke-journey-e.ts"
 	}
 }

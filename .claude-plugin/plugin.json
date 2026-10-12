@@ -1,13 +1,13 @@
 {
 	"name": "mstack",
-	"version": "0.3.0",
-	"description": "Compare public funding rates and stage Mobius positions for explicit human wallet approval.",
+	"version": "0.4.0",
+	"description": "Compare funding rates, onboard a scoped Mobius API key, and stage or submit positions under explicit policy.",
 	"author": {
 		"name": "mstack contributors",
 		"url": "https://github.com/da-bao-jian"
 	},
 	"license": "MIT",
-	"keywords": ["funding", "perpetuals", "mobius", "proposals"],
+	"keywords": ["funding", "perpetuals", "mobius", "api-key", "proposals"],
 	"skills": ["./skills/"],
 	"displayName": "mstack",
 	"homepage": "https://github.com/da-bao-jian/mstack#readme",

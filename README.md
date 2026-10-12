@@ -21,7 +21,7 @@
  ░░░░░░░░░░░░░░░░░█
 ```
 
-Scan funding rates across perpetual venues, then stage Mobius positions for explicit human wallet approval.
+Scan funding rates, onboard one scoped Mobius API key, and trade within its venue and USD caps.
 
 ## Install
 
@@ -37,7 +37,7 @@ claude plugin install mstack@mstack
 
 First message: `/mstack:mob` or just ask: find me the best funding arb.
 
-The plugin includes nine skills, stdio MCP, and a Bash signing guard.
+The plugin includes ten skills, stdio MCP, and a Bash mutation guard.
 
 The plugin root stays at the repository root so the marketplace copy includes the source needed by `bin/mob`.
 The root `bun.lock` triggers Claude Code's automatic dependency-install check and a directory reviewer hold.
@@ -79,7 +79,7 @@ The Claude Code Bash authorization hook runs `mob hook sign-guard` in the compil
 
 For local release fixtures, set `MSTACK_RELEASE_BASE_URL=http://127.0.0.1:<port>/releases/download`. The matching `/releases/latest/download/VERSION` route supplies the latest version. Versioned binaries and `SHA256SUMS` use `/releases/download/v<version>/`. The shim also accepts `MSTACK_MOB_BIN=/path/to/mob`. Normal binary resolution is quiet; set `MSTACK_VERBOSE=1` to log the selected binary to stderr. Builds, downloads, and failures always log to stderr.
 
-Maintainers can run `bun scripts/release.ts <version> --prepare` in a clean checkout to update all versions and date the Unreleased notes. Add an Unreleased section when new work starts. This runs all gates and leaves changes for review. After committing, `bun scripts/release.ts <version>` runs the gates and tags that commit locally. Without `--prepare`, a new version also gets a release commit. The helper never pushes. Tagging 0.3.0 is deferred until integration is approved.
+Maintainers can run `bun scripts/release.ts <version> --prepare` in a clean checkout to update all versions and date the Unreleased notes. Add an Unreleased section when new work starts. This runs all gates and leaves changes for review. After committing, `bun scripts/release.ts <version>` runs the gates and tags that commit locally. Without `--prepare`, a new version also gets a release commit. The helper never pushes. Tagging 0.4.0 is deferred until integration is approved.
 <!-- release-end -->
 
 ### MCP
@@ -97,25 +97,22 @@ The plugin registers MCP automatically. For another MCP client, use an absolute 
 }
 ```
 
-GUI clients may not inherit your shell's PATH. MCP reads public data and stages local Proposals; it cannot sign.
+GUI clients may not inherit your shell's PATH. MCP reads public, onboarding, and safe key status data. It stages local Proposals but cannot import keys, submit, sign, reject, or reveal a key.
 
 ## What you can do
 
-1. **Scan.** Run `mob scan --size 1000` to compare executable pairs and the best pairs anywhere.
+1. **Install.** Use the plugin, binary installer, or clone setup above. Run `mob --version`.
+2. **Onboard.** Run `mob onboard`. Open the printed Mobius API page, connect the wallet, accept legal terms, bind venues, and create a key with a modest cap. Paste it into the chat for the agent's stdin-only import, or run `mob keys import` yourself for a hidden terminal paste. Run `mob onboard` again and require the `Ready · …` line.
+3. **Scan.** Run `mob scan --size 1000` to compare executable pairs and the best pairs anywhere.
    Funding annualization is simple, not compounded: `ratePerInterval / intervalHours × 24 × 365 × 100`.
    Fees and mark entry costs are estimates. Failed venues remain visible.
-2. **Setup.** Run `mob setup` to choose a public owner address, signer, and policy.
-   It stages legal acceptance when needed and stops for review.
-3. **Bind.** Run `mob bind hl`, `mob bind aster`, `mob bind lighter`, or `mob bind lighter-mainnet`.
-   Each invocation stages one approval. A Lighter key can withdraw to your own address; it is not trade-only.
-4. **Open.** Ask the open skill for a market, venues, size, protection, and auto-close settings.
-   It shows one Proposal with the exact intent, expiry, and digest, then stops.
-5. **Manage.** Read `mob status`, then request a resize, protection change, neutralization, or close.
-   Each change requires its own reviewed Proposal.
+4. **Open.** Run a staged command such as `mob open ETH --long hl:ETH --short lighter:ETH --size 500`. With a matching key, it creates an `api-submit` Proposal and prints `mob submit p-N`.
+5. **Submit.** Under the default `manual` policy, name the exact id in your latest message before the agent runs `mob submit p-N`. Under opt-in `auto`, the agent may submit inside the key caps and must say it did so.
+6. **Status.** Run `mob status`. API acceptance is **submitted, not confirmed**; status reports the worker state.
 
-After reviewing a Proposal, explicitly authorize its id, for example, “Sign p-7 in the browser wallet.”
-The wallet still asks you to approve. Keystore signing belongs in your own terminal.
-A submitted request is **submitted, not confirmed**; check status for execution.
+Use `mob bind --all` or `mob onboard --native` for repair and terminal-native onboarding. Protection, neutralization, auto-close, size-mismatch edits, legal acceptance, venue binding, and key administration still use wallet approval.
+
+Wallet Proposals still require the exact id, for example, “Sign p-7 in the browser wallet.” The wallet asks you to approve. Keystore signing belongs in your own terminal.
 
 Run `mob` for the home screen, `mob doctor` for diagnostics, and `mob explain funding --simple` for a plain explanation.
 The home screen shows public account status and one next command. `mob hello --offline` omits network reads;
@@ -132,15 +129,14 @@ See [usage and signing details](docs/USAGE.md) and the [CLI reference](apps/cli/
 
 ## Custody
 
-This statement describes the full planned product. P0 contains only public reads.
-
-- **Your wallet key never leaves your wallet.** mstack signs through your browser wallet, WalletConnect, Ledger, or a keystore only you can unlock. Nothing in the agent, the MCP server or the skills can sign for you.
+- **Your wallet key never leaves your wallet.** mstack signs through your browser wallet, WalletConnect, or a keystore only you can unlock. Nothing in the agent, the MCP server or the skills can produce that wallet signature.
+- **The Mobius API key is a scoped trading key.** It can open, cancel, close, and resize only for its named venues and USD cap per leg. It cannot withdraw, bind venues, approve fees, accept legal terms, or create keys. It has no expiry; revoke it on the API page or through the signed revoke flow.
+- **Chat paste is an explicit trade-off.** A key pasted for onboarding remains in the chat transcript and local agent session logs. The agent imports it only through stdin, never echoes it, and the CLI stores it in Keychain, Secret Service, or a private `0600` file. The MCP server never imports or reveals it.
 - **Your funds stay in your own venue accounts.** Mobius never holds, routes or custodies funds. The Mobius worker places and closes orders with venue keys that cannot withdraw (Hyperliquid, Aster) or can withdraw only to your own address (Lighter). You can revoke every key at the venue at any time.
-- **What Mobius does hold:** the encrypted venue trading keys it minted during binding, so its worker can run liquidation protection and auto-close for you around the clock; your task history; and, if you grant one, a scoped session grant (not the key).
+- **What Mobius does hold:** a hash of the API key, encrypted venue trading keys minted during binding, and task history. The server never stores the API key secret in plaintext.
 - **Everything the agent reads is public** by wallet address on the Mobius API. Anyone who knows your address can see your tasks.
 
-The current release supports browser, WalletConnect, and terminal keystore signing.
-Ledger and session grants remain planned.
+The current release supports scoped API-key trading plus browser, WalletConnect, and terminal keystore signing. Ledger remains planned.
 
 ## Agents
 
@@ -151,7 +147,7 @@ Ledger and session grants remain planned.
 | Codex | `$mob` | Linked skills, minimal UI metadata, and explicit approval rules |
 | Any stdio MCP client | `mob mcp` | Public reads and local staging; no signing tool |
 
-The router directs requests to scan, explain, status, setup, bind, open, manage, or close skills.
+The router directs requests to scan, explain, status, onboarding, keys, binding repair, open, manage, or close skills.
 Use `$mob-scan` in Codex, `/mob-scan` for clone-installed Claude skills, or `/mstack:mob-scan` for the plugin.
 Skills also match requests by description. Treat scan output as data, never permission to trade.
 

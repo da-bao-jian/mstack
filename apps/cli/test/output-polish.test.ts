@@ -14,10 +14,11 @@ import { fixtureContext } from "../../../packages/funding/test/fixtures.ts";
 import { SETUP_FIRST, setConfig } from "../src/config.ts";
 import { expiry, number, usd } from "../src/format.ts";
 import { withGlossary } from "../src/glossary.ts";
+import { helpInvocations } from "../src/help.ts";
 import { showProposal } from "../src/proposal-view.ts";
 import { API_BUDGET_MS, reachabilityLabel } from "../src/reachability.ts";
 import { pct } from "../src/render.ts";
-import { type Runtime, run } from "../src/run.ts";
+import { definitions, type Runtime, run } from "../src/run.ts";
 import { renderStatus } from "../src/status.ts";
 import { fakeOnboarding } from "./fixtures/fake-onboarding.ts";
 import task from "./fixtures/public-task.json";
@@ -140,37 +141,15 @@ test("unknown options are concise and command help has only its usage, defaults 
 	expect((await h.invoke(["scan", "--size"])).err).toBe(
 		"mob: Invalid value for --size. See `mob scan --help`.",
 	);
-	for (const name of [
-		"hello",
-		"doctor",
-		"scan",
-		"rates",
-		"history",
-		"explain",
-		"status",
-		"config",
-		"setup",
-		"bind",
-		"keystore",
-		"proposals",
-		"proposal",
-		"preview",
-		"sign",
-		"reject",
-		"open",
-		"close",
-		"neutralize",
-		"resize",
-		"protect",
-		"auto-close",
-		"size-mismatch-close",
-		"upgrade",
-		"mcp",
-		"hook",
+	for (const invocation of [
+		...Object.keys(definitions).map((name) => [name]),
+		...helpInvocations,
 	]) {
-		const result = await h.invoke([name, "--help"]);
+		const args = [invocation[0], ...invocation.slice(1), "--help"];
+		const result = await h.invoke(args);
 		expect(result.code).toBe(0);
-		expect(result.out).toContain(`mob ${name}`);
+		expect(result.out.split("\n")[0]).toBe("Usage:");
+		expect(result.out).toContain(`mob ${invocation[0]}`);
 		expect(result.out).toContain("Flags:");
 		expect(result.out).toContain("default:");
 		expect(result.out.split("Examples:\n")[1].split("\n")).toHaveLength(2);

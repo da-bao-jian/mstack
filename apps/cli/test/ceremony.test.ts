@@ -63,6 +63,11 @@ test("bind --all stages one ceremony and keystore signs the batch with one unloc
 	);
 	expect(out.join("\n")).toContain("Next: mob sign c-1");
 	out.length = 0;
+	expect(await run(["proposals"], rt)).toBe(0);
+	expect(out.join("\n")).toMatch(
+		/c-1\tceremony\tawaiting-prepare-signature\texpires in \d+:\d{2}\thl, lighter/,
+	);
+	out.length = 0;
 	const signCode = await run(["sign", "c-1"], rt);
 	expect({ signCode, error: err.join("\n") }).toEqual({
 		signCode: 0,

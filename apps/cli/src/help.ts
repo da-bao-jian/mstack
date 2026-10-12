@@ -20,12 +20,35 @@ const examples: Record<string, [string, string]> = {
 		"mob setup",
 		"mob setup --owner 0x0000000000000000000000000000000000000001 --signer browser --policy manual",
 	],
+	onboard: ["mob onboard", "mob onboard --owner 0x… --venues hl,lighter"],
 	bind: ["mob bind hl", "mob bind lighter"],
+	"bind --all": [
+		"mob bind --all",
+		"mob bind --all --venues hl,lighter --rebind",
+	],
+	keys: ["mob keys show", "mob keys list"],
+	"keys import": [
+		"printf '%s' \"$KEY\" | mob keys import --stdin --name agent --venues hl,lighter --max-size 5000",
+		"mob keys import",
+	],
+	"keys create": [
+		"mob keys create --name terminal --venues hl,lighter --max-size 5000",
+		"mob keys create --name desk --venues hl,aster --max-size 1000",
+	],
+	"keys list": ["mob keys list", "mob keys list --json"],
+	"keys revoke": ["mob keys revoke <uuid>", "mob keys revoke <uuid> --json"],
+	"keys show": ["mob keys show", "mob keys show --json"],
+	"keys delete": ["mob keys delete", "mob keys delete --json"],
 	keystore: ["mob keystore create", "mob keystore list"],
+	"keystore create": ["mob keystore create", "mob keystore create --help"],
+	"keystore import": ["mob keystore import", "mob keystore import --help"],
+	"keystore list": ["mob keystore list", "mob keystore list --help"],
 	proposals: ["mob proposals", "mob proposals --json"],
 	proposal: ["mob proposal show p-1", "mob proposal show p-1 --json"],
+	"proposal show": ["mob proposal show p-1", "mob proposal show p-1 --json"],
 	preview: ["mob preview p-1", "mob preview p-1 --json"],
 	sign: ["mob sign p-1", "mob sign p-1 --with browser"],
+	"sign c-N": ["mob sign c-1", "mob sign c-1 --with browser"],
 	submit: ["mob submit p-1", "mob submit p-1 --json"],
 	reject: ["mob reject p-1", "mob reject p-2"],
 	open: [
@@ -54,7 +77,70 @@ const examples: Record<string, [string, string]> = {
 		"mob hook sign-guard < hook-input.json",
 		'printf \'%s\' \'{"tool_input":{"command":"mob scan"}}\' | mob hook sign-guard',
 	],
+	"hook sign-guard": [
+		"mob hook sign-guard < hook-input.json",
+		'printf \'%s\' \'{"tool_input":{"command":"mob scan"}}\' | mob hook sign-guard',
+	],
+	"config get": ["mob config get owner", "mob config get policy"],
+	"config set": [
+		"mob config set default_size_usd 5000",
+		"mob config set policy manual",
+	],
 };
+
+const usageOverrides: Record<string, string[]> = {
+	"bind --all": ["  mob bind --all [--venues a,b] [--rebind]"],
+	"config get": ["  mob config get <key>"],
+	"config set": ["  mob config set <key> <value>"],
+	"hook sign-guard": ["  mob hook sign-guard"],
+	"keys create": [
+		"  mob keys create --name <n> --venues a,b[,c,d] --max-size <usd>",
+	],
+	"keys delete": ["  mob keys delete"],
+	"keys import": [
+		"  mob keys import [--stdin] [--unverified] [--name <n>] [--venues a,b] [--max-size <usd>]",
+	],
+	"keys list": ["  mob keys list"],
+	"keys revoke": ["  mob keys revoke <uuid>"],
+	"keys show": ["  mob keys show [--json]"],
+	"keystore create": ["  mob keystore create"],
+	"keystore import": ["  mob keystore import"],
+	"keystore list": ["  mob keystore list"],
+	"proposal show": ["  mob proposal show <id>"],
+	"sign c-N": ["  mob sign c-N [--with keystore|browser|walletconnect]"],
+};
+
+export const helpInvocations: string[][] = [
+	["bind", "--all"],
+	["config", "get"],
+	["config", "set"],
+	["hook", "sign-guard"],
+	...["import", "create", "list", "revoke", "show", "delete"].map((action) => [
+		"keys",
+		action,
+	]),
+	...["create", "import", "list"].map((action) => ["keystore", action]),
+	["proposal", "show"],
+	["sign", "c-1"],
+];
+
+export function helpTopic(
+	command: string,
+	positionals: string[],
+	values: Record<string, string | boolean | undefined>,
+): string {
+	if (command === "bind" && values.all === true) return "bind --all";
+	if (command === "sign" && /^c-[1-9]\d*$/.test(positionals[0] ?? ""))
+		return "sign c-N";
+	const action = positionals[0];
+	if (
+		action &&
+		["keys", "keystore", "config", "proposal", "hook"].includes(command) &&
+		Object.hasOwn(examples, `${command} ${action}`)
+	)
+		return `${command} ${action}`;
+	return command;
+}
 const defaults: Record<string, string> = {
 	size: "config default_size_usd, initially 1000",
 	"open.size": "required",
@@ -81,9 +167,9 @@ export function commandHelp(
 	options: ParseArgsConfig["options"],
 	overview: string,
 ) {
-	const usage: string[] = [];
+	const usage: string[] = usageOverrides[command] ?? [];
 	let matching = false;
-	for (const line of overview.split("\n")) {
+	for (const line of usage.length ? [] : overview.split("\n")) {
 		if (/^ {2}mob /.test(line))
 			matching = new RegExp(`^  mob ${command}(?: |$)`).test(line);
 		else if (!/^ {4}/.test(line)) matching = false;
@@ -100,7 +186,9 @@ export function commandHelp(
 		),
 		"",
 		"Examples:",
-		...examples[command].map((example) => `  ${example}`),
+		...(examples[command] ?? [`mob ${command}`, `mob ${command} --help`]).map(
+			(example) => `  ${example}`,
+		),
 	].join("\n");
 }
 function distance(a: string, b: string): number {

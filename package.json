@@ -1,7 +1,7 @@
 {
 	"name": "mstack",
 	"private": true,
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"type": "module",
 	"license": "MIT",
 	"engines": {
@@ -30,7 +30,8 @@
 		"smoke:onboard": "bun run --filter @mstack/cli smoke:onboard",
 		"smoke:ceremony": "bun run --filter @mstack/cli smoke:ceremony",
 		"smoke:home": "bun run --cwd apps/cli smoke:home",
-		"smoke:submit": "bun run --cwd apps/cli smoke:submit"
+		"smoke:submit": "bun run --cwd apps/cli smoke:submit",
+		"smoke:journey-e": "bun run --cwd apps/cli smoke:journey-e"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.15",

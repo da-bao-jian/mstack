@@ -27,6 +27,7 @@ import {
 import { getAddress } from "viem";
 import pkg from "../package.json";
 import { getConfig, readConfig, SETUP_FIRST, UsageError } from "./config.ts";
+import { expiry } from "./format.ts";
 import { cliKeyStore } from "./key-store.ts";
 import { keyListTable } from "./keys-command.ts";
 import { object, submitPlan } from "./onboarding-http.ts";
@@ -96,7 +97,7 @@ export async function p1(
 				),
 				...ceremonies.map(
 					(ceremony) =>
-						`${ceremony.id}\tceremony\t${ceremony.status}\t${ceremony.venues.map((venue) => venue.venue).join(", ")}`,
+						`${ceremony.id}\tceremony\t${ceremony.status}\t${expiry(ceremony.expiresAt, rt.now())}\t${ceremony.venues.map((venue) => venue.venue).join(", ")}`,
 				),
 			].join("\n") || "No proposals.",
 		);

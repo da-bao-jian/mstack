@@ -10,10 +10,13 @@ import type { Runtime } from "./commands/runtime.ts";
 import { type ScanOptions, scan } from "./commands/scan.ts";
 import { type StatusOptions, status } from "./commands/status.ts";
 import { UsageError } from "./config.ts";
+import { keyStatus } from "./keys-command.ts";
+import { onboardingStatus } from "./onboard.ts";
 import { stagePosition } from "./positions.ts";
 import { proposalResult } from "./proposal-view.ts";
 
-const readOnly = "Read-only. This tool never signs, trades, or holds keys.";
+const readOnly =
+	"Read-only. This tool never signs, trades, imports, submits, or reveals a key.";
 const validator = new AjvJsonSchemaValidator();
 const text = (description: string): JsonSchemaType => ({
 	type: "string",
@@ -32,6 +35,12 @@ const venues: JsonSchemaType = {
 	items: { type: "string" },
 	description:
 		"Venue IDs: hl, lighter, lighter-mainnet, aster, binance, bybit, okx. Omit for all.",
+};
+const onboardingVenues: JsonSchemaType = {
+	type: "array",
+	items: { type: "string" },
+	description:
+		"Trade venue IDs: hl, lighter, lighter-mainnet, aster. Omit for all.",
 };
 const owner = text(
 	"Public 20-byte 0x owner address. Defaults to the owner config key.",
@@ -198,6 +207,20 @@ export const mcpTools = [
 		{ key: text("Config key to read.") },
 		["key"],
 		({ key }, rt) => config({ action: "get", key }, rt),
+	),
+	tool<{ owner?: string; venues?: string[] }>(
+		"onboarding_status",
+		"Read the onboarding checklist: legal acceptance, venue readiness, safe key prefix and verification state.",
+		{ owner, venues: onboardingVenues },
+		[],
+		onboardingStatus,
+	),
+	tool<Record<string, never>>(
+		"key_status",
+		"Read the local key prefix, storage backend and live verification result. The secret is never returned.",
+		{},
+		[],
+		(_options, rt) => keyStatus(rt),
 	),
 	tool<{
 		base: string;

@@ -67,6 +67,8 @@ test("MCP tools/list pins names, staging annotations, and input schemas", async 
 		"task_list",
 		"task_get",
 		"config_get",
+		"onboarding_status",
+		"key_status",
 		"propose_open",
 		"propose_close",
 		"propose_neutralize",
@@ -82,7 +84,7 @@ test("MCP tools/list pins names, staging annotations, and input schemas", async 
 		expect(tool.description).toContain(
 			staging
 				? "Never signs, submits, or holds keys"
-				: "Read-only. This tool never signs, trades, or holds keys.",
+				: "Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
 		);
 		expect(tool.annotations?.readOnlyHint).toBe(!staging);
 		expect(tool.annotations?.idempotentHint).toBe(!staging);
@@ -442,6 +444,84 @@ test("global network remains disabled with the MCP SDK loaded", async () => {
 	expect(() =>
 		globalThis.fetch("https://funding.mob.exchange/api/client-ip"),
 	).toThrow("Network disabled in tests");
+});
+
+test("onboarding and key status tools return safe read-only state", async () => {
+	const statusHome = await mkdtemp(join(home, "session-status-"));
+	const owner = "0x0000000000000000000000000000000000000001";
+	const secret = `mobius_01234567-89ab-cdef-0123-456789abcdef.${"ab".repeat(32)}`;
+	await setConfig("owner", owner, statusHome);
+	await setConfig("key_store", "file", statusHome);
+	await setConfig("auth_base", "http://auth.test", statusHome);
+	await setConfig("api_base", "http://funding.test", statusHome);
+	await setConfig("strategy_api_base", "http://strategy.test", statusHome);
+	const fetch = async (input: string | URL | Request, init?: RequestInit) => {
+		const url = new URL(String(input));
+		if (url.pathname === "/legal/acceptance")
+			return Response.json({
+				accepted: true,
+				acceptedAt: "2026-10-12T00:00:00Z",
+			});
+		if (url.pathname === "/api/binding/readiness")
+			return Response.json({
+				venues: ["hl", "lighter"].map((venue) => ({
+					venue,
+					bound: true,
+					ready: true,
+				})),
+			});
+		if (url.pathname === "/v1/delta-neutral/tasks") {
+			expect(new Headers(init?.headers).get("authorization")).toBe(
+				`Bearer ${secret}`,
+			);
+			return Response.json({ tasks: [], nextCursor: null });
+		}
+		throw new Error(`Unexpected status request ${url}`);
+	};
+	expect(
+		await run(
+			[
+				"keys",
+				"import",
+				"--stdin",
+				"--name",
+				"agent",
+				"--venues",
+				"hl,lighter",
+				"--max-size",
+				"5000",
+			],
+			{
+				home: statusHome,
+				now: () => 1_800_000_000_000,
+				fetch,
+				readStdin: async () => secret,
+				out: () => {},
+				err: () => {},
+			},
+		),
+	).toBe(0);
+	const { call } = await connect({
+		home: statusHome,
+		now: () => 1_800_000_000_000,
+		fetch,
+	});
+	const onboarding = text(
+		await call("onboarding_status", { venues: ["hl", "lighter"] }),
+	);
+	const key = text(await call("key_status"));
+	expect(JSON.parse(onboarding)).toMatchObject({
+		ready: true,
+		key: "ok",
+		prefix: "mobius_01234567-89ab-cdef-0123-456789abcdef…",
+	});
+	expect(JSON.parse(key)).toEqual({
+		prefix: "mobius_01234567-89ab-cdef-0123-456789abcdef…",
+		backend: "file",
+		verified: true,
+	});
+	expect(onboarding).not.toContain(secret);
+	expect(key).not.toContain(secret);
 });
 
 test("MCP stages all seven routes, returns exact stored views, and cannot sign or reject", async () => {

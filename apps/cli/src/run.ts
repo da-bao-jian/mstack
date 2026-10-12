@@ -15,7 +15,7 @@ import { readinessStatus, status, statusApi } from "./commands/status.ts";
 import { configHome, numberFlag, UsageError } from "./config.ts";
 import { paint } from "./format.ts";
 import { withGlossary } from "./glossary.ts";
-import { commandHelp, parseCommand } from "./help.ts";
+import { commandHelp, helpTopic, parseCommand } from "./help.ts";
 import type { HomeServices } from "./home-data.ts";
 import { footer, pct, renderScan, table } from "./render.ts";
 import { renderHistory } from "./render-history.ts";
@@ -288,7 +288,13 @@ export async function run(
 		);
 		const values = parsedValues as Record<string, string | boolean | undefined>;
 		if (values.help) {
-			rt.out(commandHelp(command, definitions[command], help));
+			rt.out(
+				commandHelp(
+					helpTopic(command, positionals, values),
+					definitions[command],
+					help,
+				),
+			);
 			return 0;
 		}
 		const text = (name: string) => values[name] as string | undefined;

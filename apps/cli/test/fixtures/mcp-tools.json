@@ -1,7 +1,7 @@
 [
 	{
 		"name": "funding_scan",
-		"description": "Rank current funding with estimated net APY for a hold period. Returns bounded executable/anywhere views, counts, failures and unmatched markets. Annualization is simple, not compounded. Read-only. This tool never signs, trades, or holds keys.",
+		"description": "Rank current funding with estimated net APY for a hold period. Returns bounded executable/anywhere views, counts, failures and unmatched markets. Annualization is simple, not compounded. Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
 		"inputSchema": {
 			"type": "object",
 			"properties": {
@@ -73,7 +73,7 @@
 	},
 	{
 		"name": "funding_rates",
-		"description": "Read filtered native-market funding observations with hourly and simple annualized rates and snapshot metadata. At least one of venue or market is required; raw rates and listings follow the same filter as the view. Read-only. This tool never signs, trades, or holds keys.",
+		"description": "Read filtered native-market funding observations with hourly and simple annualized rates and snapshot metadata. At least one of venue or market is required; raw rates and listings follow the same filter as the view. Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
 		"inputSchema": {
 			"type": "object",
 			"properties": {
@@ -98,7 +98,7 @@
 	},
 	{
 		"name": "funding_history",
-		"description": "Read settled keyless funding history, interval-weighted averages, coverage, and the best average spread. Lighter has no keyless history. Annualization is simple, not compounded. Read-only. This tool never signs, trades, or holds keys.",
+		"description": "Read settled keyless funding history, interval-weighted averages, coverage, and the best average spread. Lighter has no keyless history. Annualization is simple, not compounded. Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
 		"inputSchema": {
 			"type": "object",
 			"properties": {
@@ -130,7 +130,7 @@
 	},
 	{
 		"name": "explain",
-		"description": "Read bundled Markdown about funding, basis, fees, and Mobius protection. Omit topic to list topics. Read-only. This tool never signs, trades, or holds keys.",
+		"description": "Read bundled Markdown about funding, basis, fees, and Mobius protection. Omit topic to list topics. Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
 		"inputSchema": {
 			"type": "object",
 			"properties": {
@@ -155,7 +155,7 @@
 	},
 	{
 		"name": "task_list",
-		"description": "Read public tasks for an owner. Funding accrued is an estimate. Read-only. This tool never signs, trades, or holds keys.",
+		"description": "Read public tasks for an owner. Funding accrued is an estimate. Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
 		"inputSchema": {
 			"type": "object",
 			"properties": {
@@ -176,7 +176,7 @@
 	},
 	{
 		"name": "task_get",
-		"description": "Read one public task and optional trim/resize logs. Funding accrued is an estimate. Read-only. This tool never signs, trades, or holds keys.",
+		"description": "Read one public task and optional trim/resize logs. Funding accrued is an estimate. Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
 		"inputSchema": {
 			"type": "object",
 			"properties": {
@@ -209,7 +209,7 @@
 	},
 	{
 		"name": "config_get",
-		"description": "Read a local setting: api_base, strategy_api_base, owner, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps, signer, or policy. No setting is changed. Read-only. This tool never signs, trades, or holds keys.",
+		"description": "Read a local setting: api_base, strategy_api_base, owner, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps, signer, or policy. No setting is changed. Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
 		"inputSchema": {
 			"type": "object",
 			"properties": {
@@ -219,6 +219,48 @@
 				}
 			},
 			"required": ["key"],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": true,
+			"destructiveHint": false,
+			"idempotentHint": true,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "onboarding_status",
+		"description": "Read the onboarding checklist: legal acceptance, venue readiness, safe key prefix and verification state. Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {
+				"owner": {
+					"type": "string",
+					"description": "Public 20-byte 0x owner address. Defaults to the owner config key."
+				},
+				"venues": {
+					"type": "array",
+					"items": { "type": "string" },
+					"description": "Trade venue IDs: hl, lighter, lighter-mainnet, aster. Omit for all."
+				}
+			},
+			"required": [],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": true,
+			"destructiveHint": false,
+			"idempotentHint": true,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "key_status",
+		"description": "Read the local key prefix, storage backend and live verification result. The secret is never returned. Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {},
+			"required": [],
 			"additionalProperties": false
 		},
 		"annotations": {
@@ -455,7 +497,7 @@
 	},
 	{
 		"name": "proposal_list",
-		"description": "Read local Proposal views, including their stored preflight results. Does not refresh or authorize them. Read-only. This tool never signs, trades, or holds keys.",
+		"description": "Read local Proposal views, including their stored preflight results. Does not refresh or authorize them. Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
 		"inputSchema": {
 			"type": "object",
 			"properties": {},
@@ -471,7 +513,7 @@
 	},
 	{
 		"name": "proposal_get",
-		"description": "Read one local Proposal view with its exact message, digest, expiry, body, and stored preflight. Does not refresh or authorize it. Read-only. This tool never signs, trades, or holds keys.",
+		"description": "Read one local Proposal view with its exact message, digest, expiry, body, and stored preflight. Does not refresh or authorize it. Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
 		"inputSchema": {
 			"type": "object",
 			"properties": {

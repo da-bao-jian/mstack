@@ -5,6 +5,30 @@ Version history comes from the package reports; dates describe implementation,
 not a claim that public release tags or artifacts were published.
 
 <!-- release-start -->
+## [0.4.0] - 2026-10-12
+
+### Added
+
+- One-visit `mob onboard` flow with the Mobius API page, legal and venue checklist, scoped key import, native batch ceremonies, and a Ready summary.
+- Local API-key custody through Keychain, Secret Service, or a private file, with import, show, list, revoke, and delete commands.
+- Strategy API task reads and idempotent open, cancel, close, and resize submission through `mob submit`.
+- Manual and opt-in auto submission policies with exact-id hook enforcement.
+- `/mob-keys`, session-aware setup, bind, open, manage, and close skills for Claude Code and Codex.
+- Read-only MCP tools `onboarding_status` and `key_status`.
+- Journey E smoke coverage for onboarding, stdin import, open, submit, status, and key confinement.
+
+### Changed
+
+- Make browser-page onboarding the default setup path. Keep binding repair and native onboarding as wallet-signing paths.
+- Report relative ceremony expiry in `mob proposals` and make help coverage exhaustive for parser commands and subcommands.
+- Prevent the onboarding Ready screen from showing contradictory key and legal `not checked` rows.
+- Update custody, architecture, usage, and readiness documentation for the scoped API key.
+
+### Security
+
+- Never print, persist in Proposals, or return the API key through MCP. Positional key import is refused; agent import uses stdin only.
+- The scoped key cannot withdraw, bind venues, approve fees, accept legal terms, or create keys.
+
 ## [0.3.0] - 2026-10-11
 
 ### Added

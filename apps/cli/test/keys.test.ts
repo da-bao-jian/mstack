@@ -404,7 +404,7 @@ test("sign stores a create answer but persists and prints only its prefix", asyn
 	});
 	await Promise.all(wallets);
 	expect(result.code).toBe(0);
-	expect(clientHeader).toBe("mstack/0.3.0");
+	expect(clientHeader).toBe("mstack/0.4.0");
 	expect(`${result.out}\n${result.err}`).not.toContain(key);
 	expect(result.out).toContain("stored in file");
 	const proposalBytes = await readFile(

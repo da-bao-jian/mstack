@@ -1,5 +1,8 @@
 # Venue capabilities and ceremonies
 
+The default page path binds venues during `mob onboard`. This reference covers
+the repair path and `mob onboard --native`.
+
 | Venue | Key capabilities | Limits and expiry |
 |---|---|---|
 | HL | Trade, cancel, adjust margin | Cannot withdraw; 179 days |

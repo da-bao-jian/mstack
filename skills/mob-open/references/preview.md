@@ -10,3 +10,7 @@ mode. Protected Aster opens fail closed without maintenance-margin data.
 Protection cannot guarantee against liquidation. Funding can flip, and losing
 one leg leaves unhedged exposure. Auto-close reacts to funding; it is not a
 guaranteed profit or loss limit.
+
+With a stored key whose scope covers both legs, open stages an `api-submit`
+Proposal. The exact next line is `mob submit p-N`. Submission acknowledgement
+is not execution confirmation.

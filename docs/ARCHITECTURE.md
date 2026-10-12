@@ -1,7 +1,8 @@
 # Architecture
 
-mstack puts public funding reads and manual Proposal workflows behind one `mob`
-binary. CLI, skills, and stdio MCP share the same data adapters, math, and preflight.
+mstack puts public funding reads, scoped API-key trading, and manual wallet
+Proposals behind one `mob` binary. CLI, skills, and stdio MCP share adapters,
+math, preflight, and local Proposal storage.
 
 ```mermaid
 flowchart TD
@@ -10,12 +11,17 @@ flowchart TD
   CLI --> Core[Shared workspace packages]
   Stdio --> Core
   Core --> Venues[Public venue APIs]
-  Core --> Mobius[Existing Mobius APIs]
+  Core --> FundingServer[funding.mob.exchange<br/>public reads + wallet writes]
+  Core --> Strategy[api.mob.exchange<br/>key-authenticated task writes]
+  Core --> Keys[OS key store or private 0600 file]
   Core --> Proposal[Local Proposal store]
   Human[Human authorizes exact id] --> Sign[mob sign]
   Proposal --> Sign
   Sign --> Wallet[Browser wallet / WalletConnect / terminal keystore]
   Wallet --> Submit[Submit exact approved request]
+  Proposal --> ApiSubmit[mob submit p-N]
+  Keys --> ApiSubmit
+  ApiSubmit --> Strategy
 ```
 
 ## One binary
@@ -45,19 +51,23 @@ W14 and W16 add no packages; see [third-party notices](../THIRD_PARTY_NOTICES.md
 
 `packages/funding` fetches and validates public venue data. `packages/opportunities`
 matches base tickers and ranks net funding estimates. `packages/mobius-client`
-contains typed routes and message builders. `packages/proposals`, `packages/signers`,
-and `packages/liquidation` own local intent, manual signing, and protection math.
+contains funding-server routes and message builders. `packages/mobius-api` owns
+the Strategy API contract. `packages/keys` owns local key custody.
+`packages/proposals`, `packages/signers`, and `packages/liquidation` own local
+intent, manual signing, and protection math.
 
-## Proposals and signing
+## Proposals, submission, and signing
 
-Mutation commands stage a Proposal and stop. The store pins the request, exact
-message or typed data, digest, local preflight, owner, and five-minute expiry.
-Signers cannot substitute different bytes after review. Policy, expiry, recovery,
-and single-use checks fail closed. Submission does not prove execution.
+Mutation commands stage a Proposal and stop. Wallet Proposals pin the request,
+exact message or typed data, digest, local preflight, owner, and five-minute
+expiry. API Proposals pin the Strategy API body and an idempotency key before
+the first send. Policy, expiry, owner, and single-use checks fail closed.
+Submission does not prove execution.
 
-Skills require the latest user message to name and authorize the exact id before
-launching browser signing. Keystore secrets belong in the human's terminal.
-MCP has no signing, rejection, or configuration-write tool.
+Manual policy requires the latest user message to name the exact id before
+`mob submit` or browser signing. Auto policy permits only API Proposals inside
+the stored key scope and cap. Keystore secrets belong in the human's terminal.
+MCP has no key import/reveal, submission, signing, rejection, or config-write tool.
 See [security boundaries](../SECURITY.md) and [usage](USAGE.md).
 
 ## Fail-fast data
@@ -68,16 +78,24 @@ Native market strings survive matching. Annualization is simple, not compounded.
 Fees and mark-based entry costs are estimates; marks do not establish fill depth.
 Tests use recorded responses, injected clocks, and local fake servers.
 
-## Existing servers only
+## Funding-server and Strategy API paths
 
-The P1 build uses the existing Mobius routes. This repository makes no server changes.
-Preflight runs locally, using readiness, venue metadata, marks, and shared math;
-it is not a new server preview endpoint. Server validation remains the final gate.
-The CLI does not set leverage or margin mode. Protection uses explicit assumed
-leverage and labels it unverified. Unsupported maintenance-margin data fails closed.
+The funding-server path uses wallet-signed requests for legal acceptance,
+binding, key administration, protection, neutralization, auto-close, and
+size-mismatch edits. Public task reads remain available by owner address.
 
-The hosted snapshot, hosted MCP, server nonces, and session grants remain future
-work. Planned PRD examples must not be read as implemented routes or guarantees.
+The Strategy API path uses `Authorization: Bearer <key>` for task list/get and
+open, cancel, close, and resize. Every POST uses a Proposal-bound idempotency
+key. The key is limited to named venues and a maximum USD size per leg. It
+cannot withdraw, bind venues, approve fees, accept legal terms, or create keys.
+Client errors redact the bearer.
+
+Both paths share local preflight using readiness, venue metadata, marks, and
+shared math. Server validation remains the final gate. The CLI does not set
+leverage or margin mode. Unsupported maintenance-margin data fails closed.
+
+The hosted snapshot, hosted MCP, and server nonces remain future work. Planned
+PRD examples must not be read as implemented routes or guarantees.
 
 ## Plugin root and packaging trade-off
 

@@ -10,6 +10,7 @@ import type { JsonObject, ProposalInput } from "@mstack/proposals";
 import { readSecretFromTty, type SecretReader } from "@mstack/signers";
 import { getAddress } from "viem";
 import pkg from "../package.json";
+import type { Runtime as CommandRuntime } from "./commands/runtime.ts";
 import {
 	getConfig,
 	numberFlag,
@@ -299,6 +300,32 @@ export function keyListTable(answer: unknown): string {
 			];
 		}),
 	);
+}
+
+export async function keyStatus(rt: CommandRuntime) {
+	const config = await readConfig(rt.home);
+	if (!config.owner) throw new UsageError(SETUP_FIRST);
+	const store = await cliKeyStore(rt);
+	const description = await store.describe(config.owner);
+	if (!description)
+		return {
+			prefix: null,
+			backend: store.backend,
+			verified: false,
+		};
+	const stored = await store.get(config.owner);
+	if (!stored) throw new Error("Key disappeared during inspection");
+	const check = await verifyApiKey(
+		description.meta.apiBase,
+		stored.key,
+		rt.fetch,
+		rt.now,
+	);
+	return {
+		prefix: description.prefix,
+		backend: description.backend,
+		verified: check.status === "ok",
+	};
 }
 
 export async function keysCommand(

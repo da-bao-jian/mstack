@@ -207,6 +207,8 @@ test("non-TTY onboard requires owner and imported key makes the checklist Ready"
 	expect(ready.out).toContain(
 		"Ready · 2 venues bound · key mobius_01234567-89ab-cdef-0123-456789abcdef… · cap $5,000",
 	);
+	expect(ready.out).not.toMatch(/^Key\s+.*not checked$/m);
+	expect(ready.out).not.toMatch(/^Legal\s+.*not checked$/m);
 	expect(ready.out.endsWith("Ready")).toBe(true);
 });
 

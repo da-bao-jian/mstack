@@ -29,7 +29,7 @@ test("verification calls the one allowed endpoint with bearer auth", async () =>
 	expect(request).toEqual({
 		url: "https://api.mob.exchange/v1/delta-neutral/tasks?limit=1",
 		authorization: `Bearer ${key}`,
-		client: "mstack/0.3.0",
+		client: "mstack/0.4.0",
 		redirect: "error",
 	});
 	expect(result).toEqual({ status: "ok", latencyMs: 0 });

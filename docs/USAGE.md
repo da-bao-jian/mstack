@@ -41,7 +41,7 @@ Scans show Executable on Mobius (top five) and Best anywhere (top ten), each sor
 
 ## Use from any MCP client
 
-`mob mcp` serves the same command results over stdio. The server reads public data and stages local Proposals. It never signs, submits mutations, holds keys, rejects Proposals, or changes config. The Claude Code plugin registers it through the bundled `.mcp.json`.
+`mob mcp` serves the same command results over stdio. The server reads public data, onboarding state, and safe key status, and stages local Proposals. It never imports, submits, signs, rejects, reveals a key, or changes config. The Claude Code plugin registers it through the bundled `.mcp.json`.
 
 For a separate Claude Code registration, with `mob` on PATH:
 
@@ -62,7 +62,7 @@ For Cursor, Claude Desktop, or Windsurf, add this to the client's MCP server set
 }
 ```
 
-The seven public/config read tools are `funding_scan`, `funding_rates`, `funding_history`, `explain`, `task_list`, `task_get`, and `config_get`. Task tools use the public `owner` config key when an owner is omitted; set it yourself with `mob config set owner 0x…`. There is no configuration write tool. Tool calls have a 60-second deadline, and snapshots use the CLI's 30-second timeout. Venue failures remain visible in `failed`; command errors become MCP tool errors.
+The nine read tools are `funding_scan`, `funding_rates`, `funding_history`, `explain`, `task_list`, `task_get`, `config_get`, `onboarding_status`, and `key_status`. `onboarding_status` returns the legal, venue, and key checklist. `key_status` returns only prefix, backend, and verification state. Task tools use the public `owner` config key when an owner is omitted. There is no configuration write tool. Tool calls have a 60-second deadline, and snapshots use the CLI's 30-second timeout. Venue failures remain visible in `failed`; command errors become MCP tool errors.
 
 The nine Proposal tools share the CLI staging and preflight code:
 
@@ -77,15 +77,31 @@ The nine Proposal tools share the CLI staging and preflight code:
 | `proposal_list` | No arguments |
 | `proposal_get` | `id` |
 
-A staging call returns `{ proposal, message }`. The view contains the exact message, owner, purpose, route and stored body, preflight, expiry, digest, and status. It omits signatures. Its message says: "Nothing is signed or sent until a human runs `mob sign <id>`." List returns these entries under `proposals`; get and list do not refresh preflight or authorize anything. Staging requires an owner, an available signer, manual policy, and passing preflight. Failed preflight stages nothing. Propose tools are marked as local writes and non-idempotent: repeating one creates a new Proposal. There is no sign, reject, or config-set tool.
+A staging call returns `{ proposal, message }`. The view contains the exact message, owner, purpose, route and stored body, preflight, expiry, digest, and status. It omits signatures and keys. An API Proposal names `mob submit <id>`; a wallet Proposal names `mob sign <id>`. List returns entries under `proposals`; get and list do not refresh preflight or authorize anything. Failed preflight stages nothing. Propose tools are local writes and non-idempotent: repeating one creates another Proposal. There is no import, submit, sign, reject, key-reveal, or config-set tool.
 
 `funding_scan` defaults to `{ holdDays, observedAt, source, annualizationMethod, counts, failed, unmatched, view: { executable, anywhere } }`. It omits the full `opportunities` array. `counts` contains `rates`, `opportunities`, `qualifying`, `executable`, `thinHidden`, and `unmatched`. These totals cover the fetched snapshot and full ranking; `thinHidden` counts hidden pairs after view filters and before top limits. Both `top` and `topExec` are capped at 200. Set `includeFull: true` only when you need the full opportunity array; the response can exceed 3 MB.
 
 `funding_rates` requires at least one of `venue` or `market`. Its raw rates, listings, and view follow those filters; failures and unmatched markets remain visible. CLI `mob rates` still permits an unfiltered raw snapshot. Funding output uses simple annualization and estimated fees and marks. After building, `MOB_LIVE=1 bun run live:mcp` checks the compiled server and prints its default payload size.
 
-## Set up and bind venues
+## Onboard and manage keys
 
-`mob setup` asks for your public owner address, signer (`browser`, `walletconnect`, or `keystore`), policy, auth API base, and legal signing chain. Defaults are `manual`, `https://auth.mob.exchange`, and chain 97. It never creates or unlocks a keystore. If you choose keystore, follow the printed creation step yourself in your terminal.
+Run `mob onboard`. It always prints the Mobius API page URL and then reads legal acceptance, venue readiness, and local key state. An agent shell prints once. A terminal watches every five seconds by default. The page flow connects the wallet, accepts legal terms, binds venues, and creates one key.
+
+Create the key with only the required venues and a modest USD cap per leg. The key can open, cancel, close, and resize positions inside those limits. It cannot withdraw, bind venues, approve fees, accept legal terms, or create another key. It has no expiry.
+
+For agent-mediated import, paste the key into chat. The chat transcript and agent session logs retain that paste. The agent must not echo it or put it on argv, in a file, or in an environment variable. It stores through stdin:
+
+```sh
+printf '%s' "$KEY" | mob keys import --stdin --name agent --venues hl,lighter --max-size 5000
+```
+
+A human can run `mob keys import` and paste into the hidden `/dev/tty` prompt. `mob keys show` reports prefix, backend, scope, cap, and verification. `mob keys delete` removes only the local copy. `mob keys list` and `mob keys revoke <uuid>` are wallet Proposals; revoke ends the server key. Run `mob onboard` again and require its `Ready · …` line.
+
+## Native onboarding and binding repair
+
+The default browser path does not need local wallet signing. Use `mob bind --all` for batch repair or `mob onboard --native` for terminals without the API page. These stage a durable `c-N` ceremony. The latest user message must name that exact ceremony before browser or WalletConnect signing. A keystore ceremony belongs in the human's own terminal.
+
+The older `mob setup` command configures a manual signer and can stage legal acceptance. `mob bind <venue>` remains the single-venue repair path.
 
 Setup checks your current legal acceptance. If needed, it stages **Accept Mobius legal terms**, shows the exact typed message, expiry and digest, and stops. Review the terms and privacy links before signing. An unconfigured legal service (503) is reported without discarding your settings. Stale terms (409) produce a new Proposal that needs separate approval. Locked policy saves settings without offering a signature.
 
@@ -104,15 +120,17 @@ For HL browser staging, a connection-only page first reads your current wallet c
 
 Use `mob status --readiness` to inspect each venue and its separate “rebind allowed” column. `mob setup` configures the CLI; the repository's `./setup` script installs skills and the binary. `bun run smoke:bind` exercises setup and all binding deployments against local fake servers, with no live writes.
 
-## Open and manage from your agent
+## Open, submit, and manage from your agent
 
-Use `/mob-setup` for public wallet configuration and legal acceptance, then `/mob-bind` for each venue. Once ready, use `/mob-open`, `/mob-manage`, or `/mob-close`. The flow asks for your market and venues, size, protection and assumed leverage, and auto-close choices. A protected open prints **"assumed leverage, not verified on the venue"**; it does not change venue leverage or margin mode.
+Use `/mob-setup` for page onboarding and key import. Use `/mob-bind` only for repair or native onboarding. Once Ready, use `/mob-open`, `/mob-manage`, or `/mob-close`. The flow asks for market, venues, size, and controls. A protected open prints **"assumed leverage, not verified on the venue"**; it does not change venue leverage or margin mode.
 
-The skill stages one Proposal and shows its purpose, venues, size, controls, preflight summary, expiry, exact message, and digest. Then it **stops and asks**. For example, after reviewing `p-7`, reply "Sign p-7 in the browser wallet". The agent can launch that browser signing flow only when your latest message names `p-7` and authorizes it. You review the page and approve in your wallet. A vague "yes" or an older approval does not qualify.
+With a matching key scope and cap, open, cancel, close, and resize stage an `api-submit` Proposal. The exact next command is `mob submit p-7`. Under default `manual` policy, the agent can run it only when your latest message names `p-7`. Under opt-in `auto`, the agent may submit inside the key limits and must say that it did so. API acceptance is submitted, not confirmed; use `mob status` for worker state.
+
+Neutralize, protection, funding auto-close, and size-mismatch edits are not in the Strategy API. They still stage wallet Proposals. The latest user message must name the exact id before browser signing. A vague "yes" or older approval does not qualify.
 
 **Keystore signing needs your own terminal.** If you choose it, run `mob sign p-7 --with keystore` yourself. The agent never runs that path or asks for your passphrase. Rejecting a Proposal also requires your request. After submission, the skill reports **"submitted, not confirmed"** and points to `/mob-status`.
 
-The Claude Code plugin's Bash hook checks literal `mob sign <id>` calls against the latest user message in its transcript. It blocks missing ids, missing transcripts, and malformed inputs. The hook is a guard, not a shell sandbox; it does not inspect arbitrary scripts or enforce consent outside Claude's Bash tool. Codex uses the same skill rules in prose. CLI policy, expiry, owner recovery, and one-signature checks still apply.
+The Claude Code plugin's Bash hook checks literal `mob sign <id>` and manual `mob submit <id>` calls against the latest user message. Auto submit is allowed only for a stored `api-submit` Proposal. The hook allows stdin key import; the CLI refuses a positional key. The hook is a guard, not a shell sandbox. Codex uses the same skill rules in prose. CLI policy, expiry, owner, and single-use checks still apply.
 
 ## Setup flags and signature review
 
@@ -131,7 +149,7 @@ The browser page shows the purpose, account match, wallet icons, exact message w
 
 ## Installation maintenance
 
-`./setup --host codex` links nine skill folders and the shared binary directory into `~/.agents/skills`.
+`./setup --host codex` links ten skill folders and the shared binary directory into `~/.agents/skills`.
 When `~/.codex/skills` already exists, setup adds the same links there for older Codex versions.
 New installations do not create that legacy directory.
 After updating a legacy-only installation, rerun `./setup --host codex` to create

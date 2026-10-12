@@ -1,0 +1,2 @@
+{"type":"user","message":{"role":"user","content":"Here is the scoped key you asked me to paste: mobius_01234567-89ab-cdef-0123-456789abcdef.abababababababababababababababababababababababababababababababab"}}
+{"type":"assistant","message":{"role":"assistant","content":"I will import it through stdin without repeating it."}}

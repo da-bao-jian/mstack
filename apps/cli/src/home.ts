@@ -22,6 +22,7 @@ export interface HomeOptions {
 	ascii?: boolean;
 	offline?: boolean;
 	json?: boolean;
+	suppressKeyLegal?: boolean;
 }
 const clean = (text: string) => text.replace(/[\p{Cc}\p{Cf}]/gu, "");
 function readText<T>(
@@ -141,8 +142,12 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 					)
 				: data.policy,
 		],
-		["Key", keyText(data)],
-		["Legal", legalText(data)],
+		...(options.suppressKeyLegal
+			? []
+			: ([
+					["Key", keyText(data)],
+					["Legal", legalText(data)],
+				] as [string, string][])),
 		[
 			"Venues",
 			homeVenues

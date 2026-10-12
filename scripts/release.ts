@@ -60,7 +60,7 @@ export async function release(
 ) {
 	const root = options.root ?? resolve(import.meta.dir, "..");
 	if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version))
-		throw new Error("Use a stable version such as 0.3.0");
+		throw new Error("Use a stable version such as 0.4.0");
 	if (
 		await command(
 			root,

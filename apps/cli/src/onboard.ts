@@ -5,6 +5,7 @@ import { MobiusClient } from "@mstack/mobius-client";
 import { openSuppressed, openUrl } from "@mstack/signers";
 import { getAddress } from "viem";
 import pkg from "../package.json";
+import type { Runtime as CommandRuntime } from "./commands/runtime.ts";
 import {
 	getConfig,
 	ownerAddress,
@@ -18,9 +19,9 @@ import { cliKeyStore } from "./key-store.ts";
 import type { Runtime } from "./run.ts";
 
 const venuesAllowed = ["hl", "lighter", "aster", "lighter-mainnet"] as const;
-type Venue = (typeof venuesAllowed)[number];
+export type OnboardingVenue = (typeof venuesAllowed)[number];
 type Readiness = {
-	venue: Venue;
+	venue: OnboardingVenue;
 	bound: boolean;
 	ready: boolean;
 	issue?: string;
@@ -31,11 +32,11 @@ const handoff = [
 	"A human at a terminal may instead run `mob keys import` and paste it hidden.",
 ];
 
-function venuesFlag(value: unknown): Venue[] {
+function venuesFlag(value: unknown): OnboardingVenue[] {
 	if (value === undefined) return [...venuesAllowed];
 	const venues = String(value)
 		.split(",")
-		.map((item) => item.trim()) as Venue[];
+		.map((item) => item.trim()) as OnboardingVenue[];
 	if (
 		venues.length < 1 ||
 		new Set(venues).size !== venues.length ||
@@ -53,7 +54,7 @@ function object(value: unknown): Record<string, unknown> {
 	return value as Record<string, unknown>;
 }
 
-function readiness(value: unknown, selected: Venue[]): Readiness[] {
+function readiness(value: unknown, selected: OnboardingVenue[]): Readiness[] {
 	const root = object(value);
 	const raw = root.venues ?? root.readiness;
 	const rows: Record<string, unknown>[] = Array.isArray(raw)
@@ -114,7 +115,7 @@ async function maybeOpen(
 	await rename(temporary, path);
 }
 
-type Snapshot = {
+export type OnboardingSnapshot = {
 	legal: boolean;
 	legalError?: string;
 	venues: Readiness[];
@@ -124,10 +125,10 @@ type Snapshot = {
 };
 
 async function snapshot(
-	selected: Venue[],
+	selected: OnboardingVenue[],
 	owner: string,
-	rt: Runtime,
-): Promise<Snapshot> {
+	rt: CommandRuntime,
+): Promise<OnboardingSnapshot> {
 	const config = await readConfig(rt.home);
 	const authBase = String(getConfig(config, "auth_base"));
 	const apiBase = String(getConfig(config, "api_base"));
@@ -176,7 +177,7 @@ async function snapshot(
 	};
 }
 
-function render(state: Snapshot, rt: Runtime): string {
+function render(state: OnboardingSnapshot, rt: Runtime): string {
 	const ok = (text: string) => paint(text, "success", rt);
 	const warning = (text: string) => paint(text, "warning", rt);
 	const danger = (text: string) => paint(text, "danger", rt);
@@ -199,7 +200,7 @@ function render(state: Snapshot, rt: Runtime): string {
 	return lines.join("\n");
 }
 
-function next(state: Snapshot, tty: boolean): string {
+function next(state: OnboardingSnapshot, tty: boolean): string {
 	const incomplete = state.venues.find((venue) => !venue.ready);
 	if (incomplete) return `Next: bind ${incomplete.venue} on the page`;
 	if (state.key === "none")
@@ -208,6 +209,24 @@ function next(state: Snapshot, tty: boolean): string {
 			: "Next: paste the key in the chat";
 	if (state.key !== "ok") return "Next: mob keys import --stdin";
 	return "Ready";
+}
+
+export async function onboardingStatus(
+	options: { owner?: string; venues?: string[] },
+	rt: CommandRuntime,
+) {
+	const config = await readConfig(rt.home);
+	const configuredOwner = options.owner ?? config.owner;
+	if (!configuredOwner) throw new UsageError("Run mob onboard first.");
+	const owner = getAddress(ownerAddress(configuredOwner));
+	const selected = venuesFlag(options.venues?.join(","));
+	const state = await snapshot(selected, owner, rt);
+	return {
+		owner,
+		...state,
+		ready: next(state, false) === "Ready",
+		next: next(state, false),
+	};
 }
 
 export async function onboard(
@@ -253,7 +272,7 @@ export async function onboard(
 	}
 	if (watch) rt.out(render(state, rt));
 	if (next(state, tty) === "Ready") {
-		await home({ offline: true }, rt);
+		await home({ offline: true, suppressKeyLegal: true }, rt);
 		const cap = state.cap?.toLocaleString("en-US") ?? "unknown";
 		rt.out(
 			`Ready · ${state.venues.filter((venue) => venue.ready).length} venues bound · key ${state.prefix} · cap ${cap === "unknown" ? "unknown" : `$${cap}`}`,

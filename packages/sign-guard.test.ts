@@ -129,6 +129,37 @@ test("malformed hook input fails closed; other commands need no transcript", asy
 		expect((await hook(command)).code).toBe(0);
 });
 
+test("paste-then-import is allowed through stdin, while argv import is refused by the CLI", async () => {
+	const key = `mobius_01234567-89ab-cdef-0123-456789abcdef.${"ab".repeat(32)}`;
+	expect(
+		await hook(
+			`printf '%s' "$KEY" | mob keys import --stdin --name agent --venues hl,lighter --max-size 5000`,
+			"paste-import.jsonl",
+		),
+	).toEqual({ code: 0, out: "", err: "" });
+	expect(await hook(`mob keys import ${key}`, "paste-import.jsonl")).toEqual({
+		code: 0,
+		out: "",
+		err: "",
+	});
+	const proc = Bun.spawn([binary, "keys", "import", key], {
+		env: { PATH: "/nonexistent", MOB_HOME: installed },
+		stdout: "pipe",
+		stderr: "pipe",
+	});
+	const [code, out, err] = await Promise.all([
+		proc.exited,
+		new Response(proc.stdout).text(),
+		new Response(proc.stderr).text(),
+	]);
+	expect(code).toBe(1);
+	expect(out).toBe("");
+	expect(err).toContain(
+		"pass the key on stdin or type it at the prompt; never on the command line",
+	);
+	expect(err).not.toContain(key);
+});
+
 test("manual submit needs the exact id; auto allows only api-submit and still blocks sign", async () => {
 	const home = await mkdtemp(join(tmpdir(), "mstack-guard-policy-"));
 	try {

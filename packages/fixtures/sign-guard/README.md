@@ -7,3 +7,8 @@ next sign command. Thinking, attachments, IDs and unrelated events were removed.
 The local checkout path was replaced with `/tmp/mstack-qa`.
 Content block shapes, roles and the sidechain flag are preserved.
 The old last-user-event rule selects the tool result and fails authorization.
+
+`paste-import.jsonl` models the accepted onboarding turn. The user pastes a
+scoped API key, and the agent imports it only through `mob keys import --stdin`.
+The hook does not treat key import as signing authority. The CLI itself refuses
+a positional key.
