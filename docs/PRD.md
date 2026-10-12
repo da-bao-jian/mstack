@@ -177,49 +177,7 @@ $ mob scan --size 5000 --top 5
 
 ## 5. Execution layer: the Mobius API as it is today
 
-Verified against `~/dev/mobius` at `33ed2ece` (funding-server `src/server/index.ts`, `routes/arbitrage.ts`, `routes/{hl,lighter,aster}.ts`). The agent stack targets this surface unchanged in P1, plus the additions in section 10.
-
-### 5.1 Global facts the design rests on
-
-- **Auth is a wallet signature over plain text.** Mutations send `{…, timestamp, signature}`. The server recovers the signer with viem `hashMessage` + `recoverAddress` (EIP-191 `personal_sign`). No EIP-712 domain, no chain id, EOAs only. The signed text is human-readable, which is good for a sign page.
-- **No API keys, no sessions, no rate limits, CORS `*`.** A CLI with no `Origin` header is admitted today. Rate limits are a P1 server item now that a CLI exists.
-- **Timestamp window** is `|now − ts| ≤ 300 s`. Proposals therefore expire after 5 minutes.
-- **Replay.** `create` has a globally unique `open_nonce`. `close`, `neutralize`, `resize`, `auto-close`, `liq-protection` and `size-mismatch-auto-close` carry no nonce and can be replayed inside the window. Resize uses absolute targets, so a replay is a no-op. The others are idempotent in effect. Nonces everywhere is a cheap P2 hygiene item.
-- **One mutation per owner at a time** (migration 016). A collision is a 409.
-- **All GET reads are public by owner address.** `list`, `task`, `liq-trims`, `resizes`, and the binding `credential` routes. T0 can read any address's tasks. This is a feature for the agent and a privacy fact to state in the README.
-- **The worker never deposits, withdraws or transfers.** It places and closes orders, trims, resizes, neutralizes, and adjusts isolated margin with the stored bot keys.
-- **Leverage and margin mode are not applied by the server.** The signed `longLeverage`/`shortLeverage`/`*MarginMode` values are stored as metadata; a browser-local trading key applies them (`useVenueMarginControl.ts:88-101`). A headless client has no such key. Section 10 item 2 moves this to the server.
-
-### 5.2 Routes the agent uses
-
-Messages are space-joined segments. Optional segments appear only when the key is present in the body, in the fixed order shown. Numbers are JS `Number → String`, so a client must reproduce `0.1`, `1e-7`, `5` (never `5.0`).
-
-| Route | Signed text (exact) |
-|---|---|
-| `POST /api/arbitrage/create` | `Open arbitrage task: long=${longVenue}:${longMarket} short=${shortVenue}:${shortMarket} sizeUsd=${n} longPrice=${n} shortPrice=${n} minFundingApy=${n} nonce=${nonce} timestamp=${ts}` then optional ` autoClose=on\|off`, ` longLeverage=`, ` shortLeverage=`, ` longMarginMode=cross\|isolated`, ` shortMarginMode=`, ` maxSpreadBps=`, ` liqProtectionPct=`, ` sizeMismatchPct=`. Always sign `minFundingApy=0` when omitting it. |
-| `POST /api/arbitrage/close` | `Close arbitrage task: ${taskId} timestamp=${ts}` |
-| `POST /api/arbitrage/neutralize` | `Neutralize arbitrage task: ${taskId} timestamp=${ts}` |
-| `POST /api/arbitrage/resize` | `Resize arbitrage task: ${taskId} timestamp=${ts}` then ` longTarget=`, ` shortTarget=`, ` disableSizeMismatchAutoClose=on` |
-| `POST /api/arbitrage/liq-protection` | `Set arbitrage liquidation protection: ${taskId} liqProtectionPct=${pct\|off} timestamp=${ts}` |
-| `POST /api/arbitrage/auto-close` | `Set arbitrage auto-close: ${taskId} autoClose=on\|off minFundingApy=${n} timestamp=${ts}` |
-| `POST /api/arbitrage/size-mismatch-auto-close` | `Set size mismatch auto-close: ${taskId} enabled=on\|off thresholdPct=${t} timestamp=${ts}` (`t` is `0` when disabled) |
-| `POST /api/complex-orders/create` (P3) | `Open complex order v3: …` multi-leg / TWAP; cancel is `Cancel complex order v3: ${orderId} timestamp=${ts}` |
-| `POST /api/binding/hl/prepare` | `Prepare HL binding nonce=${nonce} timestamp=${ts}` |
-| `POST /api/binding/aster/prepare` | `Prepare Aster binding nonce=${nonce} timestamp=${ts}` |
-| `POST /api/binding/lighter/prepare` | `Prepare Lighter binding accountIndex=${i} chainId=${c} nonce=${nonce} timestamp=${ts}` plus ` venue=${venue}` only when sent. Always send `chainId` (304 mainnet, 466324 Robinhood); the server default is wrong for mainnet. |
-| `POST /api/binding/lighter/integrator-approve` | `Approve zero-fee Lighter integrator owner=${owner} venue=${venue} integratorIndex=${i} nonce=${nonce} timestamp=${ts}` |
-| Reads (unsigned) | `GET /api/arbitrage/{rates,task,list,liq-trims,resizes,alert-dismissals}`, `GET /api/binding/{hl,aster,lighter}/{status,credential}`, `GET /api/binding/rebind-check` |
-
-Venues: `aster | hl | lighter | lighter-mainnet`. Task statuses: `pending, ordering, running, neutralizing, trimming, resizing, mismatch_checking, leg_gone_checking, closing, closed, failed`.
-
-The frontend mirrors of these builders (`frontend/src/features/delta-neutral/lib/*Message.ts`) are the reference implementation. mstack vendors them with byte-exact tests, the same way the frontend and server already pin each other.
-
-### 5.3 Gotchas to carry
-
-- The binding `status` GETs have side effects: they finalize the credential.
-- `alert-dismiss` and both `builder-finalize` routes are unsigned POSTs.
-- `GET /api/binding/lighter/credential` returns an active session's `messageToSign` and `txInfo` to anyone who knows the owner address.
-- `funding-server/README.md` is stale (shows `chainId: 97`, a signature-less Lighter prepare). The OpenAPI spec in section 10 replaces it.
+Removed from the public repository on 2026-10-13. This section described the funding server's routes, global facts and gotchas as mstack found them, including weaknesses that belong in a private tracker rather than a public document. The Mobius team holds the original in its internal knowledge base; `docs/MOBIUS-ASKS.md` carries the items that are still open.
 
 ## 6. Signing and custody
 
