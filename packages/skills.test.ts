@@ -930,37 +930,64 @@ test.each(["skills", "skills-codex"])(
 	},
 );
 
-test("router splash is ASCII, delimited and limited to once per hour for both hosts", async () => {
+test("shared splash greets once per owner or home while the router always greets", async () => {
 	const { home, path } = await preambleHome();
-	const claude = preamble(outputs.get("skills/mob/SKILL.md") as string, home);
-	const codex = preamble(
+	const claudeSkill = preamble(
+		outputs.get("skills/mob-scan/SKILL.md") as string,
+		home,
+	);
+	const codexSkill = preamble(
+		outputs.get("skills-codex/mob-status/SKILL.md") as string,
+		home,
+	);
+	const claudeRouter = preamble(
+		outputs.get("skills/mob/SKILL.md") as string,
+		home,
+	);
+	const codexRouter = preamble(
 		outputs.get("skills-codex/mob/SKILL.md") as string,
 		home,
 	);
-	const first = await command(["/bin/bash", "-c", claude], home, path);
+	const first = await command(["/bin/bash", "-c", claudeSkill], home, path);
 	const block = /<<<MOB\n([\s\S]*?)\nMOB>>>/.exec(first.out);
 	expect(block).not.toBeNull();
 	expect(block?.[1]).toMatch(/^[ -~\n]+$/);
 	expect(block?.[1]).toContain("##");
-	const stamp = join(home, ".mob/hello-stamp");
+	const stamp = join(home, ".mob/hello-home-stamp");
 	expect(Number(await readFile(stamp, "utf8"))).toBeGreaterThan(0);
 	expect(
-		(await command(["/bin/bash", "-c", codex], home, path)).out,
+		(await command(["/bin/bash", "-c", codexSkill], home, path)).out,
 	).not.toContain("<<<MOB");
+	for (const router of [claudeRouter, codexRouter])
+		expect(
+			(await command(["/bin/bash", "-c", router], home, path)).out,
+		).toContain("<<<MOB");
 	await writeFile(stamp, `${Math.floor(Date.now() / 1000) - 3601}\n`);
 	const concurrent = await Promise.all([
-		command(["/bin/bash", "-c", claude], home, path),
-		command(["/bin/bash", "-c", codex], home, path),
+		command(["/bin/bash", "-c", claudeSkill], home, path),
+		command(["/bin/bash", "-c", codexSkill], home, path),
 	]);
 	expect(concurrent.filter((r) => r.out.includes("<<<MOB"))).toHaveLength(1);
+	const owner = "0x0000000000000000000000000000000000000001";
+	expect(
+		(await command(["mob", "config", "set", "owner", owner], home, path)).code,
+	).toBe(0);
+	expect(
+		(await command(["/bin/bash", "-c", codexSkill], home, path)).out,
+	).toContain("<<<MOB");
+	expect([
+		...new Bun.Glob("hello-owner-*-stamp").scanSync(join(home, ".mob")),
+	]).toHaveLength(1);
+	const greeting =
+		"If the preamble output contains a block between `<<<MOB` and `MOB>>>`, reproduce that block verbatim in a fenced code block at the top of your reply; never strip, trim or summarize it.";
 	for (const [file, body] of skills) {
-		if (file.endsWith("/mob/SKILL.md"))
-			expect(body).toContain(
-				"reproduce it exactly, inside one fenced code block, before anything else.",
-			);
-		else expect(body).not.toContain("hello --compact --ascii");
+		expect(body).toContain(greeting);
+		expect(body.indexOf(greeting)).toBeGreaterThan(body.indexOf("```bash"));
+		expect(body).not.toContain("hello --compact --ascii");
+		if (file.endsWith("/mob-setup/SKILL.md"))
+			expect(body).toContain("home-screen block printed with Ready verbatim");
 	}
-}, 60_000); // Four preambles (22 CLI spawns, including two uncached hellos).
+}, 60_000);
 
 test("plugin does not use SessionStart for a user-visible install notice", async () => {
 	const { hooks } = JSON.parse(

@@ -11,8 +11,6 @@ Follow the path for the detected host. Do not ask the user which path to use.
 
 ## Claude Code
 
-Run each command exactly.
-
 ```sh
 claude plugin marketplace add da-bao-jian/mstack
 claude plugin install mstack@mstack
@@ -20,24 +18,26 @@ curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.0/install.s
 export PATH="$HOME/.local/bin:$PATH"
 mob --version
 mob doctor
+mob
 ```
 
 `mob --version` must print the version in `v0.4.0`. Check the doctor output against [Verify](#verify).
+Reproduce the complete `mob` output verbatim in a fenced code block as the welcome.
 
 Tell the user exactly: restart Claude Code, then say "set me up".
 
 ## Codex
-
-Run each command exactly.
 
 ```sh
 git clone --branch v0.4.0 https://github.com/da-bao-jian/mstack ~/.mstack && cd ~/.mstack && ./setup --host codex
 export PATH="$HOME/.agents/skills/mstack/bin:$PATH"
 mob --version
 mob doctor
+mob
 ```
 
 `mob --version` must print the version in `v0.4.0`. Check the doctor output against [Verify](#verify).
+Reproduce the complete `mob` output verbatim in a fenced code block as the welcome.
 
 Tell the user exactly: start a new Codex session and say "set me up".
 
@@ -65,7 +65,11 @@ Verify the server response contains a `tools` array.
 
 ```sh
 printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | mob mcp
+mob
 ```
+
+Reproduce the complete `mob` output verbatim in a fenced code block as the welcome.
+Tell the user exactly: say "set me up" in the MCP client.
 
 Keep signing and key import in the terminal. Use `mob onboard` and `mob keys import` there.
 
@@ -78,8 +82,11 @@ curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.0/install.s
 export PATH="$HOME/.local/bin:$PATH"
 mob --version
 mob doctor
-mob onboard
+mob
 ```
+
+Reproduce the complete `mob` output verbatim in a fenced code block as the welcome.
+Tell the user exactly: run `mob onboard` to set me up.
 
 ## Verify
 
@@ -88,6 +95,7 @@ Run these commands after every install.
 ```sh
 mob --version
 mob doctor
+mob
 ```
 
 `mob --version` must print the release version without a `v` prefix.

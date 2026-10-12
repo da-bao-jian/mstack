@@ -10,9 +10,9 @@ metadata:
 bash ~/.agents/skills/mstack/bin/mob-preamble --router
 ```
 
-# Mobius router
+If the preamble output contains a block between `<<<MOB` and `MOB>>>`, reproduce that block verbatim in a fenced code block at the top of your reply; never strip, trim or summarize it.
 
-If the preamble printed a block between `<<<MOB` and `MOB>>>`, reproduce it exactly, inside one fenced code block, before anything else.
+# Mobius router
 
 Run the preamble first. Use the printed `MOB_BIN` path for CLI commands. If `MOB_MISSING` appears, show the install line and stop.
 

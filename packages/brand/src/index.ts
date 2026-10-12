@@ -3,7 +3,7 @@ import logo from "../../../assets/logo.json";
 export const palette = logo.palette;
 export type Mode = "truecolor" | "ansi256" | "mono" | "ascii";
 type Environment = Record<string, string | undefined>;
-type Terminal = { env: Environment; isTTY: boolean };
+export type Terminal = { env: Environment; isTTY: boolean };
 type Color = keyof typeof palette;
 const colors: Color[] = ["bg", "sky", "orange", "navy"];
 const rgb = (hex: string) =>
@@ -47,9 +47,25 @@ function sgr(color: Color, mode: "truecolor" | "ansi256", background = false) {
 export function detectMode({ env, isTTY }: Terminal): Mode {
 	const locale = env.LC_ALL || env.LC_CTYPE || env.LANG;
 	if (locale && !/utf-?8/i.test(locale)) return "ascii";
-	if (env.NO_COLOR !== undefined || !isTTY) return "mono";
+	if (!isTTY) return "ascii";
+	if (env.NO_COLOR !== undefined) return "mono";
 	if (/^(truecolor|24bit)$/i.test(env.COLORTERM ?? "")) return "truecolor";
 	return env.TERM?.includes("256color") ? "ansi256" : "mono";
+}
+export function renderTerminalLogo({
+	size,
+	terminal,
+	mode = detectMode(terminal),
+}: {
+	size: 32 | 44 | 60;
+	terminal: Terminal;
+	mode?: Mode;
+}): { lines: string[]; mode: Mode } {
+	const lines = renderLogo({ size, mode });
+	return {
+		mode,
+		lines: terminal.isTTY ? lines : ["<<<MOB", ...lines, "MOB>>>"],
+	};
 }
 export function renderLogo({
 	size,

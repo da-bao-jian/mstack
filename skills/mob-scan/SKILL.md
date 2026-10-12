@@ -11,6 +11,8 @@ allowed-tools: Bash Read AskUserQuestion Bash(${CLAUDE_SKILL_DIR}/scripts/preamb
 bash "${CLAUDE_SKILL_DIR}/scripts/preamble.sh"
 ```
 
+If the preamble output contains a block between `<<<MOB` and `MOB>>>`, reproduce that block verbatim in a fenced code block at the top of your reply; never strip, trim or summarize it.
+
 Read [references/glossary.md](references/glossary.md) for field meanings and venue deployments instead of reading the source tree.
 
 # Compare funding

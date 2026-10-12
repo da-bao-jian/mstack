@@ -5,6 +5,7 @@ import {
 	palette,
 	renderLogo,
 	renderPalette,
+	renderTerminalLogo,
 	style,
 } from "../src/index.ts";
 
@@ -61,7 +62,7 @@ test.each([
 	[{ TERM: "xterm-256color" }, true, "ansi256"],
 	[{ TERM: "xterm" }, true, "mono"],
 	[{ COLORTERM: "truecolor", NO_COLOR: "" }, true, "mono"],
-	[{ COLORTERM: "truecolor" }, false, "mono"],
+	[{ COLORTERM: "truecolor" }, false, "ascii"],
 	[{ LANG: "C", COLORTERM: "truecolor" }, true, "ascii"],
 	[{ LANG: "C", NO_COLOR: "1" }, false, "ascii"],
 	[
@@ -77,6 +78,32 @@ test.each([
 ] as const)("mode for %j tty=%s is %s", (env, isTTY, expected) =>
 	expect(detectMode({ env, isTTY })).toBe(expected),
 );
+test("terminal renderer selects modes and delimits non-TTY output", () => {
+	const tty = { env: { COLORTERM: "truecolor" }, isTTY: true };
+	const color = renderTerminalLogo({ size: 32, terminal: tty });
+	expect(color.mode).toBe("truecolor");
+	expect(color.lines).not.toContain("<<<MOB");
+
+	const headless = renderTerminalLogo({
+		size: 32,
+		terminal: { ...tty, isTTY: false },
+	});
+	expect(headless.mode).toBe("ascii");
+	expect(headless.lines).toEqual([
+		"<<<MOB",
+		...renderLogo({ size: 32, mode: "ascii" }),
+		"MOB>>>",
+	]);
+
+	const forced = renderTerminalLogo({
+		size: 32,
+		terminal: { ...tty, isTTY: false },
+		mode: "mono",
+	});
+	expect(forced.mode).toBe("mono");
+	expect(forced.lines[0]).toBe("<<<MOB");
+	expect(forced.lines.join("\n")).toContain("░");
+});
 test("palette and styles respect terminal capabilities", () => {
 	expect(palette).toEqual({
 		bg: "#e9e3d5",

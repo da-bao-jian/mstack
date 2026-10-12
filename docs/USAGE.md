@@ -10,7 +10,7 @@ Run `mob` or `mob hello` for the logo, public account status and one next comman
 
 Doctor exits 1 for a failed or unchecked critical item. Unbound venues, Bun availability for upgrades, and upgrade notices are optional. A bound venue's readiness and deposit/account checks are critical. A valid `locked` policy passes and is labeled as disabling mutations. The HL deposit check reports current perpetual account value; it cannot establish past deposits or spot-only balances.
 
-The installer ends with the home screen and three next commands; `-q` stays quiet. The `/mob` router shows a compact ASCII splash at most once per hour, shared between hosts. The plugin does not use SessionStart to show an install notice.
+The installer ends with the home screen and three next commands; `-q` stays quiet. The first mstack skill in an hour shows a compact ASCII splash, scoped by owner or home and shared between hosts. The `/mob` router always shows it. The plugin does not use SessionStart to show an install notice.
 
 ## Funding and opportunity libraries
 
@@ -186,7 +186,7 @@ with measured timing when reachable. Slow starts at three seconds and adds
 An update-check failure is one `UPGRADE_CHECK: fail` line with a reason, without Git diagnostics.
 Failed health, config, or update checks are explicit reports; `MOB_MISSING` stops the skill.
 Later commands use the printed binary path because the preamble runs in a child shell.
-The router's `--router` option preserves the hourly ASCII splash.
+The shared preamble shows the hourly ASCII splash. The router's `--router` option always shows it.
 
 Edit templates, references, and host overlays, then run `bun run gen:skills`.
 Commit both generated host trees. CI rejects generation drift.

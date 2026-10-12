@@ -147,8 +147,9 @@ Codex also gets minimal `agents/openai.yaml` display metadata. Each skill stays 
 explicit approval rules. Reference files contain conditional explanations.
 
 `bin/mob-preamble` resolves its physical location and executes the shared script.
-The router adds `--router` to preserve the existing hourly splash; other skills
-use the bare shim. The preamble prints `MOB_BIN` for later commands because a child
-shell cannot export variables or PATH to its parent.
+Every skill uses the shared hourly splash, scoped by configured owner or `MOB_HOME`.
+The router adds `--router` to show it on every invocation. The preamble prints
+`MOB_BIN` for later commands because a child shell cannot export variables or PATH
+to its parent.
 
 Official convention URLs and validation results are recorded in [W13](reports/W13.md).

@@ -121,7 +121,7 @@ try {
 				`claude plugin marketplace add ${root}`,
 			)
 			.replace(
-				`https://raw.githubusercontent.com/da-bao-jian/mstack/<tag>`,
+				/https:\/\/raw\.githubusercontent\.com\/da-bao-jian\/mstack\/(?:<tag>|v\d+\.\d+\.\d+)/,
 				server.url.origin,
 			)
 			.replace("https://github.com/da-bao-jian/mstack", `file://${source}`)
@@ -157,6 +157,11 @@ try {
 		throw new Error(
 			`mob doctor did not verify the binary\n${doctor.out}${doctor.err}`,
 		);
+	const claudeHome = claudeResults.get("mob");
+	if (!claudeHome || !/<<<MOB\n[\s\S]*\nMOB>>>/.test(claudeHome.out))
+		throw new Error(
+			`Claude final mob output has no marked logo\n${claudeHome?.out ?? "missing"}`,
+		);
 	const pluginUninstall = uninstall.find((command) =>
 		command.startsWith("claude plugin uninstall "),
 	);
@@ -179,9 +184,14 @@ try {
 		throw new Error(
 			`Codex mob doctor did not verify the binary\n${codexDoctor.out}${codexDoctor.err}`,
 		);
+	const codexHome = codexResults.get("mob");
+	if (!codexHome || !/<<<MOB\n[\s\S]*\nMOB>>>/.test(codexHome.out))
+		throw new Error(
+			`Codex final mob output has no marked logo\n${codexHome?.out ?? "missing"}`,
+		);
 
 	console.log(
-		`smoke:paste-prompt passed: Claude plugin, release binary, doctor, uninstall, and Codex setup (${version})`,
+		`smoke:paste-prompt passed: Claude plugin, release binary, doctor, marked home welcome, uninstall, and Codex setup (${version})`,
 	);
 } finally {
 	for (const server of servers) await server.stop(true);

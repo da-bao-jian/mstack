@@ -11,6 +11,8 @@ allowed-tools: Bash Read AskUserQuestion Bash(${CLAUDE_SKILL_DIR}/scripts/preamb
 bash "${CLAUDE_SKILL_DIR}/scripts/preamble.sh"
 ```
 
+If the preamble output contains a block between `<<<MOB` and `MOB>>>`, reproduce that block verbatim in a fenced code block at the top of your reply; never strip, trim or summarize it.
+
 Run the preamble first. Use the printed `MOB_BIN` path in place of `mob`; shell-quote every public user value. If `MOB_MISSING` appears, show the install line and stop. Never run keystore commands or request a key, seed, or passphrase.
 
 # Repair and native path

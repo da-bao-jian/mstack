@@ -2,8 +2,8 @@ import { join } from "node:path";
 import {
 	detectMode,
 	type Mode,
-	renderLogo,
 	renderPalette,
+	renderTerminalLogo,
 	style,
 } from "@mstack/brand";
 import {
@@ -83,28 +83,29 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 		throw new Error("Choose --plain or --ascii");
 	const terminal = {
 		env: rt.env ?? process.env,
-		isTTY: rt.isTTY ?? Boolean(process.stdout.isTTY),
+		isTTY: rt.stdoutIsTTY ?? rt.isTTY ?? Boolean(process.stdout.isTTY),
 	};
-	const mode: Mode = options.ascii
+	const forcedMode: Mode | undefined = options.ascii
 		? "ascii"
 		: options.plain
 			? "mono"
-			: detectMode(terminal);
+			: undefined;
 	const size = options.compact ? 32 : options.big ? 60 : 44;
 	const data = await collectHome(rt, options);
 	if (options.json) {
 		rt.out(JSON.stringify(data, null, 2));
 		return;
 	}
+	const { lines: logo, mode } = renderTerminalLogo({
+		size,
+		terminal,
+		...(forcedMode ? { mode: forcedMode } : {}),
+	});
 	if (options.compact) {
 		rt.out(
-			[
-				...renderLogo({ size, mode }),
-				"",
-				renderPalette({ mode }),
-				"",
-				`Next  ${data.next}`,
-			].join("\n"),
+			[...logo, "", renderPalette({ mode }), "", `Next  ${data.next}`].join(
+				"\n",
+			),
 		);
 		return;
 	}
@@ -185,9 +186,8 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 			textMode(`${key.padEnd(10)}${clean(value)}`, mode),
 		),
 	];
-	const logo = renderLogo({ size, mode });
 	const lines =
-		(rt.columns ?? process.stdout.columns ?? 80) < 90
+		!terminal.isTTY || (rt.columns ?? process.stdout.columns ?? 80) < 90
 			? [...logo, "", ...info]
 			: Array.from({ length: Math.max(logo.length, info.length) }, (_, i) => {
 					const left = logo[i] ?? "";
@@ -347,7 +347,7 @@ export async function doctor(json: boolean, rt: Runtime): Promise<number> {
 	else {
 		const mode = detectMode({
 			env: rt.env ?? process.env,
-			isTTY: rt.isTTY ?? Boolean(process.stdout.isTTY),
+			isTTY: rt.stdoutIsTTY ?? rt.isTTY ?? Boolean(process.stdout.isTTY),
 		});
 		rt.out(
 			checks

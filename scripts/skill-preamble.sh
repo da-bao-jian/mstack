@@ -16,10 +16,15 @@ else
   exit 1
 fi
 printf 'MOB_BIN: %s\n' "$MOB"
-if [ "${1:-}" = --router ]; then
-  source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/skill-splash.sh"
-fi
 if MOB_VERSION="$("$MOB" --version)"; then printf 'MOB_VERSION: %s\n' "$MOB_VERSION"; else printf 'MOB_VERSION: fail\n'; fi
+if MOB_OWNER="$("$MOB" config get owner)"; then
+  if [ -n "$MOB_OWNER" ]; then printf 'OWNER: set\n'; else printf 'OWNER: unset\n'; fi
+else
+  MOB_OWNER=''
+  printf 'OWNER: fail\n'
+fi
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/skill-splash.sh"
+mob_splash "$MOB_OWNER" "${1:-}"
 if API_BASE="$("$MOB" config get api_base)"; then printf 'API_BASE: %s\n' "$API_BASE"; else API_BASE=''; printf 'API_BASE: fail\n'; fi
 # Advisory only: this result never gates a venue read or changes scan filters.
 if [ -n "$API_BASE" ] && MOB_HTTP="$(curl -m 15 -s -o /dev/null -w '%{http_code} %{time_total}' -H "X-Mobius-Client: mstack/$MOB_VERSION" -A "mstack/$MOB_VERSION" "$API_BASE/api/client-ip")"; then
@@ -30,11 +35,6 @@ if [ -n "$API_BASE" ] && MOB_HTTP="$(curl -m 15 -s -o /dev/null -w '%{http_code}
   esac
 else
   printf '%s\n' 'API_REACHABLE: unreachable' 'API unreachable; venue reads are unaffected'
-fi
-if MOB_OWNER="$("$MOB" config get owner)"; then
-  if [ -n "$MOB_OWNER" ]; then printf 'OWNER: set\n'; else printf 'OWNER: unset\n'; fi
-else
-  printf 'OWNER: fail\n'
 fi
 if MOB_POLICY=$("$MOB" config get policy); then
   printf 'POLICY: %s\n' "$MOB_POLICY"

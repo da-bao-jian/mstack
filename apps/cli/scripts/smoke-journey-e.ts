@@ -114,6 +114,7 @@ try {
 		ready,
 		/Ready · 2 venues bound · key mobius_[0-9a-f-]{36}… · cap \$5,000/,
 	);
+	assert.match(ready, /<<<MOB\n[\s\S]*\nMOB>>>/);
 	assert.doesNotMatch(ready, /^Key\s+.*not checked$/m);
 	assert.doesNotMatch(ready, /^Legal\s+.*not checked$/m);
 

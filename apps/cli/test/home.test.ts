@@ -37,7 +37,7 @@ async function context(configured = true) {
 		now: () => homeNow,
 		fetch: fake.fetch,
 		env: { LANG: "en_US.UTF-8", HOME: root },
-		isTTY: false,
+		isTTY: true,
 		columns: 120,
 		homeServices: {
 			which: () => "/mock/tool",
@@ -127,6 +127,25 @@ test("narrow terminal stacks logo above info; plain has no escapes", async () =>
 	);
 	expect(out.split("\n")[19]).toBe(`mstack ${pkg.version}  ·  mob`);
 	expect(out).not.toContain("\x1b");
+});
+test("non-TTY home uses one marked ASCII block; flags still force their modes", async () => {
+	const { invoke, rt } = await context();
+	rt.isTTY = false;
+	rt.stdoutIsTTY = false;
+	const headless = await invoke(["hello", "--offline"]);
+	expect(headless.out).toStartWith("<<<MOB\n");
+	expect(headless.out).toContain("\nMOB>>>\n\n");
+	expect(headless.out).toMatch(/^[\x20-\x7e\n]*$/);
+	expect(headless.out.indexOf("MOB>>>")).toBeLessThan(
+		headless.out.indexOf(`mstack ${pkg.version}`),
+	);
+
+	const plain = await invoke(["hello", "--offline", "--plain"]);
+	expect(plain.out).toStartWith("<<<MOB\n");
+	expect(plain.out).toContain("░");
+	const ascii = await invoke(["hello", "--offline", "--ascii"]);
+	expect(ascii.out).toStartWith("<<<MOB\n");
+	expect(ascii.out).not.toContain("░");
 });
 test("big and compact sizes retain Next; offline makes no HTTP calls", async () => {
 	const { invoke, fake } = await context();

@@ -2,6 +2,8 @@ import { chmod, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const repo = resolve(import.meta.dir, "..");
+const greetingRule =
+	"If the preamble output contains a block between `<<<MOB` and `MOB>>>`, reproduce that block verbatim in a fenced code block at the top of your reply; never strip, trim or summarize it.";
 
 /** Pure rendering lets tests compare both hosts without rewriting the checkout. */
 export async function renderSkills(root = repo): Promise<Map<string, string>> {
@@ -49,7 +51,7 @@ export async function renderSkills(root = repo): Promise<Map<string, string>> {
 					? // biome-ignore lint/suspicious/noTemplateCurlyInString: Host and shell substitutions are literal skill content.
 						'bash "${CLAUDE_SKILL_DIR}/scripts/preamble.sh"'
 					: "bash ~/.agents/skills/mstack/bin/mob-preamble";
-			replacements.PREAMBLE = `\`\`\`bash\n${command}${name === "mob" ? " --router" : ""}\n\`\`\``;
+			replacements.PREAMBLE = `\`\`\`bash\n${command}${name === "mob" ? " --router" : ""}\n\`\`\`\n\n${greetingRule}`;
 			let body = source.replace(/\{\{([A-Z_]+)\}\}/g, (_, key: string) => {
 				if (!Object.hasOwn(replacements, key))
 					throw new Error(`Unknown template field ${key}`);

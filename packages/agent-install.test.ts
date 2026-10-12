@@ -31,6 +31,18 @@ test("agent install doc stays short and exposes executable host commands", async
 	];
 	for (const heading of headings)
 		expect(shellCommandsInSection(install, heading).length).toBeGreaterThan(0);
+	for (const heading of [
+		"Claude Code",
+		"Codex",
+		"Other MCP clients",
+		"Plain shell",
+		"Verify",
+	]) {
+		const commands = shellCommandsInSection(install, heading);
+		const welcome = commands.lastIndexOf("mob");
+		expect(welcome).toBeGreaterThan(commands.indexOf("mob --version"));
+		expect(welcome).toBeGreaterThan(commands.indexOf("mob doctor"));
+	}
 
 	const runSource = await readFile(
 		resolve(root, "apps/cli/src/run.ts"),
@@ -90,7 +102,8 @@ test("canonical paste prompt is short and identical at every copy surface", asyn
 	const readme = await readFile(resolve(root, "README.md"), "utf8");
 	const asks = await readFile(resolve(root, "docs/MOBIUS-ASKS.md"), "utf8");
 	const canonical = firstTextBlock(prompt);
-	expect(canonical.split("\n")).toHaveLength(5);
+	expect(canonical.split("\n").length).toBeLessThanOrEqual(6);
+	expect(canonical).toContain("run `mob` and reproduce its output verbatim");
 	expect(firstTextBlock(readme, "## Paste this into your agent")).toBe(
 		canonical,
 	);
