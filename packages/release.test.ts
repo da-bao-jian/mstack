@@ -48,6 +48,7 @@ async function fixture() {
 		"README.md": "Read docs at <tag>.\n",
 		"docs/AGENT-INSTALL.md": "Install release <tag> from <tag>.\n",
 		"docs/AGENT-PROMPT.md": "Prompt for <tag>.\n",
+		"docs/MOBIUS-ASKS.md": "Ask G quotes <tag>.\n",
 	};
 	for (const [file, body] of Object.entries(files)) {
 		await mkdir(dirname(join(root, file)), { recursive: true });
