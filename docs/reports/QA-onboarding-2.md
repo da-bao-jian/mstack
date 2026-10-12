@@ -17,7 +17,7 @@ Build: `main` at `7cb79a1` (W12 + W15 + W16 + W14; W13 not yet merged), CLI 0.3.
 | A2 glossary | fixed (W14): `glossary` in `--json`; the agent read `references/glossary.md` instead of the source tree |
 | A3 cross-deployment pairs | fixed (W14): hidden, counted in the footer, `--include-cross-deployment` |
 | P1/P2/P3 sign page | fixed (W15 + W14): brand header, "This signature authorizes …", "It cannot move funds.", the statement sentence under the headline, expected vs connected owner, reason text under the disabled button |
-| C5 opener override | fixed (W15): `MOB_NO_OPEN=1` / `BROWSER` |
+| C5 opener override | **wrongly marked fixed here on 2026-10-12.** `MOB_NO_OPEN` was documented but never read; every `mob sign` with the browser signer opened the system browser, including from tests. Fixed in `73c50c9`: the opener honors `MOB_NO_OPEN` and never opens under `NODE_ENV=test`. Verified with a fake `open` on PATH. |
 | A5 session start slow | not in scope (other plugins) |
 | D1 bind says nothing about unsigned legal | open → W17 |
 | D2 per-step cost | improved: $0.97–$5.06 per step (was $4–5 flat); the growth is conversation length, not skill size. W13's shorter skills land next |
