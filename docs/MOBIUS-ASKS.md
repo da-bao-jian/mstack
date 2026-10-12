@@ -2,17 +2,9 @@
 
 Each item has a fallback in mstack, listed so nothing here blocks the client work. Specs are exact so they can be built without a second conversation.
 
-## A. API page → CLI key handoff (frontend)
+## A. (withdrawn 2026-10-12) API page → CLI handoff
 
-`https://app.mob.exchange/?nav=api&cli=<port>&token=<token>` where `port` is 1024–65535 and `token` is 64 lowercase hex characters. When both are present and valid:
-
-1. Keep the current flow (connect, bind, create key). After a key is created and shown in the dialog, add a button **Send to mstack** next to **Copy**.
-2. On click, `fetch("http://127.0.0.1:<port>/mstack/key", { method: "POST", mode: "cors", headers: { "Content-Type": "application/json" }, body })` with body `{"token":"<token>","key":"mobius_…","name":"…","venues":["hl","lighter"],"maxSizeUsd":5000,"owner":"0x…"}`.
-3. Expect `200 {"ok":true}`; then show "Sent to mstack. You can close this tab." Any other result shows "mstack did not answer; copy the key instead." The key stays in the dialog until Done.
-4. CSP: add `http://127.0.0.1:*` to `connect-src` for prod and dev (`frontend/scripts/headers.ts` static baseline or `NEXT_PUBLIC_CSP_EXTRA_CONNECT_SRC`). The CLI answers the preflight with `Access-Control-Allow-Origin: https://app.mob.exchange` (dev: `https://dev.mob.exchange`), `Access-Control-Allow-Headers: Content-Type`, `Access-Control-Allow-Methods: POST`.
-5. Never put the key in a URL, a redirect, localStorage or analytics. The `cli` and `token` parameters are ignored on every other tab.
-
-Fallback in mstack: the terminal says "press Enter and paste the key"; input is hidden; nothing changes on the page.
+Decided against a localhost receiver. The user copies the key from the page and pastes it into the agent chat. One optional nicety on the page: under the revealed key, a line "Using mstack? Paste this key into your agent chat; it stores the key and never shows it again." No other change.
 
 ## B. Deploy API 1.2.0
 
