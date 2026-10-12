@@ -11,3 +11,5 @@ does not revoke the server key. A server revoke is the action that ends it.
 
 `MOBIUS_API_KEY` is a read-only runtime override. Never use it as an import
 source. Never pass a key as argv. The direct human import reads from `/dev/tty`.
+If verification cannot reach the Strategy API, stop without storing the key.
+Use `--unverified` only after the user explicitly requests it.

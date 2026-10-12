@@ -89,11 +89,13 @@ Run `mob onboard`. It always prints the Mobius API page URL and then reads legal
 
 Create the key with only the required venues and a modest USD cap per leg. The key can open, cancel, close, and resize positions inside those limits. It cannot withdraw, bind venues, approve fees, accept legal terms, or create another key. It has no expiry.
 
-For agent-mediated import, paste the key into chat. The chat transcript and agent session logs retain that paste. The agent must not echo it or put it on argv, in a file, or in an environment variable. It stores through stdin:
+For agent-mediated import, paste the key into chat. The chat transcript and agent session logs retain that paste. The agent runs one command with the already-pasted key as the single-quoted input to the shell builtin `printf`:
 
 ```sh
-printf '%s' "$KEY" | mob keys import --stdin --name agent --venues hl,lighter --max-size 5000
+printf '%s' 'mobius_…' | mob keys import --stdin --name 'agent' --venues 'hl,lighter' --max-size '5000'
 ```
+
+Replace `mobius_…` only in that import command. Because `printf` is a shell builtin, the key does not appear in a process list or on `mob`'s argv. Never use `echo`, a file, or an environment variable. If verification reports `could not verify; not stored`, stop and report that the Strategy API is unreachable. Use `--unverified` only after an explicit user request.
 
 A human can run `mob keys import` and paste into the hidden `/dev/tty` prompt. `mob keys show` reports prefix, backend, scope, cap, and verification. `mob keys delete` removes only the local copy. `mob keys list` and `mob keys revoke <uuid>` are wallet Proposals; revoke ends the server key. Run `mob onboard` again and require its `Ready · …` line.
 

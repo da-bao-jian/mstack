@@ -32,7 +32,7 @@ mob onboard
   ├─ prints the checklist from public reads:  legal ✓   hl ✓   lighter …   key …
   │     on a TTY it redraws every 5 s (--watch); in an agent shell it prints once and exits 0
   ├─ the user pastes the key into the chat
-  │     agent:  printf '%s' "$KEY" | mob keys import --stdin      (human: mob keys import, hidden)
+  │     agent:  printf '%s' 'mobius_…' | mob keys import --stdin   (human: mob keys import, hidden)
   │     verify: GET /v1/delta-neutral/tasks?limit=1 → 200 → store in keychain / secret-tool / 0600 file
   └─ mob onboard again → home screen: Ready · 2 venues · key mobius_ab12… · cap $5,000
 
@@ -76,7 +76,7 @@ See `docs/MOBIUS-ASKS.md`. Every package below works against the API as it is to
 ## 5. Security notes
 
 - After import the CLI never prints the key: not in cards, Proposal files, logs or errors. Errors redact `mobius_<uuid>.<secret>` to `mobius_<uuid>…`. The one exposure is the user's own paste in the chat, accepted above.
-- `mob keys import --stdin` reads the secret from stdin only; argv and the environment are refused for import so the key does not land in shell history or process lists.
+- The agent puts the already-pasted key once in a single-quoted shell-builtin `printf` input and pipes it to `mob keys import --stdin`. The key is not on `mob`'s argv or in a process list. The command remains part of the accepted agent session record. An unverified import needs an explicit user request.
 - Idempotency keys are persisted in the Proposal before the first send, so a retry never duplicates a position.
 - A leaked key is bounded by its venues and cap and cannot move funds. `mob keys revoke` and the API page end it.
 - `auto` policy is opt-in and prints a warning line on every home screen while active.

@@ -2,10 +2,12 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { getAddress } from "viem";
 import { setConfig } from "../src/config.ts";
 import { type Runtime, run } from "../src/run.ts";
 
 const owner = "0x0000000000000000000000000000000000000001";
+const casedOwner = "0xa4e8ab55b434e5486550eb51b4b314ec9fb5fbde";
 const key = `mobius_01234567-89ab-cdef-0123-456789abcdef.${"ab".repeat(32)}`;
 const now = 1_800_000_000_000;
 const homes: string[] = [];
@@ -109,6 +111,20 @@ test("onboard saves owner and app base, prints public states and exact handoff",
 	});
 	expect(await invoke(path, ["config", "get", "app_base"])).toMatchObject({
 		out: "https://app.example.test/base",
+	});
+});
+
+test("onboard and config set store the same checksummed owner", async () => {
+	const path = await home();
+	const onboarded = await invoke(path, ["onboard", "--owner", casedOwner]);
+	expect(onboarded.code).toBe(0);
+	expect(await invoke(path, ["config", "get", "owner"])).toMatchObject({
+		out: getAddress(casedOwner),
+	});
+	const configured = await invoke(path, ["config", "set", "owner", casedOwner]);
+	expect(configured.code).toBe(0);
+	expect(await invoke(path, ["config", "get", "owner"])).toMatchObject({
+		out: getAddress(casedOwner),
 	});
 });
 

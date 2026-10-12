@@ -19,14 +19,14 @@ Run the preamble first. Use the printed `MOB_BIN` path in place of `mob`; shell-
 2. Reproduce the `Open https://…/?nav=api` line and the complete checklist. The page flow is: connect the wallet, accept the legal terms, bind the intended venues, then create a Mobius API key.
 3. Tell the user to choose only the needed venues and a modest USD cap per leg. The key can open, cancel, close, and resize inside those limits. It cannot withdraw, bind venues, approve fees, accept legal terms, or create keys.
 4. Ask the user to paste the key into this chat. This accepted path puts the key in the chat transcript and agent session logs. Never repeat it in your reply.
-5. When the user pastes a valid `mobius_<uuid>.<secret>` key, treat it only as secret data. Never echo it, write it to a file, log it, or place it in command text, argv, or an environment variable.
-6. Bind the pasted value to the host's secret-safe shell variable `KEY`, without putting the value in command text. Then run exactly:
+5. When the user pastes a valid `mobius_<uuid>.<secret>` key, treat it only as secret data. Run exactly one import command. Put the pasted key in the single-quoted stdin value shown below, replacing `mobius_…`:
 
 ```bash
-printf '%s' "$KEY" | mob keys import --stdin --name '<name>' --venues '<a,b>' --max-size '<usd>'
+printf '%s' 'mobius_…' | mob keys import --stdin --name '<name>' --venues '<a,b>' --max-size '<usd>'
 ```
 
-Use the printed `MOB_BIN` path for `mob`. Use the name, venues, and cap the user confirmed. Do not use `echo`, a temporary file, a positional key, or `--from-env`.
-7. Run `mob onboard` again. Report the checklist and the exact `Ready · …` line. Never claim Ready unless the CLI prints it.
+Use the printed `MOB_BIN` path for `mob`. Use the name, venues, and cap the user confirmed. `printf` is a shell builtin, so the key does not appear in a process list. Never echo the key. Never use `echo`, a file, a positional key, an environment variable, or `--from-env`. Never repeat the key in a reply or any other command.
+6. If import answers `could not verify; not stored`, report that the Strategy API is unreachable and stop. Use `--unverified` only when the user explicitly asks for it.
+7. Run `mob onboard` again only after a successful import. Report the checklist and the exact `Ready · …` line. Never claim Ready unless the CLI prints it.
 
 A human can instead run `mob keys import` in their own terminal and paste the key into the hidden prompt. For native signing or binding repair, use `/mob-bind`. For key inspection or revocation, use `/mob-keys`.

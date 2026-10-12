@@ -28,7 +28,7 @@ const examples: Record<string, [string, string]> = {
 	],
 	keys: ["mob keys show", "mob keys list"],
 	"keys import": [
-		"printf '%s' \"$KEY\" | mob keys import --stdin --name agent --venues hl,lighter --max-size 5000",
+		"printf '%s' 'mobius_…' | mob keys import --stdin --name agent --venues hl,lighter --max-size 5000",
 		"mob keys import",
 	],
 	"keys create": [

@@ -558,10 +558,16 @@ test("session skills keep keys off argv and require exact ids for manual mutatio
 		const keys = outputs.get(`${host}/mob-keys/SKILL.md`) as string;
 		for (const body of [setup, keys]) {
 			expect(body).toContain(
-				`printf '%s' "$KEY" | mob keys import --stdin --name '<name>' --venues '<a,b>' --max-size '<usd>'`,
+				`printf '%s' 'mobius_…' | mob keys import --stdin --name '<name>' --venues '<a,b>' --max-size '<usd>'`,
 			);
 			expect(body.toLowerCase()).toContain("never echo");
-			expect(body).toContain("command text");
+			expect(body).toContain("shell builtin");
+			expect(body).toContain("does not appear in a process list");
+			expect(body).toContain("could not verify; not stored");
+			expect(body.toLowerCase()).toContain(
+				"use `--unverified` only when the user explicitly asks for it",
+			);
+			expect(body).not.toContain('"$KEY"');
 			expect(body).not.toMatch(/mob keys import mobius_/);
 		}
 		for (const name of ["mob-open", "mob-manage", "mob-close"]) {

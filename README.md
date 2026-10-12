@@ -102,7 +102,7 @@ GUI clients may not inherit your shell's PATH. MCP reads public, onboarding, and
 ## What you can do
 
 1. **Install.** Use the plugin, binary installer, or clone setup above. Run `mob --version`.
-2. **Onboard.** Run `mob onboard`. Open the printed Mobius API page, connect the wallet, accept legal terms, bind venues, and create a key with a modest cap. Paste it into the chat for the agent's stdin-only import, or run `mob keys import` yourself for a hidden terminal paste. Run `mob onboard` again and require the `Ready · …` line.
+2. **Onboard.** Run `mob onboard`. Open the printed Mobius API page, connect the wallet, accept legal terms, bind venues, and create a key with a modest cap. Paste it into the chat for one agent import through the shell builtin `printf` and `mob keys import --stdin`, or run `mob keys import` yourself for a hidden terminal paste. Run `mob onboard` again and require the `Ready · …` line.
 3. **Scan.** Run `mob scan --size 1000` to compare executable pairs and the best pairs anywhere.
    Funding annualization is simple, not compounded: `ratePerInterval / intervalHours × 24 × 365 × 100`.
    Fees and mark entry costs are estimates. Failed venues remain visible.
@@ -131,7 +131,7 @@ See [usage and signing details](docs/USAGE.md) and the [CLI reference](apps/cli/
 
 - **Your wallet key never leaves your wallet.** mstack signs through your browser wallet, WalletConnect, or a keystore only you can unlock. Nothing in the agent, the MCP server or the skills can produce that wallet signature.
 - **The Mobius API key is a scoped trading key.** It can open, cancel, close, and resize only for its named venues and USD cap per leg. It cannot withdraw, bind venues, approve fees, accept legal terms, or create keys. It has no expiry; revoke it on the API page or through the signed revoke flow.
-- **Chat paste is an explicit trade-off.** A key pasted for onboarding remains in the chat transcript and local agent session logs. The agent imports it only through stdin, never echoes it, and the CLI stores it in Keychain, Secret Service, or a private `0600` file. The MCP server never imports or reveals it.
+- **Chat paste is an explicit trade-off.** A key pasted for onboarding remains in the chat transcript and local agent session logs. The agent places it once in a single-quoted shell-builtin `printf` input and pipes it to `mob keys import --stdin`. It never puts the key on `mob`'s argv, in a process list, file, environment variable, or reply. The CLI stores it in Keychain, Secret Service, or a private `0600` file. The MCP server never imports or reveals it. An unverified import needs an explicit user request.
 - **Your funds stay in your own venue accounts.** Mobius never holds, routes or custodies funds. The Mobius worker places and closes orders with venue keys that cannot withdraw (Hyperliquid, Aster) or can withdraw only to your own address (Lighter). You can revoke every key at the venue at any time.
 - **What Mobius does hold:** a hash of the API key, encrypted venue trading keys minted during binding, and task history. The server never stores the API key secret in plaintext.
 - **Everything the agent reads is public** by wallet address on the Mobius API. Anyone who knows your address can see your tasks.

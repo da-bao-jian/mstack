@@ -21,13 +21,15 @@ Run the preamble first. Use the printed `MOB_BIN` path in place of `mob`; shell-
 - Local delete: run `mob keys delete`. It does not revoke the server key. Confirm that distinction before deleting.
 - Import: ask for a name, exact venues, and modest USD cap. Ask the user to paste the key in chat. Never repeat it.
 
-For import, never echo the key, write it to a file, log it, put it in command text or argv, or use an environment variable. Bind it through the host's secret-safe shell variable `KEY`, then run exactly:
+For import, run exactly one command. Put the already-pasted key in the single-quoted stdin value below, replacing `mobius_…`:
 
 ```bash
-printf '%s' "$KEY" | mob keys import --stdin --name '<name>' --venues '<a,b>' --max-size '<usd>'
+printf '%s' 'mobius_…' | mob keys import --stdin --name '<name>' --venues '<a,b>' --max-size '<usd>'
 ```
 
-Use the printed `MOB_BIN` path. Do not use `echo`, a positional key, or `--from-env`. Report only the stored prefix and backend. A human can instead run `mob keys import` and use the hidden prompt.
+Use the printed `MOB_BIN` path. `printf` is a shell builtin, so the key does not appear in a process list. Never echo the key. Never use `echo`, a file, a positional key, an environment variable, or `--from-env`. Never repeat the key in a reply or any other command. Report only the stored prefix and backend.
+
+If import answers `could not verify; not stored`, report that the Strategy API is unreachable and stop. Use `--unverified` only when the user explicitly asks for it. A human can instead run `mob keys import` and use the hidden prompt.
 
 ## Wallet Proposal rule
 

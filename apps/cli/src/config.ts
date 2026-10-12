@@ -2,6 +2,7 @@ import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { DEFAULT_TAKER_FEE_BPS } from "@mstack/opportunities";
+import { getAddress } from "viem";
 
 export interface Config {
 	signer?: "keystore" | "browser" | "walletconnect";
@@ -137,7 +138,7 @@ export function parsedValue(
 			);
 		return `0x${Number(value).toString(16)}`;
 	}
-	if (key === "owner") return ownerAddress(String(value));
+	if (key === "owner") return getAddress(ownerAddress(String(value)));
 	const result = numberFlag(value, key, 0, key === "builder_fee_tenths_bps");
 	if (key === "default_size_usd" && result === 0)
 		throw new UsageError("default_size_usd must be positive");

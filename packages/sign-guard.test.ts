@@ -133,7 +133,7 @@ test("paste-then-import is allowed through stdin, while argv import is refused b
 	const key = `mobius_01234567-89ab-cdef-0123-456789abcdef.${"ab".repeat(32)}`;
 	expect(
 		await hook(
-			`printf '%s' "$KEY" | mob keys import --stdin --name agent --venues hl,lighter --max-size 5000`,
+			`printf '%s' '${key}' | mob keys import --stdin --name 'agent' --venues 'hl,lighter' --max-size '5000'`,
 			"paste-import.jsonl",
 		),
 	).toEqual({ code: 0, out: "", err: "" });
