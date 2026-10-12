@@ -11,8 +11,9 @@
 			"annualizationMethod": "simple",
 			"markPrice": 82794,
 			"openInterestUsd": 3172029129.1991997,
-			"oiCapped": false,
-			"volume24hUsd": 1042637459.5157708
+			"volume24hUsd": 1042637459.5157708,
+			"priceChange24hPct": -0.341847420496401,
+			"oiCapped": false
 		},
 		{
 			"venue": "hl",
@@ -25,8 +26,9 @@
 			"annualizationMethod": "simple",
 			"markPrice": 0.004023,
 			"openInterestUsd": 27416927.990177996,
-			"oiCapped": false,
-			"volume24hUsd": 2596409.5854920004
+			"volume24hUsd": 2596409.5854920004,
+			"priceChange24hPct": 2.9953917050691112,
+			"oiCapped": false
 		},
 		{
 			"venue": "hl",
@@ -39,8 +41,9 @@
 			"annualizationMethod": "simple",
 			"markPrice": 30926,
 			"openInterestUsd": 231788644.3292,
-			"oiCapped": false,
-			"volume24hUsd": 153179000.67690003
+			"volume24hUsd": 153179000.67690003,
+			"priceChange24hPct": -0.13884852594530014,
+			"oiCapped": false
 		},
 		{
 			"venue": "hl",
@@ -53,8 +56,9 @@
 			"annualizationMethod": "simple",
 			"markPrice": 230.22,
 			"openInterestUsd": 110086611.111,
-			"oiCapped": false,
-			"volume24hUsd": 51597089.289390035
+			"volume24hUsd": 51597089.289390035,
+			"priceChange24hPct": -1.6321996239958954,
+			"oiCapped": false
 		},
 		{
 			"venue": "hl",
@@ -67,8 +71,9 @@
 			"annualizationMethod": "simple",
 			"markPrice": 1696.7,
 			"openInterestUsd": 5577276.8644,
-			"oiCapped": false,
-			"volume24hUsd": 3318076.924600001
+			"volume24hUsd": 3318076.924600001,
+			"priceChange24hPct": 0.4321060731620667,
+			"oiCapped": false
 		},
 		{
 			"venue": "hl",
@@ -81,8 +86,9 @@
 			"annualizationMethod": "simple",
 			"markPrice": 2089.9,
 			"openInterestUsd": 42493175.976399995,
-			"oiCapped": false,
-			"volume24hUsd": 8068554.409000002
+			"volume24hUsd": 8068554.409000002,
+			"priceChange24hPct": 0.7035127451452757,
+			"oiCapped": false
 		}
 	],
 	"lighter": [
@@ -95,9 +101,9 @@
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
+			"volume24hUsd": 64887549.405673,
 			"markPrice": 82773.5,
-			"openInterestUsd": 16794490.690825,
-			"volume24hUsd": 64887549.405673
+			"openInterestUsd": 16794490.690825
 		},
 		{
 			"venue": "lighter",
@@ -108,9 +114,9 @@
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
+			"volume24hUsd": 29548502.088755,
 			"markPrice": 2495.4,
-			"openInterestUsd": 22488215.4072,
-			"volume24hUsd": 29548502.088755
+			"openInterestUsd": 22488215.4072
 		}
 	],
 	"lighter-mainnet": [
@@ -123,9 +129,9 @@
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
+			"volume24hUsd": 588697355.655874,
 			"markPrice": 82779.4,
-			"openInterestUsd": 160783190.19048,
-			"volume24hUsd": 588697355.655874
+			"openInterestUsd": 160783190.19048
 		},
 		{
 			"venue": "lighter-mainnet",
@@ -136,9 +142,9 @@
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
+			"volume24hUsd": 199297821.35358,
 			"markPrice": 2495.56,
-			"openInterestUsd": 89848785.90314,
-			"volume24hUsd": 199297821.35358
+			"openInterestUsd": 89848785.90314
 		}
 	],
 	"aster": [
@@ -152,8 +158,9 @@
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"markPrice": 1.85295041,
-			"nextFundingAt": 1791648000000,
-			"volume24hUsd": 39196.99
+			"volume24hUsd": 39196.99,
+			"priceChange24hPct": 3.22,
+			"nextFundingAt": 1791648000000
 		},
 		{
 			"venue": "aster",
@@ -165,8 +172,9 @@
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"markPrice": 0.01089,
-			"nextFundingAt": 1791637200000,
-			"volume24hUsd": 5910.5
+			"volume24hUsd": 5910.5,
+			"priceChange24hPct": -11.624,
+			"nextFundingAt": 1791637200000
 		},
 		{
 			"venue": "aster",
@@ -178,8 +186,9 @@
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"markPrice": 82795.2,
-			"nextFundingAt": 1791648000000,
-			"volume24hUsd": 1618052.76
+			"volume24hUsd": 1618052.76,
+			"priceChange24hPct": -0.098,
+			"nextFundingAt": 1791648000000
 		},
 		{
 			"venue": "aster",
@@ -191,8 +200,9 @@
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"markPrice": 82798.9,
-			"nextFundingAt": 1791648000000,
-			"volume24hUsd": 193914551.69
+			"volume24hUsd": 193914551.69,
+			"priceChange24hPct": -0.151,
+			"nextFundingAt": 1791648000000
 		}
 	],
 	"binance": [
@@ -206,8 +216,9 @@
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"markPrice": 1.852,
-			"nextFundingAt": 1791648000000,
-			"volume24hUsd": 4430833.71163
+			"volume24hUsd": 4430833.71163,
+			"priceChange24hPct": 2.875,
+			"nextFundingAt": 1791648000000
 		},
 		{
 			"venue": "binance",
@@ -242,8 +253,9 @@
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"markPrice": 82792.1,
-			"nextFundingAt": 1791648000000,
-			"volume24hUsd": 5226716210.38
+			"volume24hUsd": 5226716210.38,
+			"priceChange24hPct": -0.149,
+			"nextFundingAt": 1791648000000
 		},
 		{
 			"venue": "binance",
@@ -255,8 +267,9 @@
 			"source": "direct",
 			"annualizationMethod": "simple",
 			"markPrice": 0.05523073,
-			"nextFundingAt": 1791637200000,
-			"volume24hUsd": 360614594.01301
+			"volume24hUsd": 360614594.01301,
+			"priceChange24hPct": 4.733,
+			"nextFundingAt": 1791637200000
 		}
 	],
 	"bybit": [
@@ -269,10 +282,11 @@
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
-			"markPrice": 0.21813,
+			"volume24hUsd": 2559755.8733,
 			"nextFundingAt": 1791637200000,
+			"markPrice": 0.21813,
 			"openInterestUsd": 2849358.9,
-			"volume24hUsd": 2559755.8733
+			"priceChange24hPct": -0.34259999999999996
 		},
 		{
 			"venue": "bybit",
@@ -283,10 +297,11 @@
 			"observedAt": 1791635200000,
 			"source": "direct",
 			"annualizationMethod": "simple",
-			"markPrice": 82792.7,
+			"volume24hUsd": 2167214251.9178,
 			"nextFundingAt": 1791648000000,
+			"markPrice": 82792.7,
 			"openInterestUsd": 4669422920.73,
-			"volume24hUsd": 2167214251.9178
+			"priceChange24hPct": -0.3164
 		}
 	],
 	"okx": [
@@ -301,7 +316,8 @@
 			"annualizationMethod": "simple",
 			"nextFundingAt": 1791648000000,
 			"markPrice": 82779.3,
-			"volume24hUsd": 2732375152.71567
+			"volume24hUsd": 2732375152.71567,
+			"priceChange24hPct": -0.10469587536848957
 		},
 		{
 			"venue": "okx",
@@ -314,7 +330,8 @@
 			"annualizationMethod": "simple",
 			"nextFundingAt": 1791648000000,
 			"markPrice": 82710.6,
-			"volume24hUsd": 178495727.72136003
+			"volume24hUsd": 178495727.72136003,
+			"priceChange24hPct": -0.11913973147087123
 		},
 		{
 			"venue": "okx",
@@ -327,7 +344,8 @@
 			"annualizationMethod": "simple",
 			"nextFundingAt": 1791648000000,
 			"markPrice": 2495.36,
-			"volume24hUsd": 2184330875.95968
+			"volume24hUsd": 2184330875.95968,
+			"priceChange24hPct": 0.15277276554793476
 		},
 		{
 			"venue": "okx",
@@ -340,7 +358,8 @@
 			"annualizationMethod": "simple",
 			"nextFundingAt": 1791648000000,
 			"markPrice": 0.0521,
-			"volume24hUsd": 4875695.14
+			"volume24hUsd": 4875695.14,
+			"priceChange24hPct": 8.726513569937376
 		}
 	]
 }

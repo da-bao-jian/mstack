@@ -1,5 +1,6 @@
 import { lstat } from "node:fs/promises";
 import { join } from "node:path";
+import type { Snapshot } from "@mstack/funding";
 import { type KeyDescription, verifyApiKey } from "@mstack/keys";
 import {
 	ApiError,
@@ -51,7 +52,10 @@ export interface HomeData {
 	auth: Reading<{ latencyMs: number }> & { host: string };
 	legal: Reading<{ accepted: boolean; acceptedAt: string | null }>;
 	venues: Record<ArbitrageVenue, Reading<Venue>>;
-	tasks: Reading<Record<string, number>>;
+	tasks: Reading<{
+		counts: Record<string, number>;
+		running: { count: number; sizeUsd?: number; fundingUsdPerDay?: number };
+	}>;
 	proposals: Reading<{ awaiting: string[]; expired: string[] }>;
 	upgrade: Reading<{ available: string | null }>;
 	diagnostics: {
@@ -67,6 +71,7 @@ export interface HomeServices {
 	which?: (command: string) => string | null;
 	platform?: NodeJS.Platform;
 	upgrade?: () => Promise<Reading<{ available: string | null }>>;
+	marketSnapshot?: (budgetMs: number) => Promise<Snapshot>;
 }
 
 async function exists(path: string) {
@@ -384,7 +389,29 @@ export async function collectHome(
 					const counts: Record<string, number> = {};
 					for (const task of tasks)
 						counts[task.status] = (counts[task.status] ?? 0) + 1;
-					return counts;
+					const running = tasks.filter((task) => task.status === "running");
+					const numbers = (field: "size_usd" | "funding_usd") =>
+						running
+							.map((task) => task[field])
+							.filter((value): value is number | string => value !== null)
+							.map(Number);
+					const sizes = numbers("size_usd");
+					const funding = numbers("funding_usd");
+					return {
+						counts,
+						running: {
+							count: running.length,
+							...(sizes.length ? { sizeUsd: sizes[0] } : {}),
+							...(funding.length
+								? {
+										fundingUsdPerDay: funding.reduce(
+											(sum, value) => sum + value,
+											0,
+										),
+									}
+								: {}),
+						},
+					};
 				},
 				(value) => {
 					data.tasks = value;
@@ -461,7 +488,7 @@ export async function collectHome(
 				signal.addEventListener("abort", finishAbort, { once: true });
 				timer = setTimeout(
 					() => controller.abort(new Error("Home network budget expired")),
-					services.networkBudgetMs ?? API_BUDGET_MS,
+					services.networkBudgetMs ?? (options.doctor ? API_BUDGET_MS : 5_000),
 				);
 				if (signal.aborted) resolve();
 			}),

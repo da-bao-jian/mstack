@@ -35,6 +35,11 @@ function validateRows(rows: ObservedFundingRate[]): void {
 		if (row.volume24hUsd !== undefined)
 			nonnegative(row.volume24hUsd, "volume24hUsd");
 		if (
+			row.priceChange24hPct !== undefined &&
+			!Number.isFinite(row.priceChange24hPct)
+		)
+			throw new Error("priceChange24hPct: expected finite number");
+		if (
 			row.annualizationMethod !== "simple" ||
 			!["direct", "hosted"].includes(row.source)
 		) {

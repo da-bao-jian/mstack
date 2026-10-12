@@ -25,8 +25,8 @@ import { installationRoot, upgrade } from "./upgrade.ts";
 const help = `mob ${pkg.version} — funding reads and explicit Proposal signing
 
 Usage:
-  mob [--big | --compact] [--plain | --ascii] [--offline] [--json]
-  mob hello [--big | --compact] [--plain | --ascii] [--offline] [--json]
+  mob [--big | --compact] [--stacked] [--plain | --ascii] [--offline] [--json]
+  mob hello [--big | --compact] [--stacked] [--plain | --ascii] [--offline] [--json]
   mob doctor [--json]
   mob scan [--size N=1000] [--market BASE] [--venues a,b] [--top N=10]
            [--all-pairs] [--executable] [--min-apy PCT] [--strict] [--json | --json-full]
@@ -93,6 +93,7 @@ export const definitions: Record<string, ParseArgsConfig["options"]> = {
 		help: flag("boolean"),
 		big: flag("boolean"),
 		compact: flag("boolean"),
+		stacked: flag("boolean"),
 		plain: flag("boolean"),
 		ascii: flag("boolean"),
 		offline: flag("boolean"),
@@ -323,6 +324,7 @@ export async function run(
 				{
 					big: values.big === true,
 					compact: values.compact === true,
+					stacked: values.stacked === true,
 					plain: values.plain === true,
 					ascii: values.ascii === true,
 					offline: values.offline === true,

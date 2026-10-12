@@ -39,20 +39,25 @@ export function createOkxAdapter(): VenueAdapter {
 					),
 					json(ctx, "https://www.okx.com/api/v5/market/tickers?instType=SWAP"),
 				]);
-			const volumes = new Map<string, number | undefined>();
+			const tickers = new Map<
+				string,
+				{ volume?: number; priceChange24hPct?: number }
+			>();
 			for (const value of data(rawTickers)) {
 				const entry = object(value, "OKX ticker");
 				const market = string(entry.instId, "instId");
 				if (entry.instType !== "SWAP")
 					throw new Error(`${market}: expected SWAP ticker`);
-				if (volumes.has(market))
+				if (tickers.has(market))
 					throw new Error(`Duplicate OKX ticker ${market}`);
-				volumes.set(
-					market,
-					entry.volCcy24h === undefined
-						? undefined
-						: nonnegative(entry.volCcy24h, `${market} volCcy24h`),
-				);
+				const last = positive(entry.last, `${market} last`);
+				const open = positive(entry.open24h, `${market} open24h`);
+				tickers.set(market, {
+					...(entry.volCcy24h === undefined
+						? {}
+						: { volume: nonnegative(entry.volCcy24h, `${market} volCcy24h`) }),
+					priceChange24hPct: ((last - open) / open) * 100,
+				});
 			}
 			const marks = new Map<string, number>();
 			for (const value of data(rawMarks)) {
@@ -116,13 +121,18 @@ export function createOkxAdapter(): VenueAdapter {
 						{
 							nextFundingAt: fundingTime,
 							markPrice,
-							...(volumes.get(market) === undefined
+							...(tickers.get(market)?.volume === undefined
 								? {}
 								: {
 										volume24hUsd: nonnegative(
-											(volumes.get(market) as number) * markPrice,
+											(tickers.get(market)?.volume as number) * markPrice,
 											`${market} volume24hUsd`,
 										),
+									}),
+							...(tickers.get(market)?.priceChange24hPct === undefined
+								? {}
+								: {
+										priceChange24hPct: tickers.get(market)?.priceChange24hPct,
 									}),
 						},
 					),

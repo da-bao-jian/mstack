@@ -1,8 +1,7 @@
-import { join } from "node:path";
 import {
 	detectMode,
 	type Mode,
-	renderPalette,
+	renderBrandPalette,
 	renderTerminalLogo,
 	style,
 } from "@mstack/brand";
@@ -12,6 +11,7 @@ import {
 	homeVenues,
 	type Reading,
 } from "./home-data.ts";
+import { collectHomeMarket, type HomeMarket } from "./home-market.ts";
 import { reachabilityLabel } from "./reachability.ts";
 import type { Runtime } from "./run.ts";
 
@@ -22,7 +22,9 @@ export interface HomeOptions {
 	ascii?: boolean;
 	offline?: boolean;
 	json?: boolean;
+	stacked?: boolean;
 	suppressKeyLegal?: boolean;
+	readyVenues?: string[];
 }
 const clean = (text: string) => text.replace(/[\p{Cc}\p{Cf}]/gu, "");
 function readText<T>(
@@ -32,13 +34,6 @@ function readText<T>(
 	return ["ok", "slow"].includes(reading.state) && reading.value !== undefined
 		? format(reading.value)
 		: reading.state;
-}
-function proposalText(data: HomeData) {
-	return readText(data.proposals, ({ awaiting }) =>
-		awaiting.length
-			? `${awaiting.length} awaiting signature (${awaiting.join(", ")})`
-			: "none",
-	);
 }
 function upgradeText(data: HomeData) {
 	return readText(data.upgrade, ({ available }) =>
@@ -71,6 +66,7 @@ function textMode(text: string, mode: Mode) {
 				.replaceAll("✓", "+")
 				.replaceAll("✗", "x")
 				.replaceAll("–", "-")
+				.replaceAll("−", "-")
 				.replaceAll("─", "-")
 				.replaceAll("·", ".")
 				.replaceAll("…", "...")
@@ -90,121 +86,188 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 		: options.plain
 			? "mono"
 			: undefined;
-	const size = options.compact ? 32 : options.big ? 60 : 44;
-	const data = await collectHome(rt, options);
+	const size = options.big ? 60 : 32;
+	const [data, market] = await Promise.all([
+		collectHome(rt, {
+			...options,
+			offline: options.offline || options.suppressKeyLegal,
+		}),
+		collectHomeMarket(rt, options),
+	]);
 	if (options.json) {
-		rt.out(JSON.stringify(data, null, 2));
+		rt.out(JSON.stringify({ ...data, market }, null, 2));
 		return;
 	}
 	const { lines: logo, mode } = renderTerminalLogo({
 		size,
 		terminal,
 		...(forcedMode ? { mode: forcedMode } : {}),
+		markers: false,
 	});
-	if (options.compact) {
-		rt.out(
-			[...logo, "", renderPalette({ mode }), "", `Next  ${data.next}`].join(
-				"\n",
+	const colorTerminal = {
+		...terminal,
+		isTTY: terminal.isTTY && mode !== "mono" && mode !== "ascii",
+	};
+	const paint = (value: string, color: Parameters<typeof style>[1]) =>
+		style(value, color, colorTerminal);
+	const label = (value: string) => paint(value.padEnd(11), "orange");
+	const status = (value: string) =>
+		value
+			.split(/(✓|✗|–)/u)
+			.map((part) =>
+				part === "✓"
+					? paint(part, "sky")
+					: part === "✗"
+						? paint(part, "orange")
+						: part === "–"
+							? paint(part, "dim")
+							: /unreachable|needs repair|^auto ·/i.test(part)
+								? paint(part, "orange")
+								: part,
+			)
+			.join("");
+	const row = (name: string, value: string) =>
+		textMode(`${label(name)}${status(clean(value))}`, mode);
+	const continuation = (value: string) =>
+		textMode(`${" ".repeat(11)}${clean(value)}`, mode);
+	const money = (value: number) => {
+		const abs = Math.abs(value);
+		const [divisor, suffix] =
+			abs >= 1e9
+				? [1e9, "B"]
+				: abs >= 1e6
+					? [1e6, "M"]
+					: abs >= 1e3
+						? [1e3, "K"]
+						: [1, ""];
+		return `$${(value / divisor).toFixed(divisor === 1 ? 0 : 1)}${suffix}`;
+	};
+	const signed = (value: number, digits = 0) =>
+		`${value >= 0 ? "+" : "−"}${Math.abs(value).toFixed(digits)}`;
+	const pairText = (pair: HomeMarket["topPairs"][number]) =>
+		`${pair.base.padEnd(7)}long ${pair.longVenue} · short ${pair.shortVenue}  ${Math.round(pair.netApyPct)}% net${pair.volume24hUsd === undefined ? "" : `  ${money(pair.volume24hUsd)}`}`;
+	const info: string[] = [];
+	const owner = data.owner
+		? `${data.owner.slice(0, 6)}…${data.owner.slice(-4)}`
+		: "new account";
+	const heading = `mstack ${data.version} · ${owner}`;
+	info.push(paint(textMode(heading, mode), "navy"));
+	info.push(paint(textMode("─".repeat(heading.length), mode), "sky"));
+	if (market.topPairs.length) {
+		market.topPairs.forEach((pair, index) => {
+			info.push(
+				index ? continuation(pairText(pair)) : row("Top pairs", pairText(pair)),
+			);
+		});
+	} else {
+		info.push(row("Top pairs", "venues unreachable · mob scan to retry"));
+	}
+	market.trending.forEach((item, index) => {
+		const change =
+			item.priceChange24hPct === undefined
+				? ""
+				: ` · price ${signed(item.priceChange24hPct, 1)}%`;
+		const value = `${item.base.padEnd(7)}${money(item.volume24hUsd)} 24h · funding ${signed(item.annualizedPct)}%/yr${item.openInterestUsd === undefined ? "" : ` · OI ${money(item.openInterestUsd)}`}${change}`;
+		info.push(index ? continuation(value) : row("Trending", value));
+	});
+	if (data.key.description && data.tasks.value?.running.count) {
+		const running = data.tasks.value.running;
+		info.push(
+			row(
+				"Positions",
+				`${running.count} running${running.sizeUsd === undefined ? "" : ` · ${money(running.sizeUsd)} per leg`}${running.fundingUsdPerDay === undefined ? "" : ` · est. funding ${signed(running.fundingUsdPerDay, 2)}/day`}`,
 			),
 		);
-		return;
 	}
-	const envHome = terminal.env.HOME;
-	const configPath =
-		envHome && data.config.path === join(envHome, ".mob/config.json")
-			? "~/.mob/config.json"
-			: data.config.path;
-	const rows: [string, string][] = [
-		[
-			"API",
-			`${data.api.host}  ${readText(data.api, ({ latencyMs }) => reachabilityLabel(latencyMs))}`,
-		],
-		[
-			"Auth",
-			`${data.auth.host}  ${readText(data.auth, ({ latencyMs }) => reachabilityLabel(latencyMs))}`,
-		],
-		[
-			"Owner",
-			data.owner
-				? `${data.owner.slice(0, 6)}…${data.owner.slice(-4)}`
-				: "not set → run mob setup",
-		],
-		["Signer", data.signer ?? "not set"],
-		[
-			"Policy",
-			data.policy === "auto"
-				? style(
-						"auto · the agent may submit inside the key's caps",
-						"warning",
-						{
-							...terminal,
-							isTTY: terminal.isTTY && mode !== "mono" && mode !== "ascii",
-						},
-					)
-				: data.policy,
-		],
-		...(options.suppressKeyLegal
-			? []
-			: ([
-					["Key", keyText(data)],
-					["Legal", legalText(data)],
-				] as [string, string][])),
-		[
-			"Venues",
-			homeVenues
-				.map(
-					(v) =>
-						`${v} ${readText(data.venues[v], (state) => (state.ready ? "✓" : state.issue === "not_bound" ? "–" : `✗ (${state.issue})`))}`,
-				)
-				.join("  "),
-		],
-		[
-			"Tasks",
-			readText(
-				data.tasks,
-				(counts) =>
-					Object.entries(counts)
-						.map(([state, count]) => `${count} ${state}`)
-						.join(" · ") || "none",
+	const accepted = data.legal.value?.accepted === true;
+	const ready =
+		options.suppressKeyLegal === true ||
+		Boolean(
+			data.owner &&
+				accepted &&
+				data.key.description &&
+				homeVenues.some((venue) => data.venues[venue].value?.ready),
+		);
+	if (ready) {
+		const venues = options.readyVenues?.length
+			? options.readyVenues.map((venue) => `${venue} ✓`)
+			: homeVenues
+					.filter((venue) => data.venues[venue].value?.bound)
+					.map(
+						(venue) =>
+							`${venue} ${data.venues[venue].value?.ready ? "✓" : "✗"}`,
+					);
+		const key = data.key.description;
+		const cap = key?.meta.maxSizeUsd;
+		const keyCheck =
+			data.key.state === "ok"
+				? "✓"
+				: data.key.state === "rejected" || data.key.state === "unreachable"
+					? "✗"
+					: "–";
+		info.push(
+			row(
+				"Ready",
+				`${venues.join("  ")}${venues.length ? " · " : ""}key ${key?.prefix ?? "none"} ${keyCheck}${cap === undefined ? "" : ` · cap ${money(cap)}`}`,
 			),
-		],
-		["Proposals", proposalText(data)],
-		[
-			"Config",
-			`${configPath}${data.config.error ? ` · invalid: ${data.config.error}` : ""}`,
-		],
-		["Upgrade", upgradeText(data)],
-	];
-	const heading = `mstack ${data.version}  ·  mob`;
-	const info = [
-		style(textMode(heading, mode), "bold", {
-			...terminal,
-			isTTY: terminal.isTTY && mode !== "mono" && mode !== "ascii",
-		}),
-		textMode("─".repeat(heading.length), mode),
-		...rows.map(([key, value]) =>
-			textMode(`${key.padEnd(10)}${clean(value)}`, mode),
-		),
-	];
-	const lines =
-		!terminal.isTTY || (rt.columns ?? process.stdout.columns ?? 80) < 90
-			? [...logo, "", ...info]
-			: Array.from({ length: Math.max(logo.length, info.length) }, (_, i) => {
-					const left = logo[i] ?? "";
-					return `${left}${" ".repeat(size - Bun.stringWidth(left) + 3)}${info[i] ?? ""}`.trimEnd();
-				});
-	rt.out(
-		[
-			...lines,
-			...(data.api.state === "slow" || data.api.state === "unreachable"
-				? [`API ${data.api.state}; venue reads are unaffected`]
-				: []),
-			"",
-			renderPalette({ mode }),
-			"",
-			`Next  ${data.next}`,
-		].join("\n"),
+		);
+	} else {
+		const legal = accepted ? "✓" : "✗";
+		info.push(
+			row(
+				"Onboarding",
+				`legal ${legal} · hl – · lighter – · key ${data.key.description?.prefix ?? "none"}`,
+			),
+		);
+	}
+	const policy =
+		data.policy === "manual"
+			? "manual · you approve each Proposal by naming it"
+			: data.policy === "auto"
+				? "auto · the agent may submit inside the key's caps"
+				: "locked · reads only";
+	info.push(row("Policy", policy));
+	const awaiting = data.proposals.value?.awaiting[0];
+	const next = awaiting
+		? `mob sign ${awaiting}`
+		: !ready
+			? 'say "set me up"'
+			: market.topPairs[0]
+				? `say "open ${market.topPairs[0].base}"   or   mob scan`
+				: "mob scan";
+	info.push(row("Next", next));
+	const freshness = freshnessText(market);
+	const palette =
+		mode === "truecolor" || mode === "ansi256"
+			? renderBrandPalette({ mode })
+			: "";
+	const columns = rt.columns ?? process.stdout.columns ?? 80;
+	const stacked = options.stacked || columns < 72;
+	if (!stacked) while (info.length < logo.length - 1) info.push("");
+	info.push(
+		`${paint(freshness, market.freshness.state === "live" ? "sky" : "orange")}${palette ? `          ${palette}` : ""}`,
 	);
+	const lines = stacked
+		? [...logo, "", ...info]
+		: Array.from({ length: Math.max(logo.length, info.length) }, (_, index) => {
+				const left = logo[index] ?? "";
+				return `${left}${" ".repeat(size - Bun.stringWidth(left) + 3)}${info[index] ?? ""}`.trimEnd();
+			});
+	const marked = !terminal.isTTY || mode === "ascii";
+	rt.out((marked ? ["<<<MOB", ...lines, "MOB>>>"] : lines).join("\n"));
+}
+
+function freshnessText(market: HomeMarket): string {
+	const { freshness } = market;
+	if (freshness.state === "live") {
+		const timedOut = freshness.failed.length
+			? ` · ${freshness.failed.join(", ")} timed out`
+			: "";
+		return `live · ${freshness.succeeded} of ${freshness.total} venues · ${((freshness.durationMs ?? 0) / 1000).toFixed(1)} s${timedOut}`;
+	}
+	if (freshness.state === "cached" && freshness.ageMs !== undefined)
+		return `cached ${Math.max(1, Math.round(freshness.ageMs / 60_000))} min ago`;
+	return "offline";
 }
 
 interface Check {

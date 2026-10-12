@@ -64,6 +64,7 @@ async function fetchDex(
 			throw new Error(`${market}: wrong dex qualifier`);
 		const data = object(contexts[index], `${market} context`);
 		const markPrice = positive(data.markPx, `${market} markPx`);
+		const previousPrice = positive(data.prevDayPx, `${market} prevDayPx`);
 		const openInterestUsd = nonnegative(
 			nonnegative(data.openInterest, `${market} openInterest`) * markPrice,
 			`${market} openInterestUsd`,
@@ -73,6 +74,7 @@ async function fetchDex(
 				markPrice,
 				openInterestUsd,
 				...volume(data.dayNtlVlm, `${market} dayNtlVlm`),
+				priceChange24hPct: ((markPrice - previousPrice) / previousPrice) * 100,
 				oiCapped: caps.has(market),
 			}),
 		];

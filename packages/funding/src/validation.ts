@@ -79,6 +79,7 @@ export function rate(
 			| "markPrice"
 			| "openInterestUsd"
 			| "volume24hUsd"
+			| "priceChange24hPct"
 			| "oiCapped"
 			| "source"
 		>

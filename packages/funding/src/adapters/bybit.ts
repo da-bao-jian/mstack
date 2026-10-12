@@ -51,6 +51,8 @@ export const bybit: VenueAdapter = {
 							entry.openInterestValue,
 							`${market} openInterestValue`,
 						),
+						priceChange24hPct:
+							numeric(entry.price24hPcnt, `${market} price24hPcnt`) * 100,
 					},
 				),
 			];

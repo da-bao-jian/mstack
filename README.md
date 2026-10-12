@@ -125,8 +125,8 @@ Use `mob bind --all` or `mob onboard --native` for repair and terminal-native on
 Wallet Proposals still require the exact id, for example, “Sign p-7 in the browser wallet.” The wallet asks you to approve. Keystore signing belongs in your own terminal.
 
 Run `mob` for the home screen, `mob doctor` for diagnostics, and `mob explain funding --simple` for a plain explanation.
-The home screen shows public account status and one next command. `mob hello --offline` omits network reads;
-`--big`, `--compact`, `--plain`, `--ascii`, and `--json` select its presentation.
+The home screen shows a live market view, account standing and the next action. `mob hello --offline` uses the cached market view;
+`--big`, `--compact`, `--stacked`, `--plain`, `--ascii`, and `--json` select its presentation.
 Home and doctor share a five-second network budget; unfinished checks say `not checked`.
 Doctor checks installation, public config, signer availability, API access, legal acceptance, readiness,
 and local Proposals without opening a wallet. Failed or unchecked critical items exit 1; use `mob doctor --json` for the checklist.

@@ -4,13 +4,13 @@ The CLI reference lists commands and flags; this guide explains the flows and li
 
 ## Home screen and diagnostics
 
-Run `mob` or `mob hello` for the logo, public account status and one next command. Use `--big`, `--compact`, `--plain`, `--ascii`, `--offline` or `--json`. Below 90 terminal columns, the logo appears above the details. `--compact` hides the info block and keeps the logo, palette and next command. Add `--offline` to omit network reads.
+Run `mob` or `mob hello` for the logo, a five-second live market view, account standing and the next action. Use `--big`, `--compact`, `--stacked`, `--plain`, `--ascii`, `--offline` or `--json`. Below 72 terminal columns, the logo appears above the details. Add `--offline` to use the last cached market view without network reads.
 
 `mob doctor` checks the installation, public configuration, signer availability, API access, legal acceptance, venue readiness and local Proposals. `mob doctor --json` returns the checklist. It never opens a wallet or requests a secret. Both screens share a five-second network budget; unfinished reads say `not checked`. Upgrade status uses the cached `origin/main` reference; these commands do not fetch GitHub.
 
 Doctor exits 1 for a failed or unchecked critical item. Unbound venues, Bun availability for upgrades, and upgrade notices are optional. A bound venue's readiness and deposit/account checks are critical. A valid `locked` policy passes and is labeled as disabling mutations. The HL deposit check reports current perpetual account value; it cannot establish past deposits or spot-only balances.
 
-The installer ends with the home screen and three next commands; `-q` stays quiet. The first mstack skill in an hour shows a compact ASCII splash, scoped by owner or home and shared between hosts. The `/mob` router always shows it. The plugin does not use SessionStart to show an install notice.
+The installer ends with the home screen and three next commands; `-q` stays quiet. The first mstack skill in an hour shows the same live ASCII greeting, scoped by owner or home and shared between hosts. The `/mob` router always shows it. The plugin does not use SessionStart to show an install notice.
 
 ## Funding and opportunity libraries
 

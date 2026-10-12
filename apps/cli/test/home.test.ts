@@ -11,6 +11,8 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { renderLogo } from "@mstack/brand";
+import type { ObservedFundingRate, Snapshot } from "@mstack/funding";
+import { createKeyStore } from "@mstack/keys";
 import { ProposalStore } from "@mstack/proposals";
 import pkg from "../package.json";
 import { setConfig } from "../src/config.ts";
@@ -21,6 +23,41 @@ import { homeApi, homeNow, homeOwner } from "./fixtures/home-api.ts";
 const root = await mkdtemp(join(tmpdir(), "mstack-home-test-"));
 afterAll(() => rm(root, { recursive: true, force: true }));
 let sequence = 0;
+function marketSnapshot(): Snapshot {
+	const make = (
+		venue: string,
+		market: string,
+		annualizedPct: number,
+		volume24hUsd: number,
+	): ObservedFundingRate => ({
+		venue,
+		market,
+		ratePerInterval: annualizedPct / 100 / 8760,
+		intervalHours: 1,
+		annualizedPct,
+		observedAt: homeNow,
+		markPrice: 100,
+		volume24hUsd,
+		openInterestUsd: volume24hUsd / 2,
+		priceChange24hPct: 1.2,
+		source: "direct",
+		annualizationMethod: "simple",
+	});
+	const rates = [
+		make("hl", "BTC", -20, 20_000_000),
+		make("lighter", "BTC", 80, 10_000_000),
+		make("hl", "ETH", -10, 8_000_000),
+		make("lighter", "ETH", 40, 6_000_000),
+	];
+	return {
+		observedAt: homeNow,
+		rates,
+		listed: rates.map((row) => `${row.venue}:${row.market}`),
+		failed: [],
+		source: "direct",
+		annualizationMethod: "simple",
+	};
+}
 async function context(configured = true) {
 	const home = join(root, String(sequence++));
 	const fake = homeApi();
@@ -42,6 +79,7 @@ async function context(configured = true) {
 		homeServices: {
 			which: () => "/mock/tool",
 			upgrade: async () => ({ state: "ok", value: { available: null } }),
+			marketSnapshot: async () => marketSnapshot(),
 		},
 		out: (s) => lines.push(s),
 		err: (s) => errors.push(s),
@@ -83,50 +121,90 @@ async function proposal(home: string, now = homeNow) {
 		checks: [{ route: "/api/binding/hl/credential", ok: true }],
 	}));
 }
-test("no args home: parallel reads, aligned info, statuses, owner, tasks and Next", async () => {
+test("no args home: live market, account standing and next action share the logo", async () => {
 	const { invoke, fake } = await context();
 	const r = await invoke([]);
 	expect(r.code).toBe(0);
 	expect(r.err).toBe("");
-	expect(r.out).toContain(`mstack ${pkg.version}  ·  mob`);
-	expect(r.out).toContain("Owner     0x0000…0001");
-	expect(r.out).toContain("hl ✓  lighter ✓  aster –  lighter-mainnet –");
-	expect(r.out).toContain("Legal     accepted 2026-08-17");
-	expect(r.out).toContain("Tasks     2 running · 1 closed");
-	expect(r.out).toEndWith("Next  mob scan --size 1000");
-	expect(r.out.split("\n")[0].indexOf("mstack")).toBe(47);
-	for (const label of [
-		"API",
-		"Auth",
-		"Owner",
-		"Signer",
-		"Policy",
-		"Legal",
-		"Venues",
-		"Tasks",
-		"Proposals",
-		"Config",
-		"Upgrade",
-	])
-		expect(
-			r.out
-				.split("\n")
-				.find((line) => line.includes(`${label} `))
-				?.indexOf(label),
-		).toBe(47);
+	expect(r.out).toContain(`mstack ${pkg.version} · 0x0000…0001`);
+	expect(r.out).toContain("Top pairs  BTC");
+	expect(r.out).toContain("Trending   BTC");
+	expect(r.out).toContain("Onboarding legal ✓");
+	expect(r.out).toContain('Next       say "set me up"');
+	expect(r.out).toContain("live · 2 of 7 venues");
+	expect(r.out.split("\n")[0].indexOf("mstack")).toBe(35);
 	expect(fake.calls).toHaveLength(7);
 	expect(fake.calls.every((c) => c.method === "GET")).toBe(true);
 	expect(fake.calls.some((c) => c.url.includes("rebind-check"))).toBe(false);
 });
-test("narrow terminal stacks logo above info; plain has no escapes", async () => {
-	const { invoke, rt } = await context();
-	rt.columns = 89;
-	const { out } = await invoke(["hello", "--offline", "--plain"]);
-	expect(out.split("\n").slice(0, 18)).toEqual(
-		renderLogo({ size: 44, mode: "mono" }),
+test("80-column ASCII home snapshots cover fresh, running and cached states", async () => {
+	const fresh = await context(false);
+	fresh.rt.columns = 80;
+	fresh.rt.isTTY = false;
+	fresh.rt.stdoutIsTTY = false;
+	expect((await fresh.invoke([])).out).toMatchSnapshot("fresh live");
+
+	const onboarded = await context();
+	await setConfig("key_store", "file", onboarded.home);
+	const store = await createKeyStore({
+		home: onboarded.home,
+		selection: "file",
+		env: {},
+		apiBase: "https://api.test",
+		now: () => homeNow,
+	});
+	await store.put(
+		homeOwner,
+		`mobius_01234567-89ab-cdef-0123-456789abcdef.${"ab".repeat(32)}`,
+		{
+			importedAt: homeNow,
+			apiBase: "https://api.test",
+			maxSizeUsd: 5000,
+		},
 	);
-	expect(out.split("\n")[19]).toBe(`mstack ${pkg.version}  ·  mob`);
+	onboarded.rt.columns = 80;
+	onboarded.rt.isTTY = false;
+	onboarded.rt.stdoutIsTTY = false;
+	expect((await onboarded.invoke([])).out).toMatchSnapshot("onboarded running");
+
+	const cached = await context(false);
+	await cached.invoke([]);
+	cached.rt.now = () => homeNow + 4 * 60_000;
+	cached.rt.homeServices = {
+		...cached.rt.homeServices,
+		marketSnapshot: async () => ({
+			...marketSnapshot(),
+			rates: [],
+			listed: [],
+		}),
+	};
+	cached.rt.columns = 80;
+	cached.rt.isTTY = false;
+	cached.rt.stdoutIsTTY = false;
+	expect((await cached.invoke([])).out).toMatchSnapshot("unreachable cached");
+});
+test("terminal under 72 columns stacks the 13-row logo above info", async () => {
+	const { invoke, rt } = await context();
+	rt.columns = 60;
+	const { out } = await invoke(["hello", "--offline", "--plain"]);
+	expect(out.split("\n").slice(0, 13)).toEqual(
+		renderLogo({ size: 32, mode: "mono" }),
+	);
+	expect(out.split("\n")[14]).toBe(`mstack ${pkg.version} · 0x0000…0001`);
 	expect(out).not.toContain("\x1b");
+});
+test("TTY home uses brand colors and the three-swatch palette only", async () => {
+	const { invoke, rt } = await context(false);
+	rt.env = { LANG: "en_US.UTF-8", COLORTERM: "truecolor" };
+	const { out } = await invoke([]);
+	expect(out).toContain("\x1b[38;2;2;123;176mmstack");
+	expect(out).toContain("\x1b[38;2;246;96;71mTop pairs");
+	expect(out).toContain("\x1b[38;2;127;216;255m─");
+	expect(out).toContain("\x1b[48;2;127;216;255m  \x1b[0m sky");
+	expect(out).toContain("\x1b[48;2;246;96;71m  \x1b[0m orange");
+	expect(out).toContain("\x1b[48;2;2;123;176m  \x1b[0m navy");
+	expect(out).not.toContain(" bg");
+	expect(out).not.toContain("<<<MOB");
 });
 test("non-TTY home uses one marked ASCII block; flags still force their modes", async () => {
 	const { invoke, rt } = await context();
@@ -134,9 +212,9 @@ test("non-TTY home uses one marked ASCII block; flags still force their modes", 
 	rt.stdoutIsTTY = false;
 	const headless = await invoke(["hello", "--offline"]);
 	expect(headless.out).toStartWith("<<<MOB\n");
-	expect(headless.out).toContain("\nMOB>>>\n\n");
+	expect(headless.out).toEndWith("\nMOB>>>");
 	expect(headless.out).toMatch(/^[\x20-\x7e\n]*$/);
-	expect(headless.out.indexOf("MOB>>>")).toBeLessThan(
+	expect(headless.out.indexOf("MOB>>>")).toBeGreaterThan(
 		headless.out.indexOf(`mstack ${pkg.version}`),
 	);
 
@@ -147,25 +225,24 @@ test("non-TTY home uses one marked ASCII block; flags still force their modes", 
 	expect(ascii.out).toStartWith("<<<MOB\n");
 	expect(ascii.out).not.toContain("░");
 });
-test("big and compact sizes retain Next; offline makes no HTTP calls", async () => {
+test("big has 25 art rows; compact uses the 13-row home and offline makes no HTTP calls", async () => {
 	const { invoke, fake } = await context();
-	expect(
-		(await invoke(["hello", "--compact", "--ascii", "--offline"])).out,
-	).toBe(
-		[
-			...renderLogo({ size: 32, mode: "ascii" }),
-			"",
-			".. -- ++ ##",
-			"",
-			"Next  mob bind hl",
-		].join("\n"),
-	);
+	const compactOffline = await invoke([
+		"hello",
+		"--compact",
+		"--ascii",
+		"--offline",
+	]);
+	expect(compactOffline.out).toStartWith("<<<MOB\n");
+	expect(compactOffline.out).toContain('Next       say "set me up"');
+	expect(compactOffline.out).not.toContain("sky  ");
 	const big = await invoke(["--big", "--plain", "--offline"]);
-	expect(big.out.split("\n")[0].indexOf("mstack")).toBe(63);
-	expect(big.out).toContain("not checked");
+	expect(big.out.split("\n").filter((line) => /[░▒█]/.test(line))).toHaveLength(
+		25,
+	);
 	expect(fake.calls).toHaveLength(0);
 	const compact = await invoke(["hello", "--compact", "--ascii"]);
-	expect(compact.out).toEndWith("Next  mob scan --size 1000");
+	expect(compact.out).toContain("Top pairs");
 	expect(compact.out).not.toContain("Owner");
 	expect(fake.calls).toHaveLength(7);
 });
@@ -173,8 +250,8 @@ test("big and compact sizes retain Next; offline makes no HTTP calls", async () 
 test("no config Next setup and auth terms read; no owner-specific routes", async () => {
 	const { invoke, fake } = await context(false);
 	const r = await invoke(["--plain"]);
-	expect(r.out).toEndWith("Next  mob setup");
-	expect(r.out).toContain("not set → run mob setup");
+	expect(r.out).toContain('Next       say "set me up"');
+	expect(r.out).toContain("new account");
 	expect(fake.calls.map((c) => new URL(c.url).pathname).sort()).toEqual([
 		"/api/client-ip",
 		"/legal/terms",
@@ -186,9 +263,8 @@ test("configured but unbound Next bind; empty tasks and absent acceptance", asyn
 	fake.state.tasks = false;
 	fake.state.accepted = false;
 	const { out } = await invoke(["hello"]);
-	expect(out).toContain("Tasks     none");
-	expect(out).toContain("Legal     not accepted");
-	expect(out).toEndWith("Next  mob bind hl");
+	expect(out).toContain("Onboarding legal ✗");
+	expect(out).toContain('Next       say "set me up"');
 });
 test("JSON includes local Proposals and gives pending Proposal Next priority", async () => {
 	const { invoke, home } = await context();
@@ -348,7 +424,7 @@ test("upgrade and terminal ASCII output; help/version remain plain", async () =>
 	};
 	const r = await invoke(["hello", "--ascii", "--offline"]);
 	expect(r.out).toMatch(/^[\x20-\x7e\n]*$/);
-	expect(r.out).toContain("available abcdef0");
+	expect(r.out).toContain("Top pairs");
 	expect((await invoke(["--help"])).out).toContain("mob doctor [--json]");
 	expect((await invoke(["--version"])).out).toBe(pkg.version);
 	for (const args of [
@@ -367,9 +443,7 @@ test("slow API is labeled, unreachable deadline is explicit, and venue reads sti
 		if (url.includes("/api/client-ip")) await Bun.sleep(3100);
 		return fast(url, init);
 	};
-	const result = await invoke(["hello", "--plain"]);
-	expect(result.out).toMatch(/slow · 3\.\d s/);
-	expect(result.out).toContain("API slow; venue reads are unaffected");
+	await invoke(["hello", "--plain"]);
 	fake.state.hang = "/api/client-ip";
 	rt.fetch = fast;
 	rt.homeServices = { ...rt.homeServices, networkBudgetMs: 30 };

@@ -3,6 +3,7 @@ import asset from "../../../assets/logo.json";
 import {
 	detectMode,
 	palette,
+	renderBrandPalette,
 	renderLogo,
 	renderPalette,
 	renderTerminalLogo,
@@ -115,6 +116,9 @@ test("palette and styles respect terminal capabilities", () => {
 	expect(renderPalette({ mode: "ascii" })).toBe(".. -- ++ ##");
 	expect(renderPalette({ mode: "ansi256" })).toBe(
 		"\x1b[48;5;254m  \x1b[0m \x1b[48;5;117m  \x1b[0m \x1b[48;5;203m  \x1b[0m \x1b[48;5;31m  \x1b[0m",
+	);
+	expect(renderBrandPalette({ mode: "ansi256" })).toBe(
+		"\x1b[48;5;117m  \x1b[0m sky  \x1b[48;5;203m  \x1b[0m orange  \x1b[48;5;31m  \x1b[0m navy",
 	);
 	const terminal = { env: { COLORTERM: "truecolor" }, isTTY: true };
 	expect(style("title", "bold", terminal)).toBe("\x1b[1mtitle\x1b[0m");

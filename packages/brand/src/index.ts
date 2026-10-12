@@ -56,15 +56,17 @@ export function renderTerminalLogo({
 	size,
 	terminal,
 	mode = detectMode(terminal),
+	markers = true,
 }: {
 	size: 32 | 44 | 60;
 	terminal: Terminal;
 	mode?: Mode;
+	markers?: boolean;
 }): { lines: string[]; mode: Mode } {
 	const lines = renderLogo({ size, mode });
 	return {
 		mode,
-		lines: terminal.isTTY ? lines : ["<<<MOB", ...lines, "MOB>>>"],
+		lines: terminal.isTTY || !markers ? lines : ["<<<MOB", ...lines, "MOB>>>"],
 	};
 }
 export function renderLogo({
@@ -109,6 +111,16 @@ export function renderPalette({ mode }: { mode: Mode }): string {
 					: `${sgr(color, mode, true)}  ${reset}`,
 		)
 		.join(" ");
+}
+
+export function renderBrandPalette({ mode }: { mode: Mode }): string {
+	return (["sky", "orange", "navy"] as const)
+		.map((color) =>
+			mode === "truecolor" || mode === "ansi256"
+				? `${sgr(color, mode, true)}  ${reset} ${color}`
+				: `-- ${color}`,
+		)
+		.join("  ");
 }
 export function style(
 	text: string,

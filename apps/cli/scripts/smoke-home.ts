@@ -3,6 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ProposalStore } from "@mstack/proposals";
+import { fixtureContext } from "../../../packages/funding/test/fixtures.ts";
 import { setConfig } from "../src/config.ts";
 import { run } from "../src/run.ts";
 import { homeApi, homeNow, homeOwner } from "../test/fixtures/home-api.ts";
@@ -11,6 +12,7 @@ import { homeApi, homeNow, homeOwner } from "../test/fixtures/home-api.ts";
 const temporary = await mkdtemp(join(tmpdir(), "mstack-smoke-home-"));
 const home = join(temporary, ".mob");
 const fake = homeApi();
+const venue = await fixtureContext();
 const server = Bun.serve({
 	hostname: "127.0.0.1",
 	port: 0,
@@ -67,6 +69,8 @@ try {
 		["doctor", "--json"],
 	]) {
 		console.log(`\n$ mob ${args.join(" ")}`);
+		const started = performance.now();
+		const output: string[] = [];
 		const code = await run(args, {
 			home,
 			now: () => homeNow,
@@ -79,19 +83,32 @@ try {
 			},
 			fetch: async (url, init) => {
 				const parsed = new URL(url);
-				return fetch(
-					`${server.url.origin}${parsed.pathname}${parsed.search}`,
-					init,
-				);
+				const body = typeof init?.body === "string" ? init.body : "";
+				return parsed.hostname === server.url.hostname ||
+					body.includes('"type":"clearinghouseState"') ||
+					parsed.pathname === "/api/v1/account"
+					? fetch(
+							`${server.url.origin}${parsed.pathname}${parsed.search}`,
+							init,
+						)
+					: venue.ctx.fetch(url, init);
 			},
-			out: console.log,
+			out: (line) => {
+				output.push(line);
+				console.log(line);
+			},
 			err: console.error,
 		});
+		if (args[0] !== "doctor") {
+			assert.ok(performance.now() - started < 5_500);
+			assert.match(output.join("\n"), /<<<MOB\n[\s\S]*\nMOB>>>/);
+		}
 		console.log(`exit ${code}`);
 		assert.equal(code, 0);
 	}
 	assert.equal(fake.calls.length, 24);
 	assert.equal(fake.calls.filter((c) => c.method === "POST").length, 1);
+	assert.ok(venue.calls.length > 0, "home must read recorded venue fixtures");
 	console.log(
 		"\n24 API reads; the only POST was keyless clearinghouseState. No signature requested.",
 	);

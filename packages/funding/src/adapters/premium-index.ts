@@ -25,12 +25,25 @@ export async function premiumIndexRates(
 		json(ctx, `${baseUrl}/fundingInfo`),
 		json(ctx, `${baseUrl}/ticker/24hr`),
 	]);
-	const volumes = new Map<string, { volume24hUsd?: number }>();
+	const volumes = new Map<
+		string,
+		{ volume24hUsd?: number; priceChange24hPct?: number }
+	>();
 	for (const value of array(tickers, "24hr tickers")) {
 		const entry = object(value, "24hr ticker");
 		const symbol = string(entry.symbol, "symbol");
 		if (volumes.has(symbol)) throw new Error(`Duplicate ticker ${symbol}`);
-		volumes.set(symbol, volume(entry.quoteVolume, `${symbol} quoteVolume`));
+		volumes.set(symbol, {
+			...volume(entry.quoteVolume, `${symbol} quoteVolume`),
+			...(entry.priceChangePercent === undefined
+				? {}
+				: {
+						priceChange24hPct: numeric(
+							entry.priceChangePercent,
+							`${symbol} priceChangePercent`,
+						),
+					}),
+		});
 	}
 	const intervals = new Map<string, number>();
 	for (const value of array(info, "fundingInfo")) {

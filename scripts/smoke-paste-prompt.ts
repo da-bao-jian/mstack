@@ -162,6 +162,14 @@ try {
 		throw new Error(
 			`Claude final mob output has no marked logo\n${claudeHome?.out ?? "missing"}`,
 		);
+	if (
+		!claudeHome.out
+			.split("\n")
+			.some((line) => /[#+-].*(Ready|Onboarding)/.test(line))
+	)
+		throw new Error(
+			`Claude home does not pair art with status\n${claudeHome.out}`,
+		);
 	const pluginUninstall = uninstall.find((command) =>
 		command.startsWith("claude plugin uninstall "),
 	);
@@ -188,6 +196,14 @@ try {
 	if (!codexHome || !/<<<MOB\n[\s\S]*\nMOB>>>/.test(codexHome.out))
 		throw new Error(
 			`Codex final mob output has no marked logo\n${codexHome?.out ?? "missing"}`,
+		);
+	if (
+		!codexHome.out
+			.split("\n")
+			.some((line) => /[#+-].*(Ready|Onboarding)/.test(line))
+	)
+		throw new Error(
+			`Codex home does not pair art with status\n${codexHome.out}`,
 		);
 
 	console.log(

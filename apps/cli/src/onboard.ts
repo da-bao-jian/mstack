@@ -272,7 +272,15 @@ export async function onboard(
 	}
 	if (watch) rt.out(render(state, rt));
 	if (next(state, tty) === "Ready") {
-		await home({ offline: true, suppressKeyLegal: true }, rt);
+		await home(
+			{
+				suppressKeyLegal: true,
+				readyVenues: state.venues
+					.filter((venue) => venue.ready)
+					.map((venue) => venue.venue),
+			},
+			rt,
+		);
 		const cap = state.cap?.toLocaleString("en-US") ?? "unknown";
 		rt.out(
 			`Ready · ${state.venues.filter((venue) => venue.ready).length} venues bound · key ${state.prefix} · cap ${cap === "unknown" ? "unknown" : `$${cap}`}`,
