@@ -51,6 +51,18 @@ function legalText(data: HomeData) {
 			: "not accepted",
 	);
 }
+function keyText(data: HomeData) {
+	if (!data.key.description)
+		// TODO(W20): Replace this with `mob onboard` when onboarding lands.
+		return data.key.state === "unreachable"
+			? `unreachable${data.key.error ? `: ${data.key.error}` : ""}`
+			: "none · run mob keys import";
+	const suffix =
+		data.key.state === "ok" && data.key.latencyMs !== undefined
+			? `ok · ${data.key.latencyMs} ms`
+			: data.key.state;
+	return `${data.key.description.prefix} (${data.key.description.backend}) · ${suffix}`;
+}
 function textMode(text: string, mode: Mode) {
 	return mode !== "ascii"
 		? text
@@ -117,6 +129,7 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 		],
 		["Signer", data.signer ?? "not set"],
 		["Policy", data.policy],
+		["Key", keyText(data)],
 		["Legal", legalText(data)],
 		[
 			"Venues",
@@ -243,6 +256,12 @@ export async function doctor(json: boolean, rt: Runtime): Promise<number> {
 		"Policy",
 		data.config.valid,
 		`${data.policy}${data.policy === "locked" ? " (mutations disabled)" : ""}`,
+	);
+	add(
+		"Key",
+		data.key.description ? data.key.state === "ok" : null,
+		keyText(data),
+		false,
 	);
 	network(
 		"API",

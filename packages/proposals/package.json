@@ -8,6 +8,7 @@
 		".": "./src/index.ts"
 	},
 	"dependencies": {
+		"@mstack/keys": "workspace:*",
 		"viem": "2.57.4",
 		"@mstack/mobius-client": "workspace:*",
 		"@mstack/signers": "workspace:*"

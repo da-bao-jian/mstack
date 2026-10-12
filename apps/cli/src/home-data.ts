@@ -1,5 +1,6 @@
 import { lstat } from "node:fs/promises";
 import { join } from "node:path";
+import { type KeyDescription, verifyApiKey } from "@mstack/keys";
 import {
 	ApiError,
 	type ArbitrageVenue,
@@ -8,6 +9,7 @@ import {
 import { ProposalStore } from "@mstack/proposals";
 import pkg from "../package.json";
 import { type Config, getConfig, readConfig } from "./config.ts";
+import { cliKeyStore } from "./key-store.ts";
 import { object, request } from "./onboarding-http.ts";
 import { credentialReadiness } from "./preflight/readiness.ts";
 import { API_BUDGET_MS, reachability } from "./reachability.ts";
@@ -39,6 +41,12 @@ export interface HomeData {
 	owner: string | null;
 	signer: Config["signer"] | null;
 	policy: string;
+	key: {
+		state: "none" | "ok" | "rejected" | "unreachable" | "not checked";
+		description?: KeyDescription;
+		latencyMs?: number;
+		error?: string;
+	};
 	api: Reading<{ latencyMs: number }> & { host: string };
 	auth: Reading<{ latencyMs: number }> & { host: string };
 	legal: Reading<{ accepted: boolean; acceptedAt: string | null }>;
@@ -174,6 +182,7 @@ export async function collectHome(
 		owner: config.owner ?? null,
 		signer: config.signer ?? null,
 		policy: String(getConfig(config, "policy")),
+		key: { state: "none" },
 		api: { host: new URL(apiBase).host, ...unchecked() },
 		auth: { host: new URL(authBase).host, ...unchecked() },
 		legal: unchecked(),
@@ -198,6 +207,38 @@ export async function collectHome(
 		data.diagnostics.signer = await signerStatus(config, rt.home, services);
 	} catch (e) {
 		data.diagnostics.signer = { usable: false, detail: failure(e) };
+	}
+	if (config.owner) {
+		try {
+			const keyStore = await cliKeyStore(rt);
+			const description = await keyStore.describe(config.owner);
+			if (description) {
+				data.key = { state: "not checked", description };
+				if (!options.offline) {
+					const stored = await keyStore.get(config.owner);
+					if (stored) {
+						const checked = await verifyApiKey(
+							description.meta.apiBase,
+							stored.key,
+							rt.fetch,
+							rt.now,
+						);
+						data.key =
+							checked.status === "ok"
+								? { state: "ok", description, latencyMs: checked.latencyMs }
+								: checked.status === "rejected"
+									? {
+											state: "rejected",
+											description,
+											latencyMs: checked.latencyMs,
+										}
+									: { state: "unreachable", description, error: checked.error };
+					}
+				}
+			}
+		} catch (e) {
+			data.key = { state: "unreachable", error: failure(e) };
+		}
 	}
 	try {
 		const proposals = (await exists(join(rt.home, "proposals")))

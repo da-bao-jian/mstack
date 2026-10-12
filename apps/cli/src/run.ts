@@ -41,6 +41,9 @@ Usage:
   mob setup [--owner 0x… --signer keystore|browser|walletconnect --policy manual|locked]
             [--auth-base URL] [--legal-chain-id N] [--walletconnect-project-id ID] [--no-legal]
   mob bind <hl|aster|lighter|lighter-mainnet>
+  mob keys import [--stdin] [--unverified] [--name <n>] [--venues a,b] [--max-size <usd>]
+  mob keys create --name <n> --venues a,b[,c,d] --max-size <usd>
+  mob keys list | revoke <uuid> | show [--json] | delete
   mob keystore create | import | list
   mob proposals
   mob proposal show <id>
@@ -64,7 +67,7 @@ Usage:
   mob --help
 
 Venues: hl,lighter,lighter-mainnet,aster,binance,bybit,okx
-Config keys: api_base, auth_base, legal_chain_id, hl_signature_chain_id, owner, signer, policy, walletconnect_project_id, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps
+Config keys: api_base, auth_base, legal_chain_id, hl_signature_chain_id, owner, signer, policy, key_store, walletconnect_project_id, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps
 Keystore secrets are read only from /dev/tty. Mutation commands stage, preview, and stop before signing.
 MCP tools stage Proposals; no sign, reject, or config-set tool is exposed.
 Protection at open requires assumed leverage, not verified on the venue. Leverage and margin mode are never set by these commands.
@@ -104,6 +107,16 @@ export const definitions: Record<string, ParseArgsConfig["options"]> = {
 		"no-legal": flag("boolean"),
 	},
 	bind: { help: flag("boolean") },
+	keys: {
+		help: flag("boolean"),
+		json: flag("boolean"),
+		unverified: flag("boolean"),
+		stdin: flag("boolean"),
+		"from-env": flag("boolean"),
+		name: flag("string"),
+		venues: flag("string"),
+		"max-size": flag("string"),
+	},
 	open: {
 		help: flag("boolean"),
 		long: flag("string"),
@@ -337,6 +350,11 @@ export async function run(
 				);
 			const { bindCommand } = await import("./bind-command.ts");
 			await bindCommand(positionals[0], rt);
+			return 0;
+		}
+		if (command === "keys") {
+			const { keysCommand } = await import("./keys-command.ts");
+			await keysCommand(positionals, values, rt, rt.readSecret);
 			return 0;
 		}
 		if (command === "mcp") {

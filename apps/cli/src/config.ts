@@ -15,6 +15,7 @@ export interface Config {
 	default_size_usd?: number;
 	taker_fee_bps?: Record<string, number>;
 	builder_fee_tenths_bps?: number;
+	key_store?: "auto" | "env" | "keychain" | "secret-tool" | "file";
 }
 
 export class UsageError extends Error {}
@@ -78,6 +79,7 @@ function knownKey(key: string): void {
 			"owner",
 			"default_size_usd",
 			"builder_fee_tenths_bps",
+			"key_store",
 		].includes(key)
 	)
 		return;
@@ -101,11 +103,13 @@ export function parsedValue(
 			);
 		return value;
 	}
-	if (key === "signer" || key === "policy") {
+	if (key === "signer" || key === "policy" || key === "key_store") {
 		const allowed =
 			key === "signer"
 				? ["keystore", "browser", "walletconnect"]
-				: ["locked", "manual"];
+				: key === "policy"
+					? ["locked", "manual"]
+					: ["auto", "env", "keychain", "secret-tool", "file"];
 		if (!allowed.includes(String(value)))
 			throw new UsageError(`Invalid ${key}: expected ${allowed.join(" | ")}`);
 		return String(value);
@@ -170,6 +174,7 @@ export async function readConfig(home = configHome()): Promise<Config> {
 					"signer",
 					"policy",
 					"walletconnect_project_id",
+					"key_store",
 				].includes(key)
 					? "string"
 					: "number")
@@ -193,6 +198,7 @@ export function getConfig(config: Config, key: string): string | number {
 	if (key === "walletconnect_project_id")
 		return config.walletconnect_project_id ?? "";
 	if (key === "owner") return config.owner ?? "";
+	if (key === "key_store") return config.key_store ?? "auto";
 	if (key === "api_base")
 		return config.api_base ?? "https://funding.mob.exchange";
 	if (key === "default_size_usd") return config.default_size_usd ?? 1000;

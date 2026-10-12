@@ -232,7 +232,7 @@ test("doctor passes healthy configured state with optional unbound venues", asyn
 	const data = JSON.parse(r.out);
 	expect(r.code).toBe(0);
 	expect(data.ok).toBe(true);
-	expect(data.checks).toHaveLength(18);
+	expect(data.checks).toHaveLength(19);
 	expect(fake.calls).toHaveLength(10);
 	expect(
 		data.checks.find((c: { name: string }) => c.name === "Venue aster"),

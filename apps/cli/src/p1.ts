@@ -1,5 +1,11 @@
+import { isApiKey, type KeyMeta, prefixOf, redactKey } from "@mstack/keys";
 import { ApiError, MobiusClient } from "@mstack/mobius-client";
-import { ProposalStore, publicText, runPreflight } from "@mstack/proposals";
+import {
+	type Json,
+	ProposalStore,
+	publicText,
+	runPreflight,
+} from "@mstack/proposals";
 import {
 	browserSigner,
 	createKeystore,
@@ -14,7 +20,9 @@ import {
 import { getAddress } from "viem";
 import pkg from "../package.json";
 import { readConfig, SETUP_FIRST, UsageError } from "./config.ts";
-import { submitPlan } from "./onboarding-http.ts";
+import { cliKeyStore } from "./key-store.ts";
+import { keyListTable } from "./keys-command.ts";
+import { object, request, submitPlan } from "./onboarding-http.ts";
 import { CheckFailure, Checks, configChecks } from "./preflight/checks.ts";
 import { proposalTiming, proposalView, showProposal } from "./proposal-view.ts";
 import { refreshExpired } from "./refresh-proposal.ts";
@@ -216,14 +224,75 @@ export async function p1(
 				cancellation.signal.throwIfAborted();
 				if (rt.now() >= p.expiresAt)
 					throw new Error("Proposal expired before submission");
-				return submitPlan(p, body, rt);
+				if (!p.submit.route.startsWith("/api/keys/"))
+					return submitPlan(p, body, rt);
+				let answer: Json;
+				try {
+					answer = await request(
+						rt.fetch,
+						`${p.submit.base}${p.submit.route}`,
+						"POST",
+						body,
+						AbortSignal.timeout(Math.max(1, p.expiresAt - rt.now())),
+					);
+				} catch (error) {
+					throw new Error(
+						redactKey(error instanceof Error ? error.message : String(error)),
+					);
+				}
+				if (p.submit.onAnswer !== "store-api-key") return answer;
+				const secret = object(answer).key;
+				if (typeof secret !== "string" || !isApiKey(secret))
+					throw new Error(
+						"Key creation response did not contain a valid API key",
+					);
+				const keyStore = await cliKeyStore(rt);
+				const meta: KeyMeta = {
+					name: String(p.submit.body.name),
+					venues: (p.submit.body.venues as string[]).map(String),
+					maxSizeUsd: Number(p.submit.body.maxSizeUsd),
+					importedAt: rt.now(),
+					verifiedAt: rt.now(),
+					apiBase: p.submit.base,
+				};
+				await keyStore.put(p.owner, secret, meta);
+				return JSON.parse(
+					redactKey(
+						JSON.stringify({
+							...object(answer),
+							key: prefixOf(secret),
+							backend: keyStore.backend,
+						}),
+					),
+				);
 			},
 		});
-		rt.out(
-			publicText(
-				`${result.id}: ${result.status} · Server answer: ${JSON.stringify(result.answer)} · Submission is acknowledged; execution is not confirmed.`,
-			),
-		);
+		if (result.submit.route === "/api/keys/create") {
+			const answer = object(result.answer);
+			const prefix = String(answer.key);
+			const backendName = String(answer.backend);
+			rt.out(`Key ${prefix} stored in ${backendName}.`);
+		} else if (result.submit.route === "/api/keys/list") {
+			rt.out(keyListTable(result.answer));
+		} else if (result.submit.route === "/api/keys/revoke") {
+			const keyStore = await cliKeyStore(rt);
+			const stored = await keyStore.get(result.owner);
+			const revoked = String(result.submit.body.id);
+			const localUuid = stored?.key.slice(
+				"mobius_".length,
+				stored.key.indexOf("."),
+			);
+			const removed =
+				localUuid === revoked ? await keyStore.delete(result.owner) : false;
+			rt.out(
+				`Key mobius_${revoked}… revoked.${removed ? " Matching local key deleted." : " No matching local key was stored."}`,
+			);
+		} else
+			rt.out(
+				publicText(
+					`${result.id}: ${result.status} · Server answer: ${JSON.stringify(result.answer)} · Submission is acknowledged; execution is not confirmed.`,
+				),
+			);
 	} catch (error) {
 		waiting?.stop();
 		if (error instanceof Error && error.message === "TTY input cancelled")

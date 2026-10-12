@@ -7,6 +7,9 @@
 		"packages/mobius-client": {
 			"project": ["src/**/*.ts", "test/**/*.ts"]
 		},
+		"packages/keys": {
+			"project": ["src/**/*.ts", "test/**/*.ts"]
+		},
 		"packages/proposals": {
 			"project": ["src/**/*.ts", "test/**/*.ts"]
 		},

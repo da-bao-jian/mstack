@@ -5,6 +5,7 @@
 		{ "path": "./packages/brand" },
 		{ "path": "./packages/liquidation" },
 		{ "path": "./packages/mobius-client" },
+		{ "path": "./packages/keys" },
 		{ "path": "./packages/proposals" },
 		{ "path": "./packages/signers" },
 		{ "path": "./tsconfig.tools.json" },

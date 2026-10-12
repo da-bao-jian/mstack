@@ -1,6 +1,8 @@
+import { redactKey } from "@mstack/keys";
+
 /** Remote errors may echo submitted signatures, including split HL r/s values. */
 export function publicText(text: string): string {
-	return text
+	return redactKey(text)
 		.replace(/0x[\da-f]{64,}/gi, "[signature redacted]")
 		.replace(
 			/("(?:signature|L1Sig|r|s)"\s*:\s*)("(?:\\.|[^"\\])*"|\{[^}]*\})/gi,

@@ -8,6 +8,23 @@ import { fakeBrowserWallet } from "../../../packages/signers/test/fake-browser-w
 import { setConfig } from "../src/config.ts";
 import { run } from "../src/run.ts";
 
+test("source output paths do not interpolate API key secrets", async () => {
+	const root = join(import.meta.dir, "../../..");
+	const violations: string[] = [];
+	for (const pattern of ["apps/cli/src/**/*.ts", "packages/keys/src/**/*.ts"])
+		for await (const relative of new Bun.Glob(pattern).scan({ cwd: root })) {
+			const source = await readFile(join(root, relative), "utf8");
+			for (const [index, line] of source.split("\n").entries())
+				if (
+					/(?:\.out|\.err|console\.(?:log|error)|\blog)\([^\n]*\$\{[^}]*(?:secret|\.key)\b/i.test(
+						line,
+					)
+				)
+					violations.push(`${relative}:${index + 1}`);
+		}
+	expect(violations).toEqual([]);
+});
+
 test.each([200, 500])(
 	"signature echoed by HTTP %s remains only in the private audit record",
 	async (status) => {
@@ -17,6 +34,7 @@ test.each([200, 500])(
 		const lines: string[] = [];
 		const wallets: Promise<void>[] = [];
 		let signature = "";
+		const apiKey = `mobius_01234567-89ab-cdef-0123-456789abcdef.${"ab".repeat(32)}`;
 		try {
 			await setConfig("owner", wallet.address, home);
 			await setConfig("signer", "browser", home);
@@ -68,6 +86,7 @@ test.each([200, 500])(
 									v: 27,
 								},
 								nested: { signature: { result: { bytes: signature } } },
+								apiKey,
 							},
 							{ status },
 						);
@@ -84,10 +103,14 @@ test.each([200, 500])(
 				expect(await invoke(args)).toBe(0);
 			expect(lines.join("\n")).not.toContain(signature);
 			expect(lines.join("\n")).not.toContain(signature.slice(0, 66));
+			expect(lines.join("\n")).not.toContain(apiKey);
 			expect(lines.join("\n")).toContain("redacted");
-			expect(
-				await readFile(join(home, "proposals", `${p.id}.json`), "utf8"),
-			).toContain(signature);
+			const proposalRecord = await readFile(
+				join(home, "proposals", `${p.id}.json`),
+				"utf8",
+			);
+			expect(proposalRecord).toContain(signature);
+			expect(proposalRecord).not.toContain(apiKey);
 			for (const name of ["counter", "p-1.intent", "p-1.signature-used"])
 				expect(
 					await readFile(join(home, "proposals", name), "utf8"),

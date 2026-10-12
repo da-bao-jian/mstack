@@ -1,5 +1,6 @@
 import { lstat, readdir } from "node:fs/promises";
 import { join } from "node:path";
+import { redactKey } from "@mstack/keys";
 import { ApiError } from "@mstack/mobius-client";
 import type { Signer } from "@mstack/signers";
 import {
@@ -324,19 +325,22 @@ export class ProposalStore {
 				p.endedAt = this.now();
 				await this.save(p);
 				// A copy of the persisted body plus its signature; no prices/nonces refreshed.
-				p.answer = await options.submit(structuredClone(p), {
+				const answer = await options.submit(structuredClone(p), {
 					...structuredClone(p.submit.body),
 					[p.submit.signatureField]: signature,
 				});
-				canonical(p.answer);
+				canonical(answer);
+				p.answer = JSON.parse(redactKey(JSON.stringify(answer))) as Json;
 				await this.save(p);
 				return p;
 			} catch (error) {
 				if (p.status !== "expired") p.status = "failed";
 				p.endedAt = this.now();
-				p.error = error instanceof Error ? error.message : String(error);
+				p.error = redactKey(
+					error instanceof Error ? error.message : String(error),
+				);
 				if (error instanceof ApiError)
-					p.answer = JSON.parse(JSON.stringify(error.data)) as Json;
+					p.answer = JSON.parse(redactKey(JSON.stringify(error.data))) as Json;
 				await this.save(p);
 				throw error;
 			}

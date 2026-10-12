@@ -5,6 +5,7 @@
 	"type": "module",
 	"license": "MIT",
 	"dependencies": {
+		"@mstack/keys": "workspace:*",
 		"@mstack/mobius-client": "workspace:*",
 		"@mstack/proposals": "workspace:*",
 		"@mstack/signers": "workspace:*",

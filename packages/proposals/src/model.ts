@@ -69,6 +69,9 @@ export interface ProposalInput {
 		base: string;
 		route:
 			| keyof WriteRoutes
+			| "/api/keys/create"
+			| "/api/keys/list"
+			| "/api/keys/revoke"
 			| "/exchange"
 			| "/fapi/v3/approveAgent"
 			| "/api/v1/sendTx";
@@ -97,6 +100,7 @@ export interface ProposalInput {
 		};
 		body: JsonObject;
 		signatureField: string;
+		onAnswer?: "store-api-key";
 	};
 	preflightPlan: { checks: PreflightCheck[] };
 }
@@ -253,8 +257,16 @@ export function validateInput(p: ProposalInput): void {
 		(!Object.hasOwn(writeRoutes, p.submit.route) && !p.submit.format) ||
 		p.submit.route.endsWith("/alert-dismiss") ||
 		p.submit.route.endsWith("/builder-finalize")
+	) {
+		if (!/^\/api\/keys\/(create|list|revoke)$/.test(p.submit.route))
+			throw new Error("submit.route: Invalid submission route");
+	}
+	if (
+		p.submit.onAnswer !== undefined &&
+		(p.submit.onAnswer !== "store-api-key" ||
+			p.submit.route !== "/api/keys/create")
 	)
-		throw new Error("submit.route: Invalid submission route");
+		throw new Error("submit.onAnswer: Invalid answer handler");
 	const formats = {
 		hl: { route: "/exchange", hosts: ["api.hyperliquid.xyz"] },
 		aster: { route: "/fapi/v3/approveAgent", hosts: ["fapi.asterdex.com"] },
