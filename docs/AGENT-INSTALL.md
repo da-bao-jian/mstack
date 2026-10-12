@@ -16,13 +16,13 @@ Run each command exactly.
 ```sh
 claude plugin marketplace add da-bao-jian/mstack
 claude plugin install mstack@mstack
-curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/<tag>/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.0/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
 mob --version
 mob doctor
 ```
 
-`mob --version` must print the version in `<tag>`. Check the doctor output against [Verify](#verify).
+`mob --version` must print the version in `v0.4.0`. Check the doctor output against [Verify](#verify).
 
 Tell the user exactly: restart Claude Code, then say "set me up".
 
@@ -31,13 +31,13 @@ Tell the user exactly: restart Claude Code, then say "set me up".
 Run each command exactly.
 
 ```sh
-git clone --branch <tag> https://github.com/da-bao-jian/mstack ~/.mstack && cd ~/.mstack && ./setup --host codex
+git clone --branch v0.4.0 https://github.com/da-bao-jian/mstack ~/.mstack && cd ~/.mstack && ./setup --host codex
 export PATH="$HOME/.agents/skills/mstack/bin:$PATH"
 mob --version
 mob doctor
 ```
 
-`mob --version` must print the version in `<tag>`. Check the doctor output against [Verify](#verify).
+`mob --version` must print the version in `v0.4.0`. Check the doctor output against [Verify](#verify).
 
 Tell the user exactly: start a new Codex session and say "set me up".
 
@@ -46,7 +46,7 @@ Tell the user exactly: start a new Codex session and say "set me up".
 Install the binary and keep the printed PATH export in the current shell.
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/<tag>/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.0/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
 mob --version
 mob doctor
@@ -74,7 +74,7 @@ Keep signing and key import in the terminal. Use `mob onboard` and `mob keys imp
 Run each command exactly.
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/<tag>/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.0/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
 mob --version
 mob doctor
