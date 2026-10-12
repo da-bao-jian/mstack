@@ -24,6 +24,7 @@ export type ProposalStatus =
 	| "staged"
 	| "previewed"
 	| "awaiting-signature"
+	| "awaiting-submission"
 	| "interrupted"
 	| "signed"
 	| "submitted"
@@ -33,7 +34,8 @@ export type ProposalStatus =
 	| "expired";
 export type SigningPayload =
 	| { type: "text"; message: string }
-	| { type: "typed"; typedData: TypedDataDefinition };
+	| { type: "typed"; typedData: TypedDataDefinition }
+	| { type: "none" };
 export type ReadCheck = {
 	[R in keyof ReadRoutes]: {
 		route: R;
@@ -61,7 +63,7 @@ export interface PreflightResult {
 	}[];
 }
 export interface ProposalInput {
-	kind: "sign-text" | "sign-typed" | "venue-submit";
+	kind: "sign-text" | "sign-typed" | "venue-submit" | "api-submit";
 	owner: Address;
 	purpose: string;
 	signing: SigningPayload;
@@ -74,7 +76,9 @@ export interface ProposalInput {
 			| "/api/keys/revoke"
 			| "/exchange"
 			| "/fapi/v3/approveAgent"
-			| "/api/v1/sendTx";
+			| "/api/v1/sendTx"
+			| `/v1/delta-neutral/tasks${string}`;
+		idempotencyKey?: string;
 		format?: "hl" | "aster" | "lighter";
 		fieldOrder?: string[];
 		binding?: {
@@ -99,7 +103,7 @@ export interface ProposalInput {
 			};
 		};
 		body: JsonObject;
-		signatureField: string;
+		signatureField?: string;
 		onAnswer?: "store-api-key";
 	};
 	preflightPlan: { checks: PreflightCheck[] };
@@ -149,7 +153,9 @@ export function canonical(value: unknown): string {
 export function digest(signing: SigningPayload): Hex {
 	return signing.type === "text"
 		? keccak256(stringToHex(signing.message))
-		: hashTypedData(signing.typedData);
+		: signing.type === "typed"
+			? hashTypedData(signing.typedData)
+			: keccak256(stringToHex(canonical(signing)));
 }
 export function contentHash(
 	p: ProposalInput & {
@@ -200,13 +206,21 @@ export function validateInput(p: ProposalInput): void {
 		/[\p{Cc}\p{Cf}]/u.test(p.purpose)
 	)
 		throw new Error("purpose: Invalid Proposal purpose");
-	if (!["sign-text", "sign-typed", "venue-submit"].includes(p.kind))
+	if (
+		!["sign-text", "sign-typed", "venue-submit", "api-submit"].includes(p.kind)
+	)
 		throw new Error("kind: Invalid Proposal kind");
-	if (p.signing.type !== "text" && p.signing.type !== "typed")
+	if (
+		p.signing.type !== "text" &&
+		p.signing.type !== "typed" &&
+		p.signing.type !== "none"
+	)
 		throw new Error("signing.type: Invalid signing payload");
 	if (
 		(p.kind === "sign-text" && p.signing.type !== "text") ||
-		(p.kind === "sign-typed" && p.signing.type !== "typed")
+		(p.kind === "sign-typed" && p.signing.type !== "typed") ||
+		(p.kind === "api-submit" && p.signing.type !== "none") ||
+		(p.kind !== "api-submit" && p.signing.type === "none")
 	)
 		throw new Error(
 			"kind/signing.type: Proposal kind does not match signing payload",
@@ -254,9 +268,10 @@ export function validateInput(p: ProposalInput): void {
 			"submit.base: Submission requires HTTPS (HTTP is allowed only on loopback)",
 		);
 	if (
-		(!Object.hasOwn(writeRoutes, p.submit.route) && !p.submit.format) ||
-		p.submit.route.endsWith("/alert-dismiss") ||
-		p.submit.route.endsWith("/builder-finalize")
+		p.kind !== "api-submit" &&
+		((!Object.hasOwn(writeRoutes, p.submit.route) && !p.submit.format) ||
+			p.submit.route.endsWith("/alert-dismiss") ||
+			p.submit.route.endsWith("/builder-finalize"))
 	) {
 		if (!/^\/api\/keys\/(create|list|revoke)$/.test(p.submit.route))
 			throw new Error("submit.route: Invalid submission route");
@@ -339,7 +354,17 @@ export function validateInput(p: ProposalInput): void {
 				"submit.completion.finalize: Invalid builder finalization",
 			);
 	}
-	if (
+	if (p.kind === "api-submit") {
+		if (
+			!/^\/v1\/delta-neutral\/tasks(?:\/[^/]+\/(?:close|resize|cancel))?$/.test(
+				p.submit.route,
+			) ||
+			p.submit.signatureField !== undefined ||
+			(p.submit.idempotencyKey !== undefined &&
+				!/^[!-~]{1,128}$/.test(p.submit.idempotencyKey))
+		)
+			throw new Error("submit: Invalid Strategy API submission plan");
+	} else if (
 		p.submit.signatureField !== "signature" ||
 		Object.hasOwn(p.submit.body, p.submit.signatureField)
 	)
@@ -415,10 +440,18 @@ export function validateProposal(p: Proposal): void {
 			"Proposal integrity check failed (version/id/createdAt/expiresAt/signing.digest/contentHash)",
 		);
 	if (
+		p.kind === "api-submit" &&
+		(typeof p.submit.idempotencyKey !== "string" ||
+			!p.submit.idempotencyKey.startsWith(`${p.id}:`) ||
+			!/^[!-~]{1,128}$/.test(p.submit.idempotencyKey))
+	)
+		throw new Error("submit.idempotencyKey: Invalid Proposal-bound key");
+	if (
 		![
 			"staged",
 			"previewed",
 			"awaiting-signature",
+			"awaiting-submission",
 			"interrupted",
 			"signed",
 			"submitted",

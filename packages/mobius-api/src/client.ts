@@ -349,6 +349,7 @@ export class StrategyApiClient {
 				requestId: response.headers.get("X-Request-Id"),
 				serverError,
 				code,
+				taskId: typeof data.taskId === "string" ? data.taskId : undefined,
 				message: `${options.route}: HTTP ${response.status}${serverError ? `: ${serverError}` : ""}`,
 			};
 			if (response.status === 401) throw new ApiKeyRejected(common);

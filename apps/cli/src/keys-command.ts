@@ -112,7 +112,7 @@ async function importKey(
 		}
 	if (!isApiKey(secret))
 		throw new UsageError("Invalid Mobius API key format; not stored");
-	const apiBase = String(getConfig(config, "api_base"));
+	const apiBase = String(getConfig(config, "strategy_api_base"));
 	const checked = await verifyApiKey(apiBase, secret, rt.fetch, rt.now);
 	if (checked.status === "rejected" && checked.httpStatus === 401)
 		throw new UsageError("key rejected by the API, not stored");

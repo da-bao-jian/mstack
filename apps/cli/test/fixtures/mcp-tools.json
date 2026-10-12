@@ -209,7 +209,7 @@
 	},
 	{
 		"name": "config_get",
-		"description": "Read a local setting: api_base, owner, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps, signer, or policy. No setting is changed. Read-only. This tool never signs, trades, or holds keys.",
+		"description": "Read a local setting: api_base, strategy_api_base, owner, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps, signer, or policy. No setting is changed. Read-only. This tool never signs, trades, or holds keys.",
 		"inputSchema": {
 			"type": "object",
 			"properties": {

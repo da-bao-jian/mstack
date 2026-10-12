@@ -6,8 +6,9 @@ import { DEFAULT_TAKER_FEE_BPS } from "@mstack/opportunities";
 export interface Config {
 	signer?: "keystore" | "browser" | "walletconnect";
 	walletconnect_project_id?: string;
-	policy?: "locked" | "manual";
+	policy?: "locked" | "manual" | "auto";
 	api_base?: string;
+	strategy_api_base?: string;
 	auth_base?: string;
 	legal_chain_id?: number;
 	hl_signature_chain_id?: string;
@@ -26,12 +27,12 @@ export function ownerAddress(value: string): string {
 	return value;
 }
 
-export function apiBase(value: string): string {
+export function apiBase(value: string, name = "api_base"): string {
 	let url: URL;
 	try {
 		url = new URL(value);
 	} catch {
-		throw new UsageError("api_base must be an absolute HTTP(S) URL");
+		throw new UsageError(`${name} must be an absolute HTTP(S) URL`);
 	}
 	if (
 		!["https:", "http:"].includes(url.protocol) ||
@@ -41,7 +42,7 @@ export function apiBase(value: string): string {
 		url.hash
 	)
 		throw new UsageError(
-			"api_base must be an HTTP(S) URL without credentials, query, or fragment",
+			`${name} must be an HTTP(S) URL without credentials, query, or fragment`,
 		);
 	return url.href.replace(/\/$/, "");
 }
@@ -73,6 +74,7 @@ function knownKey(key: string): void {
 			"walletconnect_project_id",
 			"policy",
 			"api_base",
+			"strategy_api_base",
 			"auth_base",
 			"legal_chain_id",
 			"hl_signature_chain_id",
@@ -108,13 +110,14 @@ export function parsedValue(
 			key === "signer"
 				? ["keystore", "browser", "walletconnect"]
 				: key === "policy"
-					? ["locked", "manual"]
+					? ["locked", "manual", "auto"]
 					: ["auto", "env", "keychain", "secret-tool", "file"];
 		if (!allowed.includes(String(value)))
 			throw new UsageError(`Invalid ${key}: expected ${allowed.join(" | ")}`);
 		return String(value);
 	}
-	if (key === "api_base" || key === "auth_base") return apiBase(String(value));
+	if (key === "api_base" || key === "strategy_api_base" || key === "auth_base")
+		return apiBase(String(value), key);
 	if (key === "legal_chain_id") return numberFlag(value, key, 1, true);
 	if (key === "hl_signature_chain_id") {
 		if (
@@ -168,6 +171,7 @@ export async function readConfig(home = configHome()): Promise<Config> {
 				typeof item !==
 				([
 					"api_base",
+					"strategy_api_base",
 					"auth_base",
 					"hl_signature_chain_id",
 					"owner",
@@ -201,6 +205,8 @@ export function getConfig(config: Config, key: string): string | number {
 	if (key === "key_store") return config.key_store ?? "auto";
 	if (key === "api_base")
 		return config.api_base ?? "https://funding.mob.exchange";
+	if (key === "strategy_api_base")
+		return config.strategy_api_base ?? "https://api.mob.exchange";
 	if (key === "default_size_usd") return config.default_size_usd ?? 1000;
 	if (key === "builder_fee_tenths_bps")
 		return config.builder_fee_tenths_bps ?? 15;

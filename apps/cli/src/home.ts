@@ -128,7 +128,19 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 				: "not set → run mob setup",
 		],
 		["Signer", data.signer ?? "not set"],
-		["Policy", data.policy],
+		[
+			"Policy",
+			data.policy === "auto"
+				? style(
+						"auto · the agent may submit inside the key's caps",
+						"warning",
+						{
+							...terminal,
+							isTTY: terminal.isTTY && mode !== "mono" && mode !== "ascii",
+						},
+					)
+				: data.policy,
+		],
 		["Key", keyText(data)],
 		["Legal", legalText(data)],
 		[

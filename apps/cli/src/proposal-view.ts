@@ -24,24 +24,29 @@ export function showProposal(
 	const message =
 		p.signing.type === "text"
 			? p.signing.message
-			: JSON.stringify(p.signing.typedData, null, 2);
+			: p.signing.type === "typed"
+				? JSON.stringify(p.signing.typedData, null, 2)
+				: JSON.stringify(p.submit.body, null, 2);
 	const box = [
-		`┌─ ${p.signing.type === "text" ? "Message" : "Exact data"}`,
+		`┌─ ${p.signing.type === "text" ? "Message" : p.signing.type === "none" ? "Exact JSON body" : "Exact data"}`,
 		...message.split("\n").map((line) => `│ ${clean(line)}`),
 		"└─",
 	].join("\n");
 	const next =
-		p.status === "awaiting-signature"
-			? `mob sign ${p.id}`
-			: p.status === "staged" || p.status === "previewed"
-				? `mob preview ${p.id}`
-				: p.status === "interrupted" || p.status === "expired"
-					? `mob reject ${p.id}`
-					: "mob status";
+		p.status === "awaiting-submission"
+			? `mob submit ${p.id}`
+			: p.status === "awaiting-signature"
+				? `mob sign ${p.id}`
+				: p.status === "staged" || p.status === "previewed"
+					? `mob preview ${p.id}`
+					: p.status === "interrupted" || p.status === "expired"
+						? `mob reject ${p.id}`
+						: "mob status";
 	return [
 		paint(`${p.id} · ${p.purpose}`, "bold", terminal),
 		...(typeof statement === "string" ? [clean(statement)] : []),
 		`Status: ${p.status}`,
+		`Kind: ${p.kind === "api-submit" ? "api" : "wallet"}`,
 		`Route: POST ${p.submit.base}${p.submit.route}`,
 		`Owner: ${p.owner.slice(0, 6)}…${p.owner.slice(-4)}`,
 		p.owner,
@@ -49,6 +54,7 @@ export function showProposal(
 			"staged",
 			"previewed",
 			"awaiting-signature",
+			"awaiting-submission",
 			"interrupted",
 			"expired",
 		].includes(p.status)
@@ -64,7 +70,7 @@ export function showProposal(
 				)
 			: ["Preflight: not checked"]),
 		box,
-		`Digest: ${p.digest}`,
+		...(p.kind === "api-submit" ? [] : [`Digest: ${p.digest}`]),
 		...(p.error ? [`Issue: ${clean(publicText(p.error))}`] : []),
 		paint(`Next: ${next}`, "sky", terminal),
 	].join("\n");
@@ -92,6 +98,9 @@ export function proposalView(p: Proposal) {
 export function proposalResult(p: Proposal) {
 	return {
 		proposal: proposalView(p),
-		message: `Nothing is signed or sent until a human runs \`mob sign ${p.id}\`.`,
+		message:
+			p.kind === "api-submit"
+				? `Nothing is sent until \`mob submit ${p.id}\` runs under the configured policy.`
+				: `Nothing is signed or sent until a human runs \`mob sign ${p.id}\`.`,
 	};
 }

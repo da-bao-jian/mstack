@@ -26,12 +26,14 @@ const examples: Record<string, [string, string]> = {
 	proposal: ["mob proposal show p-1", "mob proposal show p-1 --json"],
 	preview: ["mob preview p-1", "mob preview p-1 --json"],
 	sign: ["mob sign p-1", "mob sign p-1 --with browser"],
+	submit: ["mob submit p-1", "mob submit p-1 --json"],
 	reject: ["mob reject p-1", "mob reject p-2"],
 	open: [
 		"mob open BTC --long lighter:BTC --short hl:BTC --size 1000",
 		"mob open ETH --long lighter:ETH --short hl:ETH --size 5000 --protect 8 --assume-leverage 2",
 	],
 	close: ["mob close 1842", "mob close 1842 --json"],
+	cancel: ["mob cancel 1842", "mob cancel 1842 --json"],
 	neutralize: ["mob neutralize 1842", "mob neutralize 1842 --json"],
 	resize: [
 		"mob resize 1842 --long 0.1",
@@ -70,6 +72,7 @@ const defaults: Record<string, string> = {
 	"legal-chain-id": "97",
 	"auth-base": "https://auth.mob.exchange",
 	"api-base": "https://funding.mob.exchange",
+	"strategy-api-base": "https://api.mob.exchange",
 	owner: "config owner",
 	with: "config signer",
 };

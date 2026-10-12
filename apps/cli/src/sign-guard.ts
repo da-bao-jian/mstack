@@ -1,4 +1,9 @@
 import { readFileSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { ProposalStore } from "@mstack/proposals";
+import { readConfig } from "./config.ts";
 
 function deny(reason: string): never {
 	throw new Error(reason);
@@ -6,7 +11,7 @@ function deny(reason: string): never {
 
 // The hook is a guard for literal CLI invocations, not a shell sandbox. Never
 // evaluate shell text or accept authorization from assistant/tool messages.
-function check(raw: string): void {
+async function check(raw: string, home: string): Promise<void> {
 	const input = JSON.parse(raw);
 	const command: unknown = input?.tool_input?.command;
 	if (typeof command !== "string") deny("missing Bash command in hook input");
@@ -14,13 +19,21 @@ function check(raw: string): void {
 		...command
 			.replace(/\\\r?\n/g, "")
 			.matchAll(
-				/(?:\bmob|\$MOB|\$\{MOB\})["']?\s+["']?sign["']?(?=\s|$)([^\n]*)/g,
+				/(?:\bmob|\$MOB|\$\{MOB\})["']?\s+["']?(sign|submit)["']?(?=\s|$)([^\n]*)/g,
 			),
 	];
 	if (!invocations.length) return;
-	const ids = invocations.map((match) => {
+	await readFile(join(home, "config.json"), "utf8").catch(() =>
+		deny("missing or unreadable config; cannot verify policy"),
+	);
+	const config = await readConfig(home).catch(() =>
+		deny("missing or unreadable config; cannot verify policy"),
+	);
+	const policy = config.policy ?? "manual";
+	if (policy === "locked") deny("policy is locked");
+	const requests = invocations.map((match) => {
 		const tokens =
-			match[1]
+			match[2]
 				.trim()
 				.match(
 					/(?:\d*>&\d+|\d*>>?|\|\||&&|[|;&<]|"[^"]*"|'[^']*'|[^\s<>|;&]+)/g,
@@ -75,8 +88,17 @@ function check(raw: string): void {
 		}
 		if (ids.length !== 1)
 			deny("use one literal Proposal id in each sign command");
-		return ids[0];
+		return { action: match[1] as "sign" | "submit", id: ids[0] };
 	});
+	if (policy === "auto") {
+		for (const request of requests) {
+			if (request.action === "sign") deny("policy auto still blocks mob sign");
+			const proposal = await new ProposalStore(home).get(request.id);
+			if (proposal.kind !== "api-submit")
+				deny(`${request.id} is not an api-submit Proposal`);
+		}
+		return;
+	}
 	if (typeof input.transcript_path !== "string" || !input.transcript_path)
 		deny("no transcript_path; cannot verify the latest user message");
 	const transcript = readFileSync(input.transcript_path, "utf8");
@@ -117,18 +139,22 @@ function check(raw: string): void {
 						.map((part) => part.text)
 						.join("\n")
 				: "";
-	for (const id of ids)
+	for (const { id } of requests)
 		if (!new RegExp(`(?<![A-Za-z0-9_-])${id}(?![A-Za-z0-9_-])`).test(message))
 			deny(`the latest user message must name the exact Proposal id ${id}`);
 }
 
-export function signGuard(raw: string, err: (text: string) => void): number {
+export async function signGuard(
+	raw: string,
+	err: (text: string) => void,
+	home = process.env.MOB_HOME ?? join(homedir(), ".mob"),
+): Promise<number> {
 	try {
-		check(raw);
+		await check(raw, home);
 		return 0;
 	} catch (error) {
 		err(
-			`mob sign blocked: ${error instanceof Error ? error.message : String(error)}`,
+			`mob mutation blocked: ${error instanceof Error ? error.message : String(error)}`,
 		);
 		return 2;
 	}

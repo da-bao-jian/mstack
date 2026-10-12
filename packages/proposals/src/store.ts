@@ -30,6 +30,10 @@ import {
 	privateDirectory,
 	readPrivate,
 } from "./storage.ts";
+
+type SignableProposal = Proposal & {
+	signing: Exclude<Proposal["signing"], { type: "none" }>;
+};
 export class ProposalStore {
 	readonly directory: string;
 	constructor(
@@ -54,6 +58,15 @@ export class ProposalStore {
 	private async claimed(id: string) {
 		try {
 			await lstat(join(this.directory, `${id}.signature-used`));
+			return true;
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
+			throw error;
+		}
+	}
+	private async submitted(id: string) {
+		try {
+			await lstat(join(this.directory, `${id}.submission-used`));
 			return true;
 		} catch (error) {
 			if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
@@ -89,10 +102,25 @@ export class ProposalStore {
 				`${path}: ${error instanceof Error ? error.message : String(error)}`,
 			);
 		}
-		if (p.status !== "rejected" && !p.signature && (await this.claimed(id)))
+		if (
+			p.kind === "api-submit" &&
+			["staged", "previewed", "awaiting-submission"].includes(p.status) &&
+			(await this.submitted(id))
+		)
 			p.status = "interrupted";
 		else if (
-			["staged", "previewed", "awaiting-signature"].includes(p.status) &&
+			p.status !== "rejected" &&
+			!p.signature &&
+			(await this.claimed(id))
+		)
+			p.status = "interrupted";
+		else if (
+			[
+				"staged",
+				"previewed",
+				"awaiting-signature",
+				"awaiting-submission",
+			].includes(p.status) &&
 			this.now() >= p.expiresAt
 		)
 			p.status = "expired";
@@ -138,6 +166,8 @@ export class ProposalStore {
 			)
 				throw new Error("Invalid Proposal counter");
 			const id = `p-${previous + 1}`;
+			if (fixed.kind === "api-submit")
+				fixed.submit.idempotencyKey = `${id}:${crypto.randomUUID()}`;
 			const now = this.now();
 			// Anchor expiry to the staged request's timestamp. Crossing a second
 			// while saving must neither refresh the request nor extend its window.
@@ -187,10 +217,16 @@ export class ProposalStore {
 			throw new Error("Proposal expired; stage a new Proposal");
 		if (
 			(await this.claimed(p.id)) ||
+			(await this.submitted(p.id)) ||
 			p.signatureAttemptedAt !== undefined ||
-			!["staged", "previewed", "awaiting-signature"].includes(p.status)
+			![
+				"staged",
+				"previewed",
+				"awaiting-signature",
+				"awaiting-submission",
+			].includes(p.status)
 		)
-			throw new Error("Proposal is terminal or already used for signing");
+			throw new Error("Proposal is terminal or already used");
 		if (this.now() >= p.expiresAt) {
 			p.status = "expired";
 			await this.save(p);
@@ -214,9 +250,52 @@ export class ProposalStore {
 			}
 			p.status = "previewed";
 			await this.save(p);
-			p.status = "awaiting-signature";
+			p.status =
+				p.kind === "api-submit" ? "awaiting-submission" : "awaiting-signature";
 			await this.save(p);
 			return p;
+		});
+	}
+	async submitApi(
+		id: string,
+		options: {
+			policy: "locked" | "manual" | "auto";
+			prepare: (p: Proposal) => Promise<void>;
+			submit: (p: Proposal) => Promise<Json>;
+		},
+	): Promise<Proposal> {
+		await this.get(id);
+		return this.lock(`${this.path(id)}.lock`, async () => {
+			const p = await this.get(id);
+			await this.editable(p);
+			if (p.kind !== "api-submit")
+				throw new Error("Proposal is not an API submission");
+			if (options.policy === "locked") throw new Error("Policy is locked");
+			if (p.status !== "awaiting-submission" || !p.preflight?.ok)
+				throw new Error("Run mob preview before submission");
+			await options.prepare(structuredClone(p));
+			await this.editable(p);
+			await exclusive(
+				join(this.directory, `${id}.submission-used`),
+				`${p.contentHash}\n`,
+			);
+			try {
+				const answer = await options.submit(structuredClone(p));
+				canonical(answer);
+				p.answer = JSON.parse(redactKey(JSON.stringify(answer))) as Json;
+				p.status = "submitted";
+				p.endedAt = this.now();
+				await this.save(p);
+				return p;
+			} catch (error) {
+				p.status = "failed";
+				p.endedAt = this.now();
+				p.error = redactKey(
+					error instanceof Error ? error.message : String(error),
+				);
+				await this.save(p);
+				throw error;
+			}
 		});
 	}
 	async reject(id: string): Promise<Proposal> {
@@ -244,7 +323,7 @@ export class ProposalStore {
 			signal?: AbortSignal;
 			policy: "locked" | "manual";
 			owner: Address;
-			connect: (proposal: Proposal) => Promise<Signer>;
+			connect: (proposal: SignableProposal) => Promise<Signer>;
 			display: (p: Proposal) => void;
 			submit: (p: Proposal, body: JsonObject) => Promise<Json>;
 		},
@@ -253,6 +332,8 @@ export class ProposalStore {
 		return this.lock(`${this.path(id)}.lock`, async () => {
 			const p = await this.get(id);
 			await this.editable(p);
+			if (p.signing.type === "none")
+				throw new Error("API Proposals use mob submit, not mob sign");
 			if (options.policy !== "manual")
 				throw new Error("Wallet policy is locked");
 			if (getAddress(options.owner) !== getAddress(p.owner))
@@ -262,7 +343,7 @@ export class ProposalStore {
 			options.display(structuredClone(p));
 			options.signal?.throwIfAborted();
 			const signer = await cancellable(
-				options.connect(structuredClone(p)),
+				options.connect(structuredClone(p) as SignableProposal),
 				options.signal,
 			);
 			options.signal?.throwIfAborted();
@@ -327,7 +408,7 @@ export class ProposalStore {
 				// A copy of the persisted body plus its signature; no prices/nonces refreshed.
 				const answer = await options.submit(structuredClone(p), {
 					...structuredClone(p.submit.body),
-					[p.submit.signatureField]: signature,
+					[p.submit.signatureField as string]: signature,
 				});
 				canonical(answer);
 				p.answer = JSON.parse(redactKey(JSON.stringify(answer))) as Json;

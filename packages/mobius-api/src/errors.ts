@@ -11,6 +11,7 @@ export class StrategyApiError extends Error {
 	readonly code?: string;
 	readonly error?: string;
 	readonly serverError?: string;
+	readonly taskId?: string;
 
 	constructor(options: {
 		name?: string;
@@ -19,6 +20,7 @@ export class StrategyApiError extends Error {
 		requestId?: string | null;
 		code?: string;
 		serverError?: string;
+		taskId?: string;
 		message: string;
 	}) {
 		super(redactKey(options.message));
@@ -33,6 +35,7 @@ export class StrategyApiError extends Error {
 			? redactKey(options.serverError)
 			: undefined;
 		this.error = this.serverError;
+		this.taskId = options.taskId;
 	}
 }
 

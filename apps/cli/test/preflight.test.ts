@@ -463,6 +463,61 @@ test("close accepts non-terminal states; other commands require running", async 
 		(await managePreflight("protect", "1842", config, {}, r, () => now)).ok,
 	).toBe(false);
 });
+test("API manage rules cancel pending, close running, and value resize on the server", async () => {
+	const pending = reads({ task: { ...publicTask, status: "pending" } });
+	expect(
+		(
+			await managePreflight(
+				"cancel",
+				"1842",
+				config,
+				{},
+				pending,
+				() => now,
+				true,
+			)
+		).ok,
+	).toBe(true);
+	expect(
+		(
+			await managePreflight(
+				"close",
+				"1842",
+				config,
+				{},
+				pending,
+				() => now,
+				true,
+			)
+		).ok,
+	).toBe(false);
+	const running = reads({ task: { ...publicTask, status: "running" } });
+	expect(
+		(
+			await managePreflight(
+				"close",
+				"1842",
+				config,
+				{},
+				running,
+				() => now,
+				true,
+			)
+		).ok,
+	).toBe(true);
+	const resized = await managePreflight(
+		"resize",
+		"1842",
+		config,
+		{ long: 0.06789 },
+		running,
+		() => now,
+		true,
+	);
+	expect(resized.ok).toBe(true);
+	expect(resized.quantized).toEqual({ longTargetBase: 0.06789 });
+	expect(resized.checks.at(-1)?.detail).toContain("valued server-side");
+});
 test("resize rounds toward current and rejects no-op, tiny order and uncloseable stub", async () => {
 	const r = reads();
 	const increase = await managePreflight(

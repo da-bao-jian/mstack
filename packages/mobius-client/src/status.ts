@@ -6,7 +6,7 @@ export interface StatusResult {
 	trims?: Record<string, unknown>[];
 	resizes?: Record<string, unknown>[];
 	observedAt: number;
-	source: "hosted";
+	source: "api" | "hosted";
 	annualizationMethod: "simple";
 }
 export async function fetchStatus(options: {

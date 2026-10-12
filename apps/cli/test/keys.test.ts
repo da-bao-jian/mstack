@@ -26,6 +26,7 @@ async function setup(extra: { signer?: string } = {}) {
 	await setConfig("owner", owner, home);
 	await setConfig("key_store", "file", home);
 	await setConfig("api_base", "http://127.0.0.1:9988", home);
+	await setConfig("strategy_api_base", "http://127.0.0.1:9988", home);
 	if (extra.signer) await setConfig("signer", extra.signer, home);
 	return home;
 }

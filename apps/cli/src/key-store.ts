@@ -1,8 +1,13 @@
 import { createKeyStore, type KeyStore } from "@mstack/keys";
 import { getConfig, readConfig } from "./config.ts";
-import type { Runtime } from "./run.ts";
 
-export async function cliKeyStore(rt: Runtime): Promise<KeyStore> {
+type KeyRuntime = {
+	home: string;
+	now: () => number;
+	env?: Record<string, string | undefined>;
+};
+
+export async function cliKeyStore(rt: KeyRuntime): Promise<KeyStore> {
 	const config = await readConfig(rt.home);
 	return createKeyStore({
 		home: rt.home,
@@ -10,7 +15,7 @@ export async function cliKeyStore(rt: Runtime): Promise<KeyStore> {
 			typeof createKeyStore
 		>[0]["selection"],
 		env: rt.env ?? process.env,
-		apiBase: String(getConfig(config, "api_base")),
+		apiBase: String(getConfig(config, "strategy_api_base")),
 		now: rt.now,
 	});
 }

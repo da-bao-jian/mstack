@@ -3,6 +3,7 @@ import {
 	type ObservedFundingRate,
 	type Snapshot,
 } from "@mstack/funding";
+import type { StoredKey } from "@mstack/keys";
 import {
 	buildAutoCloseTaskMessage,
 	buildCloseTaskMessage,
@@ -29,8 +30,15 @@ import {
 	selectedVenues,
 	snapshot,
 } from "./commands/runtime.ts";
-import { getConfig, numberFlag, readConfig, UsageError } from "./config.ts";
-import { type Checked, Checks, configChecks } from "./preflight/checks.ts";
+import {
+	getConfig,
+	numberFlag,
+	readConfig,
+	SETUP_FIRST,
+	UsageError,
+} from "./config.ts";
+import { cliKeyStore } from "./key-store.ts";
+import { type Checked, Checks } from "./preflight/checks.ts";
 import { type ManageCommand, managePreflight } from "./preflight/manage.ts";
 import { openPreflight } from "./preflight/open.ts";
 import { executionVenues } from "./preflight/readiness.ts";
@@ -84,7 +92,15 @@ export async function stagePosition(
 ): Promise<Proposal> {
 	const text = (key: string) => values[key] as string | undefined;
 	const config = await readConfig(rt.home);
-	await configChecks(config, new Checks(rt.now));
+	if (!config.owner) throw new UsageError(SETUP_FIRST);
+	const owner = getAddress(config.owner);
+	let key: StoredKey | null = null;
+	try {
+		key = await (await cliKeyStore(rt)).get(owner);
+	} catch (error) {
+		if (!(error instanceof Error) || !/not set|ENOENT/.test(error.message))
+			throw error;
+	}
 	const client = new MobiusClient({
 		base: String(getConfig(config, "api_base")),
 		version: pkg.version,
@@ -104,6 +120,10 @@ export async function stagePosition(
 	let route: keyof WriteRoutes;
 	let preflight: Checked;
 	let purpose: string;
+	let apiSubmit = false;
+	let apiBody: JsonObject | undefined;
+	let apiRoute: `/v1/delta-neutral/tasks${string}` | undefined;
+	let fallback: string | undefined;
 	if (command === "open") {
 		if (args.length !== 1)
 			throw new UsageError(
@@ -122,6 +142,18 @@ export async function stagePosition(
 				);
 		}
 		const size = numberFlag(text("size") ?? "", "size", Number.MIN_VALUE);
+		apiSubmit = Boolean(
+			key &&
+				(!key.meta.venues ||
+					[long.venue, short.venue].every((venue) =>
+						key?.meta.venues?.includes(venue),
+					)),
+		);
+		fallback = !key
+			? "no key: run mob onboard"
+			: !apiSubmit
+				? `key lacks venue ${[long.venue, short.venue].find((venue) => !key?.meta.venues?.includes(venue))}`
+				: undefined;
 		const spread = numberFlag(
 			text("max-spread-bps") ?? "50",
 			"max-spread-bps",
@@ -152,10 +184,34 @@ export async function stagePosition(
 				maxSpreadBps: spread,
 				protect,
 				assumedLeverage: leverage,
+				apiSubmit,
 			},
 			{ read: client.read.bind(client), metadata },
 			rt.now,
 		);
+		if (apiSubmit && key) {
+			const extra = new Checks(rt.now);
+			await extra.fact("key.venues", () =>
+				key.meta.venues
+					? `${key.meta.venues.includes(long.venue) && key.meta.venues.includes(short.venue) ? "covered" : "not covered"} · ${long.venue}, ${short.venue}`
+					: "unknown · server decides",
+			);
+			await extra.fact("key.maxSizeUsd", () => {
+				if (key.meta.maxSizeUsd === undefined)
+					return "unknown · server decides";
+				if (size > key.meta.maxSizeUsd)
+					throw new Error(
+						`sizeUsd ${size} exceeds key cap ${key.meta.maxSizeUsd}`,
+					);
+				return `${size} <= ${key.meta.maxSizeUsd}`;
+			});
+			preflight = {
+				...preflight,
+				ok: preflight.ok && extra.result().ok,
+				plan: [...preflight.plan, ...extra.plan],
+				checks: [...preflight.checks, ...extra.checks],
+			};
+		}
 		passed(preflight);
 		const staged = stageOpenBody(
 			{
@@ -188,6 +244,29 @@ export async function stagePosition(
 		message = staged.message;
 		route = "/api/arbitrage/create";
 		purpose = `Open ${ticker}: long ${text("long")}, short ${text("short")}, $${size} per leg`;
+		apiBody = {
+			longVenue: long.venue,
+			shortVenue: short.venue,
+			longMarket: long.market,
+			shortMarket: short.market,
+			sizeUsd: size,
+			minFundingApy: numberFlag(text("min-apy") ?? "0", "min-apy", 0),
+			maxSpreadBps: spread,
+			...(text("auto-close") === undefined
+				? {}
+				: { autoClose: onOff(text("auto-close")) }),
+			...(protect === undefined ? {} : { liqProtectionPct: protect }),
+			...(text("size-mismatch") === undefined
+				? {}
+				: {
+						sizeMismatchPct: percent(
+							text("size-mismatch") as string,
+							"size-mismatch",
+							MIN_SIZE_MISMATCH_PCT,
+						),
+					}),
+		};
+		apiRoute = "/v1/delta-neutral/tasks";
 	} else {
 		const setting = ["protect", "auto-close", "size-mismatch-close"].includes(
 			command,
@@ -213,6 +292,11 @@ export async function stagePosition(
 					}),
 		};
 		const snapshots = new Map<string, Promise<Snapshot>>();
+		const apiCandidate = Boolean(
+			key && ["close", "cancel", "resize"].includes(command),
+		);
+		if (!key && ["close", "cancel", "resize"].includes(command))
+			fallback = "no key: run mob onboard";
 		preflight = await managePreflight(
 			command as ManageCommand,
 			args[0],
@@ -233,10 +317,58 @@ export async function stagePosition(
 				},
 			},
 			rt.now,
+			apiCandidate,
 		);
+		const task = (preflight as Awaited<ReturnType<typeof managePreflight>>)
+			.task;
+		const taskVenues = task ? [task.long_venue, task.short_venue] : [];
+		apiSubmit = Boolean(
+			apiCandidate &&
+				key &&
+				(!key.meta.venues ||
+					taskVenues.every((venue) => key?.meta.venues?.includes(venue))),
+		);
+		if (apiCandidate && !apiSubmit) {
+			fallback = `key lacks venue ${taskVenues.find((venue) => !key?.meta.venues?.includes(venue))}`;
+			preflight = await managePreflight(
+				command as ManageCommand,
+				args[0],
+				config,
+				targets,
+				{
+					read: client.read.bind(client),
+					market: async (venue, market) => {
+						let data = snapshots.get(venue);
+						if (!data) {
+							data = snapshot(selectedVenues([venue]), rt);
+							snapshots.set(venue, data);
+						}
+						return {
+							row: resolveRow(await data, venue, market),
+							metadata: await metadata(venue, market),
+						};
+					},
+				},
+				rt.now,
+			);
+		}
+		if (apiSubmit && key) {
+			const extra = new Checks(rt.now);
+			await extra.fact("key.venues", () =>
+				key.meta.venues
+					? `covered · ${taskVenues.join(", ")}`
+					: "unknown · server decides",
+			);
+			preflight = {
+				...preflight,
+				ok: preflight.ok && extra.result().ok,
+				plan: [...preflight.plan, ...extra.plan],
+				checks: [...preflight.checks, ...extra.checks],
+			};
+		}
 		passed(preflight);
 		const auth = { taskId: args[0], timestamp: Math.floor(rt.now() / 1000) };
-		if (command === "close") {
+		if (command === "close" || command === "cancel") {
 			body = auth;
 			message = buildCloseTaskMessage(auth);
 			route = "/api/arbitrage/close";
@@ -281,15 +413,47 @@ export async function stagePosition(
 			route = "/api/arbitrage/size-mismatch-auto-close";
 		}
 		purpose = `${command} task ${args[0]}. Request is replayable inside the server's 300 s window (no nonce); this Proposal expires at 300 s and can be signed once.`;
+		if (
+			["protect", "auto-close", "neutralize", "size-mismatch-close"].includes(
+				command,
+			)
+		)
+			purpose +=
+				" · not available through the API key yet (Mobius ask D); sign with your wallet";
+		if (["close", "cancel", "resize"].includes(command)) {
+			apiRoute = `/v1/delta-neutral/tasks/${args[0]}/${command}`;
+			apiBody =
+				command === "resize"
+					? {
+							...(targets.long === undefined
+								? {}
+								: { longTargetBase: targets.long }),
+							...(targets.short === undefined
+								? {}
+								: { shortTargetBase: targets.short }),
+							...(values["disable-size-mismatch-auto-close"] === true
+								? { disableSizeMismatchAutoClose: true }
+								: {}),
+						}
+					: {};
+		}
 	}
+	if (fallback)
+		(rt as Runtime & { err?: (line: string) => void }).err?.(fallback);
 	rt.signal?.throwIfAborted();
 	const store = new ProposalStore(rt.home, rt.now);
 	const staged = await store.stage({
-		kind: "sign-text",
-		owner: getAddress(config.owner as string),
+		kind: apiSubmit ? "api-submit" : "sign-text",
+		owner,
 		purpose,
-		signing: { type: "text", message },
-		submit: { base: client.base, route, body, signatureField: "signature" },
+		signing: apiSubmit ? { type: "none" } : { type: "text", message },
+		submit: apiSubmit
+			? {
+					base: String(getConfig(config, "strategy_api_base")),
+					route: apiRoute as `/v1/delta-neutral/tasks${string}`,
+					body: apiBody as JsonObject,
+				}
+			: { base: client.base, route, body, signatureField: "signature" },
 		preflightPlan: { checks: preflight.plan },
 	});
 	const preview = await store.preview(staged.id, async () => ({

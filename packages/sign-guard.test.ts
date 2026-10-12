@@ -10,11 +10,13 @@ import {
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { signGuard } from "../apps/cli/src/sign-guard.ts";
+import { ProposalStore } from "./proposals/src/store.ts";
 
 const root = resolve(import.meta.dir, "..");
 const installed = await mkdtemp(join(tmpdir(), "mstack-binary-guard-"));
 afterAll(() => rm(installed, { recursive: true, force: true }));
 await mkdir(join(installed, "bin"));
+await writeFile(join(installed, "config.json"), '{"policy":"manual"}\n');
 const binary = join(installed, "bin/mob");
 const build = Bun.spawn(
 	[
@@ -38,7 +40,7 @@ await copyFile(
 );
 async function hook(command: string, fixture?: string, raw?: string) {
 	const proc = Bun.spawn([binary, "hook", "sign-guard"], {
-		env: { PATH: "/nonexistent" },
+		env: { PATH: "/nonexistent", MOB_HOME: installed },
 		stdin: new Blob([
 			raw ??
 				JSON.stringify({
@@ -110,7 +112,7 @@ test.each([
 		const result = await hook(command as string, fixture);
 		expect(result.code).toBe(2);
 		expect(result.out).toBe("");
-		expect(result.err).toContain("mob sign blocked:");
+		expect(result.err).toContain("mob mutation blocked:");
 	},
 );
 test("malformed hook input fails closed; other commands need no transcript", async () => {
@@ -125,6 +127,66 @@ test("malformed hook input fails closed; other commands need no transcript", asy
 		"echo design",
 	])
 		expect((await hook(command)).code).toBe(0);
+});
+
+test("manual submit needs the exact id; auto allows only api-submit and still blocks sign", async () => {
+	const home = await mkdtemp(join(tmpdir(), "mstack-guard-policy-"));
+	try {
+		await writeFile(join(home, "config.json"), '{"policy":"auto"}\n');
+		const store = new ProposalStore(home);
+		const staged = await store.stage({
+			kind: "api-submit",
+			owner: "0x0000000000000000000000000000000000000001",
+			purpose: "guard fixture",
+			signing: { type: "none" },
+			submit: {
+				base: "https://api.mob.exchange",
+				route: "/v1/delta-neutral/tasks",
+				body: {
+					longVenue: "hl",
+					shortVenue: "lighter",
+					longMarket: "BTC",
+					shortMarket: "BTC",
+					sizeUsd: 100,
+				},
+			},
+			preflightPlan: {
+				checks: [{ route: "staged", name: "key.venues", detail: "covered" }],
+			},
+		});
+		await store.preview(staged.id, async () => ({
+			ok: true,
+			checkedAt: Date.now(),
+			checks: [
+				{ route: "staged", name: "key.venues", detail: "covered", ok: true },
+			],
+		}));
+		const input = (command: string, fixture = "auto-submit.jsonl") =>
+			JSON.stringify({
+				tool_input: { command },
+				transcript_path: join(root, "packages/fixtures/sign-guard", fixture),
+			});
+		expect(await signGuard(input("mob submit p-1"), () => {}, home)).toBe(0);
+		expect(await signGuard(input("mob sign p-1"), () => {}, home)).toBe(2);
+
+		const recordPath = join(home, "proposals/p-1.json");
+		const record = JSON.parse(await readFile(recordPath, "utf8"));
+		record.kind = "sign-text";
+		await writeFile(recordPath, `${JSON.stringify(record)}\n`);
+		expect(await signGuard(input("mob submit p-1"), () => {}, home)).toBe(2);
+
+		await writeFile(join(home, "config.json"), '{"policy":"manual"}\n');
+		expect(
+			await signGuard(
+				input("mob submit p-1", "manual-submit.jsonl"),
+				() => {},
+				home,
+			),
+		).toBe(0);
+		expect(await signGuard(input("mob submit p-1"), () => {}, home)).toBe(2);
+	} finally {
+		await rm(home, { recursive: true, force: true });
+	}
 });
 test("plugin registers the Bash guard with exec and plugin-root paths", async () => {
 	const config = JSON.parse(
@@ -162,12 +224,13 @@ test("real claude -p transcript retains the human authorization after tool resul
 	).toEqual([]);
 	const errors: string[] = [];
 	expect(
-		signGuard(
+		await signGuard(
 			JSON.stringify({
 				tool_input: { command: '"$MOB" sign p-1 --with browser' },
 				transcript_path: path,
 			}),
 			(s) => errors.push(s),
+			installed,
 		),
 	).toBe(0);
 	expect(errors).toEqual([]);
@@ -215,19 +278,24 @@ test("meta, sidechain, and mixed tool-result events cannot replace or grant huma
 				transcript_path: path,
 			}),
 			() => {},
+			installed,
 		);
-	expect(check("p-1")).toBe(0);
-	expect(check("p-2")).toBe(2);
+	expect(await check("p-1")).toBe(0);
+	expect(await check("p-2")).toBe(2);
 	await writeFile(
 		path,
 		`${await readFile(path, "utf8")}\n${JSON.stringify(event("Show status first"))}\n`,
 	);
-	expect(check("p-1")).toBe(2);
+	expect(await check("p-1")).toBe(2);
 });
 
 test("thin shell wrapper works in a binary-only install without Bun", async () => {
 	const proc = Bun.spawn(["/bin/bash", join(installed, "sign-guard.sh")], {
-		env: { PATH: "/nonexistent", CLAUDE_PLUGIN_ROOT: installed },
+		env: {
+			PATH: "/nonexistent",
+			CLAUDE_PLUGIN_ROOT: installed,
+			MOB_HOME: installed,
+		},
 		stdin: new Blob([
 			JSON.stringify({
 				tool_input: { command: "mob sign p-1" },

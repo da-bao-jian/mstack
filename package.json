@@ -27,7 +27,8 @@
 		"live:mcp": "bun run --filter @mstack/cli live:mcp",
 		"smoke:open": "bun run --filter @mstack/cli smoke:open",
 		"smoke:bind": "bun run --filter @mstack/cli smoke:bind",
-		"smoke:home": "bun run --cwd apps/cli smoke:home"
+		"smoke:home": "bun run --cwd apps/cli smoke:home",
+		"smoke:submit": "bun run --cwd apps/cli smoke:submit"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.15",

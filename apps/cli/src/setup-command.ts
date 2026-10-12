@@ -12,6 +12,7 @@ import { ProposalStore } from "@mstack/proposals";
 import { getAddress } from "viem";
 import pkg from "../package.json";
 import { getConfig, parsedValue, readConfig, setConfig } from "./config.ts";
+import { cliKeyStore } from "./key-store.ts";
 import { printStaged, stageOnboarding } from "./onboarding-stage.ts";
 import type { Runtime } from "./run.ts";
 
@@ -224,8 +225,23 @@ export async function setupCommand(
 			parsedValue("walletconnect_project_id", project);
 			answers.push(["walletconnect_project_id", project]);
 		}
+		const requestedPolicy = answers.find(([key]) => key === "policy")?.[1];
+		if (requestedPolicy === "auto") {
+			const requestedOwner = answers.find(([key]) => key === "owner")?.[1];
+			const keyStore = await cliKeyStore(rt);
+			if (
+				!requestedOwner ||
+				keyStore.backend === "env" ||
+				!(await keyStore.get(requestedOwner))
+			)
+				throw new Error("Policy auto requires a stored key; run mob onboard");
+		}
 		for (const [key, value] of answers) await setConfig(key, value, rt.home);
 		rt.out("Setup saved. No keystore was created.");
+		if (requestedPolicy === "auto")
+			rt.out(
+				"Warning: policy auto lets the agent submit API-key Proposals inside the key's venue and size caps.",
+			);
 		if (
 			answers.some(([key, value]) => key === "signer" && value === "keystore")
 		)

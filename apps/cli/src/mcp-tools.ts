@@ -194,7 +194,7 @@ export const mcpTools = [
 	),
 	tool<{ key: string }>(
 		"config_get",
-		"Read a local setting: api_base, owner, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps, signer, or policy. No setting is changed.",
+		"Read a local setting: api_base, strategy_api_base, owner, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps, signer, or policy. No setting is changed.",
 		{ key: text("Config key to read.") },
 		["key"],
 		({ key }, rt) => config({ action: "get", key }, rt),

@@ -13,6 +13,7 @@ import { planResize, type ResizeLegInput } from "./resizePlan.ts";
 
 export type ManageCommand =
 	| "close"
+	| "cancel"
 	| "neutralize"
 	| "resize"
 	| "protect"
@@ -31,12 +32,13 @@ export async function managePreflight(
 	targets: { long?: number; short?: number },
 	reads: ManageReads,
 	now = Date.now,
+	apiSubmit = false,
 ) {
 	const checks = new Checks(now);
 	let task: PublicTask | undefined;
 	const quantized: { longTargetBase?: number; shortTargetBase?: number } = {};
 	try {
-		await configChecks(config, checks);
+		await configChecks(config, checks, undefined, apiSubmit);
 		const params = { owner: config.owner as string, taskId };
 		try {
 			task = await reads.read("/api/arbitrage/task", params);
@@ -76,14 +78,18 @@ export async function managePreflight(
 		];
 		if (
 			!(command === "close"
-				? nonterminal.includes(task.status)
-				: task.status === "running")
+				? apiSubmit
+					? task.status === "running"
+					: nonterminal.includes(task.status)
+				: command === "cancel"
+					? task.status === "pending"
+					: task.status === "running")
 		)
 			checks.fail(
 				"/api/arbitrage/task",
 				"task.status",
 				new Error(
-					`${command} requires ${command === "close" ? "a non-terminal task" : "a running task"}; status=${task.status}`,
+					`${command} requires ${command === "close" ? (apiSubmit ? "a running task" : "a non-terminal task") : command === "cancel" ? "a pending task" : "a running task"}; status=${task.status}`,
 				),
 			);
 		checks.recordRead({
@@ -93,6 +99,27 @@ export async function managePreflight(
 			assertions: [{ path: ["status"], equals: task.status }],
 		});
 		if (command === "resize") {
+			if (apiSubmit) {
+				await checks.fact("resize", () => {
+					requireValue(
+						targets.long !== undefined || targets.short !== undefined,
+						"resize requires --long and/or --short base",
+					);
+					for (const side of ["long", "short"] as const) {
+						const target = targets[side];
+						if (target === undefined) continue;
+						requireValue(
+							Number.isFinite(target) && target > 0,
+							`${side}: target must be positive; use close to exit`,
+						);
+						quantized[`${side}TargetBase`] = target;
+					}
+					return `Targets are valued server-side: ${Object.entries(quantized)
+						.map(([key, value]) => `${key}=${value}`)
+						.join(", ")}`;
+				});
+				return { ...checks.result(), task, quantized };
+			}
 			const fixedTask = task;
 			await checks.fact("resize", async () => {
 				requireValue(

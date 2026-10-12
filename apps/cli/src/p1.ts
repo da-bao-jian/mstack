@@ -25,7 +25,7 @@ import {
 } from "@mstack/signers";
 import { getAddress } from "viem";
 import pkg from "../package.json";
-import { readConfig, SETUP_FIRST, UsageError } from "./config.ts";
+import { getConfig, readConfig, SETUP_FIRST, UsageError } from "./config.ts";
 import { cliKeyStore } from "./key-store.ts";
 import { keyListTable } from "./keys-command.ts";
 import { object, submitPlan } from "./onboarding-http.ts";
@@ -69,7 +69,7 @@ export async function p1(
 			proposals
 				.map(
 					(p) =>
-						`${p.id}\t${p.status}\t${proposalTiming(p, rt.now())}\t${p.purpose}`,
+						`${p.id}\t${p.kind === "api-submit" ? "api" : "wallet"}\t${p.status}\t${proposalTiming(p, rt.now())}\t${p.purpose}`,
 				)
 				.join("\n") || "No proposals.",
 		);
@@ -105,7 +105,12 @@ export async function p1(
 			) {
 				const checks = new Checks(rt.now);
 				try {
-					await configChecks(await readConfig(rt.home), checks, p.owner);
+					await configChecks(
+						await readConfig(rt.home),
+						checks,
+						p.owner,
+						p.kind === "api-submit",
+					);
 				} catch (error) {
 					if (!(error instanceof CheckFailure)) throw error;
 				}
@@ -122,13 +127,17 @@ export async function p1(
 			throw new Error("Preflight rejected the Proposal");
 		if (!values.json)
 			rt.out(
-				`Stopped before signing. To authorize this Proposal, name ${id} and run mob sign ${id}.`,
+				result.kind === "api-submit"
+					? `Stopped before submission. Next: mob submit ${id}.`
+					: `Stopped before signing. To authorize this Proposal, name ${id} and run mob sign ${id}.`,
 			);
 		return;
 	}
 	const stored = await store.get(id);
 	if (await refreshExpired(stored, rt)) return;
 	const proposal = await store.assertSignable(id);
+	if (proposal.kind === "api-submit")
+		throw new UsageError(`Use mob submit ${id} for this API Proposal`);
 	const config = await readConfig(rt.home);
 	if ((config.policy ?? "manual") !== "manual")
 		throw new UsageError("Wallet policy is locked");
@@ -170,7 +179,7 @@ export async function p1(
 		const result = await store.sign(id, {
 			signal: cancellation.signal,
 			owner: getAddress(config.owner),
-			policy: config.policy ?? "manual",
+			policy: "manual",
 			display: (p) => {
 				if (backend === "keystore" || rt.stdoutIsTTY)
 					rt.out(showProposal(p, rt.now(), rt));
@@ -278,7 +287,9 @@ export async function p1(
 					maxSizeUsd: Number(p.submit.body.maxSizeUsd),
 					importedAt: rt.now(),
 					verifiedAt: rt.now(),
-					apiBase: p.submit.base,
+					apiBase: String(
+						getConfig(await readConfig(rt.home), "strategy_api_base"),
+					),
 				};
 				await keyStore.put(p.owner, secret, meta);
 				return JSON.parse(

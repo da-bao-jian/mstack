@@ -20,6 +20,7 @@
         "@mstack/funding": "workspace:*",
         "@mstack/keys": "workspace:*",
         "@mstack/liquidation": "workspace:*",
+        "@mstack/mobius-api": "workspace:*",
         "@mstack/mobius-client": "workspace:*",
         "@mstack/opportunities": "workspace:*",
         "@mstack/proposals": "workspace:*",

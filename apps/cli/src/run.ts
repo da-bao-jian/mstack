@@ -38,7 +38,7 @@ Usage:
   mob status [--owner 0x…] [--task ID] [--trims] [--resizes] [--api-base URL] [--json]
   mob config get <key>
   mob config set <key> <value>
-  mob setup [--owner 0x… --signer keystore|browser|walletconnect --policy manual|locked]
+  mob setup [--owner 0x… --signer keystore|browser|walletconnect --policy manual|locked|auto]
             [--auth-base URL] [--legal-chain-id N] [--walletconnect-project-id ID] [--no-legal]
   mob bind <hl|aster|lighter|lighter-mainnet>
   mob keys import [--stdin] [--unverified] [--name <n>] [--venues a,b] [--max-size <usd>]
@@ -49,11 +49,13 @@ Usage:
   mob proposal show <id>
   mob preview <id>
   mob sign <id> [--with keystore|browser|walletconnect]
+  mob submit <id>
   mob reject <id>
   mob open <BASE> --long venue:market --short venue:market --size USD
            [--protect pct|off --assume-leverage L[,S]] [--auto-close on|off]
            [--min-apy N] [--max-spread-bps N=50] [--size-mismatch pct]
   mob close <task>
+  mob cancel <task>
   mob neutralize <task>
   mob resize <task> [--long base] [--short base]
   mob protect <task> <pct|off>
@@ -67,7 +69,7 @@ Usage:
   mob --help
 
 Venues: hl,lighter,lighter-mainnet,aster,binance,bybit,okx
-Config keys: api_base, auth_base, legal_chain_id, hl_signature_chain_id, owner, signer, policy, key_store, walletconnect_project_id, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps
+Config keys: api_base, strategy_api_base, auth_base, legal_chain_id, hl_signature_chain_id, owner, signer, policy, key_store, walletconnect_project_id, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps
 Keystore secrets are read only from /dev/tty. Mutation commands stage, preview, and stop before signing.
 MCP tools stage Proposals; no sign, reject, or config-set tool is exposed.
 Protection at open requires assumed leverage, not verified on the venue. Leverage and margin mode are never set by these commands.
@@ -130,11 +132,13 @@ export const definitions: Record<string, ParseArgsConfig["options"]> = {
 		"size-mismatch": flag("string"),
 	},
 	close: { help: flag("boolean") },
+	cancel: { help: flag("boolean") },
 	neutralize: { help: flag("boolean") },
 	resize: {
 		help: flag("boolean"),
 		long: flag("string"),
 		short: flag("string"),
+		"disable-size-mismatch-auto-close": flag("boolean"),
 	},
 	protect: { help: flag("boolean") },
 	"auto-close": { help: flag("boolean"), "min-apy": flag("string") },
@@ -144,6 +148,7 @@ export const definitions: Record<string, ParseArgsConfig["options"]> = {
 	proposal: { help: flag("boolean") },
 	preview: { help: flag("boolean") },
 	sign: { help: flag("boolean"), with: flag("string") },
+	submit: { help: flag("boolean"), json: flag("boolean") },
 	reject: { help: flag("boolean") },
 	scan: {
 		...common,
@@ -181,6 +186,7 @@ export const definitions: Record<string, ParseArgsConfig["options"]> = {
 for (const command of [
 	"open",
 	"close",
+	"cancel",
 	"neutralize",
 	"resize",
 	"protect",
@@ -278,7 +284,11 @@ export async function run(
 			if (positionals.length !== 1 || positionals[0] !== "sign-guard")
 				throw new UsageError("Usage: mob hook sign-guard");
 			const { signGuard } = await import("./sign-guard.ts");
-			return signGuard(await (rt.readStdin?.() ?? Bun.stdin.text()), rt.err);
+			return signGuard(
+				await (rt.readStdin?.() ?? Bun.stdin.text()),
+				rt.err,
+				rt.home,
+			);
 		}
 		if (command === "hello" || command === "doctor") {
 			if (positionals.length)
@@ -302,6 +312,7 @@ export async function run(
 			[
 				"open",
 				"close",
+				"cancel",
 				"neutralize",
 				"resize",
 				"protect",
@@ -319,8 +330,17 @@ export async function run(
 			);
 			if (json) return 0;
 			rt.out(
-				`Stopped before signing. To authorize, name ${proposal.id} and run mob sign ${proposal.id}.`,
+				proposal.kind === "api-submit"
+					? `Staged for API-key submission. Next: mob submit ${proposal.id}`
+					: `Stopped before signing. To authorize, name ${proposal.id} and run mob sign ${proposal.id}.`,
 			);
+			return 0;
+		}
+		if (command === "submit") {
+			if (positionals.length !== 1)
+				throw new UsageError("Usage: mob submit <id>");
+			const { submitCommand } = await import("./submit-command.ts");
+			await submitCommand(positionals[0], json, rt);
 			return 0;
 		}
 		if (

@@ -40,6 +40,7 @@ export interface OpenInput {
 	maxSpreadBps: number;
 	protect?: number;
 	assumedLeverage?: [number, number];
+	apiSubmit?: boolean;
 }
 export interface OpenReads extends Reader {
 	metadata: (venue: string, market: string) => Promise<MarketMetadata>;
@@ -54,7 +55,7 @@ export async function openPreflight(
 	const checks = new Checks(now);
 	const quantities: Partial<Record<"long" | "short", number>> = {};
 	try {
-		await configChecks(input.config, checks);
+		await configChecks(input.config, checks, undefined, input.apiSubmit);
 		for (const venue of new Set([input.long.venue, input.short.venue]))
 			await checkReadiness(
 				venue as ArbitrageVenue,

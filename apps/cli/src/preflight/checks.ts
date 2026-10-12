@@ -89,6 +89,7 @@ export async function configChecks(
 	config: Config,
 	checks: Checks,
 	expectedOwner?: string,
+	apiSubmit = false,
 ): Promise<void> {
 	await checks.fact("config.owner", () => {
 		requireValue(
@@ -102,24 +103,27 @@ export async function configChecks(
 		);
 		return config.owner;
 	});
-	await checks.fact("config.signer", () => {
-		requireValue(
-			["keystore", "browser", "walletconnect"].includes(config.signer ?? ""),
-			SETUP_FIRST,
-		);
-		if (config.signer === "walletconnect")
+	if (!apiSubmit)
+		await checks.fact("config.signer", () => {
 			requireValue(
-				config.walletconnect_project_id &&
-					/^[a-f0-9]{32}$/i.test(config.walletconnect_project_id),
-				"Set walletconnect_project_id to your Reown project ID",
+				["keystore", "browser", "walletconnect"].includes(config.signer ?? ""),
+				SETUP_FIRST,
 			);
-		return config.signer as string;
-	});
+			if (config.signer === "walletconnect")
+				requireValue(
+					config.walletconnect_project_id &&
+						/^[a-f0-9]{32}$/i.test(config.walletconnect_project_id),
+					"Set walletconnect_project_id to your Reown project ID",
+				);
+			return config.signer as string;
+		});
 	await checks.fact("config.policy", () => {
 		requireValue(
-			(config.policy ?? "manual") === "manual",
-			"Wallet policy is locked",
+			apiSubmit
+				? ["manual", "auto"].includes(config.policy ?? "manual")
+				: (config.policy ?? "manual") === "manual",
+			apiSubmit ? "Policy is locked" : "Wallet policy is locked",
 		);
-		return "manual";
+		return config.policy ?? "manual";
 	});
 }
