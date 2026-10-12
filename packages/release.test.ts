@@ -198,6 +198,7 @@ test("release tag dry run reports every placeholder without editing", async () =
 	).toEqual([
 		{ file: "docs/AGENT-INSTALL.md", replacements: 2 },
 		{ file: "docs/AGENT-PROMPT.md", replacements: 1 },
+		{ file: "docs/MOBIUS-ASKS.md", replacements: 1 },
 		{ file: "README.md", replacements: 1 },
 	]);
 	expect(formatReleaseTagPlan(plan)).toContain("docs/AGENT-INSTALL.md: 2");
