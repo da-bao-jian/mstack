@@ -31,7 +31,8 @@
 		"smoke:ceremony": "bun run --filter @mstack/cli smoke:ceremony",
 		"smoke:home": "bun run --cwd apps/cli smoke:home",
 		"smoke:submit": "bun run --cwd apps/cli smoke:submit",
-		"smoke:journey-e": "bun run --cwd apps/cli smoke:journey-e"
+		"smoke:journey-e": "bun run --cwd apps/cli smoke:journey-e",
+		"smoke:paste-prompt": "bun scripts/smoke-paste-prompt.ts"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.15",

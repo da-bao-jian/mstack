@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { releaseTagFiles, rewriteReleaseTag } from "./agent-install-doc.ts";
 
 export function releaseNotes(changelog: string, version: string): string {
 	const sections = changelog.split(/^## /m);
@@ -25,6 +26,28 @@ export function moveUnreleased(
 	);
 	releaseNotes(updated, version);
 	return updated;
+}
+
+export async function releaseTagPlan(root: string, version: string) {
+	return Promise.all(
+		releaseTagFiles.map(async (file) => {
+			const source = await readFile(resolve(root, file), "utf8");
+			return { file, ...rewriteReleaseTag(source, version) };
+		}),
+	);
+}
+
+export function formatReleaseTagPlan(
+	plan: Awaited<ReturnType<typeof releaseTagPlan>>,
+): string {
+	const changed = plan.filter(({ replacements }) => replacements > 0);
+	if (!changed.length) return "Release tag placeholders: none to rewrite.\n";
+	return `${changed
+		.map(
+			({ file, replacements }) =>
+				`Release tag placeholders: ${file}: ${replacements}`,
+		)
+		.join("\n")}\n`;
 }
 
 async function command(root: string, args: string[], capture = false) {
@@ -122,6 +145,13 @@ export async function release(
 			"CHANGELOG.md",
 			moveUnreleased(changelog, version, new Date().toISOString().slice(0, 10)),
 		);
+	for (const file of releaseTagFiles) {
+		const source = await read(file);
+		const rewritten = rewriteReleaseTag(source, version).body;
+		if (rewritten.includes("<tag>"))
+			throw new Error(`Release tag placeholder remains in ${file}`);
+		changed.set(file, rewritten);
+	}
 	await gates(root);
 	if (
 		await command(
@@ -149,7 +179,10 @@ export async function release(
 		);
 		return;
 	}
-	if (version !== current) {
+	const hasEdits = [...changed].some(
+		([file, body]) => original.get(file) !== body,
+	);
+	if (hasEdits) {
 		await command(root, ["git", "add", "--", ...changed.keys()]);
 		await command(root, ["git", "commit", "-m", `chore(release): ${version}`]);
 	}
@@ -168,6 +201,9 @@ if (import.meta.main) {
 	try {
 		const args = process.argv.slice(2);
 		if (args.length === 2 && args[0] === "--notes") {
+			process.stderr.write(
+				formatReleaseTagPlan(await releaseTagPlan(process.cwd(), args[1])),
+			);
 			process.stdout.write(
 				releaseNotes(await readFile("CHANGELOG.md", "utf8"), args[1]),
 			);

@@ -25,3 +25,17 @@ Decided against a localhost receiver. The user copies the key from the page and 
 ## F. Canonical JSON key order
 
 `canonical()` in `funding-server/src/binding/apiService.ts` sorts keys with `localeCompare`, which depends on the runtime locale (case and accents). Mixed-case keys would sort differently on another machine or runtime. Sorting by code unit (`a < b ? -1 : 1`) is deterministic. All current payload keys are lowercase ASCII, so this is not urgent; mstack ports the same comparator and pins a mixed-case test either way.
+
+## G. Copy prompt for mstack
+
+On the API page, add **Copy prompt for mstack** beside the existing **Copy prompt**. Add the same prompt to a landing page at `mob.exchange/agent`.
+
+```text
+Install mstack, the Mobius funding-arbitrage agent stack, and get me ready to trade.
+Read https://raw.githubusercontent.com/da-bao-jian/mstack/<tag>/docs/AGENT-INSTALL.md
+and follow it for this host exactly. Then verify with `mob --version` and `mob doctor`,
+tell me if I need to restart, and when the skills are loaded start the onboarding
+with "set me up". My wallet address is 0x…
+```
+
+The ready-to-paste landing-page title, three sentences, prompt, and custody statement are in `docs/AGENT-PROMPT.md`.

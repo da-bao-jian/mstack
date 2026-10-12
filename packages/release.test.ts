@@ -2,7 +2,12 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { moveUnreleased, releaseNotes } from "../scripts/release.ts";
+import {
+	formatReleaseTagPlan,
+	moveUnreleased,
+	releaseNotes,
+	releaseTagPlan,
+} from "../scripts/release.ts";
 
 const temporary = await mkdtemp(join(tmpdir(), "mob-release-helper-"));
 afterAll(() => rm(temporary, { recursive: true, force: true }));
@@ -40,6 +45,9 @@ async function fixture() {
 		"bun.lock":
 			'{\n  "workspaces": {"apps/cli":{"version":"0.1.0"}},\n  "packages": {"dependency": ["dependency@0.1.0"]}\n}\n',
 		"CHANGELOG.md": changelog,
+		"README.md": "Read docs at <tag>.\n",
+		"docs/AGENT-INSTALL.md": "Install release <tag> from <tag>.\n",
+		"docs/AGENT-PROMPT.md": "Prompt for <tag>.\n",
 	};
 	for (const [file, body] of Object.entries(files)) {
 		await mkdir(dirname(join(root, file)), { recursive: true });
@@ -144,6 +152,15 @@ test("prepare bumps every manifest and only workspace lock metadata, runs gates,
 	const lock = JSON.parse(await readFile(join(f.root, "bun.lock"), "utf8"));
 	expect(lock.workspaces["apps/cli"].version).toBe("0.3.0");
 	expect(lock.packages.dependency).toEqual(["dependency@0.1.0"]);
+	expect(await readFile(join(f.root, "README.md"), "utf8")).toBe(
+		"Read docs at v0.3.0.\n",
+	);
+	expect(await readFile(join(f.root, "docs/AGENT-INSTALL.md"), "utf8")).toBe(
+		"Install release v0.3.0 from v0.3.0.\n",
+	);
+	expect(await readFile(join(f.root, "docs/AGENT-PROMPT.md"), "utf8")).toBe(
+		"Prompt for v0.3.0.\n",
+	);
 	expect((await command(["git", "tag"], f.root)).out).toBe("");
 	expect(
 		(await command(["git", "rev-list", "--count", "HEAD"], f.root)).out.trim(),
@@ -169,6 +186,34 @@ test("prepare bumps every manifest and only workspace lock metadata, runs gates,
 	expect(
 		(await command(["git", "rev-list", "--count", "HEAD"], f.root)).out.trim(),
 	).toBe("2");
+});
+
+test("release tag dry run reports every placeholder without editing", async () => {
+	const f = await fixture();
+	const before = await readFile(join(f.root, "docs/AGENT-INSTALL.md"), "utf8");
+	const plan = await releaseTagPlan(f.root, "0.3.0");
+	expect(
+		plan.map(({ file, replacements }) => ({ file, replacements })),
+	).toEqual([
+		{ file: "docs/AGENT-INSTALL.md", replacements: 2 },
+		{ file: "docs/AGENT-PROMPT.md", replacements: 1 },
+		{ file: "README.md", replacements: 1 },
+	]);
+	expect(formatReleaseTagPlan(plan)).toContain("docs/AGENT-INSTALL.md: 2");
+	expect(plan.every(({ body }) => !body.includes("<tag>"))).toBe(true);
+	expect(await readFile(join(f.root, "docs/AGENT-INSTALL.md"), "utf8")).toBe(
+		before,
+	);
+	const cli = await command(
+		[process.execPath, helper, "--notes", "0.1.0"],
+		f.root,
+	);
+	expect(cli.code).toBe(0);
+	expect(cli.out).toContain("Initial release.");
+	expect(cli.err).toContain("docs/AGENT-INSTALL.md: 2");
+	expect(await readFile(join(f.root, "docs/AGENT-INSTALL.md"), "utf8")).toBe(
+		before,
+	);
 });
 
 test("normal release commits the bump before tagging, and refuses an existing tag", async () => {

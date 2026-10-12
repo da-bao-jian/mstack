@@ -60,6 +60,9 @@ It does not prove that a live order has executed.
   `--include-cross-deployment` reveals them; it does not make them executable.
 - Thin pairs do not carry an executable command, including with `--include-thin`.
 - A hosted MCP server and Ledger remain future work.
+- A skills-only plugin over a hosted MCP is still needed for claude.ai and
+  Cowork, because those hosts refuse a plugin with `bin/`. Submit it to the
+  Anthropic plugin directory after that plugin exists.
 - Public reads expose task and binding information by owner address.
 - WalletConnect uses the Community License. Optional loading does not remove
   the obligations of distributing a binary that includes the SDK.

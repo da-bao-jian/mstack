@@ -109,3 +109,6 @@ Decided 2026-10-12, design in `docs/SESSION-ONBOARDING.md`, Mobius-side asks in 
 | **W20 onboarding ceremony** | `mob onboard`: one-shot receiver + Mobius API page + polling checklist + hidden paste fallback; `--native`: legal, batch venue binding through the API, key creation Proposal; the browser sign page serves a multi-request session (one tab, one connection). | W18, W19 |
 | **W21 trading via submit** | Proposal kind `api-submit`, `mob submit`, policy `auto`, `mob status` with the key, sign-guard covers submit, manage edits stay wallet-signed with a clear message. | W18, W19 |
 | **W22 skills, MCP, docs, QA, 0.4.0** | `/mob-setup` → onboard, `/mob-open` → submit, `/mob-keys`, MCP `propose_*` unchanged, README/READINESS/ARCHITECTURE, journeys E and F, CHANGELOG 0.4.0. | W20, W21 |
+| **W23 distribution by pasted prompt** | Agent-only install instructions, a release-pinned paste prompt, install-doc validation, a sandboxed paste-prompt smoke, and release placeholder wiring. | W22 |
+
+P2: Build a skills-only plugin over a hosted MCP for claude.ai and Cowork, which refuse plugins with `bin/`, then submit it to the Anthropic plugin directory.
