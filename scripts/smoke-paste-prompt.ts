@@ -158,7 +158,7 @@ try {
 			`mob doctor did not verify the binary\n${doctor.out}${doctor.err}`,
 		);
 	const claudeHome = claudeResults.get("mob");
-	if (!claudeHome || !/<<<MOB\n[\s\S]*\nMOB>>>/.test(claudeHome.out))
+	if (!claudeHome || !/<mob-home>\n[\s\S]*\n<\/mob-home>/.test(claudeHome.out))
 		throw new Error(
 			`Claude final mob output has no marked logo\n${claudeHome?.out ?? "missing"}`,
 		);
@@ -193,7 +193,7 @@ try {
 			`Codex mob doctor did not verify the binary\n${codexDoctor.out}${codexDoctor.err}`,
 		);
 	const codexHome = codexResults.get("mob");
-	if (!codexHome || !/<<<MOB\n[\s\S]*\nMOB>>>/.test(codexHome.out))
+	if (!codexHome || !/<mob-home>\n[\s\S]*\n<\/mob-home>/.test(codexHome.out))
 		throw new Error(
 			`Codex final mob output has no marked logo\n${codexHome?.out ?? "missing"}`,
 		);

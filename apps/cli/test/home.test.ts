@@ -204,25 +204,25 @@ test("TTY home uses brand colors and the three-swatch palette only", async () =>
 	expect(out).toContain("\x1b[48;2;246;96;71m  \x1b[0m orange");
 	expect(out).toContain("\x1b[48;2;2;123;176m  \x1b[0m navy");
 	expect(out).not.toContain(" bg");
-	expect(out).not.toContain("<<<MOB");
+	expect(out).not.toContain("<mob-home>");
 });
 test("non-TTY home uses one marked ASCII block; flags still force their modes", async () => {
 	const { invoke, rt } = await context();
 	rt.isTTY = false;
 	rt.stdoutIsTTY = false;
 	const headless = await invoke(["hello", "--offline"]);
-	expect(headless.out).toStartWith("<<<MOB\n");
-	expect(headless.out).toEndWith("\nMOB>>>");
+	expect(headless.out).toStartWith("<mob-home>\n");
+	expect(headless.out).toEndWith("\n</mob-home>");
 	expect(headless.out).toMatch(/^[\x20-\x7e\n]*$/);
-	expect(headless.out.indexOf("MOB>>>")).toBeGreaterThan(
+	expect(headless.out.indexOf("</mob-home>")).toBeGreaterThan(
 		headless.out.indexOf(`mstack ${pkg.version}`),
 	);
 
 	const plain = await invoke(["hello", "--offline", "--plain"]);
-	expect(plain.out).toStartWith("<<<MOB\n");
+	expect(plain.out).toStartWith("<mob-home>\n");
 	expect(plain.out).toContain("░");
 	const ascii = await invoke(["hello", "--offline", "--ascii"]);
-	expect(ascii.out).toStartWith("<<<MOB\n");
+	expect(ascii.out).toStartWith("<mob-home>\n");
 	expect(ascii.out).not.toContain("░");
 });
 test("big has 25 art rows; compact uses the 13-row home and offline makes no HTTP calls", async () => {
@@ -233,7 +233,7 @@ test("big has 25 art rows; compact uses the 13-row home and offline makes no HTT
 		"--ascii",
 		"--offline",
 	]);
-	expect(compactOffline.out).toStartWith("<<<MOB\n");
+	expect(compactOffline.out).toStartWith("<mob-home>\n");
 	expect(compactOffline.out).toContain('Next       say "set me up"');
 	expect(compactOffline.out).not.toContain("sky  ");
 	const big = await invoke(["--big", "--plain", "--offline"]);

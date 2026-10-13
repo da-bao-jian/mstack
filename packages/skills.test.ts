@@ -236,7 +236,7 @@ esac`,
 			);
 			expect(result.out).toContain(`MOB_VERSION: ${pkg.version}`);
 			expect(result.out).toContain("API_REACHABLE: ok");
-			expect(result.out.includes("<<<MOB")).toBe(name === "mob");
+			expect(result.out.includes("<mob-home>")).toBe(name === "mob");
 		}
 	},
 	60_000, // Two preambles (11 CLI spawns); symlink setup adds two build stubs.
@@ -949,7 +949,7 @@ test("shared splash greets once per owner or home while the router always greets
 		home,
 	);
 	const first = await command(["/bin/bash", "-c", claudeSkill], home, path);
-	const block = /<<<MOB\n([\s\S]*?)\nMOB>>>/.exec(first.out);
+	const block = /<mob-home>\n([\s\S]*?)\n<\/mob-home>/.exec(first.out);
 	expect(block).not.toBeNull();
 	expect(block?.[1]).toMatch(/^[ -~\n]+$/);
 	expect(block?.[1]).toContain("##");
@@ -957,29 +957,31 @@ test("shared splash greets once per owner or home while the router always greets
 	expect(Number(await readFile(stamp, "utf8"))).toBeGreaterThan(0);
 	expect(
 		(await command(["/bin/bash", "-c", codexSkill], home, path)).out,
-	).not.toContain("<<<MOB");
+	).not.toContain("<mob-home>");
 	for (const router of [claudeRouter, codexRouter])
 		expect(
 			(await command(["/bin/bash", "-c", router], home, path)).out,
-		).toContain("<<<MOB");
+		).toContain("<mob-home>");
 	await writeFile(stamp, `${Math.floor(Date.now() / 1000) - 3601}\n`);
 	const concurrent = await Promise.all([
 		command(["/bin/bash", "-c", claudeSkill], home, path),
 		command(["/bin/bash", "-c", codexSkill], home, path),
 	]);
-	expect(concurrent.filter((r) => r.out.includes("<<<MOB"))).toHaveLength(1);
+	expect(concurrent.filter((r) => r.out.includes("<mob-home>"))).toHaveLength(
+		1,
+	);
 	const owner = "0x0000000000000000000000000000000000000001";
 	expect(
 		(await command(["mob", "config", "set", "owner", owner], home, path)).code,
 	).toBe(0);
 	expect(
 		(await command(["/bin/bash", "-c", codexSkill], home, path)).out,
-	).toContain("<<<MOB");
+	).toContain("<mob-home>");
 	expect([
 		...new Bun.Glob("hello-owner-*-stamp").scanSync(join(home, ".mob")),
 	]).toHaveLength(1);
 	const greeting =
-		"If the preamble output contains a block between `<<<MOB` and `MOB>>>`, reproduce that block verbatim in a fenced code block at the top of your reply; never strip, trim or summarize it.";
+		"If the preamble output contains a block between the lines `<mob-home>` and `</mob-home>`, reproduce every line between those two tags verbatim in a fenced code block at the top of your reply, and leave the two tag lines out; never strip, trim or summarize the block.";
 	for (const [file, body] of skills) {
 		expect(body).toContain(greeting);
 		expect(body.indexOf(greeting)).toBeGreaterThan(body.indexOf("```bash"));

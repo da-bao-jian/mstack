@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 
 const repo = resolve(import.meta.dir, "..");
 const greetingRule =
-	"If the preamble output contains a block between `<<<MOB` and `MOB>>>`, reproduce that block verbatim in a fenced code block at the top of your reply; never strip, trim or summarize it.";
+	"If the preamble output contains a block between the lines `<mob-home>` and `</mob-home>`, reproduce every line between those two tags verbatim in a fenced code block at the top of your reply, and leave the two tag lines out; never strip, trim or summarize the block.";
 
 /** Pure rendering lets tests compare both hosts without rewriting the checkout. */
 export async function renderSkills(root = repo): Promise<Map<string, string>> {

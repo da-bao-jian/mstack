@@ -83,7 +83,7 @@ test("terminal renderer selects modes and delimits non-TTY output", () => {
 	const tty = { env: { COLORTERM: "truecolor" }, isTTY: true };
 	const color = renderTerminalLogo({ size: 32, terminal: tty });
 	expect(color.mode).toBe("truecolor");
-	expect(color.lines).not.toContain("<<<MOB");
+	expect(color.lines).not.toContain("<mob-home>");
 
 	const headless = renderTerminalLogo({
 		size: 32,
@@ -91,9 +91,9 @@ test("terminal renderer selects modes and delimits non-TTY output", () => {
 	});
 	expect(headless.mode).toBe("ascii");
 	expect(headless.lines).toEqual([
-		"<<<MOB",
+		"<mob-home>",
 		...renderLogo({ size: 32, mode: "ascii" }),
-		"MOB>>>",
+		"</mob-home>",
 	]);
 
 	const forced = renderTerminalLogo({
@@ -102,7 +102,7 @@ test("terminal renderer selects modes and delimits non-TTY output", () => {
 		mode: "mono",
 	});
 	expect(forced.mode).toBe("mono");
-	expect(forced.lines[0]).toBe("<<<MOB");
+	expect(forced.lines[0]).toBe("<mob-home>");
 	expect(forced.lines.join("\n")).toContain("░");
 });
 test("palette and styles respect terminal capabilities", () => {

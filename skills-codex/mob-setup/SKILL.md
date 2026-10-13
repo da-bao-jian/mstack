@@ -10,7 +10,7 @@ metadata:
 bash ~/.agents/skills/mstack/bin/mob-preamble
 ```
 
-If the preamble output contains a block between `<<<MOB` and `MOB>>>`, reproduce that block verbatim in a fenced code block at the top of your reply; never strip, trim or summarize it.
+If the preamble output contains a block between the lines `<mob-home>` and `</mob-home>`, reproduce every line between those two tags verbatim in a fenced code block at the top of your reply, and leave the two tag lines out; never strip, trim or summarize the block.
 
 Run the preamble first. Use the printed `MOB_BIN` path in place of `mob`; shell-quote public user values. If `MOB_MISSING` appears, show the install line and stop.
 
@@ -28,6 +28,6 @@ printf '%s' 'mobius_…' | mob keys import --stdin --name '<name>' --venues '<a,
 
 Use the printed `MOB_BIN` path for `mob`. Use the name, venues, and cap the user confirmed. `printf` is a shell builtin, so the key does not appear in a process list. Never echo the key. Never use `echo`, a file, a positional key, an environment variable, or `--from-env`. Never repeat the key in a reply or any other command.
 6. If import answers `could not verify; not stored`, report that the Strategy API is unreachable and stop. Use `--unverified` only when the user explicitly asks for it.
-7. Run `mob onboard` again only after a successful import. Report the checklist and the exact `Ready · …` line. Never claim Ready unless the CLI prints it. Reproduce the home-screen block printed with Ready verbatim in a fenced code block at the top of your reply; never strip, trim or summarize it.
+7. Run `mob onboard` again only after a successful import. Report the checklist and the exact `Ready · …` line. Never claim Ready unless the CLI prints it. Reproduce the home-screen block printed with Ready verbatim in a fenced code block at the top of your reply, without the `<mob-home>` and `</mob-home>` tag lines; never strip, trim or summarize it.
 
 A human can instead run `mob keys import` in their own terminal and paste the key into the hidden prompt. For native signing or binding repair, use `$mob-bind`. For key inspection or revocation, use `$mob-keys`.

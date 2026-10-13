@@ -1,7 +1,7 @@
 // Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
 exports[`80-column ASCII home snapshots cover fresh, running and cached states: fresh live 1`] = `
-"<<<MOB
+"<mob-home>
                   #-------------   mstack 0.4.0 . new account
                 ###-------------   --------------------------
               #####-------------   Top pairs  BTC    long hl . short lighter  92% net  $10.0M
@@ -15,11 +15,11 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
  ------------#####
  ------------###
  ------------#                     live · 2 of 7 venues · 0.0 s
-MOB>>>"
+</mob-home>"
 `;
 
 exports[`80-column ASCII home snapshots cover fresh, running and cached states: onboarded running 1`] = `
-"<<<MOB
+"<mob-home>
                   #-------------   mstack 0.4.0 . 0x0000...0001
                 ###-------------   --------------------------
               #####-------------   Top pairs  BTC    long hl . short lighter  92% net  $10.0M
@@ -33,11 +33,11 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
  ------------#####
  ------------###
  ------------#                     live · 2 of 7 venues · 0.0 s
-MOB>>>"
+</mob-home>"
 `;
 
 exports[`80-column ASCII home snapshots cover fresh, running and cached states: unreachable cached 1`] = `
-"<<<MOB
+"<mob-home>
                   #-------------   mstack 0.4.0 . new account
                 ###-------------   --------------------------
               #####-------------   Top pairs  BTC    long hl . short lighter  92% net  $10.0M
@@ -51,5 +51,5 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
  ------------#####
  ------------###
  ------------#                     cached 4 min ago
-MOB>>>"
+</mob-home>"
 `;

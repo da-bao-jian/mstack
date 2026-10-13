@@ -16,8 +16,11 @@ not a claim that public release tags or artifacts were published.
 - `/mob-keys`, session-aware setup, bind, open, manage, and close skills for Claude Code and Codex.
 - Read-only MCP tools `onboarding_status` and `key_status`.
 - Journey E smoke coverage for onboarding, stdin import, open, submit, status, and key confinement.
+- Neofetch-style home screen: the MoB logo in brand colors beside live top pairs, trending markets, account standing and the next action. Every skill greets with it once per session, and the paste-prompt install ends on it.
+- `docs/AGENT-INSTALL.md` and the paste prompt in the README, so an agent installs the plugin, the binary or the Codex skills from one URL.
 
 ### Changed
+- The skill greeting rule reproduces the lines between the `<mob-home>` and `</mob-home>` tags and leaves the tag lines out of the welcome.
 
 - Make browser-page onboarding the default setup path. Keep binding repair and native onboarding as wallet-signing paths.
 - Report relative ceremony expiry in `mob proposals` and make help coverage exhaustive for parser commands and subcommands.

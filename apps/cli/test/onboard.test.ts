@@ -223,8 +223,8 @@ test("non-TTY onboard requires owner and imported key makes the checklist Ready"
 	expect(ready.out).toContain(
 		"Ready · 2 venues bound · key mobius_01234567-89ab-cdef-0123-456789abcdef… · cap $5,000",
 	);
-	expect(ready.out).toContain("<<<MOB\n");
-	expect(ready.out).toContain("\nMOB>>>");
+	expect(ready.out).toContain("<mob-home>\n");
+	expect(ready.out).toContain("\n</mob-home>");
 	expect(ready.out).toContain("#");
 	expect(ready.out).not.toContain("░");
 	expect(ready.out).not.toMatch(/^Key\s+.*not checked$/m);
@@ -264,6 +264,6 @@ test("TTY onboard prompts for owner and watch redraws with an injected clock", a
 	expect(result.code).toBe(0);
 	expect(reads).toBe(2);
 	expect(frames.join("\n")).toContain("\x1b[2J\x1b[H");
-	expect(result.out).not.toContain("<<<MOB");
+	expect(result.out).not.toContain("<mob-home>");
 	expect(result.out.endsWith("Ready")).toBe(true);
 });

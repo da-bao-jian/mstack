@@ -37,7 +37,6 @@ Paste the prompt below into Claude Code, Codex, or another shell-capable agent.
 The agent detects its host, installs one supported path, verifies the CLI, and starts onboarding.
 
 ```text
-<<<MOB
                          ------------------
                        --#-----------------
                      --###-----------------
@@ -56,7 +55,6 @@ The agent detects its host, installs one supported path, verifies the CLI, and s
  -----------------#####
  -----------------###
  -----------------#
-MOB>>>
 ```
 
 ```text

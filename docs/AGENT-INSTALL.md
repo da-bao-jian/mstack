@@ -22,7 +22,7 @@ mob
 ```
 
 `mob --version` must print the version in `v0.4.0`. Check the doctor output against [Verify](#verify).
-Reproduce the complete `mob` output verbatim in a fenced code block as the welcome.
+Reproduce the complete `mob` output verbatim in a fenced code block as the welcome, without the `<mob-home>` and `</mob-home>` tag lines.
 
 Tell the user exactly: restart Claude Code, then say "set me up".
 
@@ -37,7 +37,7 @@ mob
 ```
 
 `mob --version` must print the version in `v0.4.0`. Check the doctor output against [Verify](#verify).
-Reproduce the complete `mob` output verbatim in a fenced code block as the welcome.
+Reproduce the complete `mob` output verbatim in a fenced code block as the welcome, without the `<mob-home>` and `</mob-home>` tag lines.
 
 Tell the user exactly: start a new Codex session and say "set me up".
 
@@ -68,7 +68,7 @@ printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | mob
 mob
 ```
 
-Reproduce the complete `mob` output verbatim in a fenced code block as the welcome.
+Reproduce the complete `mob` output verbatim in a fenced code block as the welcome, without the `<mob-home>` and `</mob-home>` tag lines.
 Tell the user exactly: say "set me up" in the MCP client.
 
 Keep signing and key import in the terminal. Use `mob onboard` and `mob keys import` there.
@@ -85,7 +85,7 @@ mob doctor
 mob
 ```
 
-Reproduce the complete `mob` output verbatim in a fenced code block as the welcome.
+Reproduce the complete `mob` output verbatim in a fenced code block as the welcome, without the `<mob-home>` and `</mob-home>` tag lines.
 Tell the user exactly: run `mob onboard` to set me up.
 
 ## Verify

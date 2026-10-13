@@ -144,8 +144,14 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 	};
 	const signed = (value: number, digits = 0) =>
 		`${value >= 0 ? "+" : "−"}${Math.abs(value).toFixed(digits)}`;
+	const baseWidth = Math.max(
+		7,
+		...[...market.topPairs, ...market.trending].map(
+			(item) => item.base.length + 1,
+		),
+	);
 	const pairText = (pair: HomeMarket["topPairs"][number]) =>
-		`${pair.base.padEnd(7)}long ${pair.longVenue} · short ${pair.shortVenue}  ${Math.round(pair.netApyPct)}% net${pair.volume24hUsd === undefined ? "" : `  ${money(pair.volume24hUsd)}`}`;
+		`${pair.base.padEnd(baseWidth)}long ${pair.longVenue} · short ${pair.shortVenue}  ${Math.round(pair.netApyPct)}% net${pair.volume24hUsd === undefined ? "" : `  ${money(pair.volume24hUsd)}`}`;
 	const info: string[] = [];
 	const owner = data.owner
 		? `${data.owner.slice(0, 6)}…${data.owner.slice(-4)}`
@@ -160,14 +166,21 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 			);
 		});
 	} else {
-		info.push(row("Top pairs", "venues unreachable · mob scan to retry"));
+		info.push(
+			row(
+				"Top pairs",
+				market.freshness.state === "offline"
+					? "offline · no cached scan yet · mob scan when online"
+					: "venues unreachable · mob scan to retry",
+			),
+		);
 	}
 	market.trending.forEach((item, index) => {
 		const change =
 			item.priceChange24hPct === undefined
 				? ""
 				: ` · price ${signed(item.priceChange24hPct, 1)}%`;
-		const value = `${item.base.padEnd(7)}${money(item.volume24hUsd)} 24h · funding ${signed(item.annualizedPct)}%/yr${item.openInterestUsd === undefined ? "" : ` · OI ${money(item.openInterestUsd)}`}${change}`;
+		const value = `${item.base.padEnd(baseWidth)}${money(item.volume24hUsd)} 24h · funding ${signed(item.annualizedPct)}%/yr${item.openInterestUsd === undefined ? "" : ` · OI ${money(item.openInterestUsd)}`}${change}`;
 		info.push(index ? continuation(value) : row("Trending", value));
 	});
 	if (data.key.description && data.tasks.value?.running.count) {
@@ -236,7 +249,7 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 				? `say "open ${market.topPairs[0].base}"   or   mob scan`
 				: "mob scan";
 	info.push(row("Next", next));
-	const freshness = freshnessText(market);
+	const freshness = textMode(freshnessText(market), mode);
 	const palette =
 		mode === "truecolor" || mode === "ansi256"
 			? renderBrandPalette({ mode })
@@ -254,7 +267,7 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 				return `${left}${" ".repeat(size - Bun.stringWidth(left) + 3)}${info[index] ?? ""}`.trimEnd();
 			});
 	const marked = !terminal.isTTY || mode === "ascii";
-	rt.out((marked ? ["<<<MOB", ...lines, "MOB>>>"] : lines).join("\n"));
+	rt.out((marked ? ["<mob-home>", ...lines, "</mob-home>"] : lines).join("\n"));
 }
 
 function freshnessText(market: HomeMarket): string {

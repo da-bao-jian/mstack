@@ -66,7 +66,10 @@ export function renderTerminalLogo({
 	const lines = renderLogo({ size, mode });
 	return {
 		mode,
-		lines: terminal.isTTY || !markers ? lines : ["<<<MOB", ...lines, "MOB>>>"],
+		lines:
+			terminal.isTTY || !markers
+				? lines
+				: ["<mob-home>", ...lines, "</mob-home>"],
 	};
 }
 export function renderLogo({

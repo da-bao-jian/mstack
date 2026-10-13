@@ -101,7 +101,7 @@ try {
 		});
 		if (args[0] !== "doctor") {
 			assert.ok(performance.now() - started < 5_500);
-			assert.match(output.join("\n"), /<<<MOB\n[\s\S]*\nMOB>>>/);
+			assert.match(output.join("\n"), /<mob-home>\n[\s\S]*\n<\/mob-home>/);
 		}
 		console.log(`exit ${code}`);
 		assert.equal(code, 0);
