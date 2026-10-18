@@ -5,6 +5,22 @@ Version history comes from the package reports; dates describe implementation,
 not a claim that public release tags or artifacts were published.
 
 <!-- release-start -->
+## [Unreleased]
+
+### Changed
+
+- Route install health, upgrade, and uninstall questions from `/mob` to `mob doctor`, `mob upgrade`, and the per-host uninstall commands.
+- Offer a one-paragraph CLAUDE.md or AGENTS.md integration at the end of the agent install, matching the gstack convention.
+- Add a manifest hygiene test and a gated skill-routing eval (`MOB_EVAL=1 bun run eval:skills`).
+
+### Removed
+
+- The Claude Code plugin no longer registers an MCP server, and the root `.mcp.json` is gone. The skills call `mob` through Bash, which the sign guard mediates; the 18 tool schemas cost about 3,500 tokens in every session and no skill used them. `mob mcp` is unchanged for Cursor, Windsurf, Claude Desktop, and any stdio client. Claude Code users can opt in with `claude mcp add --scope user mstack -- mob mcp`.
+
+### Security
+
+- The Bash sign guard sets `onFailure: block`, so a guard that cannot start, crashes, or times out blocks the call on Claude Code 2.1.295 or newer instead of letting it through. The hook timeout is 30 seconds.
+
 ## [0.4.0] - 2026-10-12
 
 ### Added
@@ -20,8 +36,8 @@ not a claim that public release tags or artifacts were published.
 - `docs/AGENT-INSTALL.md` and the paste prompt in the README, so an agent installs the plugin, the binary or the Codex skills from one URL.
 
 ### Changed
-- The skill greeting rule reproduces the lines between the `<mob-home>` and `</mob-home>` tags and leaves the tag lines out of the welcome.
 
+- The skill greeting rule reproduces the lines between the `<mob-home>` and `</mob-home>` tags and leaves the tag lines out of the welcome.
 - Make browser-page onboarding the default setup path. Keep binding repair and native onboarding as wallet-signing paths.
 - Report relative ceremony expiry in `mob proposals` and make help coverage exhaustive for parser commands and subcommands.
 - Prevent the onboarding Ready screen from showing contradictory key and legal `not checked` rows.

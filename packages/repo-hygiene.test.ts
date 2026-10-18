@@ -117,3 +117,36 @@ test("plugin and marketplace agree on the plugin name", async () => {
 	expect(plugin.displayName).toBe("mstack");
 	expect(plugin).not.toHaveProperty("userConfig");
 });
+
+test("plugin manifest pins one version, no MCP registration, a guarded hook, and no stray root files", async () => {
+	const plugin = await Bun.file(
+		join(root, ".claude-plugin/plugin.json"),
+	).json();
+	const marketplace = await Bun.file(
+		join(root, ".claude-plugin/marketplace.json"),
+	).json();
+	const { version } = await Bun.file(join(root, "package.json")).json();
+	// Users stay on a cached plugin until the manifest version string changes,
+	// so every version field moves together with the workspace release.
+	expect(plugin.version).toBe(version);
+	expect(marketplace.metadata.version).toBe(version);
+	expect(marketplace.plugins[0].version).toBe(version);
+	expect(plugin.name).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+	expect(plugin.skills).toEqual(["./skills/"]);
+	// The plugin registers no MCP server. Skills call `mob` through Bash, the
+	// surface the sign guard mediates, and the 18 tool schemas would cost about
+	// 3,500 tokens in every session. `mob mcp` stays for clients without a
+	// shell; Claude Code users opt in with `claude mcp add`. A root .mcp.json
+	// is also read as project configuration whenever this checkout is opened.
+	expect(plugin).not.toHaveProperty("mcpServers");
+	expect(await Bun.file(join(root, ".mcp.json")).exists()).toBe(false);
+	// A plugin-root CLAUDE.md is never loaded and draws a validation warning.
+	expect(await Bun.file(join(root, "CLAUDE.md")).exists()).toBe(false);
+	const hooks = await Bun.file(join(root, "hooks/hooks.json")).json();
+	for (const entry of hooks.hooks.PreToolUse)
+		for (const hook of entry.hooks) {
+			// A guard that cannot run must block, never fall open.
+			expect(hook.onFailure).toBe("block");
+			expect(hook.timeout).toBeGreaterThanOrEqual(10);
+		}
+});

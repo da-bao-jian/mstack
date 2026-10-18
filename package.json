@@ -23,6 +23,7 @@
 		"deadcode": "knip",
 		"gen:skills": "bun scripts/gen-skill-docs.ts",
 		"live:skills": "bun scripts/live-skills.ts",
+		"eval:skills": "bun scripts/eval-skills.ts",
 		"live:smoke": "bun run --filter @mstack/funding live:smoke",
 		"live:mcp": "bun run --filter @mstack/cli live:mcp",
 		"smoke:open": "bun run --filter @mstack/cli smoke:open",

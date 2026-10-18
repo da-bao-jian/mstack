@@ -25,7 +25,7 @@ Do not edit `reference/` or `docs/PRD.md`; report unresolved specification quest
 - `skills-src/`, `hosts/`: skill templates, references, and host overlays.
 - `skills/`, `skills-codex/`: committed generated skills; edit their sources.
 - `bin/`, `scripts/`, `setup`: shims, generation, and host installation.
-- `.claude-plugin/`, `.mcp.json`, `hooks/`: root plugin configuration.
+- `.claude-plugin/`, `hooks/`: root plugin configuration: skills, `bin/`, and the Bash hook; no MCP server is registered.
 - `docs/`: architecture, knowledge, package plans, and delivery reports.
 
 ## Commands

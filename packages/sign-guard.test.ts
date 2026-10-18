@@ -231,7 +231,10 @@ test("plugin registers the Bash guard with exec and plugin-root paths", async ()
 					type: "command",
 					// biome-ignore lint/suspicious/noTemplateCurlyInString: Literal plugin shell variable.
 					command: 'exec "${CLAUDE_PLUGIN_ROOT}/bin/mob" hook sign-guard',
-					timeout: 10,
+					timeout: 30,
+					// A crashed, missing, or timed-out guard blocks the call instead of
+					// letting it through (Claude Code >= 2.1.295).
+					onFailure: "block",
 				},
 			],
 		},
