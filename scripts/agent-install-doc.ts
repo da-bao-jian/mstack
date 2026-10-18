@@ -5,15 +5,25 @@ export const releaseTagFiles = [
 	"README.md",
 ] as const;
 
+// Rewrites every `<tag>` placeholder and, when the docs already carry the
+// previous release tag, that tag too, so a later release moves them forward.
 export function rewriteReleaseTag(
 	body: string,
 	version: string,
+	previous?: string,
 ): { body: string; replacements: number } {
-	const matches = body.match(/<tag>/g);
-	return {
-		body: body.replaceAll("<tag>", `v${version}`),
-		replacements: matches?.length ?? 0,
-	};
+	const patterns = [/<tag>/g];
+	if (previous && previous !== version)
+		patterns.push(
+			new RegExp(`v${previous.replaceAll(".", "\\.")}(?!\\d)`, "g"),
+		);
+	let replacements = 0;
+	let rewritten = body;
+	for (const pattern of patterns) {
+		replacements += rewritten.match(pattern)?.length ?? 0;
+		rewritten = rewritten.replace(pattern, `v${version}`);
+	}
+	return { body: rewritten, replacements };
 }
 
 export function shellCommandsInSection(

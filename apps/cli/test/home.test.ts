@@ -137,12 +137,16 @@ test("no args home: live market, account standing and next action share the logo
 	expect(fake.calls.every((c) => c.method === "GET")).toBe(true);
 	expect(fake.calls.some((c) => c.url.includes("rebind-check"))).toBe(false);
 });
+// Snapshots must survive a version bump: the home screen prints the version.
+const stable = (out: string) =>
+	out.replaceAll(`mstack ${pkg.version}`, "mstack <version>");
+
 test("80-column ASCII home snapshots cover fresh, running and cached states", async () => {
 	const fresh = await context(false);
 	fresh.rt.columns = 80;
 	fresh.rt.isTTY = false;
 	fresh.rt.stdoutIsTTY = false;
-	expect((await fresh.invoke([])).out).toMatchSnapshot("fresh live");
+	expect(stable((await fresh.invoke([])).out)).toMatchSnapshot("fresh live");
 
 	const onboarded = await context();
 	await setConfig("key_store", "file", onboarded.home);
@@ -165,7 +169,9 @@ test("80-column ASCII home snapshots cover fresh, running and cached states", as
 	onboarded.rt.columns = 80;
 	onboarded.rt.isTTY = false;
 	onboarded.rt.stdoutIsTTY = false;
-	expect((await onboarded.invoke([])).out).toMatchSnapshot("onboarded running");
+	expect(stable((await onboarded.invoke([])).out)).toMatchSnapshot(
+		"onboarded running",
+	);
 
 	const cached = await context(false);
 	await cached.invoke([]);
@@ -181,7 +187,9 @@ test("80-column ASCII home snapshots cover fresh, running and cached states", as
 	cached.rt.columns = 80;
 	cached.rt.isTTY = false;
 	cached.rt.stdoutIsTTY = false;
-	expect((await cached.invoke([])).out).toMatchSnapshot("unreachable cached");
+	expect(stable((await cached.invoke([])).out)).toMatchSnapshot(
+		"unreachable cached",
+	);
 });
 test("terminal under 72 columns stacks the 13-row logo above info", async () => {
 	const { invoke, rt } = await context();

@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import pkg from "../package.json";
 import { verifyApiKey } from "../src/index.ts";
 
 const key = `mobius_01234567-89ab-cdef-0123-456789abcdef.${"ab".repeat(32)}`;
@@ -29,7 +30,7 @@ test("verification calls the one allowed endpoint with bearer auth", async () =>
 	expect(request).toEqual({
 		url: "https://api.mob.exchange/v1/delta-neutral/tasks?limit=1",
 		authorization: `Bearer ${key}`,
-		client: "mstack/0.4.0",
+		client: `mstack/${pkg.version}`,
 		redirect: "error",
 	});
 	expect(result).toEqual({ status: "ok", latencyMs: 0 });

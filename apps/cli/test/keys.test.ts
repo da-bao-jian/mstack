@@ -6,6 +6,7 @@ import { apiKeyMessage } from "@mstack/mobius-client";
 import { ProposalStore } from "@mstack/proposals";
 import { privateKeyToAccount } from "viem/accounts";
 import { fakeBrowserWallet } from "../../../packages/signers/test/fake-browser-wallet.ts";
+import pkg from "../package.json";
 import { setConfig } from "../src/config.ts";
 import { keyListTable } from "../src/keys-command.ts";
 import { type Runtime, run } from "../src/run.ts";
@@ -404,7 +405,7 @@ test("sign stores a create answer but persists and prints only its prefix", asyn
 	});
 	await Promise.all(wallets);
 	expect(result.code).toBe(0);
-	expect(clientHeader).toBe("mstack/0.4.0");
+	expect(clientHeader).toBe(`mstack/${pkg.version}`);
 	expect(`${result.out}\n${result.err}`).not.toContain(key);
 	expect(result.out).toContain("stored in file");
 	const proposalBytes = await readFile(

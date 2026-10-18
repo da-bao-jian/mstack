@@ -2,7 +2,7 @@
 
 exports[`80-column ASCII home snapshots cover fresh, running and cached states: fresh live 1`] = `
 "<mob-home>
-                  #-------------   mstack 0.4.0 . new account
+                  #-------------   mstack <version> . new account
                 ###-------------   --------------------------
               #####-------------   Top pairs  BTC    long hl . short lighter  92% net  $10.0M
       +++++++-#####-------------              ETH    long hl . short lighter  42% net  $6.0M
@@ -14,13 +14,13 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
  ------------######+++++++
  ------------#####
  ------------###
- ------------#                     live · 2 of 7 venues · 0.0 s
+ ------------#                     live . 2 of 7 venues . 0.0 s
 </mob-home>"
 `;
 
 exports[`80-column ASCII home snapshots cover fresh, running and cached states: onboarded running 1`] = `
 "<mob-home>
-                  #-------------   mstack 0.4.0 . 0x0000...0001
+                  #-------------   mstack <version> . 0x0000...0001
                 ###-------------   --------------------------
               #####-------------   Top pairs  BTC    long hl . short lighter  92% net  $10.0M
       +++++++-#####-------------              ETH    long hl . short lighter  42% net  $6.0M
@@ -32,13 +32,13 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
  ------------######+++++++         Next       say "open BTC"   or   mob scan
  ------------#####
  ------------###
- ------------#                     live · 2 of 7 venues · 0.0 s
+ ------------#                     live . 2 of 7 venues . 0.0 s
 </mob-home>"
 `;
 
 exports[`80-column ASCII home snapshots cover fresh, running and cached states: unreachable cached 1`] = `
 "<mob-home>
-                  #-------------   mstack 0.4.0 . new account
+                  #-------------   mstack <version> . new account
                 ###-------------   --------------------------
               #####-------------   Top pairs  BTC    long hl . short lighter  92% net  $10.0M
       +++++++-#####-------------              ETH    long hl . short lighter  42% net  $6.0M
