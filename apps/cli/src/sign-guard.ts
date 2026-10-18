@@ -105,46 +105,98 @@ async function check(raw: string, home: string): Promise<void> {
 	if (typeof input.transcript_path !== "string" || !input.transcript_path)
 		deny("no transcript_path; cannot verify the latest user message");
 	const transcript = readFileSync(input.transcript_path, "utf8");
-	let latest: unknown;
+	// The latest human input is either a typed message or the answer the human
+	// chose from a question the assistant asked. Every other tool result is
+	// data and never replaces or grants consent.
+	let latest:
+		| { kind: "text"; text: string }
+		| { kind: "answers"; answers: string[] } = { kind: "text", text: "" };
+	const questions = new Set<string>();
 	for (const line of transcript.split("\n")) {
 		if (!line.trim()) continue;
 		const event = JSON.parse(line);
+		if (event.type === "assistant" && Array.isArray(event.message?.content)) {
+			for (const part of event.message.content)
+				if (
+					part?.type === "tool_use" &&
+					part.name === "AskUserQuestion" &&
+					typeof part.id === "string"
+				)
+					questions.add(part.id);
+			continue;
+		}
 		if (
-			event.type === "user" &&
-			!event.isMeta &&
-			!event.isSidechain &&
-			!event.isSideChain
+			event.type !== "user" ||
+			event.isMeta ||
+			event.isSidechain ||
+			event.isSideChain
+		)
+			continue;
+		if (event.message?.role !== "user")
+			deny("invalid latest user message in transcript");
+		const content = event.message.content;
+		if (typeof content === "string") {
+			latest = { kind: "text", text: content };
+			continue;
+		}
+		if (!Array.isArray(content))
+			deny("invalid latest user message in transcript");
+		const texts = content.filter(
+			(part) => part?.type === "text" && typeof part.text === "string",
+		);
+		const results = content.filter((part) => part?.type === "tool_result");
+		if (texts.length && !results.length) {
+			latest = {
+				kind: "text",
+				text: texts.map((part) => part.text).join("\n"),
+			};
+			continue;
+		}
+		if (
+			content.length === 1 &&
+			results.length === 1 &&
+			questions.has(results[0].tool_use_id)
 		) {
-			if (event.message?.role !== "user")
-				deny("invalid latest user message in transcript");
-			const content = event.message.content;
-			if (
-				typeof content === "string" ||
-				(Array.isArray(content) &&
-					content.some(
-						(part) => part?.type === "text" && typeof part.text === "string",
-					) &&
-					!content.some((part) => part?.type === "tool_result"))
-			)
-				latest = content;
-			else if (!Array.isArray(content))
-				deny("invalid latest user message in transcript");
+			const answers = chosenAnswers(results[0].content);
+			if (answers.length) latest = { kind: "answers", answers };
 		}
 	}
-	const message =
-		typeof latest === "string"
-			? latest
-			: Array.isArray(latest)
-				? latest
+	for (const { id, action } of requests) {
+		if (latest.kind === "text") {
+			if (
+				!new RegExp(`(?<![A-Za-z0-9_-])${id}(?![A-Za-z0-9_-])`).test(
+					latest.text,
+				)
+			)
+				deny(`the latest user message must name the exact Proposal id ${id}`);
+			continue;
+		}
+		const verb = action === "sign" ? "Sign" : "Submit";
+		if (
+			!latest.answers.some((answer) =>
+				new RegExp(`^\\s*${verb}\\s+${id}(?![A-Za-z0-9_-])`, "i").test(answer),
+			)
+		)
+			deny(`the answer you chose must start with "${verb} ${id}"`);
+	}
+}
+
+/** The labels the human picked, from an AskUserQuestion tool result. */
+function chosenAnswers(content: unknown): string[] {
+	const text =
+		typeof content === "string"
+			? content
+			: Array.isArray(content)
+				? content
 						.filter(
 							(part) => part?.type === "text" && typeof part.text === "string",
 						)
 						.map((part) => part.text)
 						.join("\n")
 				: "";
-	for (const { id } of requests)
-		if (!new RegExp(`(?<![A-Za-z0-9_-])${id}(?![A-Za-z0-9_-])`).test(message))
-			deny(`the latest user message must name the exact Proposal id ${id}`);
+	return [...text.matchAll(/"((?:[^"\\]|\\.)*)"="((?:[^"\\]|\\.)*)"/g)].map(
+		(match) => match[2],
+	);
 }
 
 export async function signGuard(

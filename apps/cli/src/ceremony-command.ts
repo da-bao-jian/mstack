@@ -1,3 +1,4 @@
+import { redactKey } from "@mstack/keys";
 import {
 	type BindingTarget,
 	bindingMessage,
@@ -7,11 +8,21 @@ import {
 	StrategyApiError,
 	type VenueBindingBatch,
 } from "@mstack/mobius-api";
-import { MobiusClient } from "@mstack/mobius-client";
 import {
+	type ApiKeyCreateBody,
+	type ArbitrageVenue,
+	apiKeyMessage,
+	MobiusClient,
+	type WriteRoutes,
+} from "@mstack/mobius-client";
+import {
+	type Ceremony,
 	type CeremonyProposal,
 	CeremonyStore,
+	ceremonyStep,
 	digest,
+	type Json,
+	type JsonObject,
 } from "@mstack/proposals";
 import {
 	browserCeremonySigner,
@@ -29,9 +40,11 @@ import {
 	SETUP_FIRST,
 	UsageError,
 } from "./config.ts";
+import { storeCreatedKey } from "./key-create.ts";
+import { cliKeyStore } from "./key-store.ts";
 import { keysCommand } from "./keys-command.ts";
 import type { Runtime } from "./run.ts";
-import { stageLegal } from "./setup-command.ts";
+import { type LegalPlan, legalPlan, stageLegal } from "./setup-command.ts";
 import { walletWait } from "./wallet-wait.ts";
 
 const allVenues = ["hl", "lighter", "aster", "lighter-mainnet"] as const;
@@ -74,10 +87,18 @@ async function alreadyBound(base: string, owner: string, rt: Runtime) {
 	}
 }
 
+interface CeremonyExtras {
+	/** Legal acceptance signed first, in the same wallet session. */
+	legal?: LegalPlan;
+	/** A scoped key created and stored once every venue is bound. */
+	keyPlan?: { name: string; maxSizeUsd: number };
+}
+
 export async function stageCeremony(
 	values: Record<string, string | boolean | undefined>,
 	rt: Runtime,
 	onComplete?: "stage-key",
+	extras: CeremonyExtras = {},
 ) {
 	const config = await readConfig(rt.home);
 	if (!config.owner) throw new UsageError(SETUP_FIRST);
@@ -122,7 +143,10 @@ export async function stageCeremony(
 			!["complete", "partial", "rejected", "failed", "expired"].includes(
 				ceremony.status,
 			) &&
-			JSON.stringify(ceremony.venues) === JSON.stringify(targets),
+			JSON.stringify(ceremony.venues) === JSON.stringify(targets) &&
+			Boolean(ceremony.legal) === Boolean(extras.legal) &&
+			JSON.stringify(ceremony.keyPlan ?? null) ===
+				JSON.stringify(extras.keyPlan ?? null),
 	);
 	const ceremony =
 		existing ??
@@ -131,10 +155,35 @@ export async function stageCeremony(
 			apiBase: strategyBase,
 			venues: targets,
 			...(onComplete ? { onComplete } : {}),
+			...(extras.legal
+				? {
+						legal: {
+							signing: extras.legal.signing,
+							base: extras.legal.base,
+							body: extras.legal.body,
+						},
+					}
+				: {}),
+			...(extras.keyPlan ? { keyPlan: extras.keyPlan } : {}),
 		}));
-	rt.out(
-		`${ceremony.id} · venue binding ceremony · ${venues.join(", ")} · ${ceremony.status}`,
-	);
+	if (extras.legal || extras.keyPlan) {
+		const parts = [
+			...(extras.legal ? ["accept legal terms"] : []),
+			`bind ${venues.join(", ")}`,
+			...(extras.keyPlan
+				? [
+						`create key “${extras.keyPlan.name}” (cap $${extras.keyPlan.maxSizeUsd.toLocaleString("en-US")}) and store it locally`,
+					]
+				: []),
+		];
+		rt.out(
+			`${ceremony.id} · onboarding ceremony · ${venues.join(", ")} · ${ceremony.status}`,
+		);
+		rt.out(`One wallet session: ${parts.join(", then ")}.`);
+	} else
+		rt.out(
+			`${ceremony.id} · venue binding ceremony · ${venues.join(", ")} · ${ceremony.status}`,
+		);
 	rt.out(`Next: mob sign ${ceremony.id}`);
 	return ceremony;
 }
@@ -145,24 +194,41 @@ export async function nativeOnboard(
 ) {
 	const config = await readConfig(rt.home);
 	if (!config.owner) throw new UsageError(SETUP_FIRST);
-	const base = String(getConfig(config, "auth_base"));
-	let accepted = false;
-	try {
-		accepted = (
-			await new MobiusClient({
-				base,
-				version: pkg.version,
-				fetch: rt.fetch,
-			}).read("/legal/acceptance", { wallet: config.owner })
-		).accepted;
-	} catch {
-		accepted = false;
-	}
-	if (!accepted) {
+	const plan = await legalPlan(rt);
+	if (plan === "locked") throw new UsageError("Wallet policy is locked");
+	if (plan === "unavailable")
+		rt.out(
+			"Legal clickwrap is not configured on the auth server (503); continuing without it.",
+		);
+	const legal = typeof plan === "object" ? plan : undefined;
+	const name = typeof values.name === "string" ? values.name.trim() : "mstack";
+	if (!name || name.length > 64 || /[\p{Cc}\p{Cf}]/u.test(name))
+		throw new UsageError("name must be 1 to 64 visible characters");
+	const maxSizeUsd = numberFlag(
+		typeof values["max-size"] === "string" ? values["max-size"] : "5000",
+		"max-size",
+		10,
+	);
+	const ceremony = await stageCeremony(values, rt, undefined, {
+		legal,
+		keyPlan: { name, maxSizeUsd },
+	});
+	if (ceremony) return;
+	// Every requested venue is already bound: stage the remaining steps alone.
+	if (legal) {
 		await stageLegal(rt);
 		return;
 	}
-	await stageCeremony(values, rt, "stage-key");
+	if (!(await (await cliKeyStore(rt)).get(getAddress(config.owner))))
+		await keysCommand(
+			["create"],
+			{
+				name,
+				venues: parseVenues(values.venues).join(","),
+				"max-size": String(maxSizeUsd),
+			},
+			rt,
+		);
 }
 
 function view(step: CeremonyProposal) {
@@ -232,11 +298,15 @@ export async function signCeremony(
 		);
 	let waiting: ReturnType<typeof walletWait> | undefined;
 	let session: Session;
+	// The server window binds the binding steps; the wallet session stays open
+	// through status polling and the key step, which carries its own window.
+	const deadline = ceremony.expiresAt + 900_000;
+	const legalPending = Boolean(ceremony.legal && !ceremony.legal.signature);
 	if (backend === "browser") {
 		const browser = browserCeremonySigner(
 			ceremony.id,
 			ceremony.owner,
-			ceremony.expiresAt,
+			deadline,
 			{
 				now: rt.now,
 				openUrl: rt.openUrl,
@@ -246,13 +316,16 @@ export async function signCeremony(
 				},
 			},
 		);
-		browser.addSteps([view(ceremony.prepare)]);
+		browser.addSteps([
+			...(legalPending && ceremony.legal ? [view(ceremony.legal)] : []),
+			view(ceremony.prepare),
+		]);
 		session = browser;
 	} else if (backend === "walletconnect") {
 		const wallet = walletConnectCeremonySigner(
 			ceremony.id,
 			ceremony.owner,
-			ceremony.expiresAt,
+			deadline,
 			{
 				projectId: config.walletconnect_project_id as string,
 				now: rt.now,
@@ -288,18 +361,28 @@ export async function signCeremony(
 			now: rt.now,
 		});
 		let card = 0;
+		const find = (record: Ceremony, stepId: string) =>
+			stepId === record.prepare.id
+				? record.prepare
+				: stepId === record.read?.id
+					? record.read
+					: stepId === record.legal?.id
+						? record.legal
+						: stepId === record.key?.id
+							? record.key
+							: record.requests.find((item) => item.id === stepId);
+		const total = () =>
+			(ceremony.legal ? 1 : 0) +
+			2 +
+			ceremony.requests.length +
+			(ceremony.keyPlan ? 1 : 0);
 		const sign = async (step: CeremonyProposal) => {
 			if (rt.now() >= step.expiresAt)
 				throw new Error("Ceremony step expired before signing");
 			card++;
-			rt.out(showStep(step, card, 2 + ceremony.requests.length));
+			rt.out(showStep(step, card, total()));
 			await store.update(id, (record) => {
-				const stored =
-					step.id === record.prepare.id
-						? record.prepare
-						: step.id === record.read?.id
-							? record.read
-							: record.requests.find((item) => item.id === step.id);
+				const stored = find(record, step.id);
 				if (!stored || stored.signatureAttemptedAt !== undefined)
 					throw new Error(
 						"Ceremony step is terminal or already used for signing",
@@ -309,12 +392,7 @@ export async function signCeremony(
 			try {
 				const signature = await session.sign(view(step));
 				await store.update(id, (record) => {
-					const stored =
-						step.id === record.prepare.id
-							? record.prepare
-							: step.id === record.read?.id
-								? record.read
-								: record.requests.find((item) => item.id === step.id);
+					const stored = find(record, step.id);
 					if (!stored) throw new Error("Ceremony step disappeared");
 					stored.signature = signature;
 					stored.status = "signed";
@@ -324,12 +402,122 @@ export async function signCeremony(
 				return signature;
 			} catch (error) {
 				await store.update(id, (record) => {
-					const stored = record.requests.find((item) => item.id === step.id);
+					const stored = find(record, step.id);
 					if (stored) stored.status = "rejected";
 				});
 				throw error;
 			}
 		};
+
+		const createKeyInSession = async (current: Ceremony, venues: string[]) => {
+			const plan = current.keyPlan;
+			if (!plan) return;
+			const createdAt = rt.now();
+			if (createdAt >= deadline) {
+				rt.out(
+					`Wallet session deadline passed before the key step. Retry with mob keys create --name '${plan.name}' --venues '${venues.join(",")}' --max-size '${plan.maxSizeUsd}'.`,
+				);
+				return;
+			}
+			const timestamp = Math.floor(createdAt / 1000);
+			const nonce = crypto.randomUUID();
+			const body: JsonObject = {
+				owner: current.owner,
+				name: plan.name,
+				venues,
+				maxSizeUsd: plan.maxSizeUsd,
+				nonce,
+				timestamp,
+			};
+			const signing = {
+				type: "text" as const,
+				message: apiKeyMessage("create", {
+					owner: current.owner,
+					timestamp,
+					name: plan.name,
+					venues: venues as ArbitrageVenue[],
+					maxSizeUsd: plan.maxSizeUsd,
+					nonce,
+				}),
+			};
+			const fundingBase = String(getConfig(config, "api_base"));
+			ceremony = await store.update(id, (record) => {
+				if (!record.key)
+					record.key = ceremonyStep(
+						`${id}:key`,
+						record.owner,
+						`Create API key “${plan.name}” · venues ${venues.join(", ")} · cap $${plan.maxSizeUsd}`,
+						signing,
+						createdAt,
+						Math.min(createdAt + 300_000, deadline),
+						{ type: "key-ceremony", base: fundingBase, body },
+					);
+			});
+			const keyStep = ceremony.key;
+			if (keyStep?.submit.type !== "key-ceremony")
+				throw new Error("Ceremony key step was not stored");
+			session.addSteps?.([view(keyStep)]);
+			try {
+				const signature = keyStep.signature ?? (await sign(keyStep));
+				const answer = (await new MobiusClient({
+					base: keyStep.submit.base,
+					version: pkg.version,
+					fetch: rt.fetch,
+				}).write(
+					"/api/keys/create",
+					{ ...keyStep.submit.body, signature } as unknown as ApiKeyCreateBody,
+					AbortSignal.timeout(Math.max(1, keyStep.expiresAt - rt.now())),
+				)) as unknown as Json;
+				const stored = await storeCreatedKey(
+					rt,
+					current.owner,
+					keyStep.submit.body,
+					answer,
+				);
+				const prefix = String(stored.key);
+				const backend = String(stored.backend);
+				await store.update(id, (record) => {
+					record.keyResult = { prefix, backend };
+					record.status = "complete";
+				});
+				rt.out(`Key ${prefix} stored in ${backend}.`);
+				rt.out(
+					`Ready · ${venues.length} venues bound · key ${prefix} · cap $${plan.maxSizeUsd.toLocaleString("en-US")}`,
+				);
+			} catch (error) {
+				const message = redactKey(
+					error instanceof Error ? error.message : String(error),
+				);
+				await store.update(id, (record) => {
+					record.status = "partial";
+					record.error = message;
+				});
+				rt.out(
+					`Key creation did not complete: ${message}. Retry with mob keys create --name '${plan.name}' --venues '${venues.join(",")}' --max-size '${plan.maxSizeUsd}'.`,
+				);
+			}
+		};
+
+		if (ceremony.legal && !ceremony.legal.signature) {
+			const legal = ceremony.legal;
+			if (legal.submit.type !== "legal-ceremony")
+				throw new Error("Invalid legal step");
+			const signature = await sign(legal);
+			await new MobiusClient({
+				base: legal.submit.base,
+				version: pkg.version,
+				fetch: rt.fetch,
+			}).write(
+				"/legal/acceptance" as keyof WriteRoutes,
+				{
+					...legal.submit.body,
+					signature,
+				} as WriteRoutes[keyof WriteRoutes]["body"],
+				AbortSignal.timeout(Math.max(1, legal.expiresAt - rt.now())),
+			);
+			rt.out("Legal terms accepted.");
+			ceremony = await store.get(id);
+		}
 
 		let prepareSignature = ceremony.prepare.signature;
 		if (!prepareSignature) {
@@ -490,7 +678,12 @@ export async function signCeremony(
 		rt.out(
 			`${id} ${successful.length === latest.results.length ? "complete" : "partial"} · ${successful.length} venues bound`,
 		);
-		if (
+		if (ceremony.keyPlan && successful.length === latest.results.length)
+			await createKeyInSession(
+				ceremony,
+				successful.map((r) => r.venue),
+			);
+		else if (
 			ceremony.onComplete === "stage-key" &&
 			successful.length === latest.results.length
 		)

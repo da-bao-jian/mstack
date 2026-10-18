@@ -42,6 +42,7 @@ import { type Checked, Checks } from "./preflight/checks.ts";
 import { type ManageCommand, managePreflight } from "./preflight/manage.ts";
 import { openPreflight } from "./preflight/open.ts";
 import { executionVenues } from "./preflight/readiness.ts";
+import { writeRequest } from "./restage.ts";
 
 function nativeLeg(value: string | undefined) {
 	const separator = value?.indexOf(":") ?? -1;
@@ -456,6 +457,7 @@ export async function stagePosition(
 			: { base: client.base, route, body, signatureField: "signature" },
 		preflightPlan: { checks: preflight.plan },
 	});
+	await writeRequest(rt.home, staged.id, { command, args, values });
 	const preview = await store.preview(staged.id, async () => ({
 		ok: preflight.ok,
 		checks: preflight.checks,

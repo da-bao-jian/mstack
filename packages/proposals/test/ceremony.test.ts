@@ -126,3 +126,71 @@ test("ceremony checksum rejects record edits", async () => {
 	await writeFile(path, raw.replace("aster", "hl"), { mode: 0o600 });
 	await expect(h.store.get(ceremony.id)).rejects.toThrow("integrity");
 });
+
+test("ceremony stage carries a legal step and a key plan that round-trip through storage", async () => {
+	const h = await store();
+	const signing = {
+		type: "typed" as const,
+		typedData: {
+			domain: { name: "Mobius Legal", version: "1", chainId: 97 },
+			types: { AcceptLegalTerms: [{ name: "statement", type: "string" }] },
+			primaryType: "AcceptLegalTerms",
+			message: { statement: "I agree" },
+		},
+	};
+	const ceremony = await h.store.stage({
+		owner: account.address,
+		apiBase: "http://127.0.0.1:9988",
+		venues: [{ venue: "lighter" }],
+		legal: {
+			signing,
+			base: "https://auth.example.test",
+			body: { wallet: account.address, signedAt: now / 1000 },
+		},
+		keyPlan: { name: "mstack", maxSizeUsd: 5000 },
+	});
+	expect(ceremony.legal?.id).toBe("c-1:legal");
+	expect(ceremony.legal?.kind).toBe("sign-typed");
+	expect(ceremony.legal?.expiresAt).toBe(ceremony.expiresAt);
+	expect(ceremony.legal?.submit).toEqual({
+		type: "legal-ceremony",
+		base: "https://auth.example.test",
+		body: { wallet: account.address, signedAt: now / 1000 },
+	});
+	expect(ceremony.keyPlan).toEqual({ name: "mstack", maxSizeUsd: 5000 });
+	expect(ceremony.key).toBeUndefined();
+	const stored = await h.store.get("c-1");
+	expect(stored.legal).toEqual(ceremony.legal);
+	expect(stored.keyPlan).toEqual(ceremony.keyPlan);
+	// A key step created later carries its own window inside the record.
+	await h.store
+		.update("c-1", (record) => {
+			record.key = {
+				id: "c-1:key",
+				kind: "sign-text",
+				owner: record.owner,
+				purpose: "Create API key",
+				createdAt: now + 60_000,
+				expiresAt: now + 360_000,
+				digest:
+					"0x0000000000000000000000000000000000000000000000000000000000000000",
+				signing: { type: "text", message: "Mobius API keys: create" },
+				status: "awaiting-signature",
+				submit: {
+					type: "key-ceremony",
+					base: "https://funding.example.test",
+					body: {},
+				},
+			};
+		})
+		.catch((error) => error);
+	await expect(h.store.get("c-1")).resolves.toMatchObject({ id: "c-1" });
+	await expect(
+		h.store.stage({
+			owner: account.address,
+			apiBase: "http://127.0.0.1:9988",
+			venues: [{ venue: "lighter" }],
+			keyPlan: { name: "", maxSizeUsd: 5000 },
+		}),
+	).rejects.toThrow("key plan");
+});

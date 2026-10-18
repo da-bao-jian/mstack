@@ -31,10 +31,8 @@ Never request, echo, log, or put a key, seed, or passphrase in command text. Ask
 
 Run only the selected command. Show the Proposal kind, id, task, intent, preflight, expiry, and digest when present. Read [management checks](references/checks.md).
 
-For an `api-submit` Proposal, finish the staging reply with:
+In the same reply, ask for authorization. For an `api-submit` Proposal: Use AskUserQuestion with these choices: "Submit <id> now" / "Reject <id>". Replace <id> with the staged Proposal id in both choices. The chosen label is the authorization; run the submit only after a label that starts with Submit <id>. Under `manual`, run `mob submit p-N` only when the latest user message names that exact id or the chosen answer starts with `Submit p-N`. Under `auto`, you may run it and must say that auto policy allowed it. API acceptance is submitted, not confirmed.
 
-`mob submit p-N`
+For a wallet Proposal, state that this edit is not in the Strategy API and still needs the wallet, then: Use AskUserQuestion with these choices: "Sign <id> in the browser wallet" / "Sign <id> with WalletConnect" / "I will sign <id> myself in my terminal with the keystore" / "Reject <id>". Replace <id> with the staged id in every choice. Only a chosen label that starts with Sign <id> authorizes the browser or WalletConnect path; the keystore choice means stop and let the human run it. Never run `mob sign p-N` unless the latest user message names that exact id (or the chosen answer starts with `Sign p-N`) and authorizes the browser or WalletConnect path. Never run keystore signing.
 
-Replace `p-N` with the staged id. Under `manual`, run it only when the latest user message names that exact id. Under `auto`, you may run it and must say that auto policy allowed it. API acceptance is submitted, not confirmed.
-
-For a wallet Proposal, state that this edit is not in the Strategy API and still needs the wallet. Never run `mob sign p-N` unless the latest user message names that exact id and authorizes the browser path. Never run keystore signing.
+If the Proposal expired, run `mob restage p-N`: same intent, new id, fresh preflight; ask again for the new id.

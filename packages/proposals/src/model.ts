@@ -425,6 +425,15 @@ export function validateInput(p: ProposalInput): void {
 			);
 	}
 }
+/**
+ * Wallet Proposals follow the server's 300-second signature window. API
+ * Proposals carry no signature, so they keep a 15-minute window for the
+ * human to read the card and answer.
+ */
+export function proposalWindowMs(kind: ProposalInput["kind"]): number {
+	return kind === "api-submit" ? 900_000 : 300_000;
+}
+
 export function validateProposal(p: Proposal): void {
 	validateInput(p);
 	if (
@@ -432,7 +441,7 @@ export function validateProposal(p: Proposal): void {
 		!/^p-[1-9]\d*$/.test(p.id) ||
 		!Number.isSafeInteger(p.createdAt) ||
 		p.createdAt < 0 ||
-		p.expiresAt !== p.createdAt + 300_000 ||
+		p.expiresAt !== p.createdAt + proposalWindowMs(p.kind) ||
 		p.digest !== digest(p.signing) ||
 		p.contentHash !== contentHash(p)
 	)

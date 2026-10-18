@@ -10,6 +10,7 @@ import {
 	loopbackFetch,
 } from "../../../packages/mobius-api/test/fake-api.ts";
 import { setConfig } from "../src/config.ts";
+import { cliKeyStore } from "../src/key-store.ts";
 import { type Runtime, run } from "../src/run.ts";
 
 const homes: string[] = [];
@@ -126,10 +127,9 @@ test("sign guard accepts c-N only when the latest user message names it", async 
 	expect(errors.at(-1)).toContain("c-7");
 });
 
-test("native onboard stages the key Proposal after the batch binds", async () => {
-	const now = 1_800_000_000_000;
-	const api = fakeStrategyApi({ now: () => now });
-	servers.push(api);
+const fakeApiKey = `mobius_01234567-89ab-cdef-0123-456789abcdef.${"ab".repeat(32)}`;
+
+async function nativeHome(api: ReturnType<typeof fakeStrategyApi>) {
 	const home = await mkdtemp(join(tmpdir(), "mstack-native-onboard-"));
 	homes.push(home);
 	const password = "native ceremony password";
@@ -138,21 +138,44 @@ test("native onboard stages the key Proposal after the batch binds", async () =>
 	for (const [key, value] of [
 		["signer", "keystore"],
 		["policy", "manual"],
+		["key_store", "file"],
 		["api_base", "https://funding.example.test"],
 		["strategy_api_base", api.base],
-		["auth_base", api.base],
+		["auth_base", "https://auth.example.test"],
 	] as const)
 		await setConfig(key, value, home);
-	const lines: string[] = [];
-	const fetch: Runtime["fetch"] = async (input, init) => {
+	return { home, password };
+}
+
+function nativeFetch(
+	api: ReturnType<typeof fakeStrategyApi>,
+	options: { legalAccepted: boolean; calls: string[] },
+): Runtime["fetch"] {
+	return async (input, init) => {
 		const url = new URL(String(input));
-		if (url.pathname === "/legal/acceptance")
+		const method = init?.method ?? "GET";
+		options.calls.push(`${method} ${url.host}${url.pathname}`);
+		if (url.pathname === "/legal/acceptance" && method !== "POST")
 			return Response.json({
-				accepted: true,
+				accepted: options.legalAccepted,
 				termsVersion: "2026-10-12",
 				privacyVersion: "2026-10-12",
 				acceptedAt: "2026-10-12T00:00:00.000Z",
 			});
+		if (url.pathname === "/legal/terms")
+			return Response.json({
+				termsVersion: "2026-10-12",
+				termsUrl: "https://mob.exchange/terms",
+				privacyVersion: "2026-10-12",
+				privacyUrl: "https://mob.exchange/privacy",
+			});
+		if (url.pathname === "/legal/acceptance" && method === "POST") {
+			const body = JSON.parse(String(init?.body));
+			if (typeof body.signature !== "string" || !body.wallet)
+				return Response.json({ error: "missing signature" }, { status: 400 });
+			options.legalAccepted = true;
+			return Response.json({ ok: true });
+		}
 		if (url.pathname === "/api/binding/readiness")
 			return Response.json({
 				ready: api.bound.has("hl") && api.bound.has("lighter"),
@@ -162,12 +185,38 @@ test("native onboard stages the key Proposal after the batch binds", async () =>
 					bound: api.bound.has(venue as "hl" | "lighter"),
 				})),
 			});
+		if (url.pathname === "/api/keys/create" && method === "POST") {
+			const body = JSON.parse(String(init?.body));
+			if (typeof body.signature !== "string" || !body.nonce)
+				return Response.json({ error: "missing signature" }, { status: 400 });
+			return Response.json({
+				key: fakeApiKey,
+				record: {
+					id: "01234567-89ab-cdef-0123-456789abcdef",
+					name: body.name,
+					venues: body.venues,
+					max_size_usd: String(body.maxSizeUsd),
+					key_prefix: "mobius_01234567-89ab-cdef-0123-456789abcdef…",
+					created_at: "2030-01-01T00:00:00Z",
+					revoked_at: null,
+				},
+			});
+		}
 		return loopbackFetch(input, init);
 	};
+}
+
+test("native onboard binds, creates the key, and stores it in one wallet session", async () => {
+	const now = 1_800_000_000_000;
+	const api = fakeStrategyApi({ now: () => now });
+	servers.push(api);
+	const { home, password } = await nativeHome(api);
+	const lines: string[] = [];
+	const calls: string[] = [];
 	const rt: Partial<Runtime> = {
 		home,
 		now: () => now,
-		fetch,
+		fetch: nativeFetch(api, { legalAccepted: true, calls }),
 		sleep: async () => {},
 		stdinIsTTY: false,
 		stdoutIsTTY: false,
@@ -188,14 +237,128 @@ test("native onboard stages the key Proposal after the batch binds", async () =>
 			rt,
 		),
 	).toBe(0);
+	expect(lines.join("\n")).toContain("c-1 · onboarding ceremony · hl, lighter");
+	expect(lines.join("\n")).toContain(
+		"One wallet session: bind hl, lighter, then create key “mstack” (cap $5,000) and store it locally.",
+	);
 	expect(lines.join("\n")).toContain("Next: mob sign c-1");
 	expect(await run(["sign", "c-1"], rt)).toBe(0);
-	const proposals = await new ProposalStore(home, () => now).list();
-	expect(proposals).toHaveLength(1);
-	expect(proposals[0].submit.route).toBe("/api/keys/create");
-	expect(proposals[0].submit.body).toMatchObject({
+	const text = lines.join("\n");
+	expect(text).toContain(
+		"Key mobius_01234567-89ab-cdef-0123-456789abcdef… stored in file.",
+	);
+	expect(text).toContain(
+		"Ready · 2 venues bound · key mobius_01234567-89ab-cdef-0123-456789abcdef… · cap $5,000",
+	);
+	expect(text).not.toContain(fakeApiKey);
+	const ceremony = await new CeremonyStore(home, () => now).get("c-1");
+	expect(ceremony.status).toBe("complete");
+	expect(ceremony.key?.status).toBe("signed");
+	expect(ceremony.keyResult).toEqual({
+		prefix: "mobius_01234567-89ab-cdef-0123-456789abcdef…",
+		backend: "file",
+	});
+	expect(await new ProposalStore(home, () => now).list()).toHaveLength(0);
+	const stored = await (await cliKeyStore({ home } as Runtime)).get(
+		api.owner.address,
+	);
+	expect(stored?.meta).toMatchObject({
 		name: "mstack",
 		venues: ["hl", "lighter"],
 		maxSizeUsd: 5000,
+	});
+	expect(
+		calls.filter((call) => call.endsWith("/api/keys/create")),
+	).toHaveLength(1);
+	expect(
+		calls.some(
+			(call) => call.startsWith("POST") && call.endsWith("/legal/acceptance"),
+		),
+	).toBe(false);
+});
+
+test("native onboard signs the legal terms first when they are not accepted", async () => {
+	const now = 1_800_000_000_000;
+	const api = fakeStrategyApi({ now: () => now });
+	servers.push(api);
+	const { home, password } = await nativeHome(api);
+	const lines: string[] = [];
+	const calls: string[] = [];
+	const rt: Partial<Runtime> = {
+		home,
+		now: () => now,
+		fetch: nativeFetch(api, { legalAccepted: false, calls }),
+		sleep: async () => {},
+		stdinIsTTY: false,
+		stdoutIsTTY: false,
+		out: (line) => lines.push(line),
+		err: (line) => lines.push(line),
+		readSecret: async () => password,
+	};
+	expect(
+		await run(
+			[
+				"onboard",
+				"--native",
+				"--owner",
+				api.owner.address,
+				"--venues",
+				"hl,lighter",
+				"--name",
+				"desk",
+				"--max-size",
+				"2500",
+			],
+			rt,
+		),
+	).toBe(0);
+	expect(lines.join("\n")).toContain(
+		"One wallet session: accept legal terms, then bind hl, lighter, then create key “desk” (cap $2,500) and store it locally.",
+	);
+	const staged = await new CeremonyStore(home, () => now).get("c-1");
+	expect(staged.legal?.id).toBe("c-1:legal");
+	expect(staged.legal?.signing.type).toBe("typed");
+	lines.length = 0;
+	expect(await run(["proposal", "show", "c-1"], rt)).toBe(0);
+	const shown = lines.join("\n");
+	expect(shown).toContain("c-1 · ceremony · awaiting-prepare-signature");
+	expect(shown).toContain("Key      “desk” · cap $2,500");
+	expect(shown).toContain("1. · Accept Mobius legal terms");
+	expect(shown).toContain("2. · Authorize venue binding preparation");
+	expect(shown).toContain("· Create API key “desk” and store it locally");
+	expect(shown).toContain("Next: mob sign c-1");
+	lines.length = 0;
+	expect(await run(["proposal", "show", "c-1", "--json"], rt)).toBe(0);
+	expect(JSON.parse(lines.join("\n"))).toMatchObject({
+		id: "c-1",
+		kind: "ceremony",
+		keyPlan: { name: "desk", maxSizeUsd: 2500 },
+		steps: [
+			{ id: "c-1:legal", status: "awaiting-signature" },
+			{ id: "c-1:prepare" },
+		],
+	});
+	expect(await run(["sign", "c-1"], rt)).toBe(0);
+	const text = lines.join("\n");
+	expect(text).toContain("c-1:legal · step 1 of");
+	expect(text).toContain("Legal terms accepted.");
+	expect(text).toContain(
+		"Ready · 2 venues bound · key mobius_01234567-89ab-cdef-0123-456789abcdef… · cap $2,500",
+	);
+	const legalPost = calls.findIndex(
+		(call) => call === "POST auth.example.test/legal/acceptance",
+	);
+	const prepare = calls.findIndex((call) =>
+		call.endsWith("/v1/venue-bindings/prepare"),
+	);
+	expect(legalPost).toBeGreaterThanOrEqual(0);
+	expect(legalPost).toBeLessThan(prepare);
+	const ceremony = await new CeremonyStore(home, () => now).get("c-1");
+	expect(ceremony.legal?.status).toBe("signed");
+	expect(ceremony.status).toBe("complete");
+	expect(
+		await (await cliKeyStore({ home } as Runtime)).get(api.owner.address),
+	).toMatchObject({
+		meta: { name: "desk", venues: ["hl", "lighter"], maxSizeUsd: 2500 },
 	});
 });

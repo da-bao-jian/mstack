@@ -19,6 +19,7 @@ import {
 	type PreflightResult,
 	type Proposal,
 	type ProposalInput,
+	proposalWindowMs,
 	validateInput,
 	validateProposal,
 } from "./model.ts";
@@ -186,14 +187,14 @@ export class ProposalStore {
 						!Number.isSafeInteger(timestamp))) ||
 				!Number.isSafeInteger(createdAt) ||
 				createdAt > now ||
-				now >= createdAt + 300_000
+				now >= createdAt + proposalWindowMs(fixed.kind)
 			)
 				throw new Error("Request timestamp is expired or in the future");
 			const partial = {
 				...fixed,
 				id,
 				createdAt,
-				expiresAt: createdAt + 300_000,
+				expiresAt: createdAt + proposalWindowMs(fixed.kind),
 				digest: digest(fixed.signing),
 			};
 			const p: Proposal = {

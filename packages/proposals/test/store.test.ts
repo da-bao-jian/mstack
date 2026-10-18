@@ -490,3 +490,35 @@ test("cancelling an outstanding signature releases the lock, burns the attempt a
 	expect(f.counts().submissions).toBe(0);
 	expect((await f.store.reject("p-1")).status).toBe("rejected");
 });
+
+test("API Proposals keep a 15-minute window; wallet Proposals keep the server's 300 seconds", async () => {
+	const wallet = await fixture("sign-text");
+	expect(wallet.p.expiresAt - wallet.p.createdAt).toBe(300_000);
+	const directory = join(home, String(sequence++));
+	let now = 1_787_555_739_000;
+	const store = new ProposalStore(directory, () => now);
+	const p = await store.stage({
+		kind: "api-submit",
+		owner: account.address,
+		purpose: "Open through the key",
+		signing: { type: "none" },
+		submit: {
+			base: "http://127.0.0.1:1234",
+			route: "/v1/delta-neutral/tasks",
+			body: { longVenue: "hl", shortVenue: "lighter", sizeUsd: 1000 },
+		},
+		preflightPlan: {
+			checks: [{ route: "staged", name: "key.venues", detail: "covered" }],
+		},
+	});
+	expect(p.expiresAt - p.createdAt).toBe(900_000);
+	await store.preview(p.id, async () => ({
+		ok: true,
+		checkedAt: now,
+		checks: [{ route: "staged", name: "key.venues", ok: true }],
+	}));
+	now += 899_999;
+	expect((await store.get(p.id)).status).toBe("awaiting-submission");
+	now += 1;
+	expect((await store.get(p.id)).status).toBe("expired");
+});
