@@ -7,6 +7,8 @@ not a claim that public release tags or artifacts were published.
 <!-- release-start -->
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-18
+
 ### Changed
 
 - Route install health, upgrade, and uninstall questions from `/mob` to `mob doctor`, `mob upgrade`, and the per-host uninstall commands.

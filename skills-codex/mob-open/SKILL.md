@@ -3,7 +3,7 @@ name: mob-open
 description: Open a position with a scoped API key. Use for "open a position", "open that pair", or "open $5k HYPE"; stages one Proposal and submits only under the configured policy. (mstack)
 license: MIT
 metadata:
-  version: "0.4.0"
+  version: "0.4.1"
 ---
 
 ```bash
