@@ -62,11 +62,16 @@ async function command(root: string, args: string[], capture = false) {
 	return out.trim();
 }
 
-async function gates(root: string) {
+async function gates(root: string, options: { bumped?: boolean } = {}) {
 	for (const args of [
 		["bun", "install", "--frozen-lockfile"],
 		["bun", "run", "gen:skills"],
-		["git", "diff", "--exit-code", "--", "skills", "skills-codex"],
+		// Committed skills must match their sources before anything is edited.
+		// After the version bump the regenerated skills carry the new version
+		// and join the release commit, so that pass skips the drift check.
+		...(options.bumped
+			? []
+			: [["git", "diff", "--exit-code", "--", "skills", "skills-codex"]]),
 		["bun", "run", "check"],
 		["bun", "run", "lint"],
 		["bun", "run", "test", "--timeout", "30000"],
@@ -167,25 +172,26 @@ export async function release(
 	try {
 		for (const [file, body] of changed)
 			await writeFile(resolve(root, file), body);
-		if (version !== current) await gates(root);
+		if (version !== current) await gates(root, { bumped: true });
 	} catch (error) {
 		for (const [file, body] of original)
 			await writeFile(resolve(root, file), body);
+		// Regenerate from the restored version so the skills match again.
+		await command(root, ["bun", "run", "gen:skills"]).catch(() => {});
 		throw error;
 	}
 	if (options.prepare) {
 		console.log(
-			`Prepared ${version}. No commit, tag or push. Review and commit these files.`,
+			`Prepared ${version}. No commit, tag or push. Review and commit these files with the regenerated skills.`,
 		);
 		return;
 	}
-	const hasEdits = [...changed].some(
-		([file, body]) => original.get(file) !== body,
-	);
-	if (hasEdits) {
-		await command(root, ["git", "add", "--", ...changed.keys()]);
+	await command(root, ["git", "add", "--", ...changed.keys()]);
+	// The tree was clean before the edits, so the only other modified tracked
+	// files are the regenerated skills.
+	await command(root, ["git", "add", "--update"]);
+	if (await command(root, ["git", "diff", "--cached", "--name-only"], true))
 		await command(root, ["git", "commit", "-m", `chore(release): ${version}`]);
-	}
 	await command(root, [
 		"git",
 		"tag",

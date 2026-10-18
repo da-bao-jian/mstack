@@ -49,6 +49,7 @@ async function fixture() {
 		"docs/AGENT-INSTALL.md": "Install release <tag> from <tag>.\n",
 		"docs/AGENT-PROMPT.md": "Prompt for <tag>.\n",
 		"docs/MOBIUS-ASKS.md": "Ask G quotes <tag>.\n",
+		"skills/mob/SKILL.md": "version: 0.1.0\n",
 	};
 	for (const [file, body] of Object.entries(files)) {
 		await mkdir(dirname(join(root, file)), { recursive: true });
@@ -69,7 +70,19 @@ async function fixture() {
 	for (const name of ["bun", "claude"])
 		await writeFile(
 			join(tools, name),
-			`#!/bin/sh\nprintf '%s\\n' '${name}'" $*" >> "$RELEASE_TEST_LOG"\nif [ "\${RELEASE_TEST_FAIL:-}" = "$*" ]; then exit 1; fi\n`,
+			[
+				"#!/bin/sh",
+				`printf '%s\\n' '${name}'" $*" >> "$RELEASE_TEST_LOG"`,
+				`if [ "\${RELEASE_TEST_FAIL:-}" = "$*" ]; then exit 1; fi`,
+				// Fail only the second run of a gate: the pass after the version bump.
+				`if [ "\${RELEASE_TEST_FAIL_SECOND:-}" = "$*" ] && [ "$(grep -c -x -F '${name}'" $*" "$RELEASE_TEST_LOG")" -ge 2 ]; then exit 1; fi`,
+				// A fake generator that bakes the package version into a skill.
+				`if [ "$*" = "run gen:skills" ] && [ -n "\${RELEASE_TEST_SKILL:-}" ]; then`,
+				'  mkdir -p "$(dirname "$RELEASE_TEST_SKILL")"',
+				`  printf 'version: %s\\n' "$(sed -n 's/.*"version": *"\\([^"]*\\)".*/\\1/p' package.json | head -1)" > "$RELEASE_TEST_SKILL"`,
+				"fi",
+				"",
+			].join("\n"),
 			{ mode: 0o755 },
 		);
 	const env = {
@@ -239,4 +252,36 @@ test("a failed gate prevents edits and tags", async () => {
 		"",
 	);
 	expect((await command(["git", "tag"], f.root)).out).toBe("");
+});
+
+test("a version bump regenerates the skills and commits them with the release", async () => {
+	const skill = { RELEASE_TEST_SKILL: "skills/mob/SKILL.md" };
+	const f = await fixture();
+	expect((await f.run("0.3.0", true, skill)).code).toBe(0);
+	expect(await readFile(join(f.root, "skills/mob/SKILL.md"), "utf8")).toBe(
+		"version: 0.3.0\n",
+	);
+	await command(["git", "checkout", "--", "."], f.root);
+	expect((await f.run("0.3.0", false, skill)).code).toBe(0);
+	expect((await command(["git", "status", "--porcelain"], f.root)).out).toBe(
+		"",
+	);
+	expect(
+		(await command(["git", "show", "--format=", "--name-only", "HEAD"], f.root))
+			.out,
+	).toContain("skills/mob/SKILL.md");
+	// A gate that fails after the bump restores the manifests and the skills.
+	const g = await fixture();
+	expect(
+		(
+			await g.run("0.3.0", false, {
+				...skill,
+				RELEASE_TEST_FAIL_SECOND: "run build",
+			})
+		).code,
+	).toBe(1);
+	expect((await command(["git", "status", "--porcelain"], g.root)).out).toBe(
+		"",
+	);
+	expect((await command(["git", "tag"], g.root)).out).toBe("");
 });

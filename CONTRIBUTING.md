@@ -79,7 +79,8 @@ Do not push or change remotes during an implementation assignment.
 Release assignments update workspace, plugin, and marketplace versions together,
 regenerate skills, update `CHANGELOG.md`, and rerun the gates and strict validation.
 Start an Unreleased section when new work begins. In a clean checkout, use
-`bun scripts/release.ts <version> --prepare` to run gates and prepare version changes.
+`bun scripts/release.ts <version> --prepare` to run the gates, bump every version,
+regenerate the skills, and date the changelog.
 After review and commit, the release assignment can run the helper without `--prepare`
 to create the local tag. The helper never pushes.
 Build the supported artifacts, verify checksums, and test a clean installation.
