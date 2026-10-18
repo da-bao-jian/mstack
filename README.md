@@ -89,7 +89,7 @@ The Claude Code Bash authorization hook runs `mob hook sign-guard` in the compil
 
 For local release fixtures, set `MSTACK_RELEASE_BASE_URL=http://127.0.0.1:<port>/releases/download`. The matching `/releases/latest/download/VERSION` route supplies the latest version. Versioned binaries and `SHA256SUMS` use `/releases/download/v<version>/`. The shim also accepts `MSTACK_MOB_BIN=/path/to/mob`. Normal binary resolution is quiet; set `MSTACK_VERBOSE=1` to log the selected binary to stderr. Builds, downloads, and failures always log to stderr.
 
-Maintainers can run `bun scripts/release.ts <version> --prepare` in a clean checkout to update all versions and date the Unreleased notes. Add an Unreleased section when new work starts. This runs all gates and leaves changes for review. After committing, `bun scripts/release.ts <version>` runs the gates and tags that commit locally. Without `--prepare`, a new version also gets a release commit. The helper never pushes; the release coordinator pushes the tag, which starts the release workflow.
+Maintainers can run `bun scripts/release.ts <version> --prepare` in a clean checkout to update all versions, regenerate the skills, and date the Unreleased notes. Add an Unreleased section when new work starts. This runs all gates and leaves changes for review. After committing, `bun scripts/release.ts <version>` runs the gates and tags that commit locally. Without `--prepare`, a new version also gets a release commit. The helper never pushes; the release coordinator pushes the tag, which starts the release workflow.
 <!-- release-end -->
 
 ### MCP

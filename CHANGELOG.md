@@ -17,6 +17,10 @@ not a claim that public release tags or artifacts were published.
 
 - The Claude Code plugin no longer registers an MCP server, and the root `.mcp.json` is gone. The skills call `mob` through Bash, which the sign guard mediates; the 18 tool schemas cost about 3,500 tokens in every session and no skill used them. `mob mcp` is unchanged for Cursor, Windsurf, Claude Desktop, and any stdio client. Claude Code users can opt in with `claude mcp add --scope user mstack -- mob mcp`.
 
+### Fixed
+
+- The release helper regenerates the skills with the new version and commits them, instead of stopping on its own drift check after the bump.
+
 ### Security
 
 - The Bash sign guard sets `onFailure: block`, so a guard that cannot start, crashes, or times out blocks the call on Claude Code 2.1.295 or newer instead of letting it through. The hook timeout is 30 seconds.
