@@ -12,6 +12,7 @@ import pkg from "../package.json";
 import { readConfig, UsageError } from "./config.ts";
 import { cliKeyStore } from "./key-store.ts";
 import { proposalView } from "./proposal-view.ts";
+import { restageProposal } from "./restage.ts";
 import type { Runtime } from "./run.ts";
 
 function taskId(route: string): string | undefined {
@@ -24,6 +25,12 @@ export async function submitCommand(
 	rt: Runtime,
 ): Promise<void> {
 	const store = new ProposalStore(rt.home, rt.now, rt.err);
+	// An expired Proposal is restaged under a new id that needs new consent.
+	if (
+		(await store.get(id)).status === "expired" &&
+		(await restageProposal(id, rt))
+	)
+		return;
 	// Existence and terminal/expiry checks happen in submitApi before policy or key use.
 	await store.assertSignable(id);
 	const config = await readConfig(rt.home);

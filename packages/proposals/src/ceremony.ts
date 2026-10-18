@@ -10,7 +10,12 @@ import {
 	type VenueBindingBatch,
 } from "@mstack/mobius-api";
 import { getAddress, type Hex, type TypedDataDefinition } from "viem";
-import { canonical, digest, type SigningPayload } from "./model.ts";
+import {
+	canonical,
+	digest,
+	type JsonObject,
+	type SigningPayload,
+} from "./model.ts";
 import {
 	atomic,
 	exclusive,
@@ -40,7 +45,9 @@ export interface CeremonyProposal {
 	submit:
 		| { type: "prepare-ceremony" }
 		| { type: "collect-ceremony"; requestId: string }
-		| { type: "read-ceremony" };
+		| { type: "read-ceremony" }
+		| { type: "legal-ceremony"; base: string; body: JsonObject }
+		| { type: "key-ceremony"; base: string; body: JsonObject };
 	requestId?: string;
 	venue?: string;
 	action?: string;
@@ -81,6 +88,12 @@ export interface Ceremony {
 	latest?: VenueBindingBatch;
 	error?: string;
 	onComplete?: "stage-key";
+	/** Legal acceptance signed first, in the same wallet session. */
+	legal?: CeremonyProposal;
+	/** A scoped API key created and stored once every venue is bound. */
+	keyPlan?: { name: string; maxSizeUsd: number };
+	key?: CeremonyProposal;
+	keyResult?: { prefix: string; backend: string };
 }
 
 type Stored = Ceremony & { recordHash: string };
@@ -107,7 +120,7 @@ function parse(raw: string): Ceremony {
 	return ceremony as Ceremony;
 }
 
-function step(
+export function ceremonyStep(
 	id: string,
 	owner: `0x${string}`,
 	purpose: string,
@@ -156,7 +169,32 @@ function validate(ceremony: Ceremony): void {
 		throw new Error("Ceremony needs venues");
 	if (!Array.isArray(ceremony.requests) || !Array.isArray(ceremony.signatures))
 		throw new Error("Invalid ceremony steps");
+	if (
+		ceremony.keyPlan !== undefined &&
+		(typeof ceremony.keyPlan.name !== "string" ||
+			!ceremony.keyPlan.name ||
+			!Number.isFinite(ceremony.keyPlan.maxSizeUsd) ||
+			ceremony.keyPlan.maxSizeUsd <= 0)
+	)
+		throw new Error("Invalid ceremony key plan");
+	if (ceremony.key) {
+		const key = ceremony.key;
+		// The key step is created after binding, so it carries its own window.
+		if (
+			key.owner !== ceremony.owner ||
+			!Number.isSafeInteger(key.createdAt) ||
+			!Number.isSafeInteger(key.expiresAt) ||
+			key.createdAt < ceremony.createdAt ||
+			key.expiresAt <= key.createdAt ||
+			key.kind !== "sign-text" ||
+			key.signing.type !== "text" ||
+			key.submit.type !== "key-ceremony" ||
+			digest(key.signing) !== key.digest
+		)
+			throw new Error("Ceremony key step mismatch");
+	}
 	for (const proposal of [
+		...(ceremony.legal ? [ceremony.legal] : []),
 		ceremony.prepare,
 		...ceremony.requests,
 		...(ceremony.read ? [ceremony.read] : []),
@@ -229,6 +267,8 @@ export class CeremonyStore {
 		apiBase: string;
 		venues: BindingTarget[];
 		onComplete?: "stage-key";
+		legal?: { signing: CeremonySigningPayload; base: string; body: JsonObject };
+		keyPlan?: { name: string; maxSizeUsd: number };
 	}): Promise<Ceremony> {
 		const owner = getAddress(input.owner);
 		await this.ready();
@@ -268,7 +308,7 @@ export class CeremonyStore {
 					status: "awaiting-prepare-signature",
 					prepareIdempotencyKey: `${id}:prepare:${crypto.randomUUID()}`,
 					submitIdempotencyKey: `${id}:${crypto.randomUUID()}`,
-					prepare: step(
+					prepare: ceremonyStep(
 						`${id}:prepare`,
 						owner,
 						"Authorize venue binding preparation",
@@ -280,6 +320,24 @@ export class CeremonyStore {
 					requests: [],
 					signatures: [],
 					...(input.onComplete ? { onComplete: input.onComplete } : {}),
+					...(input.legal
+						? {
+								legal: ceremonyStep(
+									`${id}:legal`,
+									owner,
+									"Accept Mobius legal terms",
+									structuredClone(input.legal.signing),
+									createdAt,
+									expiresAt,
+									{
+										type: "legal-ceremony",
+										base: input.legal.base,
+										body: structuredClone(input.legal.body),
+									},
+								),
+							}
+						: {}),
+					...(input.keyPlan ? { keyPlan: { ...input.keyPlan } } : {}),
 				};
 				validate(ceremony);
 				await atomic(join(this.directory, "counter"), `${previous + 1}\n`);
@@ -327,7 +385,7 @@ export class CeremonyStore {
 									request.payload,
 								) as TypedDataDefinition,
 							};
-				return step(
+				return ceremonyStep(
 					`${id}:${request.requestId}`,
 					ceremony.owner,
 					`Bind ${classified.venue}: ${classified.action}`,

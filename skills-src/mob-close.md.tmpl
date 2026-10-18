@@ -11,12 +11,10 @@ Never request, echo, log, or put a key, seed, or passphrase in command text. Ask
 
 Run `mob close <task>`. Show the Proposal kind, id, task, venues, size, controls, preflight, expiry, and digest when present. Read [close semantics](references/close.md).
 
-For an `api-submit` Proposal, finish the staging reply with:
+In the same reply, ask for authorization. For an `api-submit` Proposal: {{ASK_SUBMIT}} Under `manual`, run `mob submit p-N` only when the latest user message names that exact id or the chosen answer starts with `Submit p-N`. Under `auto`, you may run it inside the key limits and must say that auto policy allowed it.
 
-`mob submit p-N`
+If the CLI stages a wallet Proposal, state why the key path was unavailable, then: {{ASK_SIGN}} Never run `mob sign p-N` unless the latest user message names that exact id (or the chosen answer starts with `Sign p-N`) and authorizes the browser or WalletConnect path. The agent never runs keystore signing.
 
-Replace `p-N` with the staged id. Under `manual`, STOP and run it only when the user's latest message names that exact id. Under `auto`, you may run it inside the key limits and must say that auto policy allowed it.
-
-If the CLI stages a wallet Proposal, state why the key path was unavailable. Never run `mob sign p-N` unless the latest user message names that exact id and authorizes the browser path. The agent never runs keystore signing.
+If the Proposal expired, run `mob restage p-N`: same intent, new id, fresh preflight; ask again for the new id.
 
 After acceptance, say "submitted, not confirmed" and read status to establish whether both legs closed.

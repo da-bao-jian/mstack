@@ -3,5 +3,6 @@
 	"askSize": "If the user gave no size, ask: What USD size should I use: $1,000, $5,000, $25,000, or another amount? Wait for the answer before scanning.",
 	"askOwner": "If owner is unset, ask: What is your public 20-byte 0x owner address? Never ask for a key. Wait for the address, then use it with `--owner`. Do not change config unless the user explicitly asks to save it.",
 	"askOpen": "Ask for each missing choice in prose. Wait for the answer before staging.",
-	"askSign": "Ask in prose: \"Sign <id> in the browser wallet, sign <id> yourself in your terminal with the keystore, or reject <id>?\" Replace <id> with the staged Proposal id."
+	"askSign": "Ask in prose: \"Reply `sign <id>` to sign <id> in the browser wallet or with WalletConnect, sign <id> yourself in your terminal with the keystore, or reply `reject <id>`.\" Replace <id> with the staged id. Only a reply that names <id> authorizes the browser or WalletConnect path.",
+	"askSubmit": "Ask in prose: \"Reply `submit <id>` to send it, or `reject <id>`.\" Replace <id> with the staged Proposal id. Only a reply that names <id> authorizes the submission."
 }

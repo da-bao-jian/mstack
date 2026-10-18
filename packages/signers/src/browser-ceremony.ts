@@ -77,7 +77,13 @@ function checked(
 	const view = structuredClone(input);
 	if (!view.id.startsWith(`${ceremonyId}:`))
 		throw new Error("Signing step does not belong to ceremony");
-	if (getAddress(view.owner) !== owner || view.expiresAt !== expiresAt)
+	// A step may carry its own window (the key step is created after binding);
+	// none may outlive the session deadline.
+	if (
+		getAddress(view.owner) !== owner ||
+		!Number.isSafeInteger(view.expiresAt) ||
+		view.expiresAt > expiresAt
+	)
 		throw new Error("Signing step identity differs from ceremony");
 	const actual =
 		view.signing.type === "text"

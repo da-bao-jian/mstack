@@ -9,6 +9,16 @@ not a claim that public release tags or artifacts were published.
 
 ### Added
 
+- Native onboarding in one wallet session: `mob onboard --native` stages one ceremony that accepts the legal terms when needed, binds the venues, creates the scoped API key, and stores it locally; `mob sign c-N` walks every step on one page and the key never prints. Flags `--name` and `--max-size` set the key.
+- `mob restage <id>` stages an expired task Proposal's intent again under a new id with a fresh preflight; `mob sign` and `mob submit` on an expired id do the same and stop, so the new id needs new consent.
+- `mob risk-ack` and `riskInterview` in `mob hello --json`: the first-open risk questions are due once per owner per day instead of once per conversation.
+- The Bash sign guard accepts the answer the human chose from an AskUserQuestion the assistant asked, when the chosen label starts with `Submit p-N` or `Sign p-N`; the skills offer those labels in the same reply as the staged card.
+
+### Changed
+
+- API-submit Proposals keep a 15-minute window; wallet Proposals keep the server's 300 seconds.
+- `/mob-setup` is native-first: one authorization instead of three and no key paste; the Mobius page and paste path remain the fallback for a wallet that is not on this machine.
+
 - Seven more scan venues: MEXC, BingX, Bitget, Gate, GRVT, Variational, and QFEX. Each adapter reads the venue's public bulk feeds, keeps native market names, and ships with recorded fixtures, pinned expected rows, and scope tests. GRVT tickers are fetched per instrument with bounded concurrency; QFEX publishes no mark price, so its entry cost stays unmeasured; MEXC coin-margined, Bitget USDC and coin products, Gate's BTC-settled book, Variational swaps, and non-USD QFEX quotes are out of scope. Default taker fees come from each venue's published base tier.
 
 ## [0.4.1] - 2026-10-18

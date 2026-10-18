@@ -8,13 +8,95 @@ import {
 	LEGAL_EIP712_DOMAIN_VERSION,
 	MobiusClient,
 } from "@mstack/mobius-client";
-import { ProposalStore } from "@mstack/proposals";
+import {
+	type JsonObject,
+	type ProposalInput,
+	ProposalStore,
+} from "@mstack/proposals";
 import { getAddress } from "viem";
 import pkg from "../package.json";
 import { getConfig, parsedValue, readConfig, setConfig } from "./config.ts";
 import { cliKeyStore } from "./key-store.ts";
 import { printStaged, stageOnboarding } from "./onboarding-stage.ts";
 import type { Runtime } from "./run.ts";
+
+export interface LegalPlan {
+	base: string;
+	signing: Extract<ProposalInput["signing"], { type: "typed" }>;
+	body: JsonObject;
+	detail: string;
+}
+
+/**
+ * Builds the typed legal acceptance for the configured owner, or reports that
+ * it is already accepted, blocked by policy, or not configured on the server.
+ */
+export async function legalPlan(
+	rt: Runtime,
+	fresh = false,
+): Promise<LegalPlan | "accepted" | "locked" | "unavailable"> {
+	const config = await readConfig(rt.home);
+	if (!config.owner) throw new Error("Setup requires an owner");
+	const owner = getAddress(config.owner);
+	const base = String(getConfig(config, "auth_base"));
+	const client = new MobiusClient({
+		base,
+		version: pkg.version,
+		fetch: rt.fetch,
+	});
+	try {
+		if (
+			!fresh &&
+			(await client.read("/legal/acceptance", { wallet: owner })).accepted
+		)
+			return "accepted";
+		if ((config.policy ?? "manual") === "locked") return "locked";
+		const response = await client.read("/legal/terms", {});
+		const terms = {
+			termsVersion: response.termsVersion,
+			termsUrl: response.termsUrl,
+			privacyVersion: response.privacyVersion,
+			privacyUrl: response.privacyUrl,
+		};
+		for (const key of ["termsUrl", "privacyUrl"] as const) {
+			const url = new URL(terms[key]);
+			if (url.protocol !== "https:" || url.username || url.password)
+				throw new Error(`Invalid legal ${key}`);
+		}
+		const signedAt = Math.floor(rt.now() / 1000);
+		return {
+			base,
+			signing: {
+				type: "typed",
+				typedData: {
+					domain: {
+						name: LEGAL_EIP712_DOMAIN_NAME,
+						version: LEGAL_EIP712_DOMAIN_VERSION,
+						chainId: Number(getConfig(config, "legal_chain_id")),
+					},
+					types: ACCEPT_LEGAL_TERMS_TYPES,
+					primaryType: ACCEPT_LEGAL_TERMS_PRIMARY_TYPE,
+					message: {
+						statement: ACCEPT_LEGAL_TERMS_STATEMENT,
+						wallet: owner,
+						...terms,
+						signedAt,
+					},
+				},
+			},
+			body: {
+				wallet: owner,
+				termsVersion: terms.termsVersion,
+				privacyVersion: terms.privacyVersion,
+				signedAt,
+			},
+			detail: `Terms ${terms.termsVersion}: ${terms.termsUrl}; privacy ${terms.privacyVersion}: ${terms.privacyUrl}`,
+		};
+	} catch (error) {
+		if (error instanceof ApiError && error.status === 503) return "unavailable";
+		throw error;
+	}
+}
 
 export async function stageLegal(rt: Runtime, fresh = false) {
 	const config = await readConfig(rt.home);

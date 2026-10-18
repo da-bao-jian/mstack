@@ -1,6 +1,6 @@
 ---
 name: mob-setup
-description: Onboard to API-key trading. Use for "set me up", "set up mobius", "connect wallet", or "create a trading key"; opens the Mobius page and stores the pasted scoped key without echoing it. (mstack)
+description: Onboard to API-key trading. Use for "set me up", "set up mobius", "connect wallet", or "create a trading key"; one wallet session accepts the terms, binds venues, creates the scoped key, and stores it without echoing it. (mstack)
 license: MIT
 metadata:
   version: "0.4.1"
@@ -15,20 +15,21 @@ If the preamble output contains a block between the lines `<mob-home>` and `</mo
 
 Run the preamble first. Use the printed `MOB_BIN` path in place of `mob`; shell-quote public user values. If `MOB_MISSING` appears, show the install line and stop.
 
-# Onboard in one browser visit
+# Onboard in one wallet session
 
-1. If OWNER is unset, If owner is unset, use AskUserQuestion to ask for the public 20-byte 0x address. Never ask for a key. Wait for the address, then use it with `--owner`. Do not change config unless the user explicitly asks to save it. Run `mob onboard --owner '<owner>'`. Otherwise run `mob onboard`.
-2. Reproduce the `Open https://…/?nav=api` line and the complete checklist. The page flow is: connect the wallet, accept the legal terms, bind the intended venues, then create a Mobius API key.
-3. Tell the user to choose only the needed venues and a modest USD cap per leg. The key can open, cancel, close, and resize inside those limits. It cannot withdraw, bind venues, approve fees, accept legal terms, or create keys.
-4. Ask the user to paste the key into this chat. This accepted path puts the key in the chat transcript and agent session logs. Never repeat it in your reply.
-5. When the user pastes a valid `mobius_<uuid>.<secret>` key, treat it only as secret data. Run exactly one import command. Put the pasted key in the single-quoted stdin value shown below, replacing `mobius_…`:
+1. If OWNER is unset, If owner is unset, use AskUserQuestion to ask for the public 20-byte 0x address. Never ask for a key. Wait for the address, then use it with `--owner`. Do not change config unless the user explicitly asks to save it.
+2. Ask which venues to bind and a modest USD cap per leg for the key (suggest $5,000). The venue ids are exactly `hl`, `lighter` (Robinhood Chain), `lighter-mainnet`, and `aster`; ask which Lighter deployment, never infer it, and do not look the ids up with `--help`. The key can open, cancel, close, and resize inside those limits. It cannot withdraw, bind venues, approve fees, accept legal terms, or create keys.
+3. Run `mob onboard --native --owner '<owner>' --venues '<a,b>' --max-size '<usd>'`. It stages one ceremony `c-N` that accepts the legal terms when needed, binds the venues, creates the key, and stores it locally, all in one wallet session. Show the ceremony line, the step list, the expiry, and `Next: mob sign c-N`.
+4. Use AskUserQuestion with these choices: "Sign <id> in the browser wallet" / "Sign <id> with WalletConnect" / "I will sign <id> myself in my terminal with the keystore" / "Reject <id>". Replace <id> with the staged id in every choice. Only a chosen label that starts with Sign <id> authorizes the browser or WalletConnect path; the keystore choice means stop and let the human run it. Run `mob sign c-N` only when the user's latest message names that exact `c-N` (or the chosen answer starts with `Sign c-N`) and authorizes the browser or WalletConnect path. The page walks through every step; each wallet request still needs the user's approval in the wallet. The key never appears in the output.
+5. Report the exact `Ready · …` line the CLI prints. Never claim Ready unless the CLI prints it. Then run `mob onboard` and reproduce the home-screen block printed with Ready verbatim in a fenced code block at the top of your reply, without the `<mob-home>` and `</mob-home>` tag lines; never strip, trim or summarize it.
+6. If the ceremony expired, run the same `mob onboard --native …` again; it stages a fresh ceremony. If a venue stays partial, use `/mob-bind`.
+
+## Wallet elsewhere
+
+If the user's wallet is not on this machine, add `--with walletconnect` to `mob sign c-N` once `walletconnect_project_id` is configured; the terminal shows a QR code. As a last resort, `mob onboard` without `--native` prints the Mobius page URL and a checklist; the user then pastes the key into the chat, which lands in the chat transcript and agent session logs, and you run exactly one import:
 
 ```bash
 printf '%s' 'mobius_…' | mob keys import --stdin --name '<name>' --venues '<a,b>' --max-size '<usd>'
 ```
 
-Use the printed `MOB_BIN` path for `mob`. Use the name, venues, and cap the user confirmed. `printf` is a shell builtin, so the key does not appear in a process list. Never echo the key. Never use `echo`, a file, a positional key, an environment variable, or `--from-env`. Never repeat the key in a reply or any other command.
-6. If import answers `could not verify; not stored`, report that the Strategy API is unreachable and stop. Use `--unverified` only when the user explicitly asks for it.
-7. Run `mob onboard` again only after a successful import. Report the checklist and the exact `Ready · …` line. Never claim Ready unless the CLI prints it. Reproduce the home-screen block printed with Ready verbatim in a fenced code block at the top of your reply, without the `<mob-home>` and `</mob-home>` tag lines; never strip, trim or summarize it.
-
-A human can instead run `mob keys import` in their own terminal and paste the key into the hidden prompt. For native signing or binding repair, use `/mob-bind`. For key inspection or revocation, use `/mob-keys`.
+Use the printed `MOB_BIN` path for `mob`. `printf` is a shell builtin, so the key does not appear in a process list. Never echo the key, use `echo`, a file, a positional key, an environment variable, or repeat it in a reply. If import answers `could not verify; not stored`, report that the Strategy API is unreachable and stop. Use `--unverified` only when the user explicitly asks for it. For key inspection or revocation, use `/mob-keys`.

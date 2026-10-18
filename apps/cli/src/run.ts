@@ -12,7 +12,13 @@ import {
 } from "./commands/runtime.ts";
 import { scan } from "./commands/scan.ts";
 import { readinessStatus, status, statusApi } from "./commands/status.ts";
-import { configHome, numberFlag, UsageError } from "./config.ts";
+import {
+	configHome,
+	numberFlag,
+	readConfig,
+	SETUP_FIRST,
+	UsageError,
+} from "./config.ts";
 import { paint } from "./format.ts";
 import { withGlossary } from "./glossary.ts";
 import { commandHelp, helpTopic, parseCommand } from "./help.ts";
@@ -41,6 +47,7 @@ Usage:
   mob setup [--owner 0x… --signer keystore|browser|walletconnect --policy manual|locked|auto]
             [--auth-base URL] [--legal-chain-id N] [--walletconnect-project-id ID] [--no-legal]
   mob onboard [--owner 0x…] [--app-base URL] [--watch] [--native] [--venues a,b]
+              [--name <n>] [--max-size <usd>]   (native: one wallet session binds and creates the key)
   mob bind <hl|aster|lighter|lighter-mainnet>
   mob keys import [--stdin] [--unverified] [--name <n>] [--venues a,b] [--max-size <usd>]
   mob keys create --name <n> --venues a,b[,c,d] --max-size <usd>
@@ -63,6 +70,8 @@ Usage:
   mob auto-close <task> on|off [--min-apy N]
   mob size-mismatch-close <task> on|off --pct N
   mob status --readiness [--owner 0x…] [--json]
+  mob restage <p-N>            (expired Proposal: same intent, new id, needs new consent)
+  mob risk-ack                 (records the first-open risk questions for 24 hours)
   mob upgrade
   mob mcp
   mob hook sign-guard
@@ -100,6 +109,8 @@ export const definitions: Record<string, ParseArgsConfig["options"]> = {
 		json: flag("boolean"),
 	},
 	doctor: { help: flag("boolean"), json: flag("boolean") },
+	restage: { help: flag("boolean") },
+	"risk-ack": { help: flag("boolean") },
 	setup: {
 		help: flag("boolean"),
 		owner: flag("string"),
@@ -119,6 +130,8 @@ export const definitions: Record<string, ParseArgsConfig["options"]> = {
 		venues: flag("string"),
 		"lighter-account": flag("string"),
 		rebind: flag("boolean"),
+		name: flag("string"),
+		"max-size": flag("string"),
 	},
 	bind: {
 		help: flag("boolean"),
@@ -367,6 +380,27 @@ export async function run(
 				throw new UsageError("Usage: mob submit <id>");
 			const { submitCommand } = await import("./submit-command.ts");
 			await submitCommand(positionals[0], json, rt);
+			return 0;
+		}
+		if (command === "restage") {
+			if (positionals.length !== 1 || !/^p-[1-9]\d*$/.test(positionals[0]))
+				throw new UsageError("Usage: mob restage <p-N>");
+			const { restageProposal } = await import("./restage.ts");
+			if (!(await restageProposal(positionals[0], rt)))
+				throw new UsageError(
+					`${positionals[0]} has no stored request; run the original command again`,
+				);
+			return 0;
+		}
+		if (command === "risk-ack") {
+			if (positionals.length) throw new UsageError("Usage: mob risk-ack");
+			const config = await readConfig(rt.home);
+			if (!config.owner) throw new UsageError(SETUP_FIRST);
+			const { acknowledgeRiskInterview } = await import("./risk-interview.ts");
+			await acknowledgeRiskInterview(rt.home, config.owner, rt.now());
+			rt.out(
+				`Risk interview recorded for ${config.owner}; due again in 24 hours.`,
+			);
 			return 0;
 		}
 		if (

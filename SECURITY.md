@@ -38,7 +38,10 @@ Skills stop for explicit approval of the exact id. Browser wallet approval is
 still required. The Claude Code plugin registers no MCP server, so every agent
 command in that host passes through the Bash sign guard. `mob mcp`, for other
 clients, can read and stage; it cannot sign, reject, or change config.
-The Claude Bash sign guard checks literal commands and the latest user message.
+The Claude Bash sign guard checks literal commands against the latest user
+message, or against the answer the user chose from an AskUserQuestion the assistant
+asked when that label starts with `Submit <id>` or `Sign <id>`; other tool results
+never grant consent.
 It is not a shell sandbox and cannot inspect arbitrary scripts or other hosts.
 On Claude Code 2.1.295 or newer, a guard that cannot start, crashes, or times out
 blocks the call. Older versions let such a call continue; the CLI policy, expiry,

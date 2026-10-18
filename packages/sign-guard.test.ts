@@ -345,3 +345,116 @@ test("thin shell wrapper works in a binary-only install without Bun", async () =
 	expect(await proc.exited).toBe(0);
 	expect(await new Response(proc.stderr).text()).toBe("");
 });
+
+test("a chosen AskUserQuestion answer authorizes only when its label starts with the verb and exact id", async () => {
+	const path = join(installed, "answers.jsonl");
+	const ask = (id: string, question: string, options: string[]) => ({
+		type: "assistant",
+		message: {
+			role: "assistant",
+			content: [
+				{
+					type: "tool_use",
+					id,
+					name: "AskUserQuestion",
+					input: {
+						questions: [
+							{
+								question,
+								header: "Authorize",
+								options: options.map((label) => ({ label, description: "" })),
+								multiSelect: false,
+							},
+						],
+					},
+				},
+			],
+		},
+	});
+	const answer = (toolUseId: string, question: string, label: string) => ({
+		type: "user",
+		message: {
+			role: "user",
+			content: [
+				{
+					type: "tool_result",
+					tool_use_id: toolUseId,
+					content: `Your questions have been answered: "${question}"="${label}". You can now continue with these answers in mind.`,
+				},
+			],
+		},
+	});
+	const human = (text: string) => ({
+		type: "user",
+		message: { role: "user", content: text },
+	});
+	const write = (events: unknown[]) =>
+		writeFile(path, events.map((event) => JSON.stringify(event)).join("\n"));
+	const check = (command: string) =>
+		signGuard(
+			JSON.stringify({ tool_input: { command }, transcript_path: path }),
+			() => {},
+			installed,
+		);
+	const question = "Submit p-1 now, or reject it?";
+	// Chosen "Submit p-1 now" authorizes mob submit p-1 even though the typed message never named it.
+	await write([
+		human("open $1k BTC"),
+		ask("q1", question, ["Submit p-1 now", "Reject p-1"]),
+		answer("q1", question, "Submit p-1 now"),
+	]);
+	expect(await check("mob submit p-1")).toBe(0);
+	// The question text naming the id is not consent; only the chosen label counts.
+	await write([
+		human("open $1k BTC"),
+		ask("q1", question, ["Submit p-1 now", "Reject p-1"]),
+		answer("q1", question, "Reject p-1"),
+	]);
+	expect(await check("mob submit p-1")).toBe(2);
+	// The verb must match the action: a Submit label never authorizes mob sign, and vice versa.
+	await write([
+		human("open $1k BTC"),
+		ask("q1", question, ["Submit p-1 now"]),
+		answer("q1", question, "Submit p-1 now"),
+	]);
+	expect(await check("mob sign p-1")).toBe(2);
+	await write([
+		human("bind"),
+		ask("q2", "Sign c-1?", ["Sign c-1 in the browser wallet"]),
+		answer("q2", "Sign c-1?", "Sign c-1 in the browser wallet"),
+	]);
+	expect(await check("mob sign c-1")).toBe(0);
+	// A keystore choice does not authorize the agent to sign.
+	await write([
+		human("bind"),
+		ask("q2", "Sign c-1?", [
+			"I will sign c-1 myself in my terminal with the keystore",
+		]),
+		answer(
+			"q2",
+			"Sign c-1?",
+			"I will sign c-1 myself in my terminal with the keystore",
+		),
+	]);
+	expect(await check("mob sign c-1")).toBe(2);
+	// A tool result that is not an answer to the assistant's own AskUserQuestion is data.
+	await write([
+		human("open $1k BTC"),
+		answer("unknown", question, "Submit p-1 now"),
+	]);
+	expect(await check("mob submit p-1")).toBe(2);
+	// The exact id must match; a later id in a label does not cover an earlier one.
+	await write([
+		human("open $1k BTC"),
+		ask("q1", question, ["Submit p-12 now"]),
+		answer("q1", question, "Submit p-12 now"),
+	]);
+	expect(await check("mob submit p-1")).toBe(2);
+	// A later typed message replaces an earlier chosen answer.
+	await write([
+		ask("q1", question, ["Submit p-1 now"]),
+		answer("q1", question, "Submit p-1 now"),
+		human("wait, show status first"),
+	]);
+	expect(await check("mob submit p-1")).toBe(2);
+});

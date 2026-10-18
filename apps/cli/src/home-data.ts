@@ -14,6 +14,7 @@ import { cliKeyStore } from "./key-store.ts";
 import { object, request } from "./onboarding-http.ts";
 import { credentialReadiness } from "./preflight/readiness.ts";
 import { API_BUDGET_MS, reachability } from "./reachability.ts";
+import { type RiskInterview, riskInterviewStatus } from "./risk-interview.ts";
 import type { Runtime } from "./run.ts";
 import { installationRoot } from "./upgrade.ts";
 
@@ -51,6 +52,7 @@ export interface HomeData {
 	api: Reading<{ latencyMs: number }> & { host: string };
 	auth: Reading<{ latencyMs: number }> & { host: string };
 	legal: Reading<{ accepted: boolean; acceptedAt: string | null }>;
+	riskInterview: RiskInterview;
 	venues: Record<ArbitrageVenue, Reading<Venue>>;
 	tasks: Reading<{
 		counts: Record<string, number>;
@@ -191,6 +193,7 @@ export async function collectHome(
 		api: { host: new URL(apiBase).host, ...unchecked() },
 		auth: { host: new URL(authBase).host, ...unchecked() },
 		legal: unchecked(),
+		riskInterview: await riskInterviewStatus(rt.home, config.owner, rt.now()),
 		venues: {
 			hl: unchecked(),
 			lighter: unchecked(),

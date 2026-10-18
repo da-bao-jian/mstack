@@ -19,18 +19,14 @@ Never request, echo, log, or place an API key, private key, seed, or passphrase 
 
 # Open with the stored key
 
-1. Run `mob keys show --json`. If no key is stored, use `/mob-setup`. Run `mob status --readiness --json` and `mob hello --json`; if a selected venue or `legal.value.accepted` is unsigned, expired, missing, or cannot be checked, name it and stop. Do not ask the risk questions while readiness is missing.
-2. Use AskUserQuestion for each missing choice. Wait for the answer before staging. Confirm the native long and short `venue:market` legs and USD size per leg. A recent scan can suggest them, but it cannot authorize them.
-3. Confirm protection or off. Protection needs assumed leverage and is not verified on the venue. Confirm auto-close and its minimum simple APY when enabled.
-4. On the first open in this conversation, ask three risk questions: can funding flip, what happens if one leg disappears, and can protection guarantee no liquidation? Require answers that recognize loss, unhedged exposure, and no guarantee.
-5. Run one `mob open …` command with only the confirmed values. Show the Proposal kind, id, purpose, venues, size, controls, preflight, expiry, and digest when present. Read [preview details](references/preview.md).
+1. Run `mob keys show --json` and `mob hello --json`. If no key is stored, use `/mob-setup`. If `legal.value.accepted` or a selected venue in `mob status --readiness --json` is unsigned, expired, missing, or cannot be checked, name it and stop. Do not ask the risk questions while readiness is missing.
+2. Stage at once when the user's words already give both legs and the size. Use AskUserQuestion for each missing choice. Wait for the answer before staging. Confirm only what is missing: native long and short `venue:market` legs, USD size per leg, protection (needs assumed leverage, not verified on the venue), and auto-close with its minimum simple APY. A recent scan can suggest legs; it cannot authorize them.
+3. Only when `hello` reports `riskInterview.due` as true, ask three risk questions before staging: can funding flip, what happens if one leg disappears, can protection guarantee no liquidation? Require answers that recognize loss, unhedged exposure, and no guarantee, then run `mob risk-ack`. When `due` is false, skip the questions.
+4. Run one `mob open <BASE> --long venue:market --short venue:market --size USD [--protect pct|off --assume-leverage L[,S]] [--auto-close on|off --min-apy N]` command with only the confirmed values. Show the Proposal kind, id, purpose, venues, size, controls, preflight, expiry, and digest when present. Read [preview details](references/preview.md).
+5. In the same reply, ask for authorization. For an `api-submit` Proposal: Use AskUserQuestion with these choices: "Submit <id> now" / "Reject <id>". Replace <id> with the staged Proposal id in both choices. The chosen label is the authorization; run the submit only after a label that starts with Submit <id>. For a wallet Proposal, explain why the key path was unavailable, then: Use AskUserQuestion with these choices: "Sign <id> in the browser wallet" / "Sign <id> with WalletConnect" / "I will sign <id> myself in my terminal with the keystore" / "Reject <id>". Replace <id> with the staged id in every choice. Only a chosen label that starts with Sign <id> authorizes the browser or WalletConnect path; the keystore choice means stop and let the human run it.
 
-For an `api-submit` Proposal, finish the staging reply with this exact line:
+Under `manual`, run `mob submit p-N` only when the latest user message names that exact id or the chosen answer starts with `Submit p-N`. Under `auto`, you may run it inside the stored venue and cap limits, but say that auto policy allowed the submission. Never run `mob sign p-N` unless the latest user message names that exact id (or the chosen answer starts with `Sign p-N`) and authorizes the browser or WalletConnect path. The agent never runs keystore signing.
 
-`mob submit p-N`
-
-Replace `p-N` with the staged id. Under `manual`, STOP. Run it only when the user's latest message names that exact id. Under `auto`, you may run it inside the stored venue and cap limits, but your reply must say that auto policy allowed the submission.
-
-For a wallet Proposal, explain why the key path was unavailable. Never run `mob sign p-N` unless the latest user message names that exact id and authorizes the browser path. The agent never runs keystore signing.
+If the Proposal expired, run `mob restage p-N`. It stages the same intent under a new id with a fresh preflight and stops; ask again for the new id. Never authorize it yourself.
 
 After API acceptance, say "submitted, not confirmed", report the task id, and use `/mob-status` for worker state.

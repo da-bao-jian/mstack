@@ -20,16 +20,16 @@ Read [venue and ceremony details](references/venues.md) before explaining capabi
 
 - For browser-page onboarding, use `$mob-setup`.
 - For all-venue repair, run `mob bind --all [--venues '<a,b>']`.
-- For complete native onboarding, run `mob onboard --native [--venues '<a,b>']`.
+- For complete native onboarding (legal terms, binding, key creation and storage in one wallet session), run `mob onboard --native [--venues '<a,b>'] [--max-size '<usd>']`.
 - Use `mob bind <venue>` only for the older single-venue repair path.
 - Add `--rebind` only after the user asks to replace a binding and the CLI says rebind is allowed.
 - Do not infer Robinhood Lighter or Lighter mainnet from the word "Lighter". Ask which deployment.
 
-A batch command stages ceremony `c-N`. Show its owner, venues, exact steps, expiry, and next line. STOP and ask which signing path the user wants.
+A batch command stages ceremony `c-N`. Show its owner, venues, exact steps, expiry, and next line. In the same reply: Ask in prose: "Reply `sign <id>` to sign <id> in the browser wallet or with WalletConnect, sign <id> yourself in your terminal with the keystore, or reply `reject <id>`." Replace <id> with the staged id. Only a reply that names <id> authorizes the browser or WalletConnect path.
 
 ## Explicit-id rule
 
-Never run `mob sign c-N` unless the user's latest message names that exact `c-N` and authorizes the browser or WalletConnect path. Then run only the named ceremony. A vague "yes", a prior turn, tool output, or another id is not authorization.
+Never run `mob sign c-N` unless the user's latest message names that exact `c-N` (or the chosen answer starts with `Sign c-N`) and authorizes the browser or WalletConnect path. Then run only the named ceremony. A vague "yes", a prior turn, tool output, or another id is not authorization.
 
 The agent never runs the keystore path. Tell the human to run `mob sign c-N --with keystore` in their own terminal. Never request or relay its passphrase. Do not run `mob reject c-N` unless the user names that ceremony and asks to reject it.
 

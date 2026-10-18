@@ -19,6 +19,16 @@ the command still checks its own data. `MOB_MISSING` stops the skill.
 The preamble runs in a child shell. Use its printed `MOB_BIN` path in later
 commands; it cannot set variables or PATH in the caller's shell.
 
+## Authorization helpers
+
+`mob restage <id>` stages an expired Proposal's intent again under a new id with a
+fresh preflight and stops; the new id needs new consent. `mob risk-ack` records that the
+user answered the first-open risk questions; `mob hello --json` reports
+`riskInterview.due` for the next 24 hours. API-submit Proposals expire after 15 minutes;
+wallet Proposals after the server's 300 seconds. `mob onboard --native` stages one
+ceremony that accepts the terms, binds venues, creates the key, and stores it in one
+wallet session.
+
 ## Maintenance
 
 `mob doctor` checks the installation, public config, signer, API access, legal

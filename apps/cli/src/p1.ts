@@ -1,4 +1,4 @@
-import { isApiKey, type KeyMeta, prefixOf, redactKey } from "@mstack/keys";
+import { redactKey } from "@mstack/keys";
 import {
 	ApiError,
 	type ApiKeyCreateBody,
@@ -26,14 +26,16 @@ import {
 } from "@mstack/signers";
 import { getAddress } from "viem";
 import pkg from "../package.json";
-import { getConfig, readConfig, SETUP_FIRST, UsageError } from "./config.ts";
+import { readConfig, SETUP_FIRST, UsageError } from "./config.ts";
 import { expiry } from "./format.ts";
+import { storeCreatedKey } from "./key-create.ts";
 import { cliKeyStore } from "./key-store.ts";
 import { keyListTable } from "./keys-command.ts";
 import { object, submitPlan } from "./onboarding-http.ts";
 import { CheckFailure, Checks, configChecks } from "./preflight/checks.ts";
 import { proposalTiming, proposalView, showProposal } from "./proposal-view.ts";
 import { refreshExpired } from "./refresh-proposal.ts";
+import { restageProposal } from "./restage.ts";
 import type { Runtime } from "./run.ts";
 import { walletWait } from "./wallet-wait.ts";
 
@@ -106,6 +108,75 @@ export async function p1(
 	if (command === "proposal") {
 		if (args.length !== 2 || args[0] !== "show")
 			throw new UsageError("Usage: mob proposal show <id>");
+		if (/^c-[1-9]\d*$/.test(args[1])) {
+			const ceremony = await new CeremonyStore(rt.home, rt.now, rt.err).get(
+				args[1],
+			);
+			const steps = [
+				...(ceremony.legal ? [ceremony.legal] : []),
+				ceremony.prepare,
+				...ceremony.requests,
+				...(ceremony.read ? [ceremony.read] : []),
+				...(ceremony.key ? [ceremony.key] : []),
+			];
+			if (values.json) {
+				rt.out(
+					JSON.stringify(
+						{
+							id: ceremony.id,
+							kind: "ceremony",
+							owner: ceremony.owner,
+							status: ceremony.status,
+							venues: ceremony.venues.map((venue) => venue.venue),
+							createdAt: ceremony.createdAt,
+							expiresAt: ceremony.expiresAt,
+							keyPlan: ceremony.keyPlan ?? null,
+							keyResult: ceremony.keyResult ?? null,
+							steps: steps.map((step) => ({
+								id: step.id,
+								purpose: step.purpose,
+								status: step.status,
+								digest: step.digest,
+							})),
+						},
+						null,
+						2,
+					),
+				);
+				return;
+			}
+			const signable = ![
+				"complete",
+				"partial",
+				"rejected",
+				"failed",
+				"expired",
+			].includes(ceremony.status);
+			rt.out(
+				[
+					`${ceremony.id} · ceremony · ${ceremony.status} · ${expiry(ceremony.expiresAt, rt.now())}`,
+					`Owner    ${ceremony.owner}`,
+					`Venues   ${ceremony.venues.map((venue) => venue.venue).join(", ")}`,
+					...(ceremony.keyPlan
+						? [
+								`Key      “${ceremony.keyPlan.name}” · cap $${ceremony.keyPlan.maxSizeUsd.toLocaleString("en-US")}${ceremony.keyResult ? ` · stored ${ceremony.keyResult.prefix} in ${ceremony.keyResult.backend}` : ""}`,
+							]
+						: []),
+					"Steps",
+					...steps.map(
+						(step, index) =>
+							`  ${index + 1}. ${step.status === "signed" ? "✓" : "·"} ${step.purpose}`,
+					),
+					...(ceremony.keyPlan && !ceremony.key
+						? [
+								`  ${steps.length + 1}. · Create API key “${ceremony.keyPlan.name}” and store it locally`,
+							]
+						: []),
+					...(signable ? [`Next: mob sign ${ceremony.id}`] : []),
+				].join("\n"),
+			);
+			return;
+		}
 		rt.out(show(await store.get(args[1])));
 		return;
 	}
@@ -163,6 +234,7 @@ export async function p1(
 	}
 	const stored = await store.get(id);
 	if (await refreshExpired(stored, rt)) return;
+	if (stored.status === "expired" && (await restageProposal(id, rt))) return;
 	const proposal = await store.assertSignable(id);
 	if (proposal.kind === "api-submit")
 		throw new UsageError(`Use mob submit ${id} for this API Proposal`);
@@ -303,32 +375,7 @@ export async function p1(
 					);
 				}
 				if (p.submit.onAnswer !== "store-api-key") return answer;
-				const secret = object(answer).key;
-				if (typeof secret !== "string" || !isApiKey(secret))
-					throw new Error(
-						"Key creation response did not contain a valid API key",
-					);
-				const keyStore = await cliKeyStore(rt);
-				const meta: KeyMeta = {
-					name: String(p.submit.body.name),
-					venues: (p.submit.body.venues as string[]).map(String),
-					maxSizeUsd: Number(p.submit.body.maxSizeUsd),
-					importedAt: rt.now(),
-					verifiedAt: rt.now(),
-					apiBase: String(
-						getConfig(await readConfig(rt.home), "strategy_api_base"),
-					),
-				};
-				await keyStore.put(p.owner, secret, meta);
-				return JSON.parse(
-					redactKey(
-						JSON.stringify({
-							...object(answer),
-							key: prefixOf(secret),
-							backend: keyStore.backend,
-						}),
-					),
-				);
+				return storeCreatedKey(rt, p.owner, p.submit.body, answer);
 			},
 		});
 		if (result.submit.route === "/api/keys/create") {
