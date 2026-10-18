@@ -83,6 +83,7 @@ const reads: {
 			venues: [{ venue: "hl", ready: false, issue: "not_bound" }],
 		},
 	},
+	"/api/agent-grants": { params: { owner }, result: [] },
 };
 const auth = { timestamp: 1787555739, signature: "0x1234" as const };
 const writes: {
@@ -226,6 +227,44 @@ const writes: {
 	},
 	"/api/binding/aster/builder-finalize": {
 		body: { ownerAddress: owner },
+		result: { ok: true },
+	},
+	"/api/agent-grants/create": {
+		body: {
+			owner,
+			agent: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+			scopes: ["open", "close"],
+			maxOpenNotionalUsd: 5000,
+			maxOpenTasks: 3,
+			venues: ["hl", "lighter"],
+			markets: "*",
+			expires: 1787642139,
+			nonce: "01234567-89ab-4cde-8123-456789abcdef",
+			timestamp: 1787555739,
+			signature: `0x${"1".repeat(130)}`,
+		},
+		result: {
+			grant: {
+				grantId: "g-1",
+				owner,
+				agent: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+				scopes: ["open", "close"],
+				maxOpenNotionalUsd: 5000,
+				maxOpenTasks: 3,
+				venues: ["hl", "lighter"],
+				markets: "*",
+				expiresAt: "2026-08-24T00:00:00.000Z",
+				revokedAt: null,
+			},
+		},
+	},
+	"/api/agent-grants/revoke": {
+		body: {
+			owner,
+			agent: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+			timestamp: 1787555739,
+			signature: `0x${"1".repeat(130)}`,
+		},
 		result: { ok: true },
 	},
 };

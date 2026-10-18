@@ -1,5 +1,10 @@
 import type { Hex } from "viem";
 import type {
+	AgentGrantBody,
+	AgentGrantRecord,
+	AgentGrantRevokeBody,
+} from "./agentGrants.ts";
+import type {
 	ApiKeyCreateBody,
 	ApiKeyListBody,
 	ApiKeyRecord,
@@ -106,8 +111,17 @@ export interface ReadRoutes {
 		params: { ownerAddress: string };
 		result: ArbitrageVenueReadinessResp;
 	};
+	"/api/agent-grants": { params: Owner; result: AgentGrantRecord[] };
 }
 export interface WriteRoutes {
+	"/api/agent-grants/create": {
+		body: Signed<AgentGrantBody>;
+		result: { grant: AgentGrantRecord };
+	};
+	"/api/agent-grants/revoke": {
+		body: Signed<AgentGrantRevokeBody>;
+		result: { ok: true };
+	};
 	"/api/keys/list": { body: ApiKeyListBody; result: ApiKeyRecord[] };
 	"/api/keys/create": {
 		body: ApiKeyCreateBody;

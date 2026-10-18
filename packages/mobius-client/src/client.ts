@@ -53,6 +53,11 @@ function required(
 		throw new Error(`invalid ${field}`);
 }
 function validateRead(route: keyof ReadRoutes, value: unknown): unknown {
+	if (route === "/api/agent-grants") {
+		if (!Array.isArray(value)) throw new Error("invalid grants");
+		for (const item of value) required(record(item), "grantId", "string");
+		return value;
+	}
 	if (route === "/api/binding/readiness") {
 		const root = Array.isArray(value) ? undefined : record(value);
 		const raw = Array.isArray(value) ? value : root?.venues;
@@ -165,6 +170,13 @@ function validateRead(route: keyof ReadRoutes, value: unknown): unknown {
 	return body;
 }
 function validateWrite(route: keyof WriteRoutes, value: unknown): unknown {
+	if (route === "/api/agent-grants/create") {
+		const grant = record(record(value).grant);
+		required(grant, "grantId", "string");
+		required(grant, "agent", "string");
+		return value;
+	}
+	if (route === "/api/agent-grants/revoke") return record(value);
 	if (route.startsWith("/api/keys/"))
 		return validateApiKeyResponse(
 			route.slice("/api/keys/".length) as "list" | "create" | "revoke",

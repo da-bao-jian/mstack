@@ -29,6 +29,14 @@ wallet Proposals after the server's 300 seconds. `mob onboard --native` stages o
 ceremony that accepts the terms, binds venues, creates the key, and stores it in one
 wallet session.
 
+`mob approver` (human terminal only) unlocks the keystore once per idle window and signs
+each card after the human answers y; `mob hello --json` reports `approver.running`. The
+agent then runs `mob sign <id> --with approver` instead of asking the human to switch
+terminals. `mob status --readiness --json` carries a compact glossary per row.
+
+`mob grant create|show|revoke` is the client side of session grants (PRD 6.6) and needs
+Mobius API support that does not exist yet; `create` says so and stages nothing.
+
 ## Maintenance
 
 `mob doctor` checks the installation, public config, signer, API access, legal

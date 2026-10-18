@@ -72,6 +72,9 @@ Usage:
   mob status --readiness [--owner 0x…] [--json]
   mob restage <p-N>            (expired Proposal: same intent, new id, needs new consent)
   mob risk-ack                 (records the first-open risk questions for 24 hours)
+  mob approver [--idle-minutes N=30]   (your terminal: unlock the keystore once, approve each card with y)
+  mob grant create --scopes a,b --max-notional <usd> --max-tasks <n> --venues a,b [--markets *|BTC,ETH] [--expires-hours N=24]
+  mob grant show | mob grant revoke <agent>   (session grants, PRD 6.6; needs Mobius API support)
   mob upgrade
   mob mcp
   mob hook sign-guard
@@ -109,6 +112,16 @@ export const definitions: Record<string, ParseArgsConfig["options"]> = {
 		json: flag("boolean"),
 	},
 	doctor: { help: flag("boolean"), json: flag("boolean") },
+	approver: { help: flag("boolean"), "idle-minutes": flag("string") },
+	grant: {
+		help: flag("boolean"),
+		scopes: flag("string"),
+		"max-notional": flag("string"),
+		"max-tasks": flag("string"),
+		venues: flag("string"),
+		markets: flag("string"),
+		"expires-hours": flag("string"),
+	},
 	restage: { help: flag("boolean") },
 	"risk-ack": { help: flag("boolean") },
 	setup: {
@@ -392,6 +405,17 @@ export async function run(
 				);
 			return 0;
 		}
+		if (command === "grant") {
+			const { grantCommand } = await import("./grant-command.ts");
+			await grantCommand(positionals, values, rt);
+			return 0;
+		}
+		if (command === "approver") {
+			if (positionals.length) throw new UsageError("Usage: mob approver");
+			const { approverCommand } = await import("./approver.ts");
+			await approverCommand(values, rt);
+			return 0;
+		}
 		if (command === "risk-ack") {
 			if (positionals.length) throw new UsageError("Usage: mob risk-ack");
 			const config = await readConfig(rt.home);
@@ -509,7 +533,11 @@ export async function run(
 				);
 				rt.out(
 					json
-						? JSON.stringify(result.map(withGlossary), null, 2)
+						? JSON.stringify(
+								result.map((row) => withGlossary(row, { compact: true })),
+								null,
+								2,
+							)
 						: table(
 								["venue", "ready", "issue", "rebind allowed", "rebind detail"],
 								result.map((r) => [

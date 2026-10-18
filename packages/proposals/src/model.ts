@@ -104,7 +104,7 @@ export interface ProposalInput {
 		};
 		body: JsonObject;
 		signatureField?: string;
-		onAnswer?: "store-api-key";
+		onAnswer?: "store-api-key" | "store-agent-grant" | "revoke-agent-grant";
 	};
 	preflightPlan: { checks: PreflightCheck[] };
 }
@@ -276,10 +276,14 @@ export function validateInput(p: ProposalInput): void {
 		if (!/^\/api\/keys\/(create|list|revoke)$/.test(p.submit.route))
 			throw new Error("submit.route: Invalid submission route");
 	}
+	const answerRoutes = {
+		"store-api-key": "/api/keys/create",
+		"store-agent-grant": "/api/agent-grants/create",
+		"revoke-agent-grant": "/api/agent-grants/revoke",
+	} as const;
 	if (
 		p.submit.onAnswer !== undefined &&
-		(p.submit.onAnswer !== "store-api-key" ||
-			p.submit.route !== "/api/keys/create")
+		answerRoutes[p.submit.onAnswer] !== p.submit.route
 	)
 		throw new Error("submit.onAnswer: Invalid answer handler");
 	const formats = {

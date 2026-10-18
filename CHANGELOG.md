@@ -12,6 +12,9 @@ not a claim that public release tags or artifacts were published.
 - Native onboarding in one wallet session: `mob onboard --native` stages one ceremony that accepts the legal terms when needed, binds the venues, creates the scoped API key, and stores it locally; `mob sign c-N` walks every step on one page and the key never prints. Flags `--name` and `--max-size` set the key.
 - `mob restage <id>` stages an expired task Proposal's intent again under a new id with a fresh preflight; `mob sign` and `mob submit` on an expired id do the same and stop, so the new id needs new consent.
 - `mob risk-ack` and `riskInterview` in `mob hello --json`: the first-open risk questions are due once per owner per day instead of once per conversation.
+- `mob approver`: a persistent approver for keystore users. It runs in the human's own terminal, unlocks the keystore once per idle window, shows each card the agent hands over with `mob sign <id> --with approver` (chosen automatically when the signer is `keystore`, the caller has no TTY, and an approver answers), and signs after the human types `y`. `mob hello --json` reports `approver.running`.
+- Session grants, client side (PRD 6.6): byte-exact `Authorize Mobius agent` and `Revoke Mobius agent` builders, the proposed `/api/agent-grants` routes, and `mob grant create|show|revoke`, which generates a local agent key once, stages the owner-signed message, and records the server's grant. `create` probes the API first and refuses while the routes do not exist; agent-signed mutations are not implemented yet.
+- `mob status --readiness --json` carries a compact per-row glossary (about 5 KB for four venues instead of 42 KB).
 - The Bash sign guard accepts the answer the human chose from an AskUserQuestion the assistant asked, when the chosen label starts with `Submit p-N` or `Sign p-N`; the skills offer those labels in the same reply as the staged card.
 
 ### Changed

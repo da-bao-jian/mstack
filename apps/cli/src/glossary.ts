@@ -159,16 +159,24 @@ const costModel =
 	"Estimates, not quotes: default taker fees (bps per fill) hl 4.5, lighter 0, lighter-mainnet 0, aster 3.5, binance 5, bybit 5.5, okx 5, mexc 2, bingx 5, bitget 6, gate 7.5, grvt 4.5, variational 0, qfex 10; two fills per leg. HL builder fee defaults to 1.5 bps per fill, doubled against either Lighter deployment, on open and close. Config overrides apply. Entry uses marks, not book depth or slippage. Net APY amortizes nonnegative entry cost over holdDays; break-even uses signed entry cost. Annualization is simple, never compounded.";
 
 /** Add documentation without changing any existing value or unbounded server data. */
-export function withGlossary(data: unknown) {
-	const meanings: Record<string, string> = Object.assign(
-		Object.create(null),
-		fields,
-	);
+/**
+ * Attaches field meanings. `compact` keeps only the fields present in the
+ * data and drops the cost model, for views an agent reads per row.
+ */
+export function withGlossary(
+	data: unknown,
+	options: { compact?: boolean } = {},
+) {
+	const meanings: Record<string, string> = options.compact
+		? Object.create(null)
+		: Object.assign(Object.create(null), fields);
 	function visit(value: unknown) {
 		if (Array.isArray(value)) {
 			for (const item of value) visit(item);
 		} else if (value && typeof value === "object")
 			for (const [key, item] of Object.entries(value)) {
+				// JSON drops undefined fields; a compact glossary must not list them.
+				if (options.compact && item === undefined) continue;
 				meanings[key] =
 					fields[key] ??
 					`Server-reported ${key
@@ -184,7 +192,7 @@ export function withGlossary(data: unknown) {
 		glossary: {
 			fields: meanings,
 			venues,
-			costModel,
+			...(options.compact ? {} : { costModel }),
 			executable: fields.executable,
 			qualifies: fields.qualifies,
 			annualization: fields.annualizationMethod,
