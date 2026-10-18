@@ -12,7 +12,7 @@
 
 - **Three layers over one core.** Scan (free, keyless, every venue), decide (shared pure math), execute (the Mobius funding-server API, monetized by builder fees). Scan is the wedge. Execute is the business.
 - **Signing copies aomi's rule: composition is open, signing is gated.** The agent stages a Proposal. The server previews it. The user signs it in their own wallet, and only after naming the proposal id. Nothing can change between preview and signature. The agent never holds a key that can sign for the owner.
-- **Four surfaces over one library.** `mob` CLI, `mob mcp` (stdio MCP server), host-specific `SKILL.md` packs, and a Claude Code plugin that bundles all three. Distribution copies gstack: one clone, one `./setup`, every agent host.
+- **Four surfaces over one library.** `mob` CLI, `mob mcp` (stdio MCP server), host-specific `SKILL.md` packs, and a Claude Code plugin that bundles the CLI and the skills. The plugin registers no MCP server; its skills call the CLI through Bash, where the sign guard applies (decided 2026-10-18). Distribution copies gstack: one clone, one `./setup`, every agent host.
 - **Custody is honest.** The owner key stays in the wallet. Venue keys are trade-scoped and revocable at the venue. Funds sit in the user's own venue accounts. Mobius never holds funds. Section 6.8 states exactly what Mobius does hold.
 - **GTM is a funnel with two loops.** Scanner installs → first open → builder fee. Referral codes and season points pull the next user in. Section 9 has the plan and the KPIs.
 - **Server work is small and listed.** A preview route, server-applied leverage, session grants, a funding snapshot route, rate limits, an OpenAPI spec and a legal-acceptance call from the CLI. Section 10.
@@ -97,7 +97,7 @@ Source: `~/.claude/skills/gstack` (README, setup, SKILL.md.tmpl, ARCHITECTURE.md
 | `mob mcp` (stdio) | Claude Desktop, Cursor, Windsurf, any MCP client | Scan, explain, read status, stage and preview Proposals | No. Returns the `mob sign <id>` instruction |
 | Hosted MCP `https://mcp.mob.exchange/mcp` (P2) | Zero-install users, claude.ai, ChatGPT apps | Same as stdio MCP, read + stage | No. Signing is handed to `app.mob.exchange/sign/<id>` (the aomi portal pattern) |
 | Skills pack | Claude Code, Codex, Cursor, OpenCode, Factory | Guided flows with questions, the Q&A knowledge, the safety rules | Through the CLI only |
-| Claude Code plugin | Claude Code | Skills + `.mcp.json` + `bin/mob` on PATH + `userConfig` + a `mob watch` monitor | Through the CLI only |
+| Claude Code plugin | Claude Code | Skills + `bin/mob` on PATH + the Bash sign guard + `userConfig` + a `mob watch` monitor; no MCP server is registered | Through the CLI only |
 
 ### 3.3 Trust tiers
 
@@ -377,7 +377,7 @@ Bundled markdown, each with a one-paragraph plain version and a precise version:
 
 | Path | Command | Gives |
 |---|---|---|
-| Claude Code plugin (primary) | `/plugin marketplace add lu-bann/mstack` then `/plugin install mstack` | Skills, `.mcp.json` (stdio `mob mcp`), `bin/mob` on the Bash PATH, `userConfig` prompts (owner address, referral code), a `mob watch` monitor. Pinned `version`, auto-updates with the marketplace. |
+| Claude Code plugin (primary) | `/plugin marketplace add lu-bann/mstack` then `/plugin install mstack` | Skills, `bin/mob` on the Bash PATH, the Bash sign guard (no MCP server is registered; `claude mcp add` opts in), `userConfig` prompts (owner address, referral code), a `mob watch` monitor. Pinned `version`, auto-updates with the marketplace. |
 | gstack-style clone (every host) | `git clone --single-branch --depth 1 https://github.com/lu-bann/mstack ~/.claude/skills/mstack && cd ~/.claude/skills/mstack && ./setup` and `./setup --host codex|cursor|opencode|factory` | Per-host generated SKILL.md, compiled binary built locally |
 | Agent Skills registry | `npx skills add lu-bann/mstack` | The skills only; the CLI installs on first run |
 | MCP, any client | `claude mcp add mstack -- mob mcp` or the JSON block for Cursor, Windsurf, Claude Desktop | Tools only |
@@ -390,7 +390,7 @@ Bundled markdown, each with a one-paragraph plain version and a precise version:
 
 ```
 mstack/
-├── .claude-plugin/plugin.json      # name, version, userConfig (owner, referral_code), mcpServers inline
+├── .claude-plugin/plugin.json      # name, version, userConfig (owner, referral_code); no mcpServers (CLI-first)
 ├── .claude-plugin/marketplace.json # single-plugin marketplace so `/plugin marketplace add lu-bann/mstack` works
 ├── skills/mob*/SKILL.md            # generated per host by scripts/gen-skill-docs.ts
 ├── bin/mob                         # compiled Bun binary (on the Bash PATH while enabled)
