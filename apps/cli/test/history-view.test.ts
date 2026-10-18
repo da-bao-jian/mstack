@@ -20,7 +20,10 @@ test("net APY sorts both sections independently, selects per base, and puts null
 		},
 		{ sizeUsd: 1000 },
 	);
-	const sample = result.opportunities[0];
+	// The ranked top pair may carry a thin or cross-deployment flag, which the
+	// view would hide; the sorting test needs an unflagged template row.
+	const sample = result.opportunities.find((r) => r.flags.length === 0);
+	if (!sample) throw new Error("fixture snapshot has no unflagged pair");
 	result.opportunities = [
 		{
 			...sample,

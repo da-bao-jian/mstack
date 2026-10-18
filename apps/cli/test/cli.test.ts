@@ -51,7 +51,7 @@ test("scan JSON contains bounded views and counts without all ranked rows", asyn
 		"unmatched",
 		"view",
 	]);
-	expect(body.counts.opportunities).toBe(29);
+	expect(body.counts.opportunities).toBe(155);
 	expect(body.view.anywhere).toHaveLength(2);
 	expect(
 		new Set(body.view.anywhere.map((r: { base: string }) => r.base)).size,
@@ -77,7 +77,7 @@ test("scan json-full opts into all opportunities and retains the bounded counts 
 		glossary: fullGlossary,
 		...body
 	} = JSON.parse(full.out);
-	expect(opportunities).toHaveLength(29);
+	expect(opportunities).toHaveLength(155);
 	const { glossary: boundedGlossary, ...boundedBody } = JSON.parse(bounded.out);
 	expect(body).toEqual(boundedBody);
 	expect(fullGlossary.venues).toEqual(boundedGlossary.venues);
@@ -438,10 +438,11 @@ test("thin rows are hidden and counted before top, and can be included", async (
 	const hidden = await invoke(args);
 	const body = JSON.parse(hidden.out);
 	expect(body.view).toEqual({ executable: [], anywhere: [] });
-	expect(body.counts.thinHidden).toBe(29);
-	expect(hidden.err).toContain("thin hidden: 29");
+	expect(body.counts.thinHidden).toBe(155);
+	expect(hidden.err).toContain("thin hidden: 155");
 	const included = await invoke([...args, "--include-thin"]);
-	expect(JSON.parse(included.out).view.anywhere).toHaveLength(2);
+	// One row per base: BTC, ETH, ERA, and XTZ have more than one listing.
+	expect(JSON.parse(included.out).view.anywhere).toHaveLength(4);
 	expect(
 		JSON.parse(included.out).view.anywhere.every((r: { flags: string[] }) =>
 			r.flags.includes("thin"),

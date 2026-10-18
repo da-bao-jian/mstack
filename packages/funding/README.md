@@ -4,12 +4,13 @@ Read-only venue adapters and fresh funding snapshots. This package has no runtim
 
 ```ts
 import {
-  aster, binance, bybit, fetchSnapshot, hyperliquid,
-  lighter, lighterMainnet, okx,
+  aster, binance, bingx, bitget, bybit, fetchSnapshot, gate, grvt,
+  hyperliquid, lighter, lighterMainnet, mexc, okx, qfex, variational,
 } from "@mstack/funding";
 
 const snapshot = await fetchSnapshot(
-  [hyperliquid, lighter, lighterMainnet, aster, binance, bybit, okx],
+  [hyperliquid, lighter, lighterMainnet, aster, binance, bybit, okx,
+   mexc, bingx, bitget, gate, grvt, variational, qfex],
   { timeoutMs: 60_000 },
 );
 ```
@@ -21,6 +22,8 @@ Every row carries `observedAt` in Unix milliseconds, `source`, and `annualizatio
 Native market names remain intact: `kPEPE`, `xyz:NVDA`, `USD1:BTC`, `BTCUSDT`, and `BTC-USDT-SWAP`. Aster follows the upstream USDT/USD1 market scope. Binance and Bybit dated futures and delisted Hyperliquid markets do not emit funding rows. OKX makes four parallel requests: SWAP instruments, bulk funding (`instId=ANY`), SWAP mark prices, and SWAP tickers. Only instruments marked `live` emit rows. Missing funding or marks for a live instrument fails the adapter.
 
 Optional `volume24hUsd` is the bulk feed's 24-hour USD turnover: HL `dayNtlVlm`, Lighter `daily_quote_token_volume`, Bybit `turnover24h`, and Aster/Binance `ticker/24hr.quoteVolume`. OKX uses `volCcy24h × markPx` (base volume, not contract volume). Missing fields or ticker rows leave volume unknown; negative or malformed values fail the adapter. Aster and Binance fetch their bulk tickers alongside funding and marks.
+
+Seven venues added on 2026-10-18 keep native names too: MEXC `BTC_USDT` (USDT, USDC, and USD1 settlement; coin-margined contracts are skipped), BingX `BTC-USDT`, Bitget `BTCUSDT` (USDT-M product only), Gate `BTC_USDT` (USDT book, delisting contracts skipped), GRVT `BTC_USDT_Perp`, Variational `BTC-PERP` (perpetuals only; swaps carry separate long and short rates), and QFEX `AAPL-USD` (USD quotes only). GRVT quotes an eight-hour rate in percentage points for every instrument, so the adapter scales it to the instrument's interval; QFEX publishes a percentage per hour. Open interest in USD is MEXC `holdVol × contractSize × fairPrice`, Bitget `holdingAmount × markPrice`, Gate `total_size × quanto_multiplier × mark_price`, GRVT `open_interest × mark_price`, Variational trader long plus short notional, and QFEX `open_interest_usd`; BingX serves it per symbol only, so it stays unknown. Volume is MEXC `amount24`, BingX `quoteVolume`, Bitget `usdtVolume`, Gate `volume_24h_settle`, GRVT taker buy plus sell quote volume, Variational `volume_24h`, and QFEX `target_volume`. GRVT tickers are one request per instrument, issued sixteen at a time. QFEX has no mark price in its feed, so entry cost stays unmeasured there.
 
 Lighter joins `funding-rates` with `orderBookDetails` by symbol. It preserves inactive listings, omits an explicitly zero mark, and rejects negative or malformed marks. When a mark exists, open interest in USD is the reported base open interest times that mark. Missing details for a funding symbol fail the adapter.
 

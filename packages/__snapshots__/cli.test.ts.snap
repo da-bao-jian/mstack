@@ -14,7 +14,7 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
  ------------######+++++++
  ------------#####
  ------------###
- ------------#                     live . 2 of 7 venues . 0.0 s
+ ------------#                     live . 2 of 14 venues . 0.0 s
 </mob-home>"
 `;
 
@@ -32,7 +32,7 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
  ------------######+++++++         Next       say "open BTC"   or   mob scan
  ------------#####
  ------------###
- ------------#                     live . 2 of 7 venues . 0.0 s
+ ------------#                     live . 2 of 14 venues . 0.0 s
 </mob-home>"
 `;
 

@@ -1,0 +1,61 @@
+{
+	"code": 0,
+	"msg": "",
+	"data": [
+		{
+			"symbol": "BTC-USDT",
+			"markPrice": "81702.5",
+			"indexPrice": "81739.2",
+			"lastFundingRate": "0.00007800",
+			"nextFundingTime": 1792310400000,
+			"fundingIntervalHours": 8,
+			"minFundingRate": "-0.003000",
+			"maxFundingRate": "0.003000",
+			"updateTime": 1792281600000
+		},
+		{
+			"symbol": "ETH-USDT",
+			"markPrice": "2409.52",
+			"indexPrice": "2410.50",
+			"lastFundingRate": "0.00008000",
+			"nextFundingTime": 1792310400000,
+			"fundingIntervalHours": 8,
+			"minFundingRate": "-0.003000",
+			"maxFundingRate": "0.003000",
+			"updateTime": 1792281600000
+		},
+		{
+			"symbol": "XTZ-USDT",
+			"markPrice": "0.2969",
+			"indexPrice": "0.2972",
+			"lastFundingRate": "-0.00027000",
+			"nextFundingTime": 1792310400000,
+			"fundingIntervalHours": 4,
+			"minFundingRate": "-0.02",
+			"maxFundingRate": "0.02",
+			"updateTime": 1792296000000
+		},
+		{
+			"symbol": "BTC-USDC",
+			"markPrice": "81615.6",
+			"indexPrice": "81647.9",
+			"lastFundingRate": "0.00007800",
+			"nextFundingTime": 1792310400000,
+			"fundingIntervalHours": 8,
+			"minFundingRate": "-0.003000",
+			"maxFundingRate": "0.003000",
+			"updateTime": 1792281600000
+		},
+		{
+			"symbol": "ERA-USDT",
+			"markPrice": "0.06710",
+			"indexPrice": "0.06773",
+			"lastFundingRate": "-0.00039400",
+			"nextFundingTime": 1792303200000,
+			"fundingIntervalHours": 1,
+			"minFundingRate": "-0.03",
+			"maxFundingRate": "0.03",
+			"updateTime": 1792299600000
+		}
+	]
+}

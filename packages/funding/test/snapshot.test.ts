@@ -2,14 +2,21 @@ import { expect, test } from "bun:test";
 import {
 	aster,
 	binance,
+	bingx,
+	bitget,
 	bybit,
 	fetchSnapshot,
+	gate,
+	grvt,
 	hyperliquid,
 	lighter,
 	lighterMainnet,
+	mexc,
 	type ObservedFundingRate,
 	okx,
+	qfex,
 	type VenueAdapter,
+	variational,
 } from "../src/main.ts";
 import { changed, expected, fixtureContext, observedAt } from "./fixtures.ts";
 
@@ -21,6 +28,13 @@ const adapters = [
 	binance,
 	bybit,
 	okx,
+	mexc,
+	bingx,
+	bitget,
+	gate,
+	grvt,
+	variational,
+	qfex,
 ];
 
 test("snapshot includes all sources, native listed names, and exact observation metadata", async () => {

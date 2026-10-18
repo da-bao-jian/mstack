@@ -1,14 +1,21 @@
 import {
 	aster,
 	binance,
+	bingx,
+	bitget,
 	bybit,
 	type Fetch,
 	fetchSnapshot,
+	gate,
+	grvt,
 	hyperliquid,
 	lighter,
 	lighterMainnet,
+	mexc,
 	okx,
+	qfex,
 	type Snapshot,
+	variational,
 } from "@mstack/funding";
 import { publicText } from "@mstack/proposals";
 import { SETUP_FIRST, UsageError } from "../config.ts";
@@ -28,6 +35,13 @@ const adapters = [
 	binance,
 	bybit,
 	okx,
+	mexc,
+	bingx,
+	bitget,
+	gate,
+	grvt,
+	variational,
+	qfex,
 ];
 const SNAPSHOT_TIMEOUT_MS = 30_000;
 
