@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { bindingMessage, preparePayload } from "@mstack/mobius-api";
 import { privateKeyToAccount } from "viem/accounts";
-import { CeremonyStore } from "../src/ceremony.ts";
+import { CeremonyStore, ceremonyFingerprint } from "../src/ceremony.ts";
 
 const account = privateKeyToAccount(`0x${"03".repeat(32)}`);
 const now = 1_800_000_000_000;
@@ -193,4 +193,29 @@ test("ceremony stage carries a legal step and a key plan that round-trip through
 			keyPlan: { name: "", maxSizeUsd: 5000 },
 		}),
 	).rejects.toThrow("key plan");
+});
+
+test("ceremony fingerprint pins owner, venues, prepare, legal and key plan", async () => {
+	const h = await store();
+	const plain = await h.store.stage({
+		owner: account.address,
+		apiBase: "http://127.0.0.1:9988",
+		venues: [{ venue: "hl", signatureChainId: 42161 }],
+	});
+	const first = ceremonyFingerprint(plain);
+	expect(first).toMatch(/^0x[0-9a-f]{64}$/);
+	expect(ceremonyFingerprint(await h.store.get(plain.id))).toBe(first);
+	const planned = await h.store.stage({
+		owner: account.address,
+		apiBase: "http://127.0.0.1:9988",
+		venues: [{ venue: "hl", signatureChainId: 42161 }],
+		keyPlan: { name: "mstack", maxSizeUsd: 2000 },
+	});
+	expect(ceremonyFingerprint(planned)).not.toBe(first);
+	expect(
+		ceremonyFingerprint({
+			...planned,
+			keyPlan: { name: "mstack", maxSizeUsd: 2001 },
+		}),
+	).not.toBe(ceremonyFingerprint(planned));
 });

@@ -119,10 +119,16 @@ export async function recordGrantAnswer(
 		const grantId = String(grant.grantId);
 		if (!/^[\w-]{1,128}$/.test(grantId))
 			throw new Error("Grant answer did not contain a valid grantId");
+		// The signed body, not the server's answer, says which agent was authorized.
+		const agent = getAddress(String(p.submit.body.agent));
+		if (getAddress(String(grant.agent)) !== agent)
+			throw new Error(
+				"The server answered with an agent address you did not sign; nothing was recorded",
+			);
 		const record: LocalGrant = {
 			grantId,
 			owner: p.owner,
-			agent: getAddress(String(grant.agent)),
+			agent,
 			scopes: (p.submit.body.scopes as string[]).map(String),
 			maxOpenNotionalUsd: Number(p.submit.body.maxOpenNotionalUsd),
 			maxOpenTasks: Number(p.submit.body.maxOpenTasks),
@@ -142,6 +148,10 @@ export async function recordGrantAnswer(
 		return;
 	}
 	if (p.submit.onAnswer === "revoke-agent-grant") {
+		if (object(answer).ok !== true)
+			throw new Error(
+				"The server did not confirm the revoke (ok was not true); local records are unchanged",
+			);
 		const agent = getAddress(String(p.submit.body.agent));
 		for (const grant of await localGrants(rt.home))
 			if (getAddress(grant.agent) === agent && !grant.revokedAt) {
@@ -217,10 +227,21 @@ export async function grantCommand(
 		fetch: rt.fetch,
 	});
 	const timestamp = Math.floor(rt.now() / 1000);
+	// Probe first: the route set is PRD roadmap item 9 and may not exist yet.
+	const probe = async () => {
+		try {
+			await client.read("/api/agent-grants", { owner });
+		} catch (error) {
+			if (error instanceof ApiError && error.status === 404)
+				throw new UsageError(NOT_SUPPORTED);
+			throw error;
+		}
+	};
 	if (action === "revoke") {
 		if (args.length !== 2 || !/^0x[0-9a-fA-F]{40}$/.test(args[1]))
 			throw new UsageError("Usage: mob grant revoke <agent address>");
 		const agent = getAddress(args[1]);
+		await probe();
 		const body = { owner, agent, timestamp };
 		await stageOnboarding(
 			{
@@ -255,6 +276,8 @@ export async function grantCommand(
 			throw new UsageError(
 				`Unknown scope ${scope}; use ${AGENT_GRANT_SCOPES.join(", ")}`,
 			);
+	if (new Set(scopes).size !== scopes.length)
+		throw new UsageError("--scopes must not repeat a scope");
 	const venues = list(
 		values.venues as string | undefined,
 		"venues",
@@ -264,6 +287,8 @@ export async function grantCommand(
 			throw new UsageError(
 				`Unknown venue ${venue}; use hl, lighter, lighter-mainnet, aster`,
 			);
+	if (new Set(venues).size !== venues.length)
+		throw new UsageError("--venues must not repeat a venue");
 	const maxOpenNotionalUsd = numberFlag(
 		typeof values["max-notional"] === "string" ? values["max-notional"] : "",
 		"max-notional",
@@ -285,18 +310,21 @@ export async function grantCommand(
 	);
 	if (hours > 24 * 30)
 		throw new UsageError("--expires-hours must be at most 720");
+	// PRD 6.6 lists base assets, not venue market strings such as xyz:NVDA.
 	const markets =
 		values.markets === undefined || values.markets === "*"
 			? "*"
-			: list(values.markets as string, "markets").map((m) => m.toUpperCase());
-	// Probe first: the route set is PRD roadmap item 9 and may not exist yet.
-	try {
-		await client.read("/api/agent-grants", { owner });
-	} catch (error) {
-		if (error instanceof ApiError && error.status === 404)
-			throw new UsageError(NOT_SUPPORTED);
-		throw error;
+			: list(values.markets as string, "markets");
+	if (markets !== "*") {
+		for (const market of markets)
+			if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(market))
+				throw new UsageError(
+					`--markets takes base assets such as BTC or NVDA, not venue market strings (${market})`,
+				);
+		if (new Set(markets).size !== markets.length)
+			throw new UsageError("--markets must not repeat a base");
 	}
+	await probe();
 	const key = await agentKey(rt.home, owner);
 	const body: AgentGrantBody = {
 		owner,

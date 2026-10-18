@@ -32,10 +32,14 @@ wallet session.
 `mob approver` (human terminal only) unlocks the keystore once per idle window and signs
 each card after the human answers y; `mob hello --json` reports `approver.running`. The
 agent then runs `mob sign <id> --with approver` instead of asking the human to switch
-terminals. `mob status --readiness --json` carries a compact glossary per row.
+terminals. Give that call a tool timeout of at least ten minutes: the CLI waits ten
+minutes for the answer, the approver withdraws the card if the agent's process
+disconnects first, and `mob proposal show <id>` tells the outcome either way.
+`mob status --readiness --json` carries a compact glossary per row.
 
-`mob grant create|show|revoke` is the client side of session grants (PRD 6.6) and needs
-Mobius API support that does not exist yet; `create` says so and stages nothing.
+`mob grant create|show|revoke` is the client side of session grants (PRD 6.6). `create` and
+`revoke` probe the API first; while it lacks the routes they say so and stage nothing.
+`--markets` takes base assets such as BTC, not venue market strings.
 
 ## Maintenance
 

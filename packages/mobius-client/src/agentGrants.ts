@@ -21,7 +21,7 @@ export interface AgentGrantBody {
 	maxOpenNotionalUsd: number;
 	maxOpenTasks: number;
 	venues: ArbitrageVenue[];
-	/** "*" or an explicit list of base assets. */
+	/** "*" or an explicit list of base assets (BTC, NVDA), never venue market strings. */
 	markets: string[] | "*";
 	/** Unix seconds. */
 	expires: number;
@@ -79,11 +79,14 @@ export function validateAgentGrantBody(body: AgentGrantBody): void {
 	if (
 		body.markets !== "*" &&
 		(!body.markets.length ||
+			new Set(body.markets).size !== body.markets.length ||
 			body.markets.some(
-				(market) => !/^[\p{L}\p{N}][\p{L}\p{N}._:-]*$/u.test(market),
+				(market) => !/^[\p{L}\p{N}][\p{L}\p{N}._-]*$/u.test(market),
 			))
 	)
-		throw new Error('grant markets must be "*" or a list of bases');
+		throw new Error(
+			'grant markets must be "*" or a unique list of bases (no venue prefix)',
+		);
 	if (!Number.isSafeInteger(body.timestamp) || body.timestamp <= 0)
 		throw new Error("grant timestamp must be unix seconds");
 	if (!Number.isSafeInteger(body.expires) || body.expires <= body.timestamp)

@@ -19,10 +19,20 @@ not a claim that public release tags or artifacts were published.
 
 ### Changed
 
+- `mob sign <id> --with approver` waits ten minutes for the human's answer (was one hour) and, on timeout, points the agent at `mob proposal show <id>`.
 - API-submit Proposals keep a 15-minute window; wallet Proposals keep the server's 300 seconds.
 - `/mob-setup` is native-first: one authorization instead of three and no key paste; the Mobius page and paste path remain the fallback for a wallet that is not on this machine.
 
 - Seven more scan venues: MEXC, BingX, Bitget, Gate, GRVT, Variational, and QFEX. Each adapter reads the venue's public bulk feeds, keeps native market names, and ships with recorded fixtures, pinned expected rows, and scope tests. GRVT tickers are fetched per instrument with bounded concurrency; QFEX publishes no mark price, so its entry cost stays unmeasured; MEXC coin-margined, Bitget USDC and coin products, Gate's BTC-settled book, Variational swaps, and non-USD QFEX quotes are out of scope. Default taker fees come from each venue's published base tier.
+
+### Fixed
+
+- `mob approver` could not start from the shipped binary: it demanded an injected passphrase reader. It now reads the passphrase from the controlling terminal.
+- The approver pins the record it shows (Proposal content hash or ceremony fingerprint) and refuses to sign when the bytes changed after the card. Ctrl-C and Ctrl-D at its prompt decline instead of wedging the queue, a failing request never blocks the next one, a card whose requester disconnected is withdrawn and never signed, a mistyped passphrase after the idle window is not cached, a second approver on the same home is refused, SIGHUP cleans up like Ctrl-C, and a home path too long for a unix socket fails with a clear message.
+- `mob grant`: `revoke` probes the server like `create`; a grant answer is recorded only for the agent address the owner signed, and a revoke only when the server confirms `ok`; `--markets` takes base assets only and rejects venue market strings and repeats.
+- Compact readiness rows name only the venues they mention, skip the scan-only glossary notes, and document `issue` and `check`.
+- After signing through the approver, Ctrl-C no longer kills it without cleanup: Bun drops its native signal handler when the sign path removes its own listeners, so signing inside the approver now cancels through the approver's signal instead of process listeners.
+- The Claude overlay's signing question keeps four choices: the approver choice replaces the keystore-myself choice while an approver runs.
 
 ## [0.4.1] - 2026-10-18
 

@@ -192,6 +192,25 @@ test.each(["sign-text", "sign-typed", "venue-submit"] as const)(
 		);
 	},
 );
+test("a pinned record hash that no longer matches stops signing before the attempt is burned", async () => {
+	const f = await fixture();
+	await f.store.preview(f.p.id, f.preview);
+	await expect(
+		f.store.sign(f.p.id, {
+			...f.options,
+			expectContentHash: `0x${"ab".repeat(32)}`,
+		}),
+	).rejects.toThrow(`${f.p.id} changed after it was shown; nothing was signed`);
+	const saved = await f.store.get(f.p.id);
+	expect(saved.status).toBe("awaiting-signature");
+	expect(saved.signatureAttemptedAt).toBeUndefined();
+	const signed = await f.store.sign(f.p.id, {
+		...f.options,
+		expectContentHash: saved.contentHash,
+	});
+	expect(signed.status).toBe("submitted");
+});
+
 test("preview is mandatory; locked policy and owner mismatch never unlock", async () => {
 	const f = await fixture();
 	await expect(f.store.sign(f.p.id, f.options)).rejects.toThrow(
