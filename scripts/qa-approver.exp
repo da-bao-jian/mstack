@@ -1,0 +1,27 @@
+#!/usr/bin/expect -f
+# Plays the human at the approver terminal during `bun run qa:signing`: starts
+# `mob approver` on a pseudo-terminal, types the QA passphrase when asked, and
+# answers every "Sign it?" card with the first line of QA_ANSWER_FILE (y or n).
+# The spawned program's output is appended to QA_APPROVER_LOG; the harness
+# reads it to check what the human saw. QA only: real use needs a real human.
+set timeout -1
+log_user 0
+log_file -a $env(QA_APPROVER_LOG)
+spawn $env(MOB_BIN) approver --idle-minutes 30
+set pid [open $env(QA_PID_FILE) w]
+puts $pid [exp_pid]
+close $pid
+expect {
+    -re "Passphrase for \[^:\]*: " {
+        send -- "$env(QA_PASSPHRASE)\r"
+        exp_continue
+    }
+    -re "Sign it\\? \\\[y/N\\\] " {
+        set fh [open $env(QA_ANSWER_FILE) r]
+        set answer [string trim [gets $fh]]
+        close $fh
+        send -- "$answer\r"
+        exp_continue
+    }
+    eof
+}

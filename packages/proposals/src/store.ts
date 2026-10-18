@@ -327,11 +327,18 @@ export class ProposalStore {
 			connect: (proposal: SignableProposal) => Promise<Signer>;
 			display: (p: Proposal) => void;
 			submit: (p: Proposal, body: JsonObject) => Promise<Json>;
+			/** The record hash a card showed earlier; signing stops if the record moved. */
+			expectContentHash?: Hex;
 		},
 	): Promise<Proposal> {
 		await this.assertSignable(id);
 		return this.lock(`${this.path(id)}.lock`, async () => {
 			const p = await this.get(id);
+			if (
+				options.expectContentHash &&
+				p.contentHash !== options.expectContentHash
+			)
+				throw new Error(`${id} changed after it was shown; nothing was signed`);
 			await this.editable(p);
 			if (p.signing.type === "none")
 				throw new Error("API Proposals use mob submit, not mob sign");

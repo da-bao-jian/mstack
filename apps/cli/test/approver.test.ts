@@ -1,11 +1,12 @@
 import { afterEach, expect, test } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { stageOpenBody } from "@mstack/mobius-client";
-import { ProposalStore } from "@mstack/proposals";
+import { contentHash, digest, ProposalStore } from "@mstack/proposals";
 import { importKeystore } from "@mstack/signers";
 import { fakeOwnerKey } from "../../../packages/mobius-api/test/fake-api.ts";
+import { serializeRecord } from "../../../packages/proposals/src/record.ts";
 import { approverStatus, startApprover } from "../src/approver.ts";
 import { setConfig } from "../src/config.ts";
 import { type Runtime, run } from "../src/run.ts";
@@ -134,7 +135,21 @@ test("an agent's mob sign hands the card to the approver, which signs once per a
 	expect(await approverStatus(t.home)).toEqual({ running: true });
 	const p = await t.stage();
 	// The agent's configured signer is keystore and it has no TTY: routed automatically.
-	expect(await run(["sign", p.id], r.agentRt)).toBe(0);
+	// Signing inside the approver must not touch process signal listeners (Bun
+	// drops the native handler on removal, which would break the approver's Ctrl-C).
+	const sigints = process.listenerCount("SIGINT");
+	const seen: number[] = [];
+	expect(
+		await run(["sign", p.id], {
+			...r.agentRt,
+			out: (line) => {
+				r.agent.push(line);
+				seen.push(process.listenerCount("SIGINT"));
+			},
+		}),
+	).toBe(0);
+	expect(seen.length).toBeGreaterThan(0);
+	expect(seen.every((count) => count === sigints)).toBe(true);
 	expect(r.agent.join("\n")).toContain(
 		`Handed ${p.id} to your approver terminal`,
 	);
@@ -220,4 +235,192 @@ test("hello reports the approver and the idle window re-asks for the passphrase"
 	await handle.stop();
 	stops.length = 0;
 	expect(await approverStatus(t.home)).toEqual({ running: false });
+});
+
+test("the approver pins the card: a record swapped after the human saw it is never signed", async () => {
+	const t = await setup();
+	const r = runtimes(t.home);
+	const p = await t.stage();
+	const handle = await startApprover(
+		{ ...r.humanRt, home: t.home },
+		{
+			confirm: async () => {
+				// A same-user process rewrites the staged bytes between card and y.
+				const stored = await t.store.get(p.id);
+				const swapped = {
+					...stored,
+					signing: {
+						type: "text" as const,
+						message: "Something else entirely",
+					},
+				};
+				swapped.digest = digest(swapped.signing);
+				swapped.contentHash = contentHash(swapped);
+				await Bun.write(
+					join(t.home, "proposals", `${p.id}.intent`),
+					`${swapped.contentHash}\n`,
+				);
+				await Bun.write(
+					join(t.home, "proposals", `${p.id}.json`),
+					serializeRecord(swapped),
+				);
+				return true;
+			},
+			read: async () => t.password,
+		},
+	);
+	stops.push(handle.stop);
+	expect(await run(["sign", p.id], r.agentRt)).toBe(1);
+	expect(r.agentErrors.join("\n")).toContain(
+		`${p.id} changed after it was shown; nothing was signed`,
+	);
+	expect(t.server.writes()).toBe(0);
+	expect((await t.store.get(p.id)).status).toBe("awaiting-signature");
+});
+
+test("a request that fails inside the approver reports and never wedges the next one", async () => {
+	const t = await setup();
+	const r = runtimes(t.home);
+	let calls = 0;
+	const handle = await startApprover(
+		{ ...r.humanRt, home: t.home },
+		{
+			confirm: async () => {
+				if (++calls === 1) throw new Error("terminal went away");
+				return true;
+			},
+			read: async () => t.password,
+		},
+	);
+	stops.push(handle.stop);
+	const p = await t.stage();
+	expect(await run(["sign", p.id], r.agentRt)).toBe(1);
+	expect(r.agentErrors.join("\n")).toContain(
+		"approver request failed: terminal went away",
+	);
+	expect(t.server.writes()).toBe(0);
+	// The queue is still alive: the next request is served and signed.
+	expect(await run(["sign", p.id], r.agentRt)).toBe(0);
+	expect(t.server.writes()).toBe(1);
+	expect(r.human.join("\n")).toContain("terminal went away");
+});
+
+test("a second approver on the same home is refused, and mob approver reads the passphrase from the terminal by default", async () => {
+	const t = await setup();
+	const r = runtimes(t.home);
+	const handle = await startApprover(
+		{ ...r.humanRt, home: t.home },
+		{ confirm: async () => true, read: async () => t.password },
+	);
+	stops.push(handle.stop);
+	await expect(
+		startApprover(
+			{ ...r.humanRt, home: t.home },
+			{ confirm: async () => true, read: async () => t.password },
+		),
+	).rejects.toThrow("An approver is already running for this home");
+	await handle.stop();
+	stops.length = 0;
+	// The command no longer demands an injected reader: with none supplied it
+	// falls back to the controlling terminal, so the failure here is the
+	// missing keystore for a fresh owner, not the old reader gate.
+	await rm(join(t.home, "keystore"), { recursive: true, force: true });
+	const errors: string[] = [];
+	expect(
+		await run(["approver"], {
+			home: t.home,
+			fetch: loopbackFetch,
+			stdinIsTTY: true,
+			stdoutIsTTY: true,
+			out: () => {},
+			err: (line) => errors.push(line),
+		}),
+	).toBe(1);
+	expect(errors.join("\n")).not.toContain(
+		"needs a terminal to read the passphrase",
+	);
+	expect(errors.join("\n")).not.toContain("needs your own terminal");
+});
+
+test("a human with a TTY signs locally while an approver runs, and the requester leaving withdraws the card", async () => {
+	const t = await setup();
+	const r = runtimes(t.home);
+	let confirms = 0;
+	let withdrawnSeen = false;
+	const handle = await startApprover(
+		{ ...r.humanRt, home: t.home },
+		{
+			confirm: (_card, withdrawn) =>
+				new Promise((resolve) => {
+					confirms++;
+					// The human types y only after the requester has gone.
+					withdrawn.addEventListener("abort", () => {
+						withdrawnSeen = true;
+						resolve(true);
+					});
+				}),
+			read: async () => t.password,
+		},
+	);
+	stops.push(handle.stop);
+	// A TTY caller with the keystore signs in place; no card reaches the approver.
+	const p = await t.stage();
+	const local: string[] = [];
+	expect(
+		await run(["sign", p.id], {
+			...r.agentRt,
+			stdinIsTTY: true,
+			readSecret: async () => t.password,
+			out: (line) => local.push(line),
+		}),
+	).toBe(0);
+	expect(confirms).toBe(0);
+	expect(t.server.writes()).toBe(1);
+	// An agent hands over a card and disconnects before the answer: nothing signs.
+	const q = await t.stage();
+	const token = (await readFile(join(t.home, "approver.token"), "utf8")).trim();
+	const socket = await Bun.connect({
+		unix: join(t.home, "approver.sock"),
+		socket: {
+			open(socket) {
+				socket.write(`${JSON.stringify({ token, id: q.id })}\n`);
+			},
+			data() {},
+		},
+	});
+	while (confirms < 1) await new Promise((resolve) => setTimeout(resolve, 5));
+	socket.end();
+	while (!r.human.some((line) => line.startsWith(`Withdrawn ${q.id}`)))
+		await new Promise((resolve) => setTimeout(resolve, 5));
+	expect(withdrawnSeen).toBe(true);
+	expect(t.server.writes()).toBe(1);
+	expect((await t.store.get(q.id)).status).toBe("awaiting-signature");
+});
+
+test("a mistyped passphrase after the idle window is not cached; the next card asks again", async () => {
+	const t = await setup();
+	const r = runtimes(t.home);
+	const typed = [t.password, "not the passphrase", t.password];
+	let prompts = 0;
+	const handle = await startApprover(
+		{ ...r.humanRt, home: t.home },
+		{
+			confirm: async () => true,
+			read: async () => {
+				prompts++;
+				return typed.shift() ?? "";
+			},
+			idleMs: 1,
+		},
+	);
+	stops.push(handle.stop);
+	const p = await t.stage();
+	await new Promise((resolve) => setTimeout(resolve, 5));
+	expect(await run(["sign", p.id, "--with", "approver"], r.agentRt)).toBe(1);
+	expect(prompts).toBe(2);
+	expect(t.server.writes()).toBe(0);
+	await new Promise((resolve) => setTimeout(resolve, 5));
+	expect(await run(["sign", p.id, "--with", "approver"], r.agentRt)).toBe(0);
+	expect(prompts).toBe(3);
+	expect(t.server.writes()).toBe(1);
 });

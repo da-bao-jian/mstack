@@ -19,6 +19,7 @@ import {
 	type Ceremony,
 	type CeremonyProposal,
 	CeremonyStore,
+	ceremonyFingerprint,
 	ceremonyStep,
 	digest,
 	type Json,
@@ -288,6 +289,14 @@ export async function signCeremony(
 		throw new UsageError("Configured owner does not match ceremony owner");
 	if ((config.policy ?? "manual") !== "manual")
 		throw new UsageError("Wallet policy is locked");
+	// Only in-process callers (the approver) can pass a pinned fingerprint.
+	if (
+		typeof values.pin === "string" &&
+		ceremonyFingerprint(ceremony) !== values.pin
+	)
+		throw new UsageError(
+			`${id} changed after it was shown; nothing was signed`,
+		);
 	const backend = values.with ?? config.signer;
 	if (!backend) throw new UsageError(SETUP_FIRST);
 	if (!["keystore", "browser", "walletconnect"].includes(String(backend)))

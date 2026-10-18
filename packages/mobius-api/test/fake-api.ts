@@ -26,6 +26,22 @@ export {
 	loopbackFetch,
 } from "./fake-api-helpers.ts";
 
+/** True when the fake owner signed exactly this message; for fakes outside bun test. */
+export async function signedByFakeOwner(
+	message: string,
+	signature: string,
+): Promise<boolean> {
+	try {
+		const signer = await recoverMessageAddress({
+			message,
+			signature: signature as `0x${string}`,
+		});
+		return signer.toLowerCase() === fakeOwner.address.toLowerCase();
+	} catch {
+		return false;
+	}
+}
+
 type Grant = { owner: string; venues: Venue[]; maxSizeUsd: number };
 type Stored = { hash: string; status: number; body: unknown };
 type Batch = VenueBindingBatch & {

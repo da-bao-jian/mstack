@@ -99,6 +99,26 @@ export interface Ceremony {
 type Stored = Ceremony & { recordHash: string };
 const hash = (text: string) => createHash("sha256").update(text).digest("hex");
 
+/**
+ * What a ceremony card commits to before any signature: owner, API base,
+ * venues, the prepare and legal steps, and the key plan. An approver pins
+ * this when it shows the card and the signer checks it again, so the record
+ * cannot change in between. Server-returned request steps are classified
+ * separately when they arrive.
+ */
+export function ceremonyFingerprint(ceremony: Ceremony): Hex {
+	return `0x${hash(
+		canonical({
+			owner: ceremony.owner,
+			apiBase: ceremony.apiBase,
+			venues: ceremony.venues,
+			prepare: ceremony.prepare.digest,
+			legal: ceremony.legal?.digest ?? null,
+			keyPlan: ceremony.keyPlan ?? null,
+		}),
+	)}`;
+}
+
 function serialize(ceremony: Ceremony): string {
 	const bytes = `${JSON.stringify(ceremony, null, 2)}\n`;
 	return `${JSON.stringify({ ...ceremony, recordHash: hash(bytes) }, null, 2)}\n`;

@@ -277,8 +277,13 @@ export async function p1(
 		cancellation.abort(new Error("Signing cancelled"));
 		waiting?.stop();
 	};
-	process.on("SIGINT", cancel);
-	process.on("SIGTERM", cancel);
+	// A caller that supplies a signal owns cancellation. Bun 1.3.8 drops the
+	// native handler when a listener is removed, which would strip a long-lived
+	// caller (the approver) of its own Ctrl-C handling.
+	if (!rt.signal) {
+		process.on("SIGINT", cancel);
+		process.on("SIGTERM", cancel);
+	}
 	rt.signal?.addEventListener("abort", cancel, { once: true });
 	if (rt.signal?.aborted) cancel();
 	const checkConfig = async () => {
@@ -296,6 +301,11 @@ export async function p1(
 			signal: cancellation.signal,
 			owner: getAddress(config.owner),
 			policy: "manual",
+			// Only in-process callers (the approver) can pass a pinned record hash.
+			expectContentHash:
+				typeof values.pin === "string"
+					? (values.pin as `0x${string}`)
+					: undefined,
 			display: (p) => {
 				if (backend === "keystore" || rt.stdoutIsTTY)
 					rt.out(showProposal(p, rt.now(), rt));
@@ -463,8 +473,10 @@ export async function p1(
 		}
 		throw error;
 	} finally {
-		process.off("SIGINT", cancel);
-		process.off("SIGTERM", cancel);
+		if (!rt.signal) {
+			process.off("SIGINT", cancel);
+			process.off("SIGTERM", cancel);
+		}
 		rt.signal?.removeEventListener("abort", cancel);
 		waiting?.stop();
 		await close?.();

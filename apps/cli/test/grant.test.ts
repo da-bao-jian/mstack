@@ -21,7 +21,10 @@ afterEach(async () => {
 });
 
 /** A fake Mobius API implementing the proposed agent-grant contract. */
-function fakeGrantServer(owner: string, options: { supported: boolean }) {
+function fakeGrantServer(
+	owner: string,
+	options: { supported: boolean; answerAgent?: string },
+) {
 	const grants: Record<string, unknown>[] = [];
 	const revoked: string[] = [];
 	const server = Bun.serve({
@@ -48,7 +51,7 @@ function fakeGrantServer(owner: string, options: { supported: boolean }) {
 				const grant = {
 					grantId: `g-${grants.length + 1}`,
 					owner,
-					agent: body.agent,
+					agent: options.answerAgent ?? body.agent,
 					scopes: body.scopes,
 					maxOpenNotionalUsd: body.maxOpenNotionalUsd,
 					maxOpenTasks: body.maxOpenTasks,
@@ -231,6 +234,85 @@ test("without server support grant create refuses cleanly and stages nothing", a
 		]),
 	).toBe(1);
 	expect(h.err.join("\n")).toContain("Unknown scope withdraw");
+	h.out.length = 0;
+	expect(await h.invoke(["grant", "show"])).toBe(0);
+	expect(h.out.join("\n")).toContain("No grants.");
+});
+
+test("grant create keeps market bases as typed and refuses venue market strings", async () => {
+	const h = await home();
+	const api = fakeGrantServer(h.owner, { supported: true });
+	await setConfig("api_base", api.base, h.dir);
+	expect(
+		await h.invoke([
+			"grant",
+			"create",
+			"--scopes",
+			"open",
+			"--max-notional",
+			"100",
+			"--max-tasks",
+			"1",
+			"--venues",
+			"hl",
+			"--markets",
+			"xyz:NVDA,BTC",
+		]),
+	).toBe(1);
+	expect(h.err.join("\n")).toContain("base assets such as BTC or NVDA");
+	expect(
+		await h.invoke([
+			"grant",
+			"create",
+			"--scopes",
+			"open",
+			"--max-notional",
+			"100",
+			"--max-tasks",
+			"1",
+			"--venues",
+			"hl",
+			"--markets",
+			"NVDA,btc",
+		]),
+	).toBe(0);
+	const p = await new ProposalStore(h.dir).get("p-1");
+	expect(p.signing.type === "text" ? p.signing.message : "").toContain(
+		" markets=NVDA,btc ",
+	);
+	expect(p.submit.body.markets).toEqual(["NVDA", "btc"]);
+});
+
+test("grant revoke probes the server first, and an answer naming another agent is not recorded", async () => {
+	const h = await home();
+	const missing = fakeGrantServer(h.owner, { supported: false });
+	await setConfig("api_base", missing.base, h.dir);
+	expect(await h.invoke(["grant", "revoke", `0x${"11".repeat(20)}`])).toBe(1);
+	expect(h.err.join("\n")).toContain("does not offer agent grants yet");
+	expect(await new ProposalStore(h.dir).list()).toEqual([]);
+	const tampering = fakeGrantServer(h.owner, {
+		supported: true,
+		answerAgent: `0x${"22".repeat(20)}`,
+	});
+	await setConfig("api_base", tampering.base, h.dir);
+	expect(
+		await h.invoke([
+			"grant",
+			"create",
+			"--scopes",
+			"open",
+			"--max-notional",
+			"100",
+			"--max-tasks",
+			"1",
+			"--venues",
+			"hl",
+		]),
+	).toBe(0);
+	expect(await h.invoke(["sign", "p-1", "--with", "keystore"])).toBe(1);
+	expect(h.err.join("\n")).toContain(
+		"agent address you did not sign; nothing was recorded",
+	);
 	h.out.length = 0;
 	expect(await h.invoke(["grant", "show"])).toBe(0);
 	expect(h.out.join("\n")).toContain("No grants.");

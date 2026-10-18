@@ -121,6 +121,9 @@ const fields: Record<string, string> = {
 	error_context:
 		"Structured public server context for a failure; fields are preserved verbatim.",
 	readiness: "Per-venue binding readiness checks.",
+	issue:
+		"Why the venue is not ready, computed locally from the server's binding state: not_bound, key_invalid, builder_fee_missing, integrator_approval_missing, or unavailable.",
+	check: "The last readiness check that ran for this venue, named locally.",
 	ready: "Whether the current credential passes readiness checks.",
 	rebindAllowed: "Whether the server currently permits a new binding.",
 	rebindError: "Reason the server refused the rebind check.",
@@ -170,6 +173,7 @@ export function withGlossary(
 	const meanings: Record<string, string> = options.compact
 		? Object.create(null)
 		: Object.assign(Object.create(null), fields);
+	const seen = new Set<string>();
 	function visit(value: unknown) {
 		if (Array.isArray(value)) {
 			for (const item of value) visit(item);
@@ -177,6 +181,8 @@ export function withGlossary(
 			for (const [key, item] of Object.entries(value)) {
 				// JSON drops undefined fields; a compact glossary must not list them.
 				if (options.compact && item === undefined) continue;
+				if (key === "venue" && typeof item === "string" && item in venues)
+					seen.add(item);
 				meanings[key] =
 					fields[key] ??
 					`Server-reported ${key
@@ -191,11 +197,20 @@ export function withGlossary(
 		...(data as object),
 		glossary: {
 			fields: meanings,
-			venues,
-			...(options.compact ? {} : { costModel }),
-			executable: fields.executable,
-			qualifies: fields.qualifies,
-			annualization: fields.annualizationMethod,
+			// Compact rows name only the venues they mention and skip scan-only notes.
+			...(options.compact
+				? {
+						venues: Object.fromEntries(
+							Object.entries(venues).filter(([venue]) => seen.has(venue)),
+						),
+					}
+				: {
+						venues,
+						costModel,
+						executable: fields.executable,
+						qualifies: fields.qualifies,
+						annualization: fields.annualizationMethod,
+					}),
 		},
 	};
 }

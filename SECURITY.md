@@ -36,9 +36,12 @@ There is no `--yes`, private-key flag, automatic policy, or fallback signer.
 
 Skills stop for explicit approval of the exact id. Browser wallet approval is
 still required. `mob approver` runs only in the human's terminal: it caches the passphrase in
-memory for its idle window, answers a local socket guarded by a per-run token, and signs a
+memory for its idle window, answers a local socket inside the 0700 home, and signs a
 Proposal only after the human answers y to its card; the agent sees the relayed output and
-never the passphrase. The Claude Code plugin registers no MCP server, so every agent
+never the passphrase. The per-run token is a freshness check, not an access boundary: any
+same-user process can read it, so the boundaries are the private home directory and the
+human's y. The approver pins the record it shows and refuses to sign bytes that changed
+after the card, and it withdraws a card whose requester disconnected before the answer. The Claude Code plugin registers no MCP server, so every agent
 command in that host passes through the Bash sign guard. `mob mcp`, for other
 clients, can read and stage; it cannot sign, reject, or change config.
 The Claude Bash sign guard checks literal commands against the latest user
