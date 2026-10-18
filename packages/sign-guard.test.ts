@@ -71,6 +71,7 @@ async function hook(command: string, fixture?: string, raw?: string) {
 test.each([
 	"mob sign p-1",
 	"mob sign p-1 --with browser",
+	"mob sign p-1 --with approver",
 	"mob sign p-1 >/tmp/a 2>/tmp/b",
 	"mob sign p-1 2>&1",
 	"mob sign p-1 2>&1 | tee -a /tmp/sign.log",

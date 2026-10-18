@@ -9,6 +9,7 @@ import {
 } from "@mstack/mobius-client";
 import { ProposalStore } from "@mstack/proposals";
 import pkg from "../package.json";
+import { approverStatus } from "./approver.ts";
 import { type Config, getConfig, readConfig } from "./config.ts";
 import { cliKeyStore } from "./key-store.ts";
 import { object, request } from "./onboarding-http.ts";
@@ -53,6 +54,7 @@ export interface HomeData {
 	auth: Reading<{ latencyMs: number }> & { host: string };
 	legal: Reading<{ accepted: boolean; acceptedAt: string | null }>;
 	riskInterview: RiskInterview;
+	approver: { running: boolean };
 	venues: Record<ArbitrageVenue, Reading<Venue>>;
 	tasks: Reading<{
 		counts: Record<string, number>;
@@ -194,6 +196,7 @@ export async function collectHome(
 		auth: { host: new URL(authBase).host, ...unchecked() },
 		legal: unchecked(),
 		riskInterview: await riskInterviewStatus(rt.home, config.owner, rt.now()),
+		approver: await approverStatus(rt.home),
 		venues: {
 			hl: unchecked(),
 			lighter: unchecked(),

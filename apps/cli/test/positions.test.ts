@@ -202,6 +202,13 @@ test("CLI failures stage nothing; readiness error is verbatim; snapshot is never
 				(r: { venue: string }) => r.venue === "hl",
 			),
 		).toMatchObject({ ready: true, rebindAllowed: false });
+		// Four rows with a compact glossary stay small enough for one agent read.
+		const readiness = lines.at(-1) ?? "[]";
+		expect(Buffer.byteLength(readiness)).toBeLessThan(6_000);
+		for (const row of JSON.parse(readiness))
+			expect(Object.keys(row.glossary.fields).every((key) => key in row)).toBe(
+				true,
+			);
 		expect(await invoke(open)).toBe(0);
 		const p = await store.get("p-1");
 		expect(p.submit.body.longPrice).toBe(82794);

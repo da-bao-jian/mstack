@@ -16,6 +16,7 @@ export const readRoutes: { [R in keyof ReadRoutes]: true } = {
 	"/api/binding/lighter/status": true,
 	"/api/binding/rebind-check": true,
 	"/api/binding/readiness": true,
+	"/api/agent-grants": true,
 };
 export const writeRoutes: { [R in keyof WriteRoutes]: true } = {
 	"/api/keys/list": true,
@@ -36,4 +37,6 @@ export const writeRoutes: { [R in keyof WriteRoutes]: true } = {
 	"/api/binding/lighter/integrator-approve": true,
 	"/api/binding/hl/builder-finalize": true,
 	"/api/binding/aster/builder-finalize": true,
+	"/api/agent-grants/create": true,
+	"/api/agent-grants/revoke": true,
 };

@@ -1,3 +1,4 @@
+export * from "./agentGrants.ts";
 export * from "./apiKeys.ts";
 export * from "./binding.ts";
 export * from "./client.ts";

@@ -343,7 +343,7 @@ export async function doctor(json: boolean, rt: Runtime): Promise<number> {
 	add(
 		"Signer",
 		data.diagnostics.signer.usable,
-		`${data.signer ?? "not set"}: ${data.diagnostics.signer.detail}`,
+		`${data.signer ?? "not set"}: ${data.diagnostics.signer.detail}${data.approver.running ? " · approver running" : ""}`,
 	);
 	add(
 		"Policy",

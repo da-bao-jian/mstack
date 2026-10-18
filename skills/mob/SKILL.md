@@ -40,7 +40,7 @@ Load the named skill and follow it. Read [the command guide](references/commands
 - Sizes and venues come from the user's words.
 - Under manual policy, `mob submit p-N` needs the exact id in the latest user message or in the answer the user chose from your question.
 - Under auto policy, the agent may submit inside the key cap and venue scope, and must say it did so.
-- `mob sign p-N` and `mob sign c-N` always need the exact id in the latest user message or chosen answer. The agent never runs keystore signing.
+- `mob sign p-N` and `mob sign c-N` always need the exact id in the latest user message or chosen answer. The agent never runs keystore signing itself; when `mob hello --json` reports `approver.running`, `mob sign <id> --with approver` hands the card to the human's approver terminal.
 - An expired Proposal is restaged with `mob restage p-N`; the new id needs new consent.
 - Submission is not confirmed execution. Use status after acceptance.
 - Annualized funding is simple, not compounded. Report failed venues and unknown estimates.

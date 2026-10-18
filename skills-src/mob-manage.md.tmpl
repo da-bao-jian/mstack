@@ -25,6 +25,6 @@ Run only the selected command. Show the Proposal kind, id, task, intent, preflig
 
 In the same reply, ask for authorization. For an `api-submit` Proposal: {{ASK_SUBMIT}} Under `manual`, run `mob submit p-N` only when the latest user message names that exact id or the chosen answer starts with `Submit p-N`. Under `auto`, you may run it and must say that auto policy allowed it. API acceptance is submitted, not confirmed.
 
-For a wallet Proposal, state that this edit is not in the Strategy API and still needs the wallet, then: {{ASK_SIGN}} Never run `mob sign p-N` unless the latest user message names that exact id (or the chosen answer starts with `Sign p-N`) and authorizes the browser or WalletConnect path. Never run keystore signing.
+For a wallet Proposal, state that this edit is not in the Strategy API and still needs the wallet, then: {{ASK_SIGN}} Never run `mob sign p-N` unless the latest user message names that exact id (or the chosen answer starts with `Sign p-N`) and authorizes the browser or WalletConnect path. Never run keystore signing yourself; with `approver.running` true in `mob hello --json`, use `mob sign p-N --with approver`.
 
 If the Proposal expired, run `mob restage p-N`: same intent, new id, fresh preflight; ask again for the new id.

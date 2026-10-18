@@ -46,6 +46,22 @@ export async function p1(
 	rt: Runtime,
 	read: SecretReader = readSecretFromTty,
 ): Promise<void> {
+	if (command === "sign" && args.length === 1) {
+		// A human's approver terminal signs for an agent that has no TTY, or
+		// whenever the caller asks for it explicitly.
+		const backend = values.with ?? (await readConfig(rt.home)).signer;
+		const { approverStatus, relayToApprover } = await import("./approver.ts");
+		if (
+			backend === "approver" ||
+			(backend === "keystore" &&
+				!rt.stdinIsTTY &&
+				(await approverStatus(rt.home)).running)
+		) {
+			if ((await relayToApprover(args[0], rt)) !== 0)
+				throw new UsageError(`${args[0]} was not signed by the approver`);
+			return;
+		}
+	}
 	if (command === "sign" && args.length === 1 && /^c-[1-9]\d*$/.test(args[0])) {
 		const { signCeremony } = await import("./ceremony-command.ts");
 		await signCeremony(args[0], values, rt, read);
@@ -339,8 +355,17 @@ export async function p1(
 				cancellation.signal.throwIfAborted();
 				if (rt.now() >= p.expiresAt)
 					throw new Error("Proposal expired before submission");
-				if (!p.submit.route.startsWith("/api/keys/"))
-					return submitPlan(p, body, rt);
+				if (!p.submit.route.startsWith("/api/keys/")) {
+					const answer = await submitPlan(p, body, rt);
+					if (
+						p.submit.onAnswer === "store-agent-grant" ||
+						p.submit.onAnswer === "revoke-agent-grant"
+					) {
+						const { recordGrantAnswer } = await import("./grant-command.ts");
+						await recordGrantAnswer(rt, p, answer);
+					}
+					return answer;
+				}
 				let answer: Json;
 				try {
 					const client = new MobiusClient({

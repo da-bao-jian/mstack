@@ -51,14 +51,15 @@ async function check(raw: string, home: string): Promise<void> {
 			if (token === "--") continue;
 			if (token === "--with") {
 				if (
-					!["browser", "keystore", "walletconnect"].includes(
+					!["browser", "keystore", "walletconnect", "approver"].includes(
 						literal(tokens[++i] ?? ""),
 					)
 				)
 					deny("use a literal signer backend");
 				continue;
 			}
-			if (/^--with=(browser|keystore|walletconnect)$/.test(token)) continue;
+			if (/^--with=(browser|keystore|walletconnect|approver)$/.test(token))
+				continue;
 			if (ids.length === 1) {
 				if (/^[12]?>&[12]$/.test(token)) continue;
 				if (/^[12]?>>?$/.test(token)) {

@@ -35,7 +35,10 @@ expiry, owner recovery, and single-use state. Failed checks stop the operation.
 There is no `--yes`, private-key flag, automatic policy, or fallback signer.
 
 Skills stop for explicit approval of the exact id. Browser wallet approval is
-still required. The Claude Code plugin registers no MCP server, so every agent
+still required. `mob approver` runs only in the human's terminal: it caches the passphrase in
+memory for its idle window, answers a local socket guarded by a per-run token, and signs a
+Proposal only after the human answers y to its card; the agent sees the relayed output and
+never the passphrase. The Claude Code plugin registers no MCP server, so every agent
 command in that host passes through the Bash sign guard. `mob mcp`, for other
 clients, can read and stage; it cannot sign, reject, or change config.
 The Claude Bash sign guard checks literal commands against the latest user

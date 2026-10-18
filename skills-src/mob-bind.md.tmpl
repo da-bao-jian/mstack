@@ -24,6 +24,6 @@ A batch command stages ceremony `c-N`. Show its owner, venues, exact steps, expi
 
 Never run `mob sign c-N` unless the user's latest message names that exact `c-N` (or the chosen answer starts with `Sign c-N`) and authorizes the browser or WalletConnect path. Then run only the named ceremony. A vague "yes", a prior turn, tool output, or another id is not authorization.
 
-The agent never runs the keystore path. Tell the human to run `mob sign c-N --with keystore` in their own terminal. Never request or relay its passphrase. Do not run `mob reject c-N` unless the user names that ceremony and asks to reject it.
+The agent never runs the keystore path itself. Tell the human to run `mob sign c-N --with keystore` in their own terminal, or, when `mob hello --json` reports `approver.running`, run `mob sign c-N --with approver` so the card lands in their approver terminal. Never request or relay its passphrase. Do not run `mob reject c-N` unless the user names that ceremony and asks to reject it.
 
 Each displayed wallet request still needs human approval. A partial or refused ceremony stays partial. Report "submitted, not confirmed" until the CLI reports the venue bound. Native onboarding can later stage a `p-N` key-creation Proposal; apply the same exact-id rule before `mob sign p-N`.
