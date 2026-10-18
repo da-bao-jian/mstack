@@ -34,7 +34,7 @@ const venues: JsonSchemaType = {
 	type: "array",
 	items: { type: "string" },
 	description:
-		"Venue IDs: hl, lighter, lighter-mainnet, aster, binance, bybit, okx. Omit for all.",
+		"Venue IDs: hl, lighter, lighter-mainnet, aster, binance, bybit, okx, mexc, bingx, bitget, gate, grvt, variational, qfex. Omit for all.",
 };
 const onboardingVenues: JsonSchemaType = {
 	type: "array",

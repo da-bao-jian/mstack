@@ -7,6 +7,10 @@ not a claim that public release tags or artifacts were published.
 <!-- release-start -->
 ## [Unreleased]
 
+### Added
+
+- Seven more scan venues: MEXC, BingX, Bitget, Gate, GRVT, Variational, and QFEX. Each adapter reads the venue's public bulk feeds, keeps native market names, and ships with recorded fixtures, pinned expected rows, and scope tests. GRVT tickers are fetched per instrument with bounded concurrency; QFEX publishes no mark price, so its entry cost stays unmeasured; MEXC coin-margined, Bitget USDC and coin products, Gate's BTC-settled book, Variational swaps, and non-USD QFEX quotes are out of scope. Default taker fees come from each venue's published base tier.
+
 ## [0.4.1] - 2026-10-18
 
 ### Changed

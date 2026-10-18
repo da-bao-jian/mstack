@@ -25,6 +25,14 @@ export const DEFAULT_TAKER_FEE_BPS: Readonly<Record<string, number>> =
 		binance: 5,
 		bybit: 5.5,
 		okx: 5,
+		// Published base-tier taker rates on 2026-10-18; see docs/knowledge/fees.md.
+		mexc: 2,
+		bingx: 5,
+		bitget: 6,
+		gate: 7.5,
+		grvt: 4.5,
+		variational: 0,
+		qfex: 10,
 	});
 
 function finite(value: number, label: string): number {

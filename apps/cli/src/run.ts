@@ -69,7 +69,7 @@ Usage:
   mob --version
   mob --help
 
-Venues: hl,lighter,lighter-mainnet,aster,binance,bybit,okx
+Venues: hl,lighter,lighter-mainnet,aster,binance,bybit,okx,mexc,bingx,bitget,gate,grvt,variational,qfex
 Config keys: api_base, strategy_api_base, auth_base, app_base, legal_chain_id, hl_signature_chain_id, owner, signer, policy, key_store, walletconnect_project_id, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps
 Keystore secrets are read only from /dev/tty. Mutation commands stage, preview, and stop before signing.
 MCP tools stage Proposals; no sign, reject, or config-set tool is exposed.

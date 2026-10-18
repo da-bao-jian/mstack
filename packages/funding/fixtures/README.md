@@ -19,3 +19,13 @@ W3 adds five `history.json` recordings, each trimmed to five consecutive BTC set
 W3.1 adds `volume.json` recordings for Aster/Binance bulk 24-hour tickers and OKX SWAP tickers. Each endpoint was called once and trimmed to symbols retained in the existing fixtures. Listings absent from the newer volume capture retain unknown volume. HL, Bybit, and Lighter volume comes from their original recordings.
 
 Aster `exchangeInfo.json` was captured on 2026-10-11. It retains BTCUSDT and BTCUSD1 metadata and the LOT_SIZE / MIN_NOTIONAL filters. The capture manifest records the original response digest. Synthetic NVDA rows exist only as explicit test mutations.
+
+Seven venues were recorded on 2026-10-18 with the same rules: one request per endpoint, envelopes intact, market arrays trimmed, original digests in `manifest.json`.
+
+- MEXC: `detail`, bulk `funding_rate`, and `ticker` trimmed to `BTC_USDT`, `ETH_USDT`, the four-hour `XAU_USDT`, USD1-settled `BTC_USD1`, and coin-margined `BTC_USD` (skipped by scope).
+- BingX: `premiumIndex` and `ticker` trimmed to `BTC-USDT`, `ETH-USDT`, one-hour `ERA-USDT`, four-hour `XTZ-USDT`, and `BTC-USDC`.
+- Bitget: USDT-FUTURES `tickers` and `contracts` trimmed to `BTCUSDT`, `ETHUSDT`, four-hour `XTZUSDT`, and one-hour `ERAUSDT`.
+- Gate: USDT `contracts` and `tickers` trimmed to `BTC_USDT`, `ETH_USDT`, four-hour `2Z_USDT`, and one-hour `COOL_USDT`.
+- GRVT: `all_instruments` trimmed to `BTC_USDT_Perp`, `ETH_USDT_Perp`, and four-hour `ASTER_USDT_Perp`, with each instrument's complete `ticker` response.
+- Variational: `metadata/v2/stats` listings trimmed to `BTC-PERP`, `ETH-PERP`, four-hour `A-PERP`, one-hour `ERA-PERP`, and `US500-SWAP` (skipped by scope); platform totals stay.
+- QFEX: `md/contracts` trimmed to `AAPL-USD` (zero funding), `OPENAI-USD` and `ANTHROPIC-USD` (nonzero), and `CXMT-CNY` (skipped by scope).

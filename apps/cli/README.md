@@ -54,7 +54,7 @@ The API base defaults to `https://funding.mob.exchange`. `--api-base` overrides 
 
 `config get|set <key> [value]` uses `~/.mob/config.json`, or `$MOB_HOME/config.json` when set. Writes replace the file atomically with mode 0600. Missing files use documented defaults; malformed files fail. `get` returns the effective value.
 
-Allowed keys are `api_base`, `owner`, `default_size_usd`, `taker_fee_bps.<venue>`, `builder_fee_tenths_bps`, `signer`, `policy`, `walletconnect_project_id`, `auth_base`, `legal_chain_id`, and `hl_signature_chain_id`. Owner must be a 20-byte `0x` address; getting an unset owner prints an empty line. The WalletConnect project ID is public application configuration, has no default, and must be a 32-character hexadecimal Reown project ID. The venue must be one of the seven supported identifiers. Fee values must be finite and nonnegative; the builder setting is an integer in tenths of a basis point. Size must be positive. Config contains no credentials.
+Allowed keys are `api_base`, `owner`, `default_size_usd`, `taker_fee_bps.<venue>`, `builder_fee_tenths_bps`, `signer`, `policy`, `walletconnect_project_id`, `auth_base`, `legal_chain_id`, and `hl_signature_chain_id`. Owner must be a 20-byte `0x` address; getting an unset owner prints an empty line. The WalletConnect project ID is public application configuration, has no default, and must be a 32-character hexadecimal Reown project ID. The venue must be one of the fourteen supported identifiers. Fee values must be finite and nonnegative; the builder setting is an integer in tenths of a basis point. Size must be positive. Config contains no credentials.
 
 ## MCP server
 

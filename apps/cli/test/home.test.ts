@@ -131,7 +131,7 @@ test("no args home: live market, account standing and next action share the logo
 	expect(r.out).toContain("Trending   BTC");
 	expect(r.out).toContain("Onboarding legal ✓");
 	expect(r.out).toContain('Next       say "set me up"');
-	expect(r.out).toContain("live · 2 of 7 venues");
+	expect(r.out).toContain("live · 2 of 14 venues");
 	expect(r.out.split("\n")[0].indexOf("mstack")).toBe(35);
 	expect(fake.calls).toHaveLength(7);
 	expect(fake.calls.every((c) => c.method === "GET")).toBe(true);

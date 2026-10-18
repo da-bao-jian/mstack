@@ -197,5 +197,138 @@
 		"status": 200,
 		"rawSha256": "7ea5a0e8a6697fd258ebf458be3e1cf486605c746c73a48753e3d4324e09a505",
 		"trim": "BTCUSDT and BTCUSD1; symbol/baseAsset/quoteAsset; LOT_SIZE and MIN_NOTIONAL filters retained verbatim"
+	},
+	{
+		"file": "mexc/funding.json",
+		"url": "https://contract.mexc.com/api/v1/contract/funding_rate",
+		"method": "GET",
+		"observedAt": 1792302556953,
+		"status": 200,
+		"rawSha256": "6f8b916710d34138f385146a3103e8d236f9b321f8c18c901db1cdd32f899f45"
+	},
+	{
+		"file": "mexc/ticker.json",
+		"url": "https://contract.mexc.com/api/v1/contract/ticker",
+		"method": "GET",
+		"observedAt": 1792301966840,
+		"status": 200,
+		"rawSha256": "71e63502b32f03e01518c1f50c55cb6ba6bb069d1e2bd1a50a1cf2660b34f2ca"
+	},
+	{
+		"file": "mexc/detail.json",
+		"url": "https://contract.mexc.com/api/v1/contract/detail",
+		"method": "GET",
+		"observedAt": 1792301966949,
+		"status": 200,
+		"rawSha256": "e6808ce623bc416570ee4c5c83d5cde462f80cb627db4fee90905c55ea11f421"
+	},
+	{
+		"file": "bingx/premiumIndex.json",
+		"url": "https://open-api.bingx.com/openApi/swap/v2/quote/premiumIndex",
+		"method": "GET",
+		"observedAt": 1792301967245,
+		"status": 200,
+		"rawSha256": "74947d75471258538e83e9b4a5142af8d9f5bdec48ec831104ac5f2577f39cbf"
+	},
+	{
+		"file": "bingx/ticker.json",
+		"url": "https://open-api.bingx.com/openApi/swap/v2/quote/ticker",
+		"method": "GET",
+		"observedAt": 1792301967480,
+		"status": 200,
+		"rawSha256": "775e9b16eb8ececf7e2afa9d80b42d1fcc12284057daad35de55ba77edeaec6c"
+	},
+	{
+		"file": "bitget/tickers.json",
+		"url": "https://api.bitget.com/api/v2/mix/market/tickers?productType=USDT-FUTURES",
+		"method": "GET",
+		"observedAt": 1792301968108,
+		"status": 200,
+		"rawSha256": "0d0a6310e9054885be63b093b1fce366086daad214618c19bb19c6e142e4863b"
+	},
+	{
+		"file": "bitget/contracts.json",
+		"url": "https://api.bitget.com/api/v2/mix/market/contracts?productType=USDT-FUTURES",
+		"method": "GET",
+		"observedAt": 1792301968221,
+		"status": 200,
+		"rawSha256": "303aca70398dfe89a733752584374be8a89c704ce24ee8af91b48258e6fb6562"
+	},
+	{
+		"file": "gate/contracts.json",
+		"url": "https://api.gateio.ws/api/v4/futures/usdt/contracts",
+		"method": "GET",
+		"observedAt": 1792301968458,
+		"status": 200,
+		"rawSha256": "021520a14253e30b0cb3e783c5bac047eb0a65bd0dd99f7be9890de1a49e9dd3"
+	},
+	{
+		"file": "gate/tickers.json",
+		"url": "https://api.gateio.ws/api/v4/futures/usdt/tickers",
+		"method": "GET",
+		"observedAt": 1792301968581,
+		"status": 200,
+		"rawSha256": "90d9bf6cc2760b95cf22d00b4cf45c976fb291f11296d4e1092c5d94dd237101"
+	},
+	{
+		"file": "grvt/instruments.json",
+		"url": "https://market-data.grvt.io/full/v1/all_instruments",
+		"method": "POST",
+		"body": {
+			"kind": ["PERPETUAL"],
+			"is_active": true
+		},
+		"observedAt": 1792301968720,
+		"status": 200,
+		"rawSha256": "84cbbfff60e527a871481e865a138e0bfe61f054fefdee70e0787e2d2b0d9f1e"
+	},
+	{
+		"file": "grvt/ticker-btc.json",
+		"url": "https://market-data.grvt.io/full/v1/ticker",
+		"method": "POST",
+		"body": {
+			"instrument": "BTC_USDT_Perp"
+		},
+		"observedAt": 1792301968807,
+		"status": 200,
+		"rawSha256": "76f99eb4bbc11a4487a87d754490b0e1876590450ba8487283a58e4e15c3f3dd"
+	},
+	{
+		"file": "grvt/ticker-eth.json",
+		"url": "https://market-data.grvt.io/full/v1/ticker",
+		"method": "POST",
+		"body": {
+			"instrument": "ETH_USDT_Perp"
+		},
+		"observedAt": 1792302431352,
+		"status": 200,
+		"rawSha256": "b5a3a6325d04dd41b7f079388fb4069600d1de9165abff22414f59b741827691"
+	},
+	{
+		"file": "grvt/ticker-aster.json",
+		"url": "https://market-data.grvt.io/full/v1/ticker",
+		"method": "POST",
+		"body": {
+			"instrument": "ASTER_USDT_Perp"
+		},
+		"observedAt": 1792302431407,
+		"status": 200,
+		"rawSha256": "4efeff2130f17ed22e68da580dab302cb8e9e9504fba94f6e8f7d25534964066"
+	},
+	{
+		"file": "variational/stats.json",
+		"url": "https://omni-client-api.prod.ap-northeast-1.variational.io/metadata/v2/stats",
+		"method": "GET",
+		"observedAt": 1792302213689,
+		"status": 200,
+		"rawSha256": "9fe683588322eb65f2dbec2bfaafaa091602aa3ad86505f812a092929e7befee"
+	},
+	{
+		"file": "qfex/contracts.json",
+		"url": "https://api.qfex.com/md/contracts",
+		"method": "GET",
+		"observedAt": 1792302279896,
+		"status": 200,
+		"rawSha256": "da95b0494442278c54626fba80398c60adb414d3050f4ad4322daa57d151e6da"
 	}
 ]

@@ -147,9 +147,16 @@ const venues = {
 	binance: "Binance USD-M",
 	bybit: "Bybit",
 	okx: "OKX",
+	mexc: "MEXC futures",
+	bingx: "BingX perpetual swaps",
+	bitget: "Bitget USDT-M futures",
+	gate: "Gate USDT perpetuals",
+	grvt: "GRVT",
+	variational: "Variational Omni",
+	qfex: "QFEX",
 };
 const costModel =
-	"Estimates, not quotes: default taker fees (bps per fill) hl 4.5, lighter 0, lighter-mainnet 0, aster 3.5, binance 5, bybit 5.5, okx 5; two fills per leg. HL builder fee defaults to 1.5 bps per fill, doubled against either Lighter deployment, on open and close. Config overrides apply. Entry uses marks, not book depth or slippage. Net APY amortizes nonnegative entry cost over holdDays; break-even uses signed entry cost. Annualization is simple, never compounded.";
+	"Estimates, not quotes: default taker fees (bps per fill) hl 4.5, lighter 0, lighter-mainnet 0, aster 3.5, binance 5, bybit 5.5, okx 5, mexc 2, bingx 5, bitget 6, gate 7.5, grvt 4.5, variational 0, qfex 10; two fills per leg. HL builder fee defaults to 1.5 bps per fill, doubled against either Lighter deployment, on open and close. Config overrides apply. Entry uses marks, not book depth or slippage. Net APY amortizes nonnegative entry cost over holdDays; break-even uses signed entry cost. Annualization is simple, never compounded.";
 
 /** Add documentation without changing any existing value or unbounded server data. */
 export function withGlossary(data: unknown) {

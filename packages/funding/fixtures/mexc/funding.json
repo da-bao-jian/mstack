@@ -1,0 +1,61 @@
+{
+	"success": true,
+	"code": 0,
+	"data": [
+		{
+			"symbol": "BTC_USDT",
+			"fundingRate": 7.4e-5,
+			"maxFundingRate": 0.0018,
+			"minFundingRate": -0.0018,
+			"collectCycle": 8,
+			"nextSettleTime": 1792310400000,
+			"timestamp": 1792302556972,
+			"idxPrice": 81704.4,
+			"fairPrice": 81664.3
+		},
+		{
+			"symbol": "ETH_USDT",
+			"fundingRate": 3.7e-5,
+			"maxFundingRate": 0.0018,
+			"minFundingRate": -0.0018,
+			"collectCycle": 8,
+			"nextSettleTime": 1792310400000,
+			"timestamp": 1792302556972,
+			"idxPrice": 2408.65,
+			"fairPrice": 2407.68
+		},
+		{
+			"symbol": "XAU_USDT",
+			"fundingRate": 0,
+			"maxFundingRate": 0.03,
+			"minFundingRate": -0.03,
+			"collectCycle": 4,
+			"nextSettleTime": 1792310400000,
+			"timestamp": 1792302556972,
+			"idxPrice": 4167.46,
+			"fairPrice": 4169.08
+		},
+		{
+			"symbol": "BTC_USD",
+			"fundingRate": 5.4e-5,
+			"maxFundingRate": 0.003,
+			"minFundingRate": -0.003,
+			"collectCycle": 8,
+			"nextSettleTime": 1792310400000,
+			"timestamp": 1792302556972,
+			"idxPrice": 81599,
+			"fairPrice": 81561.4
+		},
+		{
+			"symbol": "BTC_USD1",
+			"fundingRate": -4.2e-5,
+			"maxFundingRate": 0.0002,
+			"minFundingRate": -0.0002,
+			"collectCycle": 8,
+			"nextSettleTime": 1792310400000,
+			"timestamp": 1792302556973,
+			"idxPrice": 81697.7,
+			"fairPrice": 81695.8
+		}
+	]
+}

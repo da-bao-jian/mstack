@@ -1,0 +1,199 @@
+{
+	"total_volume_24h": "848716158.090417",
+	"cumulative_volume": "420016028587.807077",
+	"tvl": "235125285.398850238319",
+	"open_interest": "1977141527.9100228818989129094",
+	"num_markets": 575,
+	"loss_refund": {
+		"pool_size": "0",
+		"refunded_24h": "0"
+	},
+	"listings": [
+		{
+			"ticker": "A-PERP",
+			"contract_type": "perpetual",
+			"name": "Vaulta",
+			"mark_price": "0.1034935697340492",
+			"volume_24h": "41967.443870",
+			"open_interest": {
+				"long_open_interest": "2819.9988792608310146200000000",
+				"short_open_interest": "0"
+			},
+			"funding": {
+				"last": {
+					"annualized_rate": "0.1095",
+					"interval_rate": "0.000050"
+				},
+				"next": {
+					"annualized_rate": "0.1095",
+					"interval_rate": "0.000050"
+				},
+				"interval_seconds": 14400,
+				"next_timestamp": 1792310400
+			},
+			"base_spread_bps": "28.987308174886592461325174000",
+			"quotes": {
+				"updated_at": "2026-10-18T05:43:28.317319891Z",
+				"base": {
+					"bid": "0.1033",
+					"ask": "0.1036"
+				},
+				"size_1k": {
+					"bid": "0.1033",
+					"ask": "0.1036"
+				},
+				"size_100k": {
+					"bid": "0.1009",
+					"ask": "0.1068"
+				}
+			}
+		},
+		{
+			"ticker": "ERA-PERP",
+			"contract_type": "perpetual",
+			"name": "Caldera",
+			"mark_price": "0.0676089399425646",
+			"volume_24h": "202746.905635",
+			"open_interest": {
+				"long_open_interest": "12171.567067049563200440000000",
+				"short_open_interest": "7019.7084280184757308000000000"
+			},
+			"funding": {
+				"last": {
+					"annualized_rate": "-24.9008",
+					"interval_rate": "-0.002843"
+				},
+				"next": {
+					"annualized_rate": "-24.9008",
+					"interval_rate": "-0.002843"
+				},
+				"interval_seconds": 3600,
+				"next_timestamp": 1792303200
+			},
+			"base_spread_bps": "13.311849006426833084851319000",
+			"quotes": {
+				"updated_at": "2026-10-18T05:43:16.232774741Z",
+				"base": {
+					"bid": "0.06757",
+					"ask": "0.06766"
+				},
+				"size_1k": {
+					"bid": "0.06754",
+					"ask": "0.06769"
+				},
+				"size_100k": {
+					"bid": "0.0668",
+					"ask": "0.06843"
+				}
+			}
+		},
+		{
+			"ticker": "US500-SWAP",
+			"contract_type": "swap",
+			"name": "Swap on US 500",
+			"mark_price": "7655.38",
+			"volume_24h": "0",
+			"open_interest": {
+				"long_open_interest": "14588986.96536820000000",
+				"short_open_interest": "6654802.00656580000000"
+			},
+			"funding": {
+				"last": {
+					"annualized_long_rate": "0.1464",
+					"annualized_short_rate": "0.08640",
+					"interval_long_rate": "0.0004067",
+					"interval_short_rate": "0.0002400"
+				},
+				"next": null,
+				"interval_seconds": 86400,
+				"next_timestamp": null
+			}
+		},
+		{
+			"ticker": "BTC-PERP",
+			"contract_type": "perpetual",
+			"name": "Bitcoin",
+			"mark_price": "81614.8333125234",
+			"volume_24h": "363578614.364292",
+			"open_interest": {
+				"long_open_interest": "103888729.70604913949335614000",
+				"short_open_interest": "90477160.94119979515991457000"
+			},
+			"funding": {
+				"last": {
+					"annualized_rate": "0.1095",
+					"interval_rate": "0.0001"
+				},
+				"next": {
+					"annualized_rate": "0.1095",
+					"interval_rate": "0.0001"
+				},
+				"interval_seconds": 28800,
+				"next_timestamp": 1792310400
+			},
+			"base_spread_bps": "1.0010435197135118278213750000",
+			"quotes": {
+				"updated_at": "2026-10-18T05:43:17.977899753Z",
+				"base": {
+					"bid": "81582.65",
+					"ask": "81590.82"
+				},
+				"size_1k": {
+					"bid": "81582.65",
+					"ask": "81590.82"
+				},
+				"size_100k": {
+					"bid": "81582.65",
+					"ask": "81590.82"
+				},
+				"size_1m": {
+					"bid": "81566.55",
+					"ask": "81590.82"
+				}
+			}
+		},
+		{
+			"ticker": "ETH-PERP",
+			"contract_type": "perpetual",
+			"name": "Ethereum",
+			"mark_price": "2406.148083406168",
+			"volume_24h": "234817498.527473",
+			"open_interest": {
+				"long_open_interest": "79447314.54265888451618988000",
+				"short_open_interest": "61255041.270477294355435320000"
+			},
+			"funding": {
+				"last": {
+					"annualized_rate": "0.07850",
+					"interval_rate": "0.00007169"
+				},
+				"next": {
+					"annualized_rate": "0.07850",
+					"interval_rate": "0.00007169"
+				},
+				"interval_seconds": 28800,
+				"next_timestamp": 1792310400
+			},
+			"base_spread_bps": "1.122125449643087719455780000",
+			"quotes": {
+				"updated_at": "2026-10-18T05:43:13.879130969Z",
+				"base": {
+					"bid": "2405.5",
+					"ask": "2405.77"
+				},
+				"size_1k": {
+					"bid": "2405.5",
+					"ask": "2405.77"
+				},
+				"size_100k": {
+					"bid": "2405.5",
+					"ask": "2405.77"
+				},
+				"size_1m": {
+					"bid": "2404.98",
+					"ask": "2406.01"
+				}
+			}
+		}
+	]
+}

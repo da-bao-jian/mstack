@@ -1,12 +1,19 @@
 import {
 	aster,
 	binance,
+	bingx,
+	bitget,
 	bybit,
 	fetchSnapshot,
+	gate,
+	grvt,
 	hyperliquid,
 	lighter,
 	lighterMainnet,
+	mexc,
 	okx,
+	qfex,
+	variational,
 } from "../src/main.ts";
 
 if (process.env.MOB_LIVE !== "1") {
@@ -15,7 +22,22 @@ if (process.env.MOB_LIVE !== "1") {
 }
 
 const snapshot = await fetchSnapshot(
-	[hyperliquid, lighter, lighterMainnet, aster, binance, bybit, okx],
+	[
+		hyperliquid,
+		lighter,
+		lighterMainnet,
+		aster,
+		binance,
+		bybit,
+		okx,
+		mexc,
+		bingx,
+		bitget,
+		gate,
+		grvt,
+		variational,
+		qfex,
+	],
 	{ timeoutMs: 60_000 },
 );
 console.log(

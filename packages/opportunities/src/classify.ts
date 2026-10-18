@@ -57,6 +57,44 @@ export function classifyMarket(
 			quoteClass = match[2] === "USD" ? "coin" : "usd-stable";
 			break;
 		}
+		case "mexc":
+		case "gate": {
+			const match = /^([\p{L}\p{N}]+)_(USDT|USDC|USD1|USD)$/u.exec(market);
+			if (!match) return null;
+			base = match[1];
+			quoteClass = match[2] === "USD" ? "coin" : "usd-stable";
+			break;
+		}
+		case "bingx": {
+			const match = /^([\p{L}\p{N}]+)-(USDT|USDC)$/u.exec(market);
+			if (!match) return null;
+			base = match[1];
+			break;
+		}
+		case "bitget": {
+			const match = /^([\p{L}\p{N}]+)(?:USDT|USDC)$/u.exec(market);
+			if (!match) return null;
+			base = match[1];
+			break;
+		}
+		case "grvt": {
+			const match = /^([\p{L}\p{N}]+)_USDT_Perp$/u.exec(market);
+			if (!match) return null;
+			base = match[1];
+			break;
+		}
+		case "variational": {
+			const match = /^([\p{L}\p{N}]+)-PERP$/u.exec(market);
+			if (!match) return null;
+			base = match[1];
+			break;
+		}
+		case "qfex": {
+			const match = /^([\p{L}\p{N}]+)-USD$/u.exec(market);
+			if (!match) return null;
+			base = match[1];
+			break;
+		}
 		default:
 			return null;
 	}

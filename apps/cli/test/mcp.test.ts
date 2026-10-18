@@ -133,7 +133,7 @@ test.each([
 			expect(body).not.toHaveProperty("opportunities");
 			expect(Buffer.byteLength(text(result))).toBeLessThan(100_000);
 			expect(Buffer.byteLength(out[0])).toBeLessThan(100_000);
-			expect(body.counts.opportunities).toBe(29);
+			expect(body.counts.opportunities).toBe(155);
 			expect(body.view.anywhere).toHaveLength(2);
 			expect(body.view.executable).toHaveLength(1);
 			expect(body.holdDays).toBe(30);
@@ -161,7 +161,7 @@ test("funding_scan defaults stay under 100 KB and includeFull explicitly adds th
 	const full = await call("funding_scan", { includeFull: true });
 	expect(full.isError).not.toBe(true);
 	const { opportunities, ...summary } = JSON.parse(text(full));
-	expect(opportunities).toHaveLength(29);
+	expect(opportunities).toHaveLength(155);
 	expect(summary).toEqual(bounded);
 	const fullOut: string[] = [];
 	expect(

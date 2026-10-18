@@ -1,0 +1,32 @@
+{
+	"result": {
+		"event_time": "1792301968500000000",
+		"instrument": "BTC_USDT_Perp",
+		"mark_price": "81698.98829323",
+		"index_price": "81736.456591301",
+		"last_price": "81696.8",
+		"last_size": "2.432",
+		"mid_price": "81696.85",
+		"best_bid_price": "81696.8",
+		"best_bid_size": "3.831",
+		"best_ask_price": "81696.9",
+		"best_ask_size": "0.609",
+		"funding_rate_8h_curr": "0.0071",
+		"funding_rate_8h_avg": "0.0071",
+		"interest_rate": "0.0",
+		"forward_price": "0.0",
+		"buy_volume_24h_b": "988.768",
+		"sell_volume_24h_b": "984.353",
+		"buy_volume_24h_q": "80549301.5298",
+		"sell_volume_24h_q": "80192654.3876",
+		"high_price": "82034.2",
+		"low_price": "80796.1",
+		"open_price": "81529.9",
+		"open_interest": "2505.11732092",
+		"long_short_ratio": "2.583333",
+		"funding_rate": "0.0071",
+		"next_funding_time": "1792310400000000000",
+		"status": "ACTIVE",
+		"session": "REGULAR"
+	}
+}

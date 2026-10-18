@@ -2,11 +2,18 @@ import { describe, expect, test } from "bun:test";
 import {
 	aster,
 	binance,
+	bingx,
+	bitget,
 	bybit,
+	gate,
+	grvt,
 	hyperliquid,
 	lighter,
 	lighterMainnet,
+	mexc,
 	okx,
+	qfex,
+	variational,
 } from "../src/main.ts";
 import { changed, expected, fixtureContext } from "./fixtures.ts";
 
@@ -45,6 +52,37 @@ const cases = [
 		adapter: okx,
 		file: "okx/funding.json",
 		path: ["data", 0, "fundingRate"],
+	},
+	{
+		adapter: mexc,
+		file: "mexc/funding.json",
+		path: ["data", 0, "fundingRate"],
+	},
+	{
+		adapter: bingx,
+		file: "bingx/premiumIndex.json",
+		path: ["data", 0, "lastFundingRate"],
+	},
+	{
+		adapter: bitget,
+		file: "bitget/tickers.json",
+		path: ["data", 0, "fundingRate"],
+	},
+	{ adapter: gate, file: "gate/contracts.json", path: [0, "funding_rate"] },
+	{
+		adapter: grvt,
+		file: "grvt/ticker-btc.json",
+		path: ["result", "funding_rate_8h_curr"],
+	},
+	{
+		adapter: variational,
+		file: "variational/stats.json",
+		path: ["listings", 0, "funding", "next", "interval_rate"],
+	},
+	{
+		adapter: qfex,
+		file: "qfex/contracts.json",
+		path: ["data", 0, "next_funding_rate"],
 	},
 ];
 
@@ -301,6 +339,142 @@ describe("OKX", () => {
 		});
 		await expect(okx.fetchRates(ctx)).rejects.toThrow(
 			"missing live funding row",
+		);
+	});
+});
+
+describe("venue scope rules", () => {
+	test("MEXC keeps linear USDT, USDC, and USD1 contracts and needs a ticker for each", async () => {
+		const { ctx } = await fixtureContext();
+		const markets = (await mexc.fetchRates(ctx)).map((row) => row.market);
+		expect(markets).toContain("BTC_USD1");
+		expect(markets).toContain("XAU_USDT");
+		expect(markets).not.toContain("BTC_USD");
+		const paused = await fixtureContext({
+			"mexc/detail.json": await changed(
+				"mexc/detail.json",
+				["data", 0, "state"],
+				4,
+			),
+		});
+		expect(
+			(await mexc.fetchRates(paused.ctx)).map((row) => row.market),
+		).not.toContain("BTC_USDT");
+		const missing = await fixtureContext({
+			"mexc/ticker.json": await changed("mexc/ticker.json", ["data"], []),
+		});
+		await expect(mexc.fetchRates(missing.ctx)).rejects.toThrow(
+			"missing MEXC ticker row",
+		);
+	});
+
+	test("BingX leaves open interest unknown and keeps volume optional", async () => {
+		const { ctx } = await fixtureContext();
+		const rows = await bingx.fetchRates(ctx);
+		expect(rows.every((row) => row.openInterestUsd === undefined)).toBe(true);
+		expect(rows.find((row) => row.market === "BTC-USDT")?.volume24hUsd).toBe(
+			336088467.36,
+		);
+		const bare = await fixtureContext({
+			"bingx/ticker.json": await changed("bingx/ticker.json", ["data"], []),
+		});
+		const unknown = await bingx.fetchRates(bare.ctx);
+		expect(unknown).toHaveLength(rows.length);
+		expect(unknown.every((row) => row.volume24hUsd === undefined)).toBe(true);
+	});
+
+	test("Bitget skips contracts that are not normal perpetuals", async () => {
+		const file = "bitget/contracts.json";
+		const { ctx } = await fixtureContext({
+			[file]: await changed(file, ["data", 0, "symbolStatus"], "maintain"),
+		});
+		expect((await bitget.fetchRates(ctx)).map((row) => row.market)).toEqual([
+			"ETHUSDT",
+			"XTZUSDT",
+			"ERAUSDT",
+		]);
+	});
+
+	test("Gate skips delisting contracts and rejects a non-boolean flag", async () => {
+		const file = "gate/contracts.json";
+		const delisting = await fixtureContext({
+			[file]: await changed(file, [1, "in_delisting"], true),
+		});
+		expect(
+			(await gate.fetchRates(delisting.ctx)).map((row) => row.market),
+		).not.toContain("BTC_USDT");
+		const invalid = await fixtureContext({
+			[file]: await changed(file, [1, "in_delisting"], "no"),
+		});
+		await expect(gate.fetchRates(invalid.ctx)).rejects.toThrow("in_delisting");
+	});
+
+	test("GRVT scales the eight-hour rate to the instrument interval and checks the ticker name", async () => {
+		const { ctx, calls } = await fixtureContext();
+		const rows = await grvt.fetchRates(ctx);
+		expect(calls).toHaveLength(4);
+		const aster = rows.find((row) => row.market === "ASTER_USDT_Perp");
+		const btc = rows.find((row) => row.market === "BTC_USDT_Perp");
+		expect(aster?.intervalHours).toBe(4);
+		// 0.005 percent per eight hours becomes 0.000025 per four-hour settlement.
+		expect(aster?.ratePerInterval).toBeCloseTo(0.000025, 12);
+		expect(btc?.nextFundingAt).toBe(1792310400000);
+		const renamed = await fixtureContext({
+			"grvt/ticker-btc.json": await changed(
+				"grvt/ticker-btc.json",
+				["result", "instrument"],
+				"ETH_USDT_Perp",
+			),
+		});
+		await expect(grvt.fetchRates(renamed.ctx)).rejects.toThrow("ticker names");
+		const badTime = await fixtureContext({
+			"grvt/ticker-btc.json": await changed(
+				"grvt/ticker-btc.json",
+				["result", "next_funding_time"],
+				1792310400000,
+			),
+		});
+		await expect(grvt.fetchRates(badTime.ctx)).rejects.toThrow("timestamp");
+	});
+
+	test("Variational keeps perpetuals with funding data and skips swaps", async () => {
+		const { ctx } = await fixtureContext();
+		const markets = (await variational.fetchRates(ctx)).map(
+			(row) => row.market,
+		);
+		expect(markets).toEqual(["A-PERP", "ERA-PERP", "BTC-PERP", "ETH-PERP"]);
+		const file = "variational/stats.json";
+		const quiet = await fixtureContext({
+			[file]: await changed(file, ["listings", 0, "funding"], null),
+		});
+		expect(
+			(await variational.fetchRates(quiet.ctx)).map((row) => row.market),
+		).toEqual(["ERA-PERP", "BTC-PERP", "ETH-PERP"]);
+		const btc = (await variational.fetchRates(ctx)).find(
+			(row) => row.market === "BTC-PERP",
+		);
+		// The venue publishes 0.1095 annualized for this row; simple annualization agrees.
+		expect(btc?.annualizedPct).toBeCloseTo(10.95, 9);
+	});
+
+	test("QFEX keeps USD-quoted perpetuals, reads percent per hour, and has no mark", async () => {
+		const { ctx } = await fixtureContext();
+		const rows = await qfex.fetchRates(ctx);
+		expect(rows.map((row) => row.market)).toEqual([
+			"AAPL-USD",
+			"ANTHROPIC-USD",
+			"OPENAI-USD",
+		]);
+		const openai = rows.find((row) => row.market === "OPENAI-USD");
+		expect(openai?.intervalHours).toBe(1);
+		expect(openai?.ratePerInterval).toBeCloseTo(-0.00000073 / 100, 15);
+		expect(rows.every((row) => row.markPrice === undefined)).toBe(true);
+		const file = "qfex/contracts.json";
+		const dated = await fixtureContext({
+			[file]: await changed(file, ["data", 0, "product_type"], "Future"),
+		});
+		await expect(qfex.fetchRates(dated.ctx)).rejects.toThrow(
+			"expected Perpetual",
 		);
 	});
 });

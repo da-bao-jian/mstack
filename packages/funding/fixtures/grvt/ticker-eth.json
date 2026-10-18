@@ -1,0 +1,32 @@
+{
+	"result": {
+		"event_time": "1792302431184026842",
+		"instrument": "ETH_USDT_Perp",
+		"mark_price": "2408.481784527",
+		"index_price": "2409.519302329",
+		"last_price": "2408.55",
+		"last_size": "20.012",
+		"mid_price": "2408.555",
+		"best_bid_price": "2408.55",
+		"best_bid_size": "0.448",
+		"best_ask_price": "2408.56",
+		"best_ask_size": "120.289",
+		"funding_rate_8h_curr": "0.008",
+		"funding_rate_8h_avg": "0.008",
+		"interest_rate": "0.0",
+		"forward_price": "0.0",
+		"buy_volume_24h_b": "15474.817",
+		"sell_volume_24h_b": "15424.368",
+		"buy_volume_24h_q": "37348179.49105",
+		"sell_volume_24h_q": "37225580.81222",
+		"high_price": "2440.39",
+		"low_price": "2355.2",
+		"open_price": "2426.49",
+		"open_interest": "58174.317232518",
+		"long_short_ratio": "3.712766",
+		"funding_rate": "0.008",
+		"next_funding_time": "1792310400000000000",
+		"status": "ACTIVE",
+		"session": "REGULAR"
+	}
+}
