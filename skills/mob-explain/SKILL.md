@@ -3,7 +3,7 @@ name: mob-explain
 description: Explain funding and Mobius mechanics from bundled sources. Use for "how does funding work", "what is basis", "why did it close", "like I'm 13", or "I don't get it". (mstack)
 license: MIT
 metadata:
-  version: "0.4.0"
+  version: "0.4.1"
 allowed-tools: Bash Read AskUserQuestion Bash(${CLAUDE_SKILL_DIR}/scripts/preamble.sh *)
 ---
 
