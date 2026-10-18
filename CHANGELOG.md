@@ -19,7 +19,7 @@ not a claim that public release tags or artifacts were published.
 
 ### Fixed
 
-- The release helper regenerates the skills with the new version and commits them, instead of stopping on its own drift check after the bump.
+- The release helper regenerates the skills with the new version and commits them, instead of stopping on its own drift check after the bump. It also moves the previous release tag forward in the install docs, and the tests that pin the client header and the home screen now read the version from the manifests.
 
 ### Security
 

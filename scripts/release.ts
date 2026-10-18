@@ -29,10 +29,13 @@ export function moveUnreleased(
 }
 
 export async function releaseTagPlan(root: string, version: string) {
+	const { version: previous } = JSON.parse(
+		await readFile(resolve(root, "package.json"), "utf8"),
+	);
 	return Promise.all(
 		releaseTagFiles.map(async (file) => {
 			const source = await readFile(resolve(root, file), "utf8");
-			return { file, ...rewriteReleaseTag(source, version) };
+			return { file, ...rewriteReleaseTag(source, version, previous) };
 		}),
 	);
 }
@@ -152,7 +155,7 @@ export async function release(
 		);
 	for (const file of releaseTagFiles) {
 		const source = await read(file);
-		const rewritten = rewriteReleaseTag(source, version).body;
+		const rewritten = rewriteReleaseTag(source, version, current).body;
 		if (rewritten.includes("<tag>"))
 			throw new Error(`Release tag placeholder remains in ${file}`);
 		changed.set(file, rewritten);

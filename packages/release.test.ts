@@ -45,7 +45,7 @@ async function fixture() {
 		"bun.lock":
 			'{\n  "workspaces": {"apps/cli":{"version":"0.1.0"}},\n  "packages": {"dependency": ["dependency@0.1.0"]}\n}\n',
 		"CHANGELOG.md": changelog,
-		"README.md": "Read docs at <tag>.\n",
+		"README.md": "Read docs at <tag>. Last release v0.1.0.\n",
 		"docs/AGENT-INSTALL.md": "Install release <tag> from <tag>.\n",
 		"docs/AGENT-PROMPT.md": "Prompt for <tag>.\n",
 		"docs/MOBIUS-ASKS.md": "Ask G quotes <tag>.\n",
@@ -167,7 +167,7 @@ test("prepare bumps every manifest and only workspace lock metadata, runs gates,
 	expect(lock.workspaces["apps/cli"].version).toBe("0.3.0");
 	expect(lock.packages.dependency).toEqual(["dependency@0.1.0"]);
 	expect(await readFile(join(f.root, "README.md"), "utf8")).toBe(
-		"Read docs at v0.3.0.\n",
+		"Read docs at v0.3.0. Last release v0.3.0.\n",
 	);
 	expect(await readFile(join(f.root, "docs/AGENT-INSTALL.md"), "utf8")).toBe(
 		"Install release v0.3.0 from v0.3.0.\n",
@@ -212,7 +212,7 @@ test("release tag dry run reports every placeholder without editing", async () =
 		{ file: "docs/AGENT-INSTALL.md", replacements: 2 },
 		{ file: "docs/AGENT-PROMPT.md", replacements: 1 },
 		{ file: "docs/MOBIUS-ASKS.md", replacements: 1 },
-		{ file: "README.md", replacements: 1 },
+		{ file: "README.md", replacements: 2 },
 	]);
 	expect(formatReleaseTagPlan(plan)).toContain("docs/AGENT-INSTALL.md: 2");
 	expect(plan.every(({ body }) => !body.includes("<tag>"))).toBe(true);
