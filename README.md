@@ -47,7 +47,7 @@ claude plugin install mstack@mstack
 
 First message: `/mstack:mob` or just ask: find me the best funding arb.
 
-The plugin includes ten skills, stdio MCP, and a Bash mutation guard.
+The plugin includes ten skills, `mob` on the agent's Bash PATH, and a Bash mutation guard. It registers no MCP server; the skills call the CLI.
 
 The plugin root stays at the repository root so the marketplace copy includes the source needed by `bin/mob`.
 The root `bun.lock` triggers Claude Code's automatic dependency-install check and a directory reviewer hold.
@@ -89,12 +89,12 @@ The Claude Code Bash authorization hook runs `mob hook sign-guard` in the compil
 
 For local release fixtures, set `MSTACK_RELEASE_BASE_URL=http://127.0.0.1:<port>/releases/download`. The matching `/releases/latest/download/VERSION` route supplies the latest version. Versioned binaries and `SHA256SUMS` use `/releases/download/v<version>/`. The shim also accepts `MSTACK_MOB_BIN=/path/to/mob`. Normal binary resolution is quiet; set `MSTACK_VERBOSE=1` to log the selected binary to stderr. Builds, downloads, and failures always log to stderr.
 
-Maintainers can run `bun scripts/release.ts <version> --prepare` in a clean checkout to update all versions and date the Unreleased notes. Add an Unreleased section when new work starts. This runs all gates and leaves changes for review. After committing, `bun scripts/release.ts <version>` runs the gates and tags that commit locally. Without `--prepare`, a new version also gets a release commit. The helper never pushes. Tagging 0.4.0 is deferred until integration is approved.
+Maintainers can run `bun scripts/release.ts <version> --prepare` in a clean checkout to update all versions and date the Unreleased notes. Add an Unreleased section when new work starts. This runs all gates and leaves changes for review. After committing, `bun scripts/release.ts <version>` runs the gates and tags that commit locally. Without `--prepare`, a new version also gets a release commit. The helper never pushes; the release coordinator pushes the tag, which starts the release workflow.
 <!-- release-end -->
 
 ### MCP
 
-The plugin registers MCP automatically. For another MCP client, use an absolute path:
+The Claude Code plugin does not register an MCP server. Its skills run `mob` through Bash, so the agent loads one tool surface and the sign guard mediates every mutation. To add the server to Claude Code anyway, with `mob` on PATH, run `claude mcp add --scope user mstack -- mob mcp`. For Cursor, Windsurf, Claude Desktop, or another MCP client, use an absolute path:
 
 ```json
 {
@@ -152,7 +152,7 @@ The current release supports scoped API-key trading plus browser, WalletConnect,
 
 | Host | Start here | Integration |
 |---|---|---|
-| Claude Code plugin | `/mstack:mob` | Namespaced skills, MCP, and Bash sign guard |
+| Claude Code plugin | `/mstack:mob` | Namespaced skills, `mob` on the Bash PATH, and the sign guard |
 | Claude Code clone | `/mob` | Linked skills; plugin hooks are not installed by clone setup |
 | Codex | `$mob` | Linked skills, minimal UI metadata, and explicit approval rules |
 | Any stdio MCP client | `mob mcp` | Public reads and local staging; no signing tool |

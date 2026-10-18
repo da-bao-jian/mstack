@@ -9,11 +9,23 @@ close, and resize can stage API-submit Proposals. Protection, neutralize,
 auto-close, size-mismatch edits, binding, legal acceptance, key create/list,
 and key revoke still need wallet authorization.
 
-MCP can read onboarding and key status and stage Proposals. It cannot import a
-key, submit, sign, reject, reveal a key, or write config.
+`mob mcp`, for clients without a shell, can read onboarding and key status and
+stage Proposals. It cannot import a key, submit, sign, reject, reveal a key, or
+write config.
 
 The preamble reports the binary path, version, owner presence, policy, signer,
 API reachability, and cached update status. A failed health probe is a report;
 the command still checks its own data. `MOB_MISSING` stops the skill.
 The preamble runs in a child shell. Use its printed `MOB_BIN` path in later
 commands; it cannot set variables or PATH in the caller's shell.
+
+## Maintenance
+
+`mob doctor` checks the installation, public config, signer, API access, legal
+acceptance, readiness, and local Proposals; `--json` returns the checklist and a
+failed critical item exits 1. `mob upgrade` fast-forwards a checkout and rebuilds,
+or downloads and verifies the latest release binary; run it only when the user
+asks to upgrade. Uninstall by host: `claude plugin uninstall mstack@mstack` for the
+plugin, `./setup --host claude --uninstall` or `./setup --host codex --uninstall`
+in the checkout for linked skills. `mob keys delete` first removes the local key
+copy; revoking the server key needs the API page or a wallet Proposal.

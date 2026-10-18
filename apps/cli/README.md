@@ -48,7 +48,7 @@ Fetchers and offline fixtures live in `packages/funding/src/history/` and `packa
 
 `status` uses `--owner` or the saved `owner` config key. Without either, it exits 1 and names the missing key. Without `--task`, it reads the owner's task list. With a task ID, it reads that task. `--trims` and `--resizes` require `--task` and read every available log page. The output displays every field projected by the pinned upstream `publicTask`, including funding accrued labeled **estimate**, protection/mismatch controls, notices, close reason, error context, and timestamps. Its footer shows API base, fetch age, task count, and requested trim/resize counts.
 
-The API base defaults to `https://funding.mob.exchange`. `--api-base` overrides config for that request. Every Mobius request sends `X-Mobius-Client: mstack/0.2.0` and `User-Agent: mstack/0.2.0`. Non-2xx and malformed responses fail with HTTP status and a bounded body excerpt. JSON status output wraps tasks/logs with observation and source metadata. Reads by owner address are public. No populated task was verified live; tests use the explicitly hand-written public-task fixture.
+The API base defaults to `https://funding.mob.exchange`. `--api-base` overrides config for that request. Every Mobius request sends `X-Mobius-Client: mstack/<version>` and `User-Agent: mstack/<version>`, using the built package version. Non-2xx and malformed responses fail with HTTP status and a bounded body excerpt. JSON status output wraps tasks/logs with observation and source metadata. Reads by owner address are public. No populated task was verified live; tests use the explicitly hand-written public-task fixture.
 
 ## Config
 

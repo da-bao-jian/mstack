@@ -7,7 +7,8 @@
 					{
 						"type": "command",
 						"command": "exec \"${CLAUDE_PLUGIN_ROOT}/bin/mob\" hook sign-guard",
-						"timeout": 10
+						"timeout": 30,
+						"onFailure": "block"
 					}
 				]
 			}

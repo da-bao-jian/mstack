@@ -115,8 +115,16 @@ this plugin. Current distribution is through our own Claude Code marketplace.
 A future P2 listing will use a separate skills-only plugin over hosted MCP.
 That plugin and service are not shipped here.
 
-MCP uses the plain `${CLAUDE_PLUGIN_ROOT}/bin/mob` command path. No shell wrapper
-is embedded in that command. SessionStart is not used to display an install notice.
+The plugin registers no MCP server. Its skills run `mob` through the Bash tool, so
+the agent loads one tool surface, the sign guard mediates every mutation, and a
+missing binary fails on the call that needs it rather than silently at session
+start. The 18 tool schemas would cost about 3,500 tokens in every session, and no
+skill referenced them. `mob mcp` serves clients without a shell or skills: Cursor,
+Windsurf, Claude Desktop, and any stdio client. Claude Code users who want the tools
+run `claude mcp add --scope user mstack -- mob mcp`. There is no root `.mcp.json`: Claude Code
+also reads that file as project configuration whenever the checkout itself is
+opened, where `${CLAUDE_PLUGIN_ROOT}` is undefined.
+SessionStart is not used to display an install notice.
 The CLI hint mechanism for Anthropic's official marketplaces does not apply to ours.
 The Bash hook executes `mob hook sign-guard` through the same shim, so a compiled
 installation can enforce the existing guard without Bun.

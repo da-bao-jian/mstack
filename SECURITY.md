@@ -35,9 +35,14 @@ expiry, owner recovery, and single-use state. Failed checks stop the operation.
 There is no `--yes`, private-key flag, automatic policy, or fallback signer.
 
 Skills stop for explicit approval of the exact id. Browser wallet approval is
-still required. MCP can read and stage; it cannot sign, reject, or change config.
+still required. The Claude Code plugin registers no MCP server, so every agent
+command in that host passes through the Bash sign guard. `mob mcp`, for other
+clients, can read and stage; it cannot sign, reject, or change config.
 The Claude Bash sign guard checks literal commands and the latest user message.
 It is not a shell sandbox and cannot inspect arbitrary scripts or other hosts.
+On Claude Code 2.1.295 or newer, a guard that cannot start, crashes, or times out
+blocks the call. Older versions let such a call continue; the CLI policy, expiry,
+owner, and single-use checks still apply there.
 
 The browser bridge uses loopback, a one-time token, and origin/host checks.
 WalletConnect pairing uses its relay with SDK telemetry disabled.

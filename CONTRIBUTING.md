@@ -8,8 +8,13 @@ bun run build
 ```
 
 `./setup --host claude` or `./setup --host codex` also builds the binary and links
-the generated skills. The latter uses `~/.agents/skills` and mirrors links into
-`~/.codex/skills` only when that older directory exists.
+the generated skills. To run the plugin itself from a checkout, add the directory as a
+marketplace: `claude plugin marketplace add /path/to/mstack` and then
+`claude plugin install mstack@mstack`. Claude Code reads a directory-sourced plugin in
+place, so skill, hook, and manifest edits apply at the next session. Do not also link
+the clone skills into `~/.claude/skills`, or `/mob` and `/mstack:mob` both match.
+The Codex setup uses `~/.agents/skills` and mirrors links into `~/.codex/skills`
+only when that older directory exists.
 See [installation maintenance](docs/USAGE.md#installation-maintenance) for uninstall behavior.
 
 ## Checks before delivery

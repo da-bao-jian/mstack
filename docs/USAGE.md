@@ -41,12 +41,12 @@ Scans show Executable on Mobius (top five) and Best anywhere (top ten), each sor
 
 ## Use from any MCP client
 
-`mob mcp` serves the same command results over stdio. The server reads public data, onboarding state, and safe key status, and stages local Proposals. It never imports, submits, signs, rejects, reveals a key, or changes config. The Claude Code plugin registers it through the bundled `.mcp.json`.
+`mob mcp` serves the same command results over stdio. The server reads public data, onboarding state, and safe key status, and stages local Proposals. It never imports, submits, signs, rejects, reveals a key, or changes config. The Claude Code plugin does not register it: the skills call the CLI through Bash, where the sign guard applies, and the tool schemas would cost context in every session.
 
-For a separate Claude Code registration, with `mob` on PATH:
+To add it to Claude Code anyway, with `mob` on PATH, use the user scope so every project sees it. Omit `--scope user` for the current project only.
 
 ```sh
-claude mcp add mstack -- mob mcp
+claude mcp add --scope user mstack -- mob mcp
 ```
 
 For Cursor, Claude Desktop, or Windsurf, add this to the client's MCP server settings. Replace the command with the absolute path to the compiled binary or installed shim; GUI clients may not inherit your shell's PATH.
