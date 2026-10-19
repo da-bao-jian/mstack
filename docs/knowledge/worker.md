@@ -2,7 +2,7 @@
 
 ## Simple
 
-The Mobius worker runs on the server and manages tasks using approved venue keys. It places and closes orders and runs the configured protection rules. The CLI reads what the server reports. A pending task is still waiting for work, and a closing task may still hold exposure. Funding accrued is an estimate until checked against venue records.
+The MoB worker runs on the server and manages tasks using approved venue keys. It places and closes orders and runs the configured protection rules. The CLI reads what the server reports. A pending task is still waiting for work, and a closing task may still hold exposure. Funding accrued is an estimate until checked against venue records.
 
 ## Precise
 

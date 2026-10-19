@@ -41,7 +41,7 @@ import type { Runtime } from "./run.ts";
  */
 
 const NOT_SUPPORTED =
-	"The Mobius API does not offer agent grants yet (PRD roadmap item 9); nothing was staged.";
+	"The MoB API does not offer agent grants yet (PRD roadmap item 9); nothing was staged.";
 const executionVenues = new Set(["hl", "lighter", "lighter-mainnet", "aster"]);
 
 function grantsDirectory(home: string): string {

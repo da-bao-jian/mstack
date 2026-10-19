@@ -21,7 +21,7 @@ const cases: { prompt: string; expect: string }[] = [
 	{ prompt: "what is mstack and what can you do?", expect: "mob" },
 	{ prompt: "where is the best funding right now?", expect: "mob-scan" },
 	{ prompt: "explain how funding arbitrage works", expect: "mob-explain" },
-	{ prompt: "import my mobius key", expect: "mob-keys" },
+	{ prompt: "import my MoB key", expect: "mob-keys" },
 	{ prompt: "open $5k HYPE long on hl, short on lighter", expect: "mob-open" },
 	{ prompt: "close my ETH position", expect: "mob-close" },
 ];

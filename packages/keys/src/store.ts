@@ -128,7 +128,7 @@ function validateStored(value: unknown): StoredKey {
 		throw new Error("Invalid stored key record");
 	const record = value as Record<string, unknown>;
 	if (typeof record.key !== "string" || !isApiKey(record.key))
-		throw new Error("Invalid stored Mobius API key");
+		throw new Error("Invalid stored MoB API key");
 	return { key: record.key, meta: validateMeta(record.meta as KeyMeta) };
 }
 
@@ -210,7 +210,7 @@ class FileStore extends BaseStore {
 		return join(this.directory(), `${ownerId(owner)}.json`);
 	}
 	async put(owner: string, secret: string, meta: KeyMeta) {
-		if (!isApiKey(secret)) throw new Error("Invalid Mobius API key");
+		if (!isApiKey(secret)) throw new Error("Invalid MoB API key");
 		await this.privateDirectories();
 		await atomicPrivate(
 			this.path(owner),
@@ -339,7 +339,7 @@ abstract class CommandStore extends BaseStore {
 		return legacy;
 	}
 	async put(owner: string, secret: string, meta: KeyMeta) {
-		if (!isApiKey(secret)) throw new Error("Invalid Mobius API key");
+		if (!isApiKey(secret)) throw new Error("Invalid MoB API key");
 		const service = await this.service(true);
 		await this.privateDirectories();
 		// Metadata is written and checked first and committed last, so a put
@@ -368,7 +368,7 @@ abstract class CommandStore extends BaseStore {
 			(await this.migrate(service, owner, await this.metaKeyId(owner)));
 		if (secret === null) return null;
 		if (!isApiKey(secret))
-			throw new Error("Credential store returned an invalid Mobius API key");
+			throw new Error("Credential store returned an invalid MoB API key");
 		const record = await this.readMetaRecord(owner);
 		if (!record)
 			throw new Error(
@@ -517,7 +517,7 @@ class SecretToolStore extends CommandStore {
 				this.command,
 				"store",
 				"--label",
-				"mstack Mobius API key",
+				"mstack MoB API key",
 				...this.attrs(service, owner),
 			],
 			`${secret}\n`,

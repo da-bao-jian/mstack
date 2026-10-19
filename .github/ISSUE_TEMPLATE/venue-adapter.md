@@ -9,7 +9,7 @@ labels: enhancement
 
 - Name and proposed identifier:
 - Public API documentation:
-- Tier: A (Mobius executable), B (other DEX), or C (CEX):
+- Tier: A (MoB executable), B (other DEX), or C (CEX):
 
 ## Data contract
 

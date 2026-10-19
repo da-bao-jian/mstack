@@ -21,7 +21,7 @@ if (process.env.MOB_LIVE !== "1") {
 const message = `mstack WalletConnect connection test: owner=${config.owner} nonce=${crypto.randomUUID()}. This is a test message, not a trade.`;
 const view = {
 	id: "p-1",
-	purpose: "Live WalletConnect smoke; no Mobius or venue submission",
+	purpose: "Live WalletConnect smoke; no MoB or venue submission",
 	owner: getAddress(config.owner),
 	expiresAt: Date.now() + 60_000,
 	digest: keccak256(stringToHex(message)),

@@ -10,7 +10,7 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
   +++++++++++######-------------              ETH    $14.0M 24h . funding +11%/yr . OI $7.0M . price +1.2%
  ++++++++++++######-------------   Onboarding legal x . hl - . lighter - . key none
 -------------######+++++++++++     Policy     manual . you approve each Proposal by naming it
- ------------######+++++++++       Next       say "set me up"
+ ------------######+++++++++       Next       say "set up mstack"
  ------------######+++++++
  ------------#####
  ------------###
@@ -46,7 +46,7 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
   +++++++++++######-------------              ETH    $14.0M 24h . funding +11%/yr . OI $7.0M . price +1.2%
  ++++++++++++######-------------   Onboarding legal x . hl - . lighter - . key none
 -------------######+++++++++++     Policy     manual . you approve each Proposal by naming it
- ------------######+++++++++       Next       say "set me up"
+ ------------######+++++++++       Next       say "set up mstack"
  ------------######+++++++
  ------------#####
  ------------###

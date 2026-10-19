@@ -248,7 +248,7 @@ export class MobiusClient {
 		signal?: AbortSignal,
 	): Promise<unknown> {
 		if (!Object.hasOwn(method === "GET" ? readRoutes : writeRoutes, route))
-			throw new Error("Invalid Mobius route");
+			throw new Error("Invalid MoB route");
 		const url = new URL(`${this.base}${route}`);
 		if (method === "GET")
 			for (const [key, value] of Object.entries(data))

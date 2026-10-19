@@ -294,7 +294,7 @@ export async function bindCommand(
 	}
 	if ("repair" in credential && credential.repair)
 		throw new Error(
-			"Server reports a standalone builder repair for an existing key. No replacement key was prepared; complete that repair in the Mobius app.",
+			"Server reports a standalone builder repair for an existing key. No replacement key was prepared; complete that repair in the MoB app.",
 		);
 	const session: Record<string, unknown> | undefined = credential.session
 		? object(credential.session)

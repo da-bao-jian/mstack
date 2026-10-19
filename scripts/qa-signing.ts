@@ -1,6 +1,6 @@
 // Gated QA of the streamlined signing and onboarding UX through a real Claude
 // Code session: the plugin is loaded from this checkout, `mob` runs against a
-// sandbox home that points at local fake Mobius servers, and the transcript is
+// sandbox home that points at local fake MoB servers, and the transcript is
 // checked for what the agent ran and asked. The second half starts a real
 // `mob approver` on a pseudo-terminal (expect plays the human) and drives the
 // approver and session-grant flows end to end. Run with:

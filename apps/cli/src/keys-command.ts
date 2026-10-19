@@ -106,14 +106,14 @@ async function importKey(
 			throw new UsageError("stdin must contain exactly one key line");
 	} else
 		try {
-			secret = (await read("Mobius API key: ")).trim();
+			secret = (await read("MoB API key: ")).trim();
 		} catch (error) {
 			throw new UsageError(
 				`${error instanceof Error ? error.message : String(error)}. Use --stdin for agent-mediated import. MOBIUS_API_KEY is only a read-only runtime override.`,
 			);
 		}
 	if (!isApiKey(secret))
-		throw new UsageError("Invalid Mobius API key format; not stored");
+		throw new UsageError("Invalid MoB API key format; not stored");
 	const apiBase = String(getConfig(config, "strategy_api_base"));
 	const checked = await verifyApiKey(apiBase, secret, rt.fetch, rt.now);
 	if (checked.status === "rejected" && checked.httpStatus === 401)

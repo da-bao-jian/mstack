@@ -1,7 +1,7 @@
 export const releaseTagFiles = [
 	"docs/AGENT-INSTALL.md",
 	"docs/AGENT-PROMPT.md",
-	"docs/MOBIUS-ASKS.md",
+	"docs/MOB-ASKS.md",
 	"README.md",
 ] as const;
 

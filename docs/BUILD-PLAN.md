@@ -45,20 +45,20 @@ After each report: run the root scripts, read the diff against the acceptance li
 
 # Build plan — P1 "Open" (PRD §12), client-side only
 
-Decision 2026-10-10: the Mobius funding-server cannot change for now. P1 is built entirely in this repo against the routes that exist today (PRD §5). Substitutes for the PRD §10 server items:
+Decision 2026-10-10: the MoB funding-server cannot change for now. P1 is built entirely in this repo against the routes that exist today (PRD §5). Substitutes for the PRD §10 server items:
 
 | PRD §10 item | Substitute in mstack |
 |---|---|
 | #1 preview route | Client-side preflight: venue readiness from `GET /api/binding/<venue>/credential` and `rebind-check`, HL open-interest caps, floors and quantization from venue metadata (mirroring the frontend's `resizePlan.ts`), the protection gate from the ported liquidation math, entry spread vs `maxSpreadBps` from live marks. The server's own `create` validation remains the final gate and its `readiness` error body is rendered verbatim. |
 | #2 server-applied leverage | Hyperliquid only: the owner's wallet signs `updateLeverage` directly (a `venue-submit` Proposal) before the open. Lighter and Aster leverage/margin mode cannot be set without a venue key, so the CLI reads what is keyless, warns, and **never includes `longLeverage` / `shortLeverage` / `*MarginMode` segments in the signed message unless it verified them on the venue**. The server would otherwise store metadata the worker could plan trims against. |
 | #3 client logging | The `X-Mobius-Client: mstack/<version>` header is already sent. Nothing else. |
-| #4 rate limits | The client self-limits to at most 2 requests/s per host to Mobius. |
+| #4 rate limits | The client self-limits to at most 2 requests/s per host to MoB. |
 | #5 legal acceptance | Existing auth-server routes: `GET /legal/terms`, `GET /legal/acceptance?wallet=`, `POST /legal/acceptance` with the EIP-712 `AcceptLegalTerms` from `reference/upstream/frontend/src/lib/legal.ts`, domain `{ name: "Mobius Legal", version: "1", chainId: <legal_chain_id config, default 97> }`. |
 | #12 Lighter tier check | The tier is not readable keylessly. The integrator approval is attempted once through the existing route; a refusal is reported as the venue's answer and never retried. |
 
 Signing rules (PRD §6.1) apply unchanged: the agent never signs; `mob sign <id>` is the only entrypoint; stage → preflight → stop → the user names the id.
 
-## W7 — Proposals, policy, signer core, Mobius write client
+## W7 — Proposals, policy, signer core, MoB write client
 - `packages/mobius-client` (`@mstack/mobius-client`): a typed client for every funding-server route in PRD §5.2 (reads move here from `apps/cli/src/status.ts`; the CLI keeps rendering). Message builders ported byte-exact from `reference/upstream/frontend/src/features/delta-neutral/lib/{openTaskMessage,resizeTaskMessage,liqProtectionMessage,sizeMismatchAutoCloseMessage}.ts` with their upstream tests, plus the inlined close / neutralize / auto-close messages from `ManageView.tsx` (lines ~883, ~1003, ~1025). Request bodies mirror `reference/upstream/frontend/src/features/binding/api.ts` (lines 489–735) and `OpenForm.tsx` (lines 1287–1373): `nonce = crypto.randomUUID()`, `timestamp` in unix seconds, `longPrice`/`shortPrice` = the venue marks at staging, `minFundingApy` always present in the message (default 0), optional segments only when set, numbers formatted with JS `String(n)`. Readiness errors parsed like `isVenueReadinessError`. Rate limiting as above.
 - `packages/proposals` (`@mstack/proposals`): the Proposal model of PRD §6.2. Store `~/.mob/proposals/<id>.json` (0600), ids `p-<n>` from a counter file, kinds `sign-text | sign-typed | venue-submit`, statuses `staged → previewed → awaiting-signature → signed → submitted → confirmed | rejected | failed | expired`, `expiresAt = createdAt + 300 s`, `digest` = keccak256 of the exact message bytes (text) or the EIP-712 hash (typed). A Proposal carries its `submit` plan (route + body builder from the signature) and its `preflight` result. One signature per Proposal, ever.
 - `packages/signers` (`@mstack/signers`): `Signer { address(): Promise<Address>; signMessage(args): Promise<Hex>; signTypedData(args): Promise<Hex> }`, viem-shaped so Hyperliquid's SDK can wrap it later. Backend `keystore`: `~/.mob/keystore/<address>.json`, scrypt + AES-256-GCM in the shape of `reference/upstream/packages/kms/src/kek.ts`, passphrase read from `/dev/tty` only (never stdin, argv or env), so an agent without a TTY cannot unlock it. `mob keystore create | import | list` (import reads the key from the TTY). Browser and WalletConnect arrive in W8 behind the same interface.
@@ -100,13 +100,13 @@ Decided 2026-10-11. Goal: ship something that feels like a finished product from
 
 # Session program (after 0.3.0)
 
-Decided 2026-10-12, design in `docs/SESSION-ONBOARDING.md`, Mobius-side asks in `docs/MOBIUS-ASKS.md`. Goal: onboarding in one browser visit on the Mobius API page, the API key as the session key, trading without a wallet popup, native signing kept for terminals without a browser.
+Decided 2026-10-12, design in `docs/SESSION-ONBOARDING.md`, MoB-side asks in `docs/MOB-ASKS.md`. Goal: onboarding in one browser visit on the MoB API page, the API key as the session key, trading without a wallet popup, native signing kept for terminals without a browser.
 
 | Package | Scope | Depends on |
 |---|---|---|
 | **W18 Strategy API client** | `@mstack/mobius-api`: typed client from the pinned OpenAPI 1.2.0 (tasks, requests, venue bindings), bearer + Idempotency-Key + 429, byte-exact `bindingMessage`/`canonical` port, funding-server key routes with the byte-exact `apiKeyMessage`, a fake Strategy API server for tests. | — |
 | **W19 key custody** | `@mstack/keys`: env → keychain → secret-tool → 0600 file; `mob keys import|create|list|revoke|show`; the key never printed, never in a Proposal file, redacted from errors; home screen and doctor lines. | — |
-| **W20 onboarding ceremony** | `mob onboard`: one-shot receiver + Mobius API page + polling checklist + hidden paste fallback; `--native`: legal, batch venue binding through the API, key creation Proposal; the browser sign page serves a multi-request session (one tab, one connection). | W18, W19 |
+| **W20 onboarding ceremony** | `mob onboard`: one-shot receiver + MoB API page + polling checklist + hidden paste fallback; `--native`: legal, batch venue binding through the API, key creation Proposal; the browser sign page serves a multi-request session (one tab, one connection). | W18, W19 |
 | **W21 trading via submit** | Proposal kind `api-submit`, `mob submit`, policy `auto`, `mob status` with the key, sign-guard covers submit, manage edits stay wallet-signed with a clear message. | W18, W19 |
 | **W22 skills, MCP, docs, QA, 0.4.0** | `/mob-setup` → onboard, `/mob-open` → submit, `/mob-keys`, MCP `propose_*` unchanged, README/READINESS/ARCHITECTURE, journeys E and F, CHANGELOG 0.4.0. | W20, W21 |
 | **W23 distribution by pasted prompt** | Agent-only install instructions, a release-pinned paste prompt, install-doc validation, a sandboxed paste-prompt smoke, and release placeholder wiring. | W22 |

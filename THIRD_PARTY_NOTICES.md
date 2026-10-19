@@ -20,7 +20,7 @@ installed packages. The WalletConnect license copy and dependency review were
 recorded in [W8b](docs/reports/W8.md#w8b--walletconnect). The Community License
 is not MIT; the repository's MIT license does not replace it.
 
-Byte-exact Mobius ports retain source paths and commit provenance in their headers.
+Byte-exact MoB ports retain source paths and commit provenance in their headers.
 Review dependency licenses and notices again when changing a pinned version or
 preparing binary distribution. W13 and W17 change no dependency versions.
 

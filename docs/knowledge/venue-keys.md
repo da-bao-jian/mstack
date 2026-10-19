@@ -2,7 +2,7 @@
 
 ## Simple
 
-The scanner needs no key. In the full Mobius service, the user's wallet authorizes venue keys that the server stores in encrypted form. Those keys let the worker trade. Hyperliquid and Aster keys cannot withdraw. Lighter's key is not trade-only: it can withdraw to the owner's own address. Funds stay in the user's venue accounts.
+The scanner needs no key. In the full MoB service, the user's wallet authorizes venue keys that the server stores in encrypted form. Those keys let the worker trade. Hyperliquid and Aster keys cannot withdraw. Lighter's key is not trade-only: it can withdraw to the owner's own address. Funds stay in the user's venue accounts.
 
 ## Precise
 

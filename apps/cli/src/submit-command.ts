@@ -33,7 +33,7 @@ async function recheck(p: Proposal, config: Config, rt: Runtime) {
 			`${p.id} ${reason}; nothing was sent. Run the original command again.`,
 		);
 	};
-	// Read checks target the public Mobius API, as they did at staging.
+	// Read checks target the public MoB API, as they did at staging.
 	const result = await runPreflight(
 		p,
 		new MobiusClient({

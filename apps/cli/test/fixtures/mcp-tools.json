@@ -130,7 +130,7 @@
 	},
 	{
 		"name": "explain",
-		"description": "Read bundled Markdown about funding, basis, fees, and Mobius protection. Omit topic to list topics. Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
+		"description": "Read bundled Markdown about funding, basis, fees, and MoB protection. Omit topic to list topics. Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
 		"inputSchema": {
 			"type": "object",
 			"properties": {

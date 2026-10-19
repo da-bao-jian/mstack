@@ -65,7 +65,7 @@ export async function bindFlow(log: (line: string) => void = () => {}) {
 			await command(["sign", proposal.id]);
 			assert.equal((await store.get(proposal.id)).status, "submitted");
 		};
-		await stage(["setup"], "Accept Mobius legal terms");
+		await stage(["setup"], "Accept MoB legal terms");
 		for (const [venue, steps] of [
 			["hl", ["prepare", "approve-agent", "approve-builder-fee"]],
 			["aster", ["prepare", "approve-agent"]],

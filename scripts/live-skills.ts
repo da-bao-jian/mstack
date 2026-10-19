@@ -79,7 +79,7 @@ try {
 			const rendered = code.replaceAll(`\${CLAUDE_SKILL_DIR}`, directory);
 			const out = await run(["bash", "-c", rendered], true, home);
 			if (!/API_REACHABLE: (ok|slow) ·/.test(out))
-				throw new Error("Mobius API was unreachable");
+				throw new Error("MoB API was unreachable");
 		}
 	}
 	console.log("\n$ claude plugin validate --strict .");

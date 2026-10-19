@@ -2,7 +2,7 @@
 
 ## Simple
 
-A funding spread must pay for entering and leaving both positions. The scanner includes taker fees on both legs and the Mobius builder fee on the Hyperliquid leg. That builder fee doubles when the other leg is Lighter. The default fees are estimates. Your account tier and market terms can change them.
+A funding spread must pay for entering and leaving both positions. The scanner includes taker fees on both legs and the MoB builder fee on the Hyperliquid leg. That builder fee doubles when the other leg is Lighter. The default fees are estimates. Your account tier and market terms can change them.
 
 ## Precise
 

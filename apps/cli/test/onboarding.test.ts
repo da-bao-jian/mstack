@@ -686,7 +686,7 @@ test("binding indicators show the next action before preview, including pending 
 			expect(output.replace(/^Legal acceptance[^\n]+\n/, "")).toStartWith(
 				"Hyperliquid binding · step 1 of 3 · prepare binding\n▶ prepare binding\n· approve agent\n· approve builder fee",
 			);
-			expect(output.indexOf("This signature asks Mobius")).toBeLessThan(
+			expect(output.indexOf("This signature asks MoB")).toBeLessThan(
 				output.indexOf("p-1 ·"),
 			);
 			expect(output).toContain("After submission, run mob bind hl");

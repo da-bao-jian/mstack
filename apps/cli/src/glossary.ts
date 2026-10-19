@@ -1,7 +1,7 @@
 const fields: Record<string, string> = {
 	glossary:
 		"Field meanings, venue names and calculation rules for this output.",
-	source: "direct means venue reads; hosted means the Mobius API.",
+	source: "direct means venue reads; hosted means the MoB API.",
 	observedAt: "Observation time in Unix milliseconds.",
 	annualizationMethod: "simple: hourly rate × 24 × 365; never compounded.",
 	venue: "Venue identifier; see glossary.venues for deployment names.",
@@ -55,7 +55,7 @@ const fields: Record<string, string> = {
 	roundTripFeePct:
 		"Estimated opening and closing taker fees on both legs, excluding builder fees, in percent.",
 	builderFeePct:
-		"Estimated opening and closing Mobius builder fees on the HL leg, in percent.",
+		"Estimated opening and closing MoB builder fees on the HL leg, in percent.",
 	entryCostPct:
 		"Signed entry price-spread estimate from marks, in percent; null without both marks.",
 	entryCostBasis:
@@ -88,13 +88,12 @@ const fields: Record<string, string> = {
 		"Total fractional funding divided by covered hours; null with no samples.",
 	minRatePerHour: "Minimum observed fractional hourly funding rate.",
 	maxRatePerHour: "Maximum observed fractional hourly funding rate.",
-	tasks:
-		"Public Mobius position records; submitted is not confirmed execution.",
+	tasks: "Public MoB position records; submitted is not confirmed execution.",
 	trims: "Liquidation-protection trim attempts reported by the server.",
 	resizes: "Resize attempts reported by the server.",
-	task_id: "Mobius position/task identifier.",
+	task_id: "MoB position/task identifier.",
 	owner: "Public wallet address owning the position.",
-	status: "Current worker state reported by Mobius.",
+	status: "Current worker state reported by MoB.",
 	size_usd: "Requested position notional in USD per leg.",
 	min_funding_apy:
 		"Minimum simple annual funding spread in percent for automatic closing.",

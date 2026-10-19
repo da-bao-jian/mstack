@@ -1,6 +1,6 @@
 ---
 name: mob-setup
-description: Onboard to API-key trading. Use for "set me up", "set up mobius", "connect wallet", or "create a trading key"; one wallet session accepts the terms, binds venues, creates the scoped key, and stores it without echoing it. (mstack)
+description: Onboard to API-key trading. Use for "set up mstack", "set me up", "set up MoB", "connect wallet", or "create a trading key"; one wallet session accepts the terms, binds venues, creates the scoped key, and stores it without echoing it. (mstack)
 license: MIT
 metadata:
   version: "0.4.4"
@@ -26,7 +26,7 @@ Run the preamble first. Use the printed `MOB_BIN` path in place of `mob`; shell-
 
 ## Wallet elsewhere
 
-If the user's wallet is not on this machine, add `--with walletconnect` to `mob sign c-N` once `walletconnect_project_id` is configured; the terminal shows a QR code. As a last resort, `mob onboard` without `--native` prints the Mobius page URL and a checklist; the user then pastes the key into the chat, which lands in the chat transcript and agent session logs, and you run exactly one import:
+If the user's wallet is not on this machine, add `--with walletconnect` to `mob sign c-N` once `walletconnect_project_id` is configured; the terminal shows a QR code. As a last resort, `mob onboard` without `--native` prints the MoB page URL and a checklist; the user then pastes the key into the chat, which lands in the chat transcript and agent session logs, and you run exactly one import:
 
 ```bash
 printf '%s' 'mobius_…' | mob keys import --stdin --name '<name>' --venues '<a,b>' --max-size '<usd>'

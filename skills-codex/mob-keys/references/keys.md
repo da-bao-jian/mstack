@@ -1,9 +1,9 @@
 # Key safety and actions
 
-The Mobius API key can open, cancel, close, and resize positions only for its
+The MoB API key can open, cancel, close, and resize positions only for its
 venue scope and USD cap per leg. It cannot withdraw, bind venues, approve fees,
 accept legal terms, or create another key. It has no expiry. Revoke it on the
-Mobius API page or with the signed `mob keys revoke <uuid>` flow.
+MoB API page or with the signed `mob keys revoke <uuid>` flow.
 
 The chat paste is stored in the chat transcript and local agent session logs.
 After import, the CLI prints only the `mobius_<uuid>…` prefix. A local delete

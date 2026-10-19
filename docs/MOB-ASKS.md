@@ -1,4 +1,4 @@
-# Mobius-side work that mstack depends on
+# MoB-side work that mstack depends on
 
 Each item has a fallback in mstack, listed so nothing here blocks the client work. Specs are exact so they can be built without a second conversation.
 
@@ -31,12 +31,12 @@ Decided against a localhost receiver. The user copies the key from the page and 
 On the API page, add **Copy prompt for mstack** beside the existing **Copy prompt**. Add the same prompt to a landing page at `mob.exchange/agent`.
 
 ```text
-Install mstack, the Mobius funding-arbitrage agent stack, and get me ready to trade. I authorize exactly:
+Install mstack, the MoB funding-arbitrage agent stack, and get me ready to trade. I authorize exactly:
 claude plugin marketplace add da-bao-jian/mstack && claude plugin install mstack@mstack
 curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.4/install.sh | sh
 Then follow https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.4/docs/AGENT-INSTALL.md from Verify: `mob --version`, `mob doctor`,
 run `mob` and reproduce its output verbatim in a fenced block as the welcome.
-Tell me if I need to restart; when the skills load, start with "set me up".
+Finish by telling me to type /reload-plugins, then say "set up mstack".
 ```
 
 The ready-to-paste landing-page title, three sentences, prompt, and custody statement are in `docs/AGENT-PROMPT.md`.
