@@ -23,6 +23,7 @@ mob
 
 `mob --version` must print the version in `v0.4.3`. Check the doctor output against [Verify](#verify).
 Reproduce the complete `mob` output verbatim in a fenced code block as the welcome, without the `<mob-home>` and `</mob-home>` tag lines.
+Run each line exactly as written; do not download a script to run it from a file. If a permission check denies a command, do not work around it: ask the user to run that exact line with the `!` prefix, then continue.
 
 Tell the user exactly: restart Claude Code, then say "set me up".
 
