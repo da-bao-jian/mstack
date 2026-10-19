@@ -7,6 +7,8 @@ not a claim that public release tags or artifacts were published.
 <!-- release-start -->
 ## [Unreleased]
 
+## [0.4.5] - 2026-10-19
+
 ### Fixed
 
 - Native onboarding never reached MoB with a Lighter venue: the prepare request had no `accountIndex`, so the API answered `HTTP 400: Lighter requires accountIndex and selects its own chain ID.` after the wallet had signed. `mob onboard --native` and `mob bind --all` now look up the wallet's main account on each Lighter deployment and sign it into the request. A venue with no account (Hyperliquid `userRole` or Lighter `accountsByL1Address`) stops onboarding before anything is staged or signed, names the venue, and prints a `--venues` list without it. `--lighter-account` applies to one Lighter venue and must belong to the wallet. The fake Strategy API now refuses a Lighter target without an account, as the live API does.
