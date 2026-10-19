@@ -27,6 +27,9 @@ not a claim that public release tags or artifacts were published.
 
 ### Fixed
 
+- The wallet address in the paste prompt was lost at the restart: the install guide now saves it with `mob config set owner` before the restart message, so "set me up" uses it.
+- The `/mob-setup` signing step no longer tells the agent to run a bare `mob sign c-N`, which fails for a new user with no saved signer; it runs the command that matches the chosen signer.
+- Stale text: the installer no longer says the Bash hook needs Bun, the shim's install hint no longer waits for a first public release, README step 2 describes the one-session onboarding, and USAGE describes the narrowed hook rule.
 - `mob approver` could not start from the shipped binary: it demanded an injected passphrase reader. It now reads the passphrase from the controlling terminal.
 - The approver pins the record it shows (Proposal content hash or ceremony fingerprint) and refuses to sign when the bytes changed after the card. Ctrl-C and Ctrl-D at its prompt decline instead of wedging the queue, a failing request never blocks the next one, a card whose requester disconnected is withdrawn and never signed, a mistyped passphrase after the idle window is not cached, a second approver on the same home is refused, SIGHUP cleans up like Ctrl-C, and a home path too long for a unix socket fails with a clear message.
 - `mob grant`: `revoke` probes the server like `create`; a grant answer is recorded only for the agent address the owner signed, and a revoke only when the server confirms `ok`; `--markets` takes base assets only and rejects venue market strings and repeats.

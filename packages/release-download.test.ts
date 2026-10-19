@@ -234,7 +234,7 @@ test("offline shim prints all three install options", async () => {
 	const result = await run(shim(taskHome), taskHome, base);
 	expect(result.code).toBe(1);
 	expect(result.err).toContain("1. Install Bun");
-	expect(result.err).toContain("2. After the first public release");
+	expect(result.err).toContain("2. Install the release binary");
 	expect(result.err).toContain("3. Download mob");
 	expect(await readdir(join(taskHome, ".mob/bin"))).toEqual([]);
 });
