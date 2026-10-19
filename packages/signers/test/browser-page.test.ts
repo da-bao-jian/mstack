@@ -50,6 +50,8 @@ async function page(
 		view?: Record<string, unknown>;
 		secondWallet?: boolean;
 		offline?: boolean;
+		walletErrors?: Record<string, { code?: number; message: string }>;
+		noAccounts?: boolean;
 	} = {},
 ) {
 	const elements = new Map<string, Element>();
@@ -95,8 +97,11 @@ async function page(
 				await new Promise<void>((resolve) => {
 					release = resolve;
 				});
+			const failure = options.walletErrors?.[req.method];
+			if (failure)
+				throw Object.assign(new Error(failure.message), { code: failure.code });
 			if (["eth_requestAccounts", "eth_accounts"].includes(req.method))
-				return [address];
+				return options.noAccounts ? [] : [address];
 			if (req.method === "eth_chainId") return `0x${chain.toString(16)}`;
 			if (req.method === "wallet_switchEthereumChain") {
 				if (options.refuseChain) throw new Error("User refused chain switch");
@@ -642,4 +647,69 @@ test("the page ends on the server's final state, not on a dropped connection", a
 		"Error. Lost the connection to mob. Your terminal shows what happened.",
 	);
 	expect(lost.el("sign").disabled).toBe(true);
+});
+
+test.each([
+	[
+		{ code: -32002, message: "Request already pending" },
+		"Your wallet already has a request open. Open the wallet, finish or close that request, then try again.",
+	],
+	[
+		{ code: 4001, message: "User rejected the request." },
+		"You declined the connection in your wallet. Click Connect wallet to try again.",
+	],
+	[
+		{ code: 4100, message: "Unauthorized" },
+		"Your wallet has not allowed this page yet. Unlock the wallet and connect this site, then try again.",
+	],
+] as const)(
+	"a wallet connect error %o says what to do and leaves Connect usable",
+	async (error, text) => {
+		const p = await page({ walletErrors: { eth_requestAccounts: error } });
+		await p.el("connect").onclick?.();
+		expect(p.el("status").textContent).toBe(text);
+		expect(p.el("connect").disabled).toBe(false);
+		expect(p.posts).toEqual([]);
+	},
+);
+
+test("a wallet with no unlocked account is told to unlock it", async () => {
+	const p = await page({ noAccounts: true });
+	await p.el("connect").onclick?.();
+	expect(p.el("status").textContent).toBe(
+		"Error. The wallet returned no account. Unlock it, choose the expected owner, then try again.",
+	);
+});
+
+test("declining a ceremony chain switch keeps the step and lets the user retry", async () => {
+	const failing = await page({
+		typed: true,
+		view: { id: "c-1:hl", steps: [step("c-1:hl", "current")] },
+		walletErrors: {
+			wallet_switchEthereumChain: { code: 4001, message: "User rejected" },
+		},
+	});
+	await failing.el("connect").onclick?.();
+	await failing.el("sign").onclick?.();
+	expect(failing.el("status").textContent).toBe(
+		"You declined the switch to BNB Smart Chain Testnet. Click Sign in wallet again and approve the switch.",
+	);
+	expect(failing.el("sign").disabled).toBe(false);
+	expect(failing.el("reject").disabled).toBe(false);
+	expect(failing.posts.map((post) => post.path)).not.toContain("/api/reject");
+});
+
+test("a wallet window that does not appear gets a hint after 15 seconds", async () => {
+	const p = await page({
+		pause: "eth_requestAccounts",
+		view: { expiresAt: 100_000 },
+	});
+	void p.el("connect").onclick?.();
+	await Bun.sleep(0);
+	p.advance(16_000);
+	expect(p.el("status").textContent).toBe(
+		"Connecting. Choose the expected owner in your wallet. No wallet window? Click the wallet's icon in the browser toolbar.",
+	);
+	p.advance(1_000);
+	expect(p.el("status").textContent.match(/No wallet window/g)).toHaveLength(1);
 });

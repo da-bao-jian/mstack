@@ -5,7 +5,6 @@ import {
 	preparePayload,
 	readPayload,
 	StrategyApiClient,
-	StrategyApiError,
 	type VenueBindingBatch,
 } from "@mstack/mobius-api";
 import {
@@ -35,6 +34,11 @@ import {
 } from "@mstack/signers";
 import { getAddress, type Hex } from "viem";
 import pkg from "../package.json";
+import {
+	explainCeremonyFailure,
+	explainVenueResult,
+	type FailureContext,
+} from "./binding-errors.ts";
 import {
 	chooseSigner,
 	getConfig,
@@ -204,6 +208,8 @@ export async function stageCeremony(
 		(ceremony) =>
 			ceremony.owner === owner &&
 			ceremony.apiBase === strategyBase &&
+			// A nearly expired ceremony would leave too little time to sign.
+			ceremony.expiresAt - rt.now() > 120_000 &&
 			!["complete", "partial", "rejected", "failed", "expired"].includes(
 				ceremony.status,
 			) &&
@@ -306,6 +312,22 @@ export async function nativeOnboard(
 		);
 }
 
+/** The command that stages a fresh ceremony with the same plan. */
+function restageCommand(ceremony: Ceremony): string {
+	const venues = [
+		...(ceremony.ready ?? []),
+		...(ceremony.integrators ?? []).map((plan) => plan.venue),
+		...ceremony.venues.map((target) => target.venue),
+	].join(",");
+	const rebind = ceremony.venues.some((target) => target.rebind)
+		? " --rebind"
+		: "";
+	const plan = ceremony.keyPlan;
+	return plan
+		? `mob onboard --native --venues '${venues}'${plan.name === "mstack" ? "" : ` --name '${plan.name}'`} --max-size '${plan.maxSizeUsd}'${rebind}`
+		: `mob bind --all --venues '${venues}'${rebind}`;
+}
+
 function view(step: CeremonyProposal) {
 	return {
 		id: step.id,
@@ -353,6 +375,11 @@ export async function signCeremony(
 ) {
 	const store = new CeremonyStore(rt.home, rt.now, rt.err);
 	let ceremony = await store.get(id);
+	const failureContext: FailureContext = {
+		id,
+		owner: ceremony.owner,
+		restage: restageCommand(ceremony),
+	};
 	if (
 		["complete", "partial", "rejected", "failed", "expired"].includes(
 			ceremony.status,
@@ -386,6 +413,56 @@ export async function signCeremony(
 	// through status polling and the key step, which carries its own window.
 	const deadline = ceremony.expiresAt + 900_000;
 	const legalPending = Boolean(ceremony.legal && !ceremony.legal.signature);
+	// MoB accepts an integrator approval timestamp for 300 seconds, so each
+	// step is created when the wallet session starts, not when it is staged.
+	// An unsigned step from an earlier session is replaced.
+	const approvalBase = String(getConfig(config, "api_base"));
+	for (const plan of ceremony.integrators ?? []) {
+		const existing = ceremony.approvals?.find(
+			(item) => item.venue === plan.venue,
+		);
+		if (existing?.signatureAttemptedAt !== undefined) continue;
+		const createdAt = rt.now();
+		const timestamp = Math.floor(createdAt / 1000);
+		const nonce = crypto.randomUUID();
+		const created = ceremonyStep(
+			`${id}:integrator-${plan.venue}`,
+			ceremony.owner,
+			`Approve the zero-fee Lighter integrator on ${plan.venue} (keeps your key)`,
+			{
+				type: "text",
+				message: lighterIntegratorApprovalMessage({
+					ownerAddress: ceremony.owner,
+					venue: plan.venue,
+					integratorIndex: plan.integratorIndex,
+					nonce,
+					timestamp,
+				}),
+			},
+			createdAt,
+			Math.min(createdAt + 300_000, deadline),
+			{
+				type: "integrator-ceremony",
+				base: approvalBase,
+				body: {
+					ownerAddress: ceremony.owner.toLowerCase(),
+					venue: plan.venue,
+					nonce,
+					timestamp,
+				},
+			},
+			{ venue: plan.venue },
+		);
+		ceremony = await store.update(id, (record) => {
+			record.approvals = [
+				...(record.approvals ?? []).filter((item) => item.venue !== plan.venue),
+				created,
+			];
+		});
+	}
+	const pendingApprovals = (ceremony.approvals ?? []).filter(
+		(step) => !step.signature,
+	);
 	if (backend === "browser") {
 		const browser = browserCeremonySigner(
 			ceremony.id,
@@ -400,12 +477,10 @@ export async function signCeremony(
 				},
 			},
 		);
-		// Integrator approvals are created when signed; prepare follows them.
 		browser.addSteps([
 			...(legalPending && ceremony.legal ? [view(ceremony.legal)] : []),
-			...(ceremony.prepare && !ceremony.integrators?.length
-				? [view(ceremony.prepare)]
-				: []),
+			...pendingApprovals.map(view),
+			...(ceremony.prepare ? [view(ceremony.prepare)] : []),
 		]);
 		session = browser;
 	} else if (backend === "walletconnect") {
@@ -576,14 +651,14 @@ export async function signCeremony(
 				);
 			} catch (error) {
 				const message = redactKey(
-					error instanceof Error ? error.message : String(error),
+					explainCeremonyFailure(error, failureContext).message,
 				);
 				await store.update(id, (record) => {
 					record.status = "partial";
 					record.error = message;
 				});
 				rt.out(
-					`Key creation did not complete: ${message}. Retry with mob keys create --name '${plan.name}' --venues '${venues.join(",")}' --max-size '${plan.maxSizeUsd}'.`,
+					`The venues are bound, but the key was not created. ${message} To create only the key, run \`mob keys create --name '${plan.name}' --venues '${venues.join(",")}' --max-size '${plan.maxSizeUsd}'\`.`,
 				);
 			}
 		};
@@ -609,49 +684,12 @@ export async function signCeremony(
 			ceremony = await store.get(id);
 		}
 
-		// MoB accepts an integrator approval timestamp for 300 seconds, so each
-		// step is created just before it is signed.
-		const approvalBase = String(getConfig(config, "api_base"));
 		const approved: string[] = [];
 		for (const plan of ceremony.integrators ?? []) {
-			let step = ceremony.approvals?.find((item) => item.venue === plan.venue);
-			if (!step) {
-				const createdAt = rt.now();
-				const timestamp = Math.floor(createdAt / 1000);
-				const nonce = crypto.randomUUID();
-				const created = ceremonyStep(
-					`${id}:integrator-${plan.venue}`,
-					ceremony.owner,
-					`Approve the zero-fee Lighter integrator on ${plan.venue} (keeps your key)`,
-					{
-						type: "text",
-						message: lighterIntegratorApprovalMessage({
-							ownerAddress: ceremony.owner,
-							venue: plan.venue,
-							integratorIndex: plan.integratorIndex,
-							nonce,
-							timestamp,
-						}),
-					},
-					createdAt,
-					Math.min(createdAt + 300_000, deadline),
-					{
-						type: "integrator-ceremony",
-						base: approvalBase,
-						body: {
-							ownerAddress: ceremony.owner.toLowerCase(),
-							venue: plan.venue,
-							nonce,
-							timestamp,
-						},
-					},
-					{ venue: plan.venue },
-				);
-				ceremony = await store.update(id, (record) => {
-					record.approvals = [...(record.approvals ?? []), created];
-				});
-				step = created;
-			}
+			const step = ceremony.approvals?.find(
+				(item) => item.venue === plan.venue,
+			);
+			if (!step) throw new Error(`No integrator step for ${plan.venue}`);
 			if (step.submit.type !== "integrator-ceremony")
 				throw new Error("Invalid integrator step");
 			session.addSteps?.([view(step)]);
@@ -724,13 +762,9 @@ export async function signCeremony(
 					{ idempotencyKey: ceremony.prepareIdempotencyKey },
 				);
 			} catch (error) {
-				if (
-					error instanceof StrategyApiError &&
-					error.code === "rebind_required"
-				)
-					throw new UsageError(
-						`MoB refused to prepare: ${error.error ?? "a venue's MoB key is not usable"}. Stage it again with --rebind to replace the key; an active position on that venue blocks the rebind.`,
-					);
+				await store.update(id, (record) => {
+					record.status = "failed";
+				});
 				throw error;
 			}
 			ceremony = await store.recordPrepared(id, prepared);
@@ -832,9 +866,6 @@ export async function signCeremony(
 		const successful = latest.results.filter((result) =>
 			["bound", "already_bound"].includes(result.status),
 		);
-		const failures = latest.results.filter(
-			(result) => result.status === "failed",
-		);
 		await store.update(id, (record) => {
 			record.status =
 				successful.length === latest.results.length
@@ -844,10 +875,9 @@ export async function signCeremony(
 						: "failed";
 			record.latest = latest;
 		});
-		for (const result of failures)
-			rt.out(
-				`${result.venue} failed · ${result.code ?? "unknown"} · retryable ${result.retryable ?? false}`,
-			);
+		for (const result of latest.results)
+			if (!["bound", "already_bound"].includes(result.status))
+				rt.out(explainVenueResult(result, failureContext));
 		rt.out(
 			`${id} ${successful.length === latest.results.length ? "complete" : "partial"} · ${successful.length} venues bound`,
 		);
@@ -873,8 +903,8 @@ export async function signCeremony(
 				read,
 			);
 	} catch (error) {
-		failure = error;
-		throw error;
+		failure = explainCeremonyFailure(error, failureContext);
+		throw failure;
 	} finally {
 		waiting?.stop();
 		await session.close(failure);
