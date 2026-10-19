@@ -52,7 +52,7 @@ test("agent install doc stays short and exposes executable host commands", async
 		resolve(root, "apps/cli/src/keys-command.ts"),
 		"utf8",
 	);
-	for (const command of ["doctor", "mcp", "onboard", "config"])
+	for (const command of ["doctor", "mcp", "onboard"])
 		expect(runSource).toContain(`${command}:`);
 	expect(runSource).toContain('args[0] === "--version"');
 	for (const command of ["import", "delete"])
@@ -71,11 +71,8 @@ test("agent install doc stays short and exposes executable host commands", async
 	expect(mobReferences.length).toBeGreaterThan(0);
 	for (const command of mobReferences)
 		expect(command).toMatch(
-			/^mob (?:--version|doctor|mcp|onboard|keys (?:import|delete)|config set owner '<address>')$/,
+			/^mob (?:--version|doctor|mcp|onboard|keys (?:import|delete))$/,
 		);
-
-	// The paste prompt's address must survive the restart into onboarding.
-	expect(install).toContain("mob config set owner '<address>'");
 
 	const setup = await readFile(resolve(root, "scripts/setup.ts"), "utf8");
 	expect(await Bun.file(resolve(root, "setup")).exists()).toBe(true);

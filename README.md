@@ -30,7 +30,7 @@ Install mstack, the Mobius funding-arbitrage agent stack, and get me ready to tr
 Read https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.2/docs/AGENT-INSTALL.md
 and follow it for this host exactly. Then verify with `mob --version` and `mob doctor`,
 run `mob` and reproduce its output verbatim in a fenced block as the welcome.
-Tell me if I need to restart; when the skills load, start with "set me up". My wallet address is 0x…
+Tell me if I need to restart; when the skills load, start with "set me up".
 ```
 
 ## Install
@@ -112,7 +112,7 @@ GUI clients may not inherit your shell's PATH. MCP reads public, onboarding, and
 ## What you can do
 
 1. **Install.** Use the plugin, binary installer, or clone setup above. Run `mob --version`.
-2. **Onboard.** Say "set me up", or run `mob onboard --native --owner 0x… --venues hl,lighter --max-size 5000`, then `mob sign c-N --with browser`. One wallet session accepts the legal terms, binds the venues, creates a scoped key with that cap, and stores it locally; the key never prints. Require the `Ready · …` line. Without a wallet on this machine, `mob onboard` prints the Mobius API page instead: paste the key once for `mob keys import --stdin`, or run `mob keys import` yourself for a hidden terminal paste.
+2. **Onboard.** Say "set me up". Setup first asks whether you bring your own wallet (a browser extension, a phone wallet over WalletConnect, or your key imported into mstack's encrypted keystore with `mob keystore import`) or create a new one with `mob keystore create`; keystore commands run in your own terminal, never in the chat. Or run `mob onboard --native --owner 0x… --venues hl,lighter --max-size 5000`, then `mob sign c-N --with browser`. One wallet session accepts the legal terms, binds the venues, creates a scoped key with that cap, and stores it locally; the key never prints. Require the `Ready · …` line. Without a wallet on this machine, `mob onboard` prints the Mobius API page instead: paste the key once for `mob keys import --stdin`, or run `mob keys import` yourself for a hidden terminal paste.
 3. **Scan.** Run `mob scan --size 1000` to compare executable pairs and the best pairs anywhere.
    Funding annualization is simple, not compounded: `ratePerInterval / intervalHours × 24 × 365 × 100`.
    Fees and mark entry costs are estimates. Failed venues remain visible.

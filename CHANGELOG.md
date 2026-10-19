@@ -7,6 +7,14 @@ not a claim that public release tags or artifacts were published.
 <!-- release-start -->
 ## [Unreleased]
 
+### Changed
+
+- The paste prompt no longer carries a wallet address. `/mob-setup` first asks whether the user brings their own wallet (browser extension, phone over WalletConnect, or imported into mstack's encrypted keystore) or creates a new one, and hands keystore commands to the human's own terminal.
+
+### Fixed
+
+- The Bash hook denies `mob keystore create|import|list` from the agent; keystore commands read a wallet key and passphrase and belong in the human's terminal.
+
 ## [0.4.2] - 2026-10-19
 
 ### Added
