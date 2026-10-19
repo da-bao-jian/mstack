@@ -3,7 +3,7 @@ name: mob-keys
 description: Manage the scoped MoB API key safely. Use for "import my key", "show key status", "list my keys", "revoke this key", or "delete the local key"; never reveals or echoes the secret. (mstack)
 license: MIT
 metadata:
-  version: "0.4.4"
+  version: "0.4.5"
 ---
 
 ```bash
