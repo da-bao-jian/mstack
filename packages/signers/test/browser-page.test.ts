@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { runInNewContext } from "node:vm";
-import { stringToHex, type TypedDataDefinition } from "viem";
+import { hashTypedData, stringToHex, type TypedDataDefinition } from "viem";
 import logo from "../../../assets/logo.json";
 import html from "../src/browser.html" with { type: "text" };
 
@@ -284,9 +284,17 @@ test("bundled page switches pinned chain before typed-data signing", async () =>
 		p.calls.find((call) => call.method === "wallet_switchEthereumChain")
 			?.params,
 	).toEqual([{ chainId: "0x61" }]);
-	expect(
-		p.calls.find((call) => call.method === "eth_signTypedData_v4")?.params,
-	).toEqual([owner, JSON.stringify(p.typedData)]);
+	// Rabby and MetaMask hash a missing EIP712Domain as an empty domain; the
+	// page declares it so the wallet signs the digest the page shows.
+	const sent = p.calls.find((call) => call.method === "eth_signTypedData_v4")
+		?.params as [string, string];
+	expect(sent[0]).toBe(owner);
+	const wallet = JSON.parse(sent[1]);
+	expect(wallet.types.EIP712Domain).toEqual([
+		{ name: "name", type: "string" },
+		{ name: "chainId", type: "uint256" },
+	]);
+	expect(hashTypedData(wallet)).toBe(hashTypedData(p.typedData));
 	expect(
 		p.calls.findIndex((call) => call.method === "wallet_switchEthereumChain"),
 	).toBeLessThan(

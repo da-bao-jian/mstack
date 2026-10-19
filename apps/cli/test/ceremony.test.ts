@@ -12,7 +12,7 @@ import {
 	loopbackFetch,
 } from "../../../packages/mobius-api/test/fake-api.ts";
 import { openBridge } from "../../../packages/signers/test/loopback.ts";
-import { setConfig } from "../src/config.ts";
+import { readConfig, setConfig } from "../src/config.ts";
 import { cliKeyStore } from "../src/key-store.ts";
 import { type Runtime, run } from "../src/run.ts";
 import { venueAccountResponse } from "./fixtures/venue-accounts.ts";
@@ -160,13 +160,19 @@ function nativeFetch(
 		calls: string[];
 		issues?: Record<string, string>;
 		approvals?: string[];
+		missing?: string[];
 	},
 ): Runtime["fetch"] {
 	return async (input, init) => {
 		const url = new URL(String(input));
 		const method = init?.method ?? "GET";
 		options.calls.push(`${method} ${url.host}${url.pathname}`);
-		const account = venueAccountResponse(input, init, api.owner.address);
+		const account = venueAccountResponse(
+			input,
+			init,
+			api.owner.address,
+			options.missing ?? [],
+		);
 		if (account) return account;
 		// A bound Robinhood Lighter key whose integrator approval is missing.
 		if (url.pathname === "/api/binding/lighter/credential")
@@ -284,6 +290,13 @@ test("a fresh user with no saved signer is told to name one, then --with signs",
 	);
 	expect(await run(["sign", "c-1", "--with", "keystore"], rt)).toBe(0);
 	expect(lines.join("\n")).toContain("Ready · 2 venues bound");
+	// The signer used once is saved, so later key Proposals need no setup.
+	expect(lines.join("\n")).toContain(
+		"Saved keystore as your signer for later signatures",
+	);
+	expect((await readConfig(home)).signer).toBe("keystore");
+	expect(await run(["keys", "list"], rt)).toBe(0);
+	expect(lines.join("\n")).toContain("Next: mob sign p-1");
 });
 
 test("native onboard binds, creates the key, and stores it in one wallet session", async () => {
@@ -622,4 +635,63 @@ test("a prepare MoB refuses after signing ends with what to do, not the raw erro
 	expect((await new CeremonyStore(home, () => now).get("c-1")).status).toBe(
 		"failed",
 	);
+});
+
+test("a wallet that never connects ends the session at the first step's deadline with the restage command", async () => {
+	const now = Date.now();
+	let clock = now;
+	const api = fakeStrategyApi({ now: () => clock });
+	servers.push(api);
+	const { home } = await nativeHome(api);
+	const lines: string[] = [];
+	const rt: Partial<Runtime> = {
+		home,
+		now: () => clock,
+		fetch: nativeFetch(api, { legalAccepted: true, calls: [] }),
+		sleep: async () => {},
+		stdinIsTTY: false,
+		stdoutIsTTY: false,
+		out: (line) => lines.push(line),
+		err: (line) => lines.push(line),
+		openUrl: async () => {},
+	};
+	const args = ["onboard", "--native", "--owner", api.owner.address];
+	expect(await run([...args, "--venues", "hl"], rt)).toBe(0);
+	// Start signing 200 ms before the prepare step's window closes.
+	clock = now + 299_800;
+	const started = Date.now();
+	expect(await run(["sign", "c-1", "--with", "browser"], rt)).not.toBe(0);
+	expect(Date.now() - started).toBeLessThan(5_000);
+	expect(lines.join("\n")).toContain(
+		"The wallet session ran out of time before every step was signed. Run `mob onboard --native --venues 'hl' --max-size '5000'`",
+	);
+});
+
+test("onboarding stops before staging when the wallet never deposited on Hyperliquid", async () => {
+	const now = Date.now();
+	const api = fakeStrategyApi({ now: () => now });
+	servers.push(api);
+	const { home } = await nativeHome(api);
+	const lines: string[] = [];
+	const rt: Partial<Runtime> = {
+		home,
+		now: () => now,
+		fetch: nativeFetch(api, {
+			legalAccepted: true,
+			calls: [],
+			missing: ["hl-deposit"],
+		}),
+		sleep: async () => {},
+		stdinIsTTY: false,
+		stdoutIsTTY: false,
+		out: (line) => lines.push(line),
+		err: (line) => lines.push(line),
+	};
+	const args = ["onboard", "--native", "--owner", api.owner.address];
+	expect(await run([...args, "--venues", "hl,lighter"], rt)).not.toBe(0);
+	expect(lines.join("\n")).toContain(
+		"This wallet's Hyperliquid perps account holds no USDC, so MoB reports Hyperliquid as unavailable and cannot create a key for it. Deposit USDC into Hyperliquid perps (app.hyperliquid.xyz, from Arbitrum), then run this again, or leave it out with --venues lighter. Nothing was staged.",
+	);
+	expect(await new CeremonyStore(home, () => now).list()).toHaveLength(0);
+	expect(await run([...args, "--venues", "lighter"], rt)).toBe(0);
 });

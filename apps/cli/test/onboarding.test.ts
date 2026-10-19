@@ -223,7 +223,9 @@ test("HL requires a funded owner; Lighter requires an existing account", async (
 	try {
 		h.server.state.funded = false;
 		expect(await h.invoke(["bind", "hl"])).toBe(1);
-		expect(h.lines.join("\n")).toContain("never deposited");
+		expect(h.lines.join("\n")).toContain(
+			"Hyperliquid perps account holds no USDC",
+		);
 		h.server.state.account = false;
 		for (const venue of ["lighter", "lighter-mainnet"])
 			expect(await h.invoke(["bind", venue])).toBe(1);

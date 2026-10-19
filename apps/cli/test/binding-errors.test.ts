@@ -143,6 +143,11 @@ test.each([
 		"bind the venue, then create the key again",
 	],
 	[
+		503,
+		"Venue binding check is temporarily unavailable. Try again.",
+		"deposit USDC on Hyperliquid (app.hyperliquid.xyz, from Arbitrum)",
+	],
+	[
 		401,
 		"Valid wallet signature required.",
 		"Create the key again and sign it promptly",

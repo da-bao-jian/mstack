@@ -44,6 +44,7 @@ import {
 	getConfig,
 	numberFlag,
 	readConfig,
+	rememberSigner,
 	SETUP_FIRST,
 	UsageError,
 } from "./config.ts";
@@ -52,7 +53,12 @@ import { cliKeyStore, requireWritableKeyStore } from "./key-store.ts";
 import { keysCommand } from "./keys-command.ts";
 import type { Runtime } from "./run.ts";
 import { type LegalPlan, legalPlan, stageLegal } from "./setup-command.ts";
-import { venueAccounts } from "./venue-accounts.ts";
+import {
+	HL_DEPOSIT_HINT,
+	hlDeposited,
+	unavailableHint,
+	venueAccounts,
+} from "./venue-accounts.ts";
 import { walletWait } from "./wallet-wait.ts";
 
 const allVenues = ["hl", "lighter", "aster", "lighter-mainnet"] as const;
@@ -159,6 +165,16 @@ export async function stageCeremony(
 		rt.out("Ready · all selected venues are already bound");
 		return;
 	}
+	// MoB cannot check the venue, so a new binding would not help.
+	const unavailable = venues.find(
+		(venue) => readiness.get(venue)?.issue === "unavailable",
+	);
+	if (unavailable) {
+		const rest = requested.filter((venue) => venue !== unavailable);
+		throw new UsageError(
+			`${unavailableHint(unavailable)}${rest.length ? `, or leave it out with --venues ${rest.join(",")}` : ""}. Nothing was staged.`,
+		);
+	}
 	const approve = venues.filter(
 		(venue): venue is LighterVenue =>
 			(venue === "lighter" || venue === "lighter-mainnet") &&
@@ -181,7 +197,19 @@ export async function stageCeremony(
 		typeof values["lighter-account"] === "string"
 			? numberFlag(values["lighter-account"], "lighter-account", 0, true)
 			: undefined;
-	const accounts = await venueAccounts(owner, bind, rt, lighterAccount);
+	const accounts = await venueAccounts(
+		owner,
+		bind,
+		rt,
+		lighterAccount,
+		requested,
+	);
+	if (bind.includes("hl") && !(await hlDeposited(owner, rt))) {
+		const rest = requested.filter((venue) => venue !== "hl");
+		throw new UsageError(
+			`${HL_DEPOSIT_HINT}${rest.length ? `, or leave it out with --venues ${rest.join(",")}` : ""}. Nothing was staged.`,
+		);
+	}
 	const integrators = await Promise.all(
 		approve.map(async (venue) => ({
 			venue,
@@ -300,6 +328,11 @@ export async function nativeOnboard(
 		await stageLegal(rt);
 		return;
 	}
+	const selected = parseVenues(values.venues);
+	if (selected.length < 2)
+		throw new UsageError(
+			"A trading key needs at least two venues, one for each leg. Add a venue with --venues and run this again; nothing else is needed for the bound venue.",
+		);
 	if (!(await (await cliKeyStore(rt)).get(getAddress(config.owner))))
 		await keysCommand(
 			["create"],
@@ -385,7 +418,9 @@ export async function signCeremony(
 			ceremony.status,
 		)
 	)
-		throw new UsageError(`Ceremony ${id} is ${ceremony.status}`);
+		throw new UsageError(
+			`Ceremony ${id} already ended (${ceremony.status})${ceremony.error ? `: ${ceremony.error}` : ""}${ceremony.status === "complete" ? "" : ` To try again, run \`${failureContext.restage}\`.`}`,
+		);
 	const config = await readConfig(rt.home);
 	if (!config.owner || getAddress(config.owner) !== getAddress(ceremony.owner))
 		throw new UsageError("Configured owner does not match ceremony owner");
@@ -514,9 +549,33 @@ export async function signCeremony(
 		};
 	}
 	let failure: unknown;
+	// Connecting waits no longer than the first step that is still unsigned.
+	const firstDue = Math.min(
+		deadline,
+		...[
+			ceremony.legal,
+			...(ceremony.approvals ?? []),
+			ceremony.prepare,
+			...ceremony.requests,
+		]
+			.filter((step) => step && !step.signature)
+			.map((step) => (step as CeremonyProposal).expiresAt),
+	);
+	let connectTimer: ReturnType<typeof setTimeout> | undefined;
 	try {
-		if (getAddress(await session.address()) !== getAddress(ceremony.owner))
+		const connected = await Promise.race([
+			session.address(),
+			new Promise<never>((_, reject) => {
+				connectTimer = setTimeout(
+					() =>
+						reject(new Error("Ceremony expired while waiting for the wallet")),
+					Math.max(0, firstDue - rt.now()),
+				);
+			}),
+		]).finally(() => clearTimeout(connectTimer));
+		if (getAddress(connected) !== getAddress(ceremony.owner))
 			throw new Error("Owner does not match signer address");
+		await rememberSigner(String(backend), config, rt);
 		const client = new StrategyApiClient({
 			base: ceremony.apiBase,
 			version: pkg.version,
@@ -551,8 +610,18 @@ export async function signCeremony(
 					);
 				stored.signatureAttemptedAt = rt.now();
 			});
+			let timer: ReturnType<typeof setTimeout> | undefined;
 			try {
-				const signature = await session.sign(view(step));
+				// Stop when the step's window ends instead of waiting for the session.
+				const signature = await Promise.race([
+					session.sign(view(step)),
+					new Promise<never>((_, reject) => {
+						timer = setTimeout(
+							() => reject(new Error("Ceremony step expired before signing")),
+							Math.max(0, step.expiresAt - rt.now()),
+						);
+					}),
+				]);
 				await store.update(id, (record) => {
 					const stored = find(record, step.id);
 					if (!stored) throw new Error("Ceremony step disappeared");
@@ -568,6 +637,8 @@ export async function signCeremony(
 					if (stored) stored.status = "rejected";
 				});
 				throw error;
+			} finally {
+				clearTimeout(timer);
 			}
 		};
 
@@ -811,7 +882,14 @@ export async function signCeremony(
 			return;
 		}
 
-		const readExpiresAt = Math.floor(ceremony.expiresAt / 1000);
+		// A read authorization is valid for 300 seconds from when it is made.
+		const readUntil =
+			ceremony.read?.expiresAt ??
+			Math.max(
+				ceremony.expiresAt,
+				Math.min(rt.now() + 290_000, ceremony.expiresAt + 600_000),
+			);
+		const readExpiresAt = Math.floor(readUntil / 1000);
 		const readBody = readPayload(
 			{ owner: ceremony.owner, bindingId, expiresAt: readExpiresAt },
 			rt.now,
@@ -828,7 +906,7 @@ export async function signCeremony(
 					owner: record.owner,
 					purpose: "Authorize binding status reads",
 					createdAt: rt.now(),
-					expiresAt: record.expiresAt,
+					expiresAt: readUntil,
 					digest: digest(readSigning),
 					signing: readSigning,
 					status: "awaiting-signature",
@@ -852,7 +930,11 @@ export async function signCeremony(
 			record.status = "polling";
 		});
 		const pollStarted = rt.now();
-		while (!terminalResults(latest) && rt.now() - pollStarted < 600_000) {
+		while (
+			!terminalResults(latest) &&
+			rt.now() - pollStarted < 600_000 &&
+			rt.now() < readUntil
+		) {
 			latest = await client.getVenueBinding(bindingId, {
 				owner: ceremony.owner,
 				expiresAt: readExpiresAt,

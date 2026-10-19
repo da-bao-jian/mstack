@@ -9,6 +9,15 @@ not a claim that public release tags or artifacts were published.
 
 ### Fixed
 
+- After onboarding with `mob sign c-N --with browser`, every later wallet Proposal (`mob keys list`, `revoke`, a key with a new cap) stopped with "Run `mob setup` first" because no signer was saved. The signer named with `--with` is now saved the first time it connects, and `mob` says so.
+- A venue MoB reports as `unavailable` (for Hyperliquid, a perps account with no USDC) was staged for a new binding, which cannot help. Onboarding and key creation now stop with the cause and the deposit step; `mob doctor` shows MoB's own verdict for a bound venue instead of a local "ready".
+- Onboarding with every venue already bound but only one venue selected explains that a trading key needs two venues.
+
+- Native onboarding staged a Hyperliquid binding for a wallet that never deposited. The binding worked, but Hyperliquid refuses such an agent and MoB reports the venue as unavailable, so key creation failed with "MoB is temporarily unavailable". Onboarding now checks the deposit first and stops with the deposit step and a `--venues` list without Hyperliquid. A refused key creation names the deposit as the cause.
+- Hyperliquid typed-data signatures (approveAgent, approveBuilderFee) failed with "Signature does not recover Proposal owner" in Rabby and MetaMask: those wallets hash a missing `EIP712Domain` type as an empty domain. The page now declares the domain type, so the wallet signs the digest the page shows.
+- Binding steps shared the 5-minute staging window, so a slow wallet ran out of time. They now use MoB's 10-minute binding session, and a session stops at a step's deadline with the exact restage command instead of waiting on the wallet.
+- The `/mob-keys` skill explains how to raise a key's cap: create a key with the new cap, then revoke the old one.
+
 - Ceremony failures showed MoB's raw error, or "Failed to fetch". Every failure now says what happened and what to do next, with the exact restage command. This covers each code MoB's binding API returns (`authorization_expired`, `owner_mismatch`, `nonce_conflict`, `rate_limited`, `venue_account_not_found`, `account_not_owned`, `venue_account_check_unavailable`, `rebind_required`, `venue_busy`, `binding_in_progress`, `binding_expired`, `signature_conflict`, `binding_not_found`, and the 503s), the integrator approval, legal and API key errors, and per-venue results (`aster_deposit_required`, `session_superseded`, `invalid_signing_chain`, still confirming). MoB's own text follows each message.
 - The signing page explains wallet errors: a request already open (-32002), a page the wallet has not allowed (4100), an unsupported request (4200), a disconnected wallet (4900/4901), an unknown chain (4902), a declined connection, and a wallet with no unlocked account. Declining a chain switch no longer ends the session; the user can approve the switch and sign again. When no wallet window appears after 15 seconds, the page points to the wallet's toolbar icon.
 - `mob onboard` reused a staged ceremony with only seconds left. It now stages a fresh one when less than 2 minutes remain.

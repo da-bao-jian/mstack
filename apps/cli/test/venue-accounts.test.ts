@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import type { Runtime } from "../src/run.ts";
-import { venueAccounts } from "../src/venue-accounts.ts";
+import { hlDeposited, venueAccounts } from "../src/venue-accounts.ts";
 import { venueAccountResponse } from "./fixtures/venue-accounts.ts";
 
 const owner = "0x00000000000000000000000000000000000000aa";
@@ -67,5 +67,16 @@ test("a failed lookup is not read as a missing account", async () => {
 	} as unknown as Runtime;
 	await expect(venueAccounts(owner, ["lighter"], rt)).rejects.toThrow(
 		"Cannot check the lighter account: HTTP 503",
+	);
+});
+
+test("a Hyperliquid wallet with no deposit is detected, and a lookup failure is not read as no deposit", async () => {
+	expect(await hlDeposited(owner, runtime())).toBe(true);
+	expect(await hlDeposited(owner, runtime(["hl-deposit"]))).toBe(false);
+	const down = {
+		fetch: async () => Response.json({ error: "down" }, { status: 503 }),
+	} as unknown as Runtime;
+	await expect(hlDeposited(owner, down)).rejects.toThrow(
+		"Cannot check the hl deposit",
 	);
 });

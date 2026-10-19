@@ -106,6 +106,41 @@ test("ceremony records returned requests in order as collect-only Proposals", as
 	]);
 });
 
+test.each([
+	[600_000, 600_000],
+	[900_000, 600_000],
+	[-1, 0],
+])(
+	"request steps use MoB's binding session window (batch +%i ms gives +%i ms)",
+	async (offset, expected) => {
+		const h = await store();
+		const ceremony = await h.store.stage({
+			owner: account.address,
+			apiBase: "http://127.0.0.1:9988",
+			venues: [{ venue: "hl" }],
+		});
+		const updated = await h.store.recordPrepared(ceremony.id, {
+			bindingId: "01234567-89ab-cdef-0123-456789abcdef",
+			owner: account.address,
+			expiresAt: new Date(ceremony.expiresAt + offset).toISOString(),
+			status: "awaiting_signatures",
+			results: [
+				{
+					venue: "hl",
+					sessionId: "11234567-89ab-cdef-0123-456789abcdef",
+					status: "awaiting_signatures",
+				},
+			],
+			signRequests: [hlRequest("approveAgent")],
+		});
+		expect(updated.requests[0]?.expiresAt).toBe(ceremony.expiresAt + expected);
+		// The stored record still validates when read back.
+		expect((await h.store.get(ceremony.id)).requests[0]?.expiresAt).toBe(
+			ceremony.expiresAt + expected,
+		);
+	},
+);
+
 test("ceremony refuses a prepared request outside the binding allow-list", async () => {
 	const h = await store();
 	const ceremony = await h.store.stage({

@@ -26,7 +26,13 @@ import {
 } from "@mstack/signers";
 import { getAddress } from "viem";
 import pkg from "../package.json";
-import { chooseSigner, readConfig, SETUP_FIRST, UsageError } from "./config.ts";
+import {
+	chooseSigner,
+	readConfig,
+	rememberSigner,
+	SETUP_FIRST,
+	UsageError,
+} from "./config.ts";
 import { expiry } from "./format.ts";
 import { storeCreatedKey } from "./key-create.ts";
 import { cliKeyStore, requireWritableKeyStore } from "./key-store.ts";
@@ -322,6 +328,7 @@ export async function p1(
 					async address() {
 						const address = await signer.address();
 						await checkConfig();
+						await rememberSigner(String(backend), config, rt);
 						return address;
 					},
 					async signMessage(args) {
