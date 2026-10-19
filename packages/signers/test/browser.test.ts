@@ -254,7 +254,7 @@ test("browser serves only authenticated self-contained HTML with nonce CSP", asy
 		expect(html).not.toContain("wallet_addEthereumChain");
 		expect(html).toContain("eip6963:requestProvider");
 		expect(html).toContain("eip6963:announceProvider");
-		expect(html).toContain("compare with your terminal");
+		expect(html).toContain("Compare with your terminal.");
 		expect(response.headers.get("Cache-Control")).toBe("no-store");
 		expect(response.headers.get("Referrer-Policy")).toBe("no-referrer");
 	} finally {

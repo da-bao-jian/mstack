@@ -170,6 +170,20 @@ export function fakeStrategyApi(
 						async (value) => {
 							const owner = String(value.owner).toLowerCase();
 							const venues = value.venues as BindingTarget[];
+							// The live API 1.2.0 rejects a Lighter target without its account.
+							for (const target of venues)
+								if (
+									(target.venue === "lighter" ||
+										target.venue === "lighter-mainnet") &&
+									!Number.isSafeInteger(target.accountIndex)
+								)
+									return json(
+										{
+											error:
+												"Lighter requires accountIndex and selects its own chain ID.",
+										},
+										400,
+									);
 							const authorization = value.authorization as Record<
 								string,
 								unknown

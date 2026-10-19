@@ -3,84 +3,116 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>mstack — Review signature</title>
+<title>mstack · Sign</title>
 <style nonce="_MSTACK_NONCE_">
-  :root { color-scheme: light dark; --paper: #e9e3d5; --ink: #171b1d; --panel: #f8f4eb; --line: #86857d; --sky: #7fd8ff; --orange: #f66047; --navy: #027bb0; --good: #146039; --bad: #a52222; }
+  :root { color-scheme: light dark; --bg: #f3f1ec; --card: #fff; --sunk: #f7f5f0; --line: #e2ddd3; --text: #15191b; --muted: #61696c; --sky: #7fd8ff; --on-sky: #0b1a21; --orange: #f66047; --navy: #027bb0; --good: #13724a; --bad: #b42318; --ring: #027bb0; }
   * { box-sizing: border-box; }
-  body { margin: 0; padding: 2rem 1.25rem; background: var(--paper); color: var(--ink); font: 17px/1.5 "Helvetica Neue", Helvetica, sans-serif; }
-  main { max-width: 48rem; margin: auto; }
-  header { display: flex; align-items: center; gap: 1rem; border-bottom: 2px solid var(--ink); padding-bottom: 1.25rem; }
-  #logo { width: 176px; height: 144px; flex: none; }
-  .wordmark { font-size: 2rem; font-weight: 800; letter-spacing: -.08em; }
-  .eyebrow { font: .8rem/1.5 monospace; text-transform: uppercase; letter-spacing: .12em; margin: 1.5rem 0 .5rem; }
-  h1 { font-size: clamp(1.8rem, 5vw, 2.8rem); font-weight: 600; line-height: 1.15; letter-spacing: -.035em; overflow-wrap: anywhere; margin: .5rem 0 1rem; }
-  .scope { margin: 0 0 1.5rem; font-size: 1.15rem; }
-  section { border-top: 1px solid var(--line); padding: 1.2rem 0; }
-  h2, legend { font: 600 1rem/1.5 "Helvetica Neue", Helvetica, sans-serif; margin: 0 0 .5rem; }
-  dl { margin: 0; } dt { font-size: .85rem; } dd { margin: .2rem 0 .8rem; }
-  .address, pre { font: .9rem/1.6 "SFMono-Regular", Consolas, monospace; overflow-wrap: anywhere; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", "Helvetica Neue", sans-serif; -webkit-font-smoothing: antialiased; }
+  main { max-width: 34rem; margin: 0 auto; padding: 1.5rem 1rem 0; }
+  header { display: flex; align-items: center; gap: .6rem; margin-bottom: 2rem; }
+  #logo { width: 33px; height: 27px; flex: none; }
+  .wordmark { font-size: 1.05rem; font-weight: 700; letter-spacing: -.03em; }
+  .local { margin-left: auto; padding: .15rem .6rem; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: .75rem; }
+  .eyebrow { margin: 0; color: var(--muted); font-size: .75rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; }
+  #intent { display: block; margin: .9rem 0 .2rem; color: var(--muted); font-size: .9rem; font-weight: 400; letter-spacing: 0; }
+  h1 { margin: 0; font-size: clamp(1.45rem, 4.5vw, 1.9rem); font-weight: 650; line-height: 1.2; letter-spacing: -.02em; overflow-wrap: anywhere; }
+  #statement { margin: .75rem 0 0; }
+  .scope { margin: .6rem 0 1.4rem; color: var(--muted); }
+  .card { margin: 0 0 .75rem; padding: .2rem 1rem; background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+  h2 { margin: .8rem 0 .3rem; font-size: .8rem; font-weight: 600; color: var(--muted); letter-spacing: .05em; text-transform: uppercase; }
+  dl { margin: 0; }
+  .row { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: .75rem; align-items: baseline; padding: .7rem 0; border-top: 1px solid var(--line); }
+  dl .row:first-child { border-top: 0; }
+  dt { color: var(--muted); font-size: .85rem; }
+  dd { margin: 0; min-width: 0; }
+  .address, .mono, pre { font: .82rem/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
   .match { color: var(--good); } .error { color: var(--bad); }
-  #account-match { margin: 0; font-weight: 600; }
-  fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
-  #wallet { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .75rem; }
-  button { font: inherit; border: 1px solid var(--ink); border-radius: 4px; padding: .65rem 1rem; min-height: 44px; cursor: pointer; background: var(--panel); color: var(--ink); }
-  button:hover:enabled { box-shadow: 0 2px 0 var(--ink); }
-  button:focus-visible, .message-box:focus-visible { outline: 3px solid var(--navy); outline-offset: 4px; }
-  button:disabled { opacity: .5; cursor: not-allowed; }
-  .wallet-option { display: flex; align-items: center; gap: .5rem; overflow-wrap: anywhere; text-align: left; }
-  .wallet-option[aria-pressed="true"] { background: var(--sky); color: #171b1d; border-width: 2px; }
-  .wallet-option img { width: 28px; height: 28px; object-fit: contain; }
-  .section-title { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-  pre { white-space: pre-wrap; background: var(--panel); border: 1px solid var(--line); padding: 1rem; margin: .75rem 0 0; }
-  .message-box { padding: 0; margin: .75rem 0 0; border: 1px solid var(--line); max-height: 22rem; overflow: auto; }
-  .message-box pre { margin: 0; border: 0; }
-  #digest { max-height: none; border-left: 4px solid var(--navy); }
-  .note { font-size: .85rem; margin: .4rem 0; }
-  #countdown { font-variant-numeric: tabular-nums; margin: 0 0 .5rem; }
-  progress { display: block; width: 100%; height: 8px; border: 0; background: var(--panel); accent-color: var(--navy); }
-  progress::-webkit-progress-bar { background: var(--panel); } progress::-webkit-progress-value { background: var(--navy); }
-  progress::-moz-progress-bar { background: var(--navy); }
-  .actions { display: flex; gap: .75rem; margin-top: 1.5rem; }
-  #sign { background: var(--sky); color: #171b1d; font-weight: 700; flex: 1; }
-  #reject { border-bottom: 3px solid var(--orange); }
-  #status { min-height: 3rem; padding-left: .75rem; border-left: 4px solid var(--navy); }
-  #status.error { border-color: var(--orange); }
+  #account-match { margin: 0; padding: .1rem 0 .8rem; font-size: .88rem; font-weight: 600; }
+  #account-match:not(.match):not(.error) { color: var(--muted); font-weight: 400; }
+  #steps { margin: 0 0 .6rem; padding: 0; list-style: none; }
+  #steps li { display: grid; grid-template-columns: 1.6rem minmax(0, 1fr) auto; gap: .5rem; align-items: center; padding: .45rem 0; color: var(--muted); }
+  #steps li[data-status="current"] { color: var(--text); font-weight: 600; }
+  #steps .mark { display: grid; place-items: center; width: 1.4rem; height: 1.4rem; border: 1px solid var(--line); border-radius: 50%; font-size: .72rem; font-weight: 600; }
+  #steps li[data-status="current"] .mark { background: var(--sky); border-color: var(--sky); color: var(--on-sky); }
+  #steps li[data-status="signed"] .mark { background: var(--good); border-color: var(--good); color: #fff; }
+  #steps li[data-status="rejected"] .mark { border-color: var(--bad); color: var(--bad); }
+  .dim { color: var(--muted); font-weight: 400; }
+  summary { display: flex; align-items: center; gap: .5rem; padding: .8rem 0; cursor: pointer; font-weight: 600; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "›"; color: var(--muted); transition: transform .15s; }
+  details[open] summary::before { transform: rotate(90deg); }
+  .hint, .note { color: var(--muted); font-size: .82rem; font-weight: 400; }
+  .note { display: block; margin-top: .2rem; }
+  .tools { display: flex; align-items: center; gap: .75rem; margin-bottom: .5rem; }
+  .message-box { margin: 0 0 .9rem; max-height: 16rem; overflow: auto; background: var(--sunk); border: 1px solid var(--line); border-radius: 10px; }
+  .message-box pre { margin: 0; padding: .75rem .85rem; white-space: pre-wrap; }
+  .actions { position: sticky; bottom: 0; margin: 1rem -1rem 0; padding: .9rem 1rem calc(1rem + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--bg) 88%, transparent); border-top: 1px solid var(--line); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+  .timer { display: flex; align-items: center; gap: .75rem; margin-bottom: .55rem; }
+  #countdown { margin: 0; color: var(--muted); font-size: .8rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  progress { flex: 1; height: 4px; border: 0; border-radius: 4px; background: var(--line); accent-color: var(--navy); appearance: none; -webkit-appearance: none; }
+  progress::-webkit-progress-bar { background: var(--line); border-radius: 4px; } progress::-webkit-progress-value { background: var(--navy); border-radius: 4px; }
+  progress::-moz-progress-bar { background: var(--navy); border-radius: 4px; }
+  #picker { min-width: 0; margin: 0 0 .7rem; padding: 0; border: 0; }
+  #picker legend { margin-bottom: .45rem; padding: 0; color: var(--muted); font-size: .85rem; }
+  #wallet { display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: .5rem; }
+  #status { display: flex; align-items: center; gap: .5rem; min-height: 1.4rem; margin: 0 0 .7rem; color: var(--muted); font-size: .9rem; }
+  #status::before { content: ""; flex: none; width: .5rem; height: .5rem; border-radius: 50%; background: var(--muted); }
+  main:has(#account.match) #status[data-state="ready"]::before, #status[data-state="accepted"]::before, #status[data-state="complete"]::before, #status[data-state="connected"]::before { background: var(--good); }
+  #status[data-state="complete"], #status[data-state="failed"] { margin: .2rem 0; color: var(--good); font-size: 1rem; font-weight: 600; }
+  #status[data-state="waiting"]::before, #status[data-state="connecting"]::before, #status[data-state="chain"]::before { background: var(--navy); animation: pulse 1.2s ease-in-out infinite; }
+  #status.error { color: var(--bad); } #status.error::before { background: var(--bad); animation: none; }
+  @keyframes pulse { 50% { opacity: .25; } }
+  .buttons { display: flex; gap: .6rem; }
+  button { min-height: 44px; padding: .6rem 1rem; font: inherit; font-weight: 600; color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: 10px; cursor: pointer; transition: background-color .15s, border-color .15s, opacity .15s; }
+  button:hover:enabled { border-color: var(--muted); }
+  button:focus-visible, summary:focus-visible, .message-box:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .primary { flex: 1; font-size: 1rem; color: var(--on-sky); background: var(--sky); border-color: transparent; }
+  .primary:hover:enabled { background: #a3e5ff; border-color: transparent; }
+  .ghost { background: transparent; }
+  #copy { min-height: 32px; padding: .2rem .7rem; font-size: .8rem; }
+  #reject { color: var(--muted); }
+  #reject:hover:enabled { color: var(--bad); border-color: var(--bad); }
+  .wallet-option { display: flex; align-items: center; gap: .55rem; font-weight: 500; text-align: left; overflow-wrap: anywhere; }
+  .wallet-option img { width: 22px; height: 22px; border-radius: 6px; object-fit: contain; }
+  .wallet-option[aria-pressed="true"] { border-color: var(--sky); box-shadow: inset 0 0 0 1px var(--sky); }
+  main:has(#status[data-state="expired"]) .card, main:has(#status[data-state="failed"]) .card { opacity: .6; }
   [hidden] { display: none; }
   @media (prefers-color-scheme: dark) {
-    :root { --paper: #171b1d; --ink: #eee9dd; --panel: #232b30; --line: #717c80; --good: #86dfaa; --bad: #ff9685; }
-    button:focus-visible, .message-box:focus-visible { outline-color: var(--sky); }
+    :root { --bg: #0d1013; --card: #151a1d; --sunk: #0f1316; --line: #273035; --text: #eef1f2; --muted: #8f9ba1; --good: #4cd699; --bad: #ff8a78; --ring: var(--sky); }
+    progress::-webkit-progress-value { background: var(--sky); } progress::-moz-progress-bar { background: var(--sky); }
   }
-  @media (max-width: 420px) { body { padding: 1rem; } .wallet-option { width: 100%; } .actions { flex-wrap: wrap; } #sign { flex-basis: 100%; } #reject { width: 100%; } }
+  @media (prefers-reduced-motion: reduce) { #status::before { animation: none; } summary::before { transition: none; } }
+  @media (max-width: 420px) { .row { grid-template-columns: 1fr; gap: .1rem; } .address { font-size: .74rem; } .buttons { flex-wrap: wrap; } .primary { flex-basis: 100%; } #reject { width: 100%; } }
 </style>
 </head>
 <body>
 <main>
-<header><svg id="logo" viewBox="0 0 176 144" width="176" height="144" role="img" aria-label="MoB logo" shape-rendering="crispEdges"></svg><span class="wordmark">mstack</span></header>
-<p class="eyebrow">Review signature · <span id="id"></span></p>
-<h1><span id="intent">This signature authorizes:</span> <span id="purpose">Loading Proposal…</span></h1>
+<header><svg id="logo" viewBox="0 0 176 144" width="176" height="144" role="img" aria-label="MoB logo" shape-rendering="crispEdges"></svg><span class="wordmark">mstack</span><span class="local">On this computer</span></header>
+<p class="eyebrow"><span id="kind">Signature request</span> · <span id="id"></span></p>
+<h1><span id="intent">This signature authorizes:</span> <span id="purpose">Loading…</span></h1>
 <p id="statement" hidden></p>
 <p class="scope">Sign only if this matches what you asked for. Each step names what it allows.</p>
-<section aria-label="Account check">
-<dl><dt>Expected owner</dt><dd class="address" id="owner"></dd><dt>Connected account</dt><dd class="address" id="account">Not connected</dd></dl>
+<section class="card" id="steps-card" aria-labelledby="steps-title" hidden><h2 id="steps-title">Steps in this wallet session</h2><ol id="steps"></ol></section>
+<section class="card" aria-label="Account check">
+<dl><div class="row"><dt>Expected owner</dt><dd class="address" id="owner"></dd></div><div class="row"><dt>Your wallet</dt><dd class="address" id="account">Not connected</dd></div></dl>
 <p id="account-match" aria-live="polite">Connect your wallet to check the owner.</p>
 </section>
-<section>
-<fieldset><legend>Choose your wallet</legend><div id="wallet"></div></fieldset>
-<button type="button" id="connect" disabled>Connect wallet</button>
-</section>
-<section>
-<div class="section-title"><h2 id="message-title">Exact message</h2><button type="button" id="copy" disabled>Copy</button></div>
-<p class="note" id="copy-status" role="status"></p>
+<section class="card" aria-label="What you sign">
+<details>
+<summary><span id="message-title">Exact message</span><span class="hint">your wallet shows the same</span></summary>
+<div class="tools"><button type="button" id="copy" class="ghost" disabled>Copy</button><span class="note" id="copy-status" role="status"></span></div>
 <!-- biome-ignore lint/a11y/noNoninteractiveTabindex: The exact message scrolls and must be reachable with the keyboard. -->
 <section class="message-box" tabindex="0" aria-labelledby="message-title"><pre id="message"></pre></section>
+<p class="note">The server checks these exact bytes, so older labels in it stay as written.</p>
+</details>
+<dl><div class="row"><dt>Digest</dt><dd><span class="mono" id="digest"></span><span class="note">Compare with your terminal.</span></dd></div></dl>
 </section>
-<section>
-<h2>Digest</h2><p class="note">compare with your terminal</p><pre id="digest"></pre>
-</section>
-<section aria-label="Time remaining">
-<p id="countdown" role="timer"></p><progress id="expiry" max="100" value="100" aria-label="Time remaining before expiry"></progress>
-<div class="actions"><button type="button" id="sign" disabled>Sign in wallet</button><button type="button" id="reject">Reject</button></div>
-<p id="status" role="status" aria-live="polite">Loading Proposal…</p>
+<section class="actions" aria-label="Sign">
+<div class="timer" id="timer"><p id="countdown" role="timer"></p><progress id="expiry" max="100" value="100" aria-label="Time remaining before expiry"></progress></div>
+<fieldset id="picker" hidden><legend>Choose a wallet</legend><div id="wallet"></div></fieldset>
+<p id="status" role="status" aria-live="polite">Loading…</p>
+<div class="buttons" id="buttons"><button type="button" id="connect" class="primary" disabled>Connect wallet</button><button type="button" id="sign" class="primary" hidden disabled>Sign in wallet</button><button type="button" id="reject" class="ghost">Reject</button></div>
 </section>
 </main>
 <script nonce="_MSTACK_NONCE_">
@@ -133,11 +165,16 @@ logoRows.forEach((row, y) => { Array.from(row).forEach((pixel, x) => {
   el("logo").append(rect);
 }); });
 const wallets = [];
-let proposal, provider, address, chainId, loadedAt, selectedIndex = 0, ready = false, busy = false, submitting = false, done = false;
+// A ceremony view carries `steps`: one wallet session signs each step in turn,
+// switching chains as each step needs, and the page stays open between steps.
+let proposal, provider, address, chainId, loadedAt, selectedIndex = 0, ready = false, busy = false, submitting = false, done = false, ceremony = false, choosing = false;
 const api = async (path, body) => {
-  const response = await fetch(path, body === undefined ? {} : {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
-  });
+  let response;
+  try {
+    response = await fetch(path, body === undefined ? {} : {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+    });
+  } catch { throw new Error("Lost the connection to mob. Your terminal shows what happened."); }
   const result = await response.json();
   if (!response.ok) throw new Error(result.error || "Bridge request failed");
   return result;
@@ -152,14 +189,21 @@ const chainName = () => ({ 1: "Ethereum", 56: "BNB Smart Chain", 97: "BNB Smart 
 function refresh() {
   const expired = proposal && Date.now() >= proposal.expiresAt;
   if (expired && !done) { done = true; status("expired", "Expired. Return to your terminal to stage a new Proposal.", true); }
+  const connected = Boolean(matches());
   el("account").textContent = address || "Not connected";
-  el("account").className = address ? (matches() ? "address match" : "address error") : "address";
-  el("account-match").textContent = address ? (matches() ? "✓ Account matches the expected owner." : "Account mismatch. Signing is disabled.") : "Connect your wallet to check the owner.";
-  el("account-match").className = address ? (matches() ? "match" : "error") : "";
-  el("sign").disabled = done || busy || !ready || !matches() || wrongChain();
+  el("account").className = address ? (connected ? "address match" : "address error") : "address";
+  el("account-match").textContent = address ? (connected ? "✓ Account matches the expected owner." : "Account mismatch. Signing is disabled.") : "Connect your wallet to check the owner.";
+  el("account-match").className = address ? (connected ? "match" : "error") : "";
+  el("sign").disabled = done || busy || !ready || !connected || (!ceremony && wrongChain());
+  el("sign").hidden = Boolean(proposal?.connectionOnly) || !connected;
   el("connect").disabled = done || busy || !proposal;
+  el("connect").hidden = connected && !proposal?.connectionOnly;
+  el("picker").hidden = !choosing || connected || done;
   el("reject").disabled = done || submitting;
   for (const wallet of wallets) wallet.button.disabled = done || busy;
+  // Once the session ends, nothing is left to press.
+  el("buttons").hidden = done;
+  el("timer").hidden = done && !expired;
   if (proposal && !done) {
     const seconds = Math.max(0, Math.ceil((proposal.expiresAt - Date.now()) / 1000));
     el("countdown").textContent = `Expires in ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
@@ -172,7 +216,7 @@ function active() { refresh(); return !done; }
 function accountStatus() {
   if (!active()) return;
   if (!matches()) status("mismatch", "Connected account does not match the expected owner.", true);
-  else if (wrongChain()) status("chain", `Chain switch needed. Switch to ${chainName()} in your wallet.`, true);
+  else if (!ceremony && wrongChain()) status("chain", `Chain switch needed. Switch to ${chainName()} in your wallet.`, true);
   else status("ready", "Connected. Review the message and digest before signing.");
 }
 function addWallet(info, candidate) {
@@ -185,11 +229,11 @@ function addWallet(info, candidate) {
     const icon = document.createElement("img"); icon.src = info.icon; icon.alt = ""; button.append(icon);
   }
   const label = document.createElement("span"); label.textContent = info.name; button.append(label);
-  button.onclick = () => {
+  button.onclick = async () => {
     if (done || busy) return;
     selectedIndex = index; provider = undefined; address = undefined; chainId = undefined;
     for (let i = 0; i < wallets.length; i++) wallets[i].button.setAttribute("aria-pressed", String(i === index));
-    status("ready", "Connect your wallet to review this Proposal."); refresh();
+    await connect();
   };
   wallets.push({ provider: candidate, button }); el("wallet").append(button); refresh();
 }
@@ -202,8 +246,13 @@ async function reportAccount() {
   if (!active() || !matches()) return;
   await api("/api/account", { address, chainId });
 }
+// One button connects. With several wallets installed, its first click asks which one.
 el("connect").onclick = async () => {
   if (el("connect").disabled) return;
+  if (wallets.length > 1 && !choosing) { choosing = true; status("choose", "Choose a wallet."); refresh(); return; }
+  await connect();
+};
+async function connect() {
   busy = true; status("connecting", "Connecting. Choose the expected owner in your wallet."); refresh();
   try {
     const selected = wallets[selectedIndex]?.provider;
@@ -211,7 +260,7 @@ el("connect").onclick = async () => {
     provider = selected;
     const accounts = await provider.request({ method: "eth_requestAccounts" });
     if (!active()) return;
-    address = accounts[0];
+    address = accounts[0]; choosing = false;
     chainId = Number(await provider.request({ method: "eth_chainId" }));
     if (!active()) return;
     if (!matches()) { accountStatus(); return; }
@@ -239,7 +288,7 @@ el("connect").onclick = async () => {
     if (wrongChain() && matches()) status("chain", `Chain switch needed. Switch to ${chainName()} in your wallet. ${error.message}`, true);
     else fail(error);
   } finally { busy = false; refresh(); }
-};
+}
 function fail(error) { if (active()) status("error", `Error. ${error.message}`, true); }
 el("copy").onclick = async () => {
   try { await navigator.clipboard.writeText(el("message").textContent); el("copy-status").textContent = "Copied exact message."; }
@@ -255,7 +304,14 @@ el("sign").onclick = async () => {
     chainId = Number(await provider.request({ method: "eth_chainId" }));
     if (!active()) return;
     if (!matches()) { accountStatus(); return; }
-    if (wrongChain()) { accountStatus(); return; }
+    if (wrongChain()) {
+      if (!ceremony) { accountStatus(); return; }
+      status("chain", `Switching to ${chainName()}. Confirm the chain change in your wallet.`);
+      await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: `0x${Number(pinned()).toString(16)}` }] });
+      if (!active()) return;
+      chainId = Number(await provider.request({ method: "eth_chainId" }));
+      if (wrongChain()) throw new Error(`Wallet did not switch to ${chainName()}.`);
+    }
     await reportAccount();
     if (!active()) return;
     const signing = proposal.signing;
@@ -265,39 +321,68 @@ el("sign").onclick = async () => {
       : { method: "eth_signTypedData_v4", params: [address, JSON.stringify(signing.typedData)] });
     if (!active()) return;
     submitting = true; refresh();
-    await api("/api/signature", { address, signature });
+    await api("/api/signature", ceremony ? { stepId: proposal.id, address, signature } : { address, signature });
     if (!active()) return;
-    done = true; status("accepted", "Done. You can close this tab.");
+    if (ceremony) { ready = false; status("accepted", "Signature accepted. Waiting for the next step…"); }
+    else { done = true; status("accepted", "Done. You can close this tab."); }
   } catch (error) {
     if (!active()) return;
     if (error.code === 4001) {
       done = true; status("rejected", "Rejected in wallet. No signature was submitted.");
-      await api("/api/reject", {}).catch(() => {});
+      await api("/api/reject", ceremony ? { stepId: proposal?.id } : {}).catch(() => {});
     } else fail(error);
   } finally { busy = false; submitting = false; refresh(); }
 };
 el("reject").onclick = async () => {
   if (!active() || el("reject").disabled) return;
   done = true; refresh();
-  try { await api("/api/reject", {}); status("rejected", "Rejected. No signature was submitted."); }
+  try { await api("/api/reject", ceremony ? { stepId: proposal?.id } : {}); status("rejected", "Rejected. No signature was submitted."); }
   catch (error) { status("error", `Error. ${error.message}`, true); }
 };
+function renderSteps(steps) {
+  el("steps-card").hidden = false;
+  el("steps").replaceChildren(...steps.map((item, index) => {
+    const li = document.createElement("li"); li.setAttribute("data-status", item.status);
+    const mark = document.createElement("span"); mark.className = "mark";
+    mark.textContent = item.status === "signed" ? "✓" : item.status === "rejected" ? "✕" : String(index + 1);
+    const purpose = document.createElement("span"); purpose.textContent = item.purpose;
+    const digest = document.createElement("span"); digest.className = "mono dim"; digest.textContent = `${item.digest.slice(0, 8)}…${item.digest.slice(-6)}`;
+    li.append(mark, purpose, digest); return li;
+  }));
+}
+function show(view) {
+  const next = Boolean(proposal);
+  proposal = view; loadedAt = Date.now();
+  if (view.connectionOnly) el("intent").textContent = "This connection checks:";
+  for (const key of ["id", "purpose", "owner", "digest"]) el(key).textContent = view[key];
+  el("kind").textContent = ceremony ? "Wallet session" : "Signature request";
+  const statement = view.signing.type === "typed" ? view.signing.typedData.message?.statement : undefined;
+  el("statement").textContent = typeof statement === "string" ? statement : "";
+  el("statement").hidden = typeof statement !== "string";
+  el("message").textContent = view.signing.type === "text" ? view.signing.message : JSON.stringify(view.signing.typedData, null, 2);
+  el("message-title").textContent = view.signing.type === "typed" ? "Exact typed data JSON" : "Exact message";
+  el("copy").disabled = false;
+  if (next && matches()) status("ready", "Next step ready. Review it, then sign in your wallet.");
+  else if (address) accountStatus();
+  else status("ready", "Connect your wallet to review this Proposal.");
+}
+// The ceremony server reports how mob ended before it stops, so the page never
+// ends on a dropped connection.
+function finish(final) {
+  done = true;
+  if (final.ok) status("complete", "All signatures are done. Your terminal shows the result; you can close this tab.");
+  else status("failed", `Stopped. ${final.message}`, true);
+  refresh();
+}
 async function poll() {
   if (done) return;
   try {
     const view = await api("/api/proposal");
     if (done) return;
-    if (!proposal) {
-      proposal = view; loadedAt = Date.now();
-      if (view.connectionOnly) { el("sign").hidden = true; el("intent").textContent = "This connection checks:"; }
-      for (const key of ["id", "purpose", "owner", "digest"]) el(key).textContent = view[key];
-      const statement = view.signing.type === "typed" ? view.signing.typedData.message?.statement : undefined;
-      if (typeof statement === "string") { el("statement").textContent = statement; el("statement").hidden = false; }
-      el("message").textContent = view.signing.type === "text" ? view.signing.message : JSON.stringify(view.signing.typedData, null, 2);
-      if (view.signing.type === "typed") el("message-title").textContent = "Exact typed data JSON";
-      el("copy").disabled = false;
-      status("ready", "Connect your wallet to review this Proposal.");
-    }
+    if (view.final) { if (Array.isArray(view.steps)) renderSteps(view.steps); finish(view.final); return; }
+    ceremony = Array.isArray(view.steps);
+    if (ceremony) renderSteps(view.steps);
+    if (!proposal || proposal.id !== view.id) show(view);
     ready = view.ready; refresh();
   } catch (error) { if (!done && !busy) { fail(error); done = true; refresh(); } }
   if (!done) setTimeout(poll, 350);

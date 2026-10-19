@@ -47,6 +47,7 @@ import { cliKeyStore, requireWritableKeyStore } from "./key-store.ts";
 import { keysCommand } from "./keys-command.ts";
 import type { Runtime } from "./run.ts";
 import { type LegalPlan, legalPlan, stageLegal } from "./setup-command.ts";
+import { venueAccounts } from "./venue-accounts.ts";
 import { walletWait } from "./wallet-wait.ts";
 
 const allVenues = ["hl", "lighter", "aster", "lighter-mainnet"] as const;
@@ -120,6 +121,7 @@ export async function stageCeremony(
 		typeof values["lighter-account"] === "string"
 			? numberFlag(values["lighter-account"], "lighter-account", 0, true)
 			: undefined;
+	const accounts = await venueAccounts(owner, venues, rt, lighterAccount);
 	const targets: BindingTarget[] = venues.map((venue) => {
 		if (venue === "hl")
 			return {
@@ -130,9 +132,7 @@ export async function stageCeremony(
 		if (venue === "lighter" || venue === "lighter-mainnet")
 			return {
 				venue,
-				...(lighterAccount === undefined
-					? {}
-					: { accountIndex: lighterAccount }),
+				accountIndex: accounts.get(venue) as number,
 				...(values.rebind === true ? { rebind: true } : {}),
 			};
 		return { venue, ...(values.rebind === true ? { rebind: true } : {}) };
@@ -263,7 +263,8 @@ type Session = {
 	address(): Promise<`0x${string}`>;
 	sign(step: ReturnType<typeof view>): Promise<Hex>;
 	addSteps?(steps: ReturnType<typeof view>[]): void;
-	close(): Promise<void>;
+	/** A browser page shows the failure before it closes. */
+	close(failure?: unknown): Promise<void>;
 };
 
 function terminalResults(batch: VenueBindingBatch) {
@@ -362,6 +363,7 @@ export async function signCeremony(
 			close: async () => signer.close?.(),
 		};
 	}
+	let failure: unknown;
 	try {
 		if (getAddress(await session.address()) !== getAddress(ceremony.owner))
 			throw new Error("Owner does not match signer address");
@@ -711,8 +713,11 @@ export async function signCeremony(
 				rt,
 				read,
 			);
+	} catch (error) {
+		failure = error;
+		throw error;
 	} finally {
 		waiting?.stop();
-		await session.close();
+		await session.close(failure);
 	}
 }
