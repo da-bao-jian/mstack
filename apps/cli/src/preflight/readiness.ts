@@ -38,8 +38,14 @@ export function credentialReadiness(
 		return "builderApproved" in credential && credential.builderApproved
 			? { venue, ready: true }
 			: { venue, ready: false, issue: "builder_fee_missing" };
+	// MoB requires the integrator approval on each Lighter deployment that
+	// names an integrator (Robinhood 994, canonical 735705), as its own
+	// readiness check does (funding-server lighterStrategyIntegratorIndex).
 	if (
-		venue === "lighter-mainnet" &&
+		(venue === "lighter-mainnet" ||
+			(venue === "lighter" &&
+				"integratorIndex" in credential &&
+				credential.integratorIndex !== null)) &&
 		(!("integratorApproved" in credential) ||
 			!credential.integratorApproved ||
 			typeof credential.integratorApprovalExpiresAt !== "number" ||

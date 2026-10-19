@@ -152,7 +152,11 @@ async function nativeHome(api: ReturnType<typeof fakeStrategyApi>) {
 
 function nativeFetch(
 	api: ReturnType<typeof fakeStrategyApi>,
-	options: { legalAccepted: boolean; calls: string[] },
+	options: {
+		legalAccepted: boolean;
+		calls: string[];
+		issues?: Record<string, string>;
+	},
 ): Runtime["fetch"] {
 	return async (input, init) => {
 		const url = new URL(String(input));
@@ -188,6 +192,7 @@ function nativeFetch(
 					venue,
 					ready: api.bound.has(venue as "hl" | "lighter"),
 					bound: api.bound.has(venue as "hl" | "lighter"),
+					...(options.issues?.[venue] ? { issue: options.issues[venue] } : {}),
 				})),
 			});
 		if (url.pathname === "/api/keys/create" && method === "POST") {
@@ -403,4 +408,45 @@ test("native onboard signs the legal terms first when they are not accepted", as
 	).toMatchObject({
 		meta: { name: "desk", venues: ["hl", "lighter"], maxSizeUsd: 2500 },
 	});
+});
+
+test("onboard stops before staging when MoB holds an unusable key, and --rebind stages the replacement", async () => {
+	const now = 1_800_000_000_000;
+	const api = fakeStrategyApi({ now: () => now });
+	servers.push(api);
+	const { home } = await nativeHome(api);
+	const lines: string[] = [];
+	const rt: Partial<Runtime> = {
+		home,
+		now: () => now,
+		fetch: nativeFetch(api, {
+			legalAccepted: true,
+			calls: [],
+			issues: { hl: "key_invalid", lighter: "integrator_approval_missing" },
+		}),
+		sleep: async () => {},
+		stdinIsTTY: false,
+		stdoutIsTTY: false,
+		out: (line) => lines.push(line),
+		err: (line) => lines.push(line),
+	};
+	const args = [
+		"onboard",
+		"--native",
+		"--owner",
+		api.owner.address,
+		"--venues",
+		"hl,lighter",
+	];
+	expect(await run(args, rt)).not.toBe(0);
+	expect(lines.join("\n")).toContain(
+		"hl has a MoB key that no longer works (key_invalid); lighter has a MoB key without its integrator approval (integrator_approval_missing). MoB replaces such a key only when asked: run this again with --rebind to bind a new one. Nothing was staged.",
+	);
+	expect(await new CeremonyStore(home, () => now).list()).toHaveLength(0);
+	expect(await run([...args, "--rebind"], rt)).toBe(0);
+	const [ceremony] = await new CeremonyStore(home, () => now).list();
+	expect(ceremony?.venues).toEqual([
+		{ venue: "hl", signatureChainId: 42161, rebind: true },
+		{ venue: "lighter", accountIndex: 123, rebind: true },
+	]);
 });

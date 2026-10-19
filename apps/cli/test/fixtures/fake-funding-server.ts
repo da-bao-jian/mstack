@@ -251,7 +251,7 @@ export function readyCredentials(owner: string, now = Date.now()) {
 			integratorApproved: true,
 			integratorIndex: 994,
 			integratorAddress: owner,
-			integratorApprovalExpiresAt: now + 172_800_000,
+			integratorApprovalExpiresAt: now + 30 * 86_400_000,
 		},
 		"lighter-mainnet": {
 			bound: true,
@@ -262,7 +262,7 @@ export function readyCredentials(owner: string, now = Date.now()) {
 			integratorApproved: true,
 			integratorIndex: 735705,
 			integratorAddress: owner,
-			integratorApprovalExpiresAt: now + 172_800_000,
+			integratorApprovalExpiresAt: now + 30 * 86_400_000,
 		},
 	};
 }

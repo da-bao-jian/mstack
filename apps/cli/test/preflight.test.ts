@@ -353,6 +353,31 @@ test("mainnet approval is required even with sufficient remaining time", async (
 		).checks.at(-1)?.error,
 	).toContain("integrator_approval_missing");
 });
+test.each([
+	[994, false, false],
+	[994, true, true],
+	[null, false, true],
+] as const)(
+	"Robinhood Lighter with integrator %s and approval %s is ready: %s",
+	async (integratorIndex, integratorApproved, ok) => {
+		// MoB requires the approval wherever it names an integrator.
+		const c = {
+			...readyCredentials(owner, now).lighter,
+			integratorIndex,
+			integratorApproved,
+		};
+		const result = await openPreflight(
+			{ ...input(), short: row("lighter") },
+			reads({ credentials: { lighter: c } }),
+			() => now,
+		);
+		expect(result.ok).toBe(ok);
+		if (!ok)
+			expect(result.checks.at(-1)?.error).toContain(
+				"integrator_approval_missing",
+			);
+	},
+);
 test("metadata failure, each floor and unknown maintenance margin fail explicitly", async () => {
 	expect(
 		(
