@@ -3,7 +3,7 @@ name: mob-manage
 description: Manage a position with the API key when supported. Use for "resize", "cancel", "rebalance", "add protection", "turn off auto-close", or "change size mismatch protection". (mstack)
 license: MIT
 metadata:
-  version: "0.4.3"
+  version: "0.4.4"
 allowed-tools: Bash Read AskUserQuestion Bash(${CLAUDE_SKILL_DIR}/scripts/preamble.sh *)
 ---
 

@@ -3,7 +3,7 @@ name: mob-setup
 description: Onboard to API-key trading. Use for "set me up", "set up mobius", "connect wallet", or "create a trading key"; one wallet session accepts the terms, binds venues, creates the scoped key, and stores it without echoing it. (mstack)
 license: MIT
 metadata:
-  version: "0.4.3"
+  version: "0.4.4"
 allowed-tools: Bash Read AskUserQuestion Bash(${CLAUDE_SKILL_DIR}/scripts/preamble.sh *)
 ---
 
