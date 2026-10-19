@@ -15,6 +15,7 @@ import {
 import { getAddress } from "viem";
 import { readConfig, SETUP_FIRST, UsageError } from "./config.ts";
 import { p1 } from "./p1.ts";
+import { ceremonyCard, showProposal } from "./proposal-view.ts";
 import type { Runtime } from "./run.ts";
 
 /**
@@ -196,13 +197,20 @@ export async function relayToApprover(
 	return code;
 }
 
-/** What the card commits to, read before the human decides. */
-async function pin(id: string, rt: Runtime): Promise<string> {
-	if (id.startsWith("c-"))
-		return ceremonyFingerprint(
-			await new CeremonyStore(rt.home, rt.now, rt.err).get(id),
-		);
-	return (await new ProposalStore(rt.home, rt.now, rt.err).get(id)).contentHash;
+/** The card and what it commits to, from one read, before the human decides. */
+async function cardFor(
+	id: string,
+	rt: Runtime,
+): Promise<{ text: string; pin: string }> {
+	if (id.startsWith("c-")) {
+		const ceremony = await new CeremonyStore(rt.home, rt.now, rt.err).get(id);
+		return {
+			text: ceremonyCard(ceremony, rt.now()),
+			pin: ceremonyFingerprint(ceremony),
+		};
+	}
+	const p = await new ProposalStore(rt.home, rt.now, rt.err).get(id);
+	return { text: showProposal(p, rt.now(), rt), pin: p.contentHash };
 }
 
 export interface ApproverOptions {
@@ -351,21 +359,14 @@ export async function startApprover(
 						fail("owner or signer changed; restart mob approver");
 						return;
 					}
-					const card: string[] = [];
-					const capture: Runtime = {
-						...rt,
-						out: (text) => card.push(text),
-						err: (text) => card.push(text),
-					};
+					let text: string;
 					let pinned: string;
 					try {
-						pinned = await pin(id, rt);
-						await p1("proposal", ["show", id], {}, capture);
+						({ text, pin: pinned } = await cardFor(id, rt));
 					} catch (error) {
 						fail(error instanceof Error ? error.message : String(error));
 						return;
 					}
-					const text = card.join("\n");
 					rt.out(`\nRequest to sign ${id}:\n${text}`);
 					const withdraw = new AbortController();
 					connection.withdraw = withdraw;

@@ -1,5 +1,6 @@
-import { randomBytes, timingSafeEqual } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { getAddress, type Hex } from "viem";
+import { bridgeSession } from "./bridge-session.ts";
 import html from "./browser.html" with { type: "text" };
 import {
 	assertPayload,
@@ -19,14 +20,14 @@ export interface BrowserOptions {
 	connectionOnly?: boolean;
 }
 
-/** One process, one Proposal, one accepted signature. The token never touches disk. */
+/** One process, one Proposal, one accepted signature. The link token never touches disk. */
 export function browserSigner(
 	input: SigningView,
 	options: BrowserOptions = {},
 ): InteractiveSigner {
 	const view = checkedView(input, options.connectionOnly);
 	const now = options.now ?? Date.now;
-	const token = randomBytes(32).toString("hex");
+	const access = bridgeSession();
 	const nonce = randomBytes(24).toString("base64");
 	const connected = deferred<{ address: typeof view.owner; chainId: number }>();
 	const signed = deferred<Hex>();
@@ -84,17 +85,23 @@ export function browserSigner(
 		server = Bun.serve({
 			hostname: "127.0.0.1",
 			port: 0,
+			development: false,
+			error: () => reply(500, "Bridge error"),
 			maxRequestBodySize: 4096,
 			async fetch(req) {
 				const url = new URL(req.url);
 				if (req.headers.get("host") !== new URL(origin).host)
 					return reply(403, "Invalid host");
-				const supplied = url.searchParams.get("t") ?? "";
-				if (
-					!/^[a-f0-9]{64}$/.test(supplied) ||
-					!timingSafeEqual(Buffer.from(supplied), Buffer.from(token))
-				)
-					return reply(403, "Invalid token");
+				const isPage =
+					req.method === "GET" && url.pathname === `/sign/${view.id}`;
+				const opened = isPage ? access.page(req, url) : undefined;
+				if (isPage ? !opened?.ok : !access.api(req))
+					return reply(
+						403,
+						isPage
+							? "This signing link was already opened; use the tab it opened"
+							: "Invalid session",
+					);
 				if (used || terminal)
 					return reply(409, "Proposal already used or closed");
 				if (now() >= view.expiresAt) {
@@ -103,7 +110,7 @@ export function browserSigner(
 					);
 					return reply(410, "Proposal expired");
 				}
-				if (req.method === "GET" && url.pathname === `/sign/${view.id}`)
+				if (isPage)
 					// Bun's *.html declaration describes its default loader, not type: text.
 					return new Response(
 						(html as unknown as string).replaceAll("_MSTACK_NONCE_", nonce),
@@ -111,6 +118,9 @@ export function browserSigner(
 							headers: {
 								...headers,
 								"Content-Type": "text/html; charset=utf-8",
+								...(opened?.setCookie
+									? { "Set-Cookie": opened.setCookie }
+									: {}),
 							},
 						},
 					);
@@ -198,12 +208,13 @@ export function browserSigner(
 			},
 		});
 		origin = `http://127.0.0.1:${server.port}`;
+		access.bind(Number(server.port));
 		timer = setTimeout(
 			() =>
 				finish(new Error("Proposal expired while waiting for browser wallet")),
 			Math.max(0, view.expiresAt - now()),
 		);
-		const url = `${origin}/sign/${view.id}?t=${token}`;
+		const url = `${origin}/sign/${view.id}?t=${access.token}`;
 		options.onUrl?.(url);
 		void (options.openUrl ?? openUrl)(url).catch((error) =>
 			finish(

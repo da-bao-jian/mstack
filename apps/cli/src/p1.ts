@@ -33,7 +33,13 @@ import { cliKeyStore } from "./key-store.ts";
 import { keyListTable } from "./keys-command.ts";
 import { object, submitPlan } from "./onboarding-http.ts";
 import { CheckFailure, Checks, configChecks } from "./preflight/checks.ts";
-import { proposalTiming, proposalView, showProposal } from "./proposal-view.ts";
+import {
+	ceremonyCard,
+	ceremonySteps,
+	proposalTiming,
+	proposalView,
+	showProposal,
+} from "./proposal-view.ts";
 import { refreshExpired } from "./refresh-proposal.ts";
 import { restageProposal } from "./restage.ts";
 import type { Runtime } from "./run.ts";
@@ -128,13 +134,7 @@ export async function p1(
 			const ceremony = await new CeremonyStore(rt.home, rt.now, rt.err).get(
 				args[1],
 			);
-			const steps = [
-				...(ceremony.legal ? [ceremony.legal] : []),
-				ceremony.prepare,
-				...ceremony.requests,
-				...(ceremony.read ? [ceremony.read] : []),
-				...(ceremony.key ? [ceremony.key] : []),
-			];
+			const steps = ceremonySteps(ceremony);
 			if (values.json) {
 				rt.out(
 					JSON.stringify(
@@ -161,36 +161,7 @@ export async function p1(
 				);
 				return;
 			}
-			const signable = ![
-				"complete",
-				"partial",
-				"rejected",
-				"failed",
-				"expired",
-			].includes(ceremony.status);
-			rt.out(
-				[
-					`${ceremony.id} · ceremony · ${ceremony.status} · ${expiry(ceremony.expiresAt, rt.now())}`,
-					`Owner    ${ceremony.owner}`,
-					`Venues   ${ceremony.venues.map((venue) => venue.venue).join(", ")}`,
-					...(ceremony.keyPlan
-						? [
-								`Key      “${ceremony.keyPlan.name}” · cap $${ceremony.keyPlan.maxSizeUsd.toLocaleString("en-US")}${ceremony.keyResult ? ` · stored ${ceremony.keyResult.prefix} in ${ceremony.keyResult.backend}` : ""}`,
-							]
-						: []),
-					"Steps",
-					...steps.map(
-						(step, index) =>
-							`  ${index + 1}. ${step.status === "signed" ? "✓" : "·"} ${step.purpose}`,
-					),
-					...(ceremony.keyPlan && !ceremony.key
-						? [
-								`  ${steps.length + 1}. · Create API key “${ceremony.keyPlan.name}” and store it locally`,
-							]
-						: []),
-					...(signable ? [`Next: mob sign ${ceremony.id}`] : []),
-				].join("\n"),
-			);
+			rt.out(ceremonyCard(ceremony, rt.now()));
 			return;
 		}
 		rt.out(show(await store.get(args[1])));

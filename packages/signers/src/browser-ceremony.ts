@@ -1,4 +1,4 @@
-import { randomBytes, timingSafeEqual } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import {
 	type Address,
 	getAddress,
@@ -7,6 +7,7 @@ import {
 	keccak256,
 	stringToHex,
 } from "viem";
+import { bridgeSession } from "./bridge-session.ts";
 import baseHtml from "./browser.html" with { type: "text" };
 import {
 	deferred,
@@ -34,8 +35,8 @@ function ceremonyHtml(nonce: string): string {
 			'Review ceremony · <span id="id"></span>',
 		)
 		.replace(
-			'<p class="scope">It cannot move funds.</p>',
-			'<p class="scope">It cannot move funds.</p><section><h2>Ceremony steps</h2><ol id="steps"></ol></section>',
+			'<p class="scope">Sign only if this matches what you asked for. Each step names what it allows.</p>',
+			'<p class="scope">Sign only if this matches what you asked for. Each step names what it allows.</p><section><h2>Ceremony steps</h2><ol id="steps"></ol></section>',
 		)
 		.replace(
 			"let proposal, provider, address, chainId, loadedAt, selectedIndex = 0, ready = false, busy = false, submitting = false, done = false;",
@@ -105,7 +106,7 @@ export function browserCeremonySigner(
 	if (!/^c-[1-9]\d*$/.test(id)) throw new Error("Invalid ceremony id");
 	const owner = getAddress(ownerInput);
 	const now = options.now ?? Date.now;
-	const token = randomBytes(32).toString("hex");
+	const access = bridgeSession();
 	const nonce = randomBytes(24).toString("base64");
 	const connected = deferred<Address>();
 	const views = new Map<string, SigningView>();
@@ -174,17 +175,22 @@ export function browserCeremonySigner(
 		server = Bun.serve({
 			hostname: "127.0.0.1",
 			port: 0,
+			development: false,
+			error: () => reply(500, "Bridge error"),
 			maxRequestBodySize: 65_536,
 			async fetch(req) {
 				const url = new URL(req.url);
 				if (req.headers.get("host") !== new URL(origin).host)
 					return reply(403, "Invalid host");
-				const supplied = url.searchParams.get("t") ?? "";
-				if (
-					!/^[a-f0-9]{64}$/.test(supplied) ||
-					!timingSafeEqual(Buffer.from(supplied), Buffer.from(token))
-				)
-					return reply(403, "Invalid token");
+				const isPage = req.method === "GET" && url.pathname === `/sign/${id}`;
+				const opened = isPage ? access.page(req, url) : undefined;
+				if (isPage ? !opened?.ok : !access.api(req))
+					return reply(
+						403,
+						isPage
+							? "This signing link was already opened; use the tab it opened"
+							: "Invalid session",
+					);
 				if (terminal) return reply(409, terminal.message);
 				if (now() >= expiresAt) {
 					finish(
@@ -192,9 +198,13 @@ export function browserCeremonySigner(
 					);
 					return reply(410, "Ceremony expired");
 				}
-				if (req.method === "GET" && url.pathname === `/sign/${id}`)
+				if (isPage)
 					return new Response(ceremonyHtml(nonce), {
-						headers: { ...headers, "Content-Type": "text/html; charset=utf-8" },
+						headers: {
+							...headers,
+							"Content-Type": "text/html; charset=utf-8",
+							...(opened?.setCookie ? { "Set-Cookie": opened.setCookie } : {}),
+						},
 					});
 				if (req.method === "GET" && url.pathname === "/api/proposal") {
 					const view = current ?? last ?? [...views.values()][0];
@@ -211,31 +221,39 @@ export function browserCeremonySigner(
 					req.headers.get("content-type")?.split(";")[0] !== "application/json"
 				)
 					return reply(415, "Expected JSON");
-				const body = (await req.json()) as Record<string, unknown>;
+				let body: Record<string, unknown>;
+				try {
+					const parsed = await req.json();
+					if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+						return reply(400, "Invalid body");
+					body = parsed as Record<string, unknown>;
+				} catch {
+					return reply(400, "Invalid JSON");
+				}
 				if (url.pathname === "/api/reject") {
 					if (current) states.set(current.id, "rejected");
 					finish(new Error("Browser wallet rejected the ceremony"), true);
+					return Response.json({ ok: true }, { headers });
+				}
+				if (
+					typeof body.address !== "string" ||
+					!/^0x[0-9a-fA-F]{40}$/.test(body.address) ||
+					getAddress(body.address) !== owner
+				)
+					return reply(403, "Wallet account does not match owner");
+				// The CLI waits for the account before it hands over the first
+				// step, so the account report is accepted with no step current.
+				if (url.pathname === "/api/account") {
+					if (!Number.isSafeInteger(body.chainId) || Number(body.chainId) <= 0)
+						return reply(400, "Invalid chainId");
+					account = { address: owner, chainId: Number(body.chainId) };
+					connected.resolve(owner);
 					return Response.json({ ok: true }, { headers });
 				}
 				if (!current) return reply(409, "CLI is not ready to sign");
 				if (accepting) return reply(409, "Signature verification in progress");
 				accepting = true;
 				try {
-					if (
-						typeof body.address !== "string" ||
-						getAddress(body.address) !== owner
-					)
-						return reply(403, "Wallet account does not match owner");
-					if (url.pathname === "/api/account") {
-						if (
-							!Number.isSafeInteger(body.chainId) ||
-							Number(body.chainId) <= 0
-						)
-							return reply(400, "Invalid chainId");
-						account = { address: owner, chainId: Number(body.chainId) };
-						connected.resolve(owner);
-						return Response.json({ ok: true }, { headers });
-					}
 					if (url.pathname !== "/api/signature")
 						return reply(404, "Unknown route");
 					if (body.stepId !== current.id || !account)
@@ -266,12 +284,13 @@ export function browserCeremonySigner(
 			},
 		});
 		origin = `http://127.0.0.1:${server.port}`;
+		access.bind(Number(server.port));
 		timer = setTimeout(
 			() =>
 				finish(new Error("Ceremony expired while waiting for browser wallet")),
 			Math.max(0, expiresAt - now()),
 		);
-		const url = `${origin}/sign/${id}?t=${token}`;
+		const url = `${origin}/sign/${id}?t=${access.token}`;
 		options.onUrl?.(url);
 		void (options.openUrl ?? openUrl)(url).catch((error) =>
 			finish(

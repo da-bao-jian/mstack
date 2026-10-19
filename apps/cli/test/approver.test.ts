@@ -237,6 +237,41 @@ test("hello reports the approver and the idle window re-asks for the passphrase"
 	expect(await approverStatus(t.home)).toEqual({ running: false });
 });
 
+test("the approver renders the card and its pin from one read of the record", async () => {
+	const t = await setup();
+	const r = runtimes(t.home);
+	const p = await t.stage();
+	const original = ProposalStore.prototype.get;
+	let reads = 0;
+	let readsAtCard = -1;
+	ProposalStore.prototype.get = async function (
+		this: ProposalStore,
+		...args: Parameters<ProposalStore["get"]>
+	) {
+		reads++;
+		return original.apply(this, args);
+	};
+	try {
+		const handle = await startApprover(
+			{ ...r.humanRt, home: t.home },
+			{
+				confirm: async (card) => {
+					readsAtCard = reads;
+					expect(card).toContain(p.id);
+					return false;
+				},
+				read: async () => t.password,
+			},
+		);
+		stops.push(handle.stop);
+		expect(await run(["sign", p.id], r.agentRt)).toBe(1);
+	} finally {
+		ProposalStore.prototype.get = original;
+	}
+	// A second read between the pin and the card would let a swap slip in.
+	expect(readsAtCard).toBe(1);
+});
+
 test("the approver pins the card: a record swapped after the human saw it is never signed", async () => {
 	const t = await setup();
 	const r = runtimes(t.home);

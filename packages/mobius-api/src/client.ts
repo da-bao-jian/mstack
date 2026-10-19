@@ -26,6 +26,7 @@ import type {
 	ResizeTask,
 	SubmitVenueBindings,
 	Task,
+	Venue,
 	VenueBindingBatch,
 } from "./types.ts";
 
@@ -81,7 +82,7 @@ function exact(row: Record<string, unknown>, allowed: string[]): void {
 	if (Object.keys(row).some((key) => !allowed.includes(key)))
 		throw new Error("unsupported response field");
 }
-const venues = ["aster", "hl", "lighter", "lighter-mainnet"];
+const venues: readonly string[] = ["aster", "hl", "lighter", "lighter-mainnet"];
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function task(value: unknown): Task {
@@ -124,7 +125,7 @@ function task(value: unknown): Task {
 	return row as unknown as Task;
 }
 
-function signRequest(value: unknown) {
+function signRequest(value: unknown, owner: string) {
 	const row = record(value);
 	exact(row, ["requestId", "venue", "action", "method", "payload"]);
 	for (const key of ["requestId", "venue", "action", "method"])
@@ -133,7 +134,7 @@ function signRequest(value: unknown) {
 	if (!venues.includes(String(row.venue))) throw new Error("invalid venue");
 	if (!["personal_sign", "eth_signTypedData_v4"].includes(String(row.method)))
 		throw new Error("invalid method");
-	classifySignRequest(row);
+	classifySignRequest(row, { owner, venues: venues as Venue[] });
 	return row;
 }
 
@@ -187,7 +188,7 @@ function binding(value: unknown): VenueBindingBatch {
 		if (result.code !== undefined) string(result, "code");
 		if (result.retryable !== undefined) boolean(result, "retryable");
 	}
-	row.signRequests.map(signRequest);
+	for (const item of row.signRequests) signRequest(item, String(row.owner));
 	return row as unknown as VenueBindingBatch;
 }
 

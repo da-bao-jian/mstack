@@ -6,7 +6,9 @@ import {
 	preparePayload,
 	readHeaders,
 	readPayload,
+	type Venue,
 } from "../src/index.ts";
+import { asterRequest, hlRequest, lighterRequest } from "./fake-api-helpers.ts";
 
 test("canonical and binding messages preserve the upstream localeCompare order", () => {
 	const value = { z: 1, A: { b: 2, B: 3 }, a: [{ Z: 4, y: 5 }] };
@@ -118,40 +120,122 @@ test("binding authorization helpers normalize and validate their inputs", () => 
 	).toThrow("expiresAt");
 });
 
-test("classifySignRequest validates but does not rebuild the payload", () => {
-	const typed = {
-		requestId: "hl:approveAgent",
-		venue: "hl",
-		action: "approveAgent",
-		method: "eth_signTypedData_v4",
-		payload: {
-			domain: {},
-			types: {},
-			primaryType: "Agent",
-			message: { agent: "0x1" },
-		},
-	} as const;
-	expect(classifySignRequest(typed)).toEqual({
-		method: typed.method,
-		venue: typed.venue,
-		action: typed.action,
-		requestId: typed.requestId,
-	});
+const OWNER = "0x1111111111111111111111111111111111111111";
+const ALL: Venue[] = ["hl", "aster", "lighter", "lighter-mainnet"];
+const context = { owner: OWNER, venues: ALL, now: () => 1_800_000_000_000 };
+const clone = <T>(value: T): unknown => structuredClone(value);
+/** Sets a nested field on a cloned request. */
+function set(target: unknown, path: string[], value: unknown) {
+	let node = target as Record<string, unknown>;
+	for (const key of path.slice(0, -1))
+		node = node[key] as Record<string, unknown>;
+	node[path.at(-1) as string] = value;
+}
+
+test("classifySignRequest accepts the venues' exact binding requests and names what each allows", () => {
+	for (const request of [
+		hlRequest("approveAgent"),
+		hlRequest("approveBuilderFee"),
+		asterRequest(OWNER),
+		lighterRequest(OWNER, "lighter", "changePubKey"),
+		lighterRequest(OWNER, "lighter-mainnet", "approveIntegrator"),
+	])
+		expect(classifySignRequest(request, context)).toMatchObject({
+			venue: request.venue,
+			action: request.action,
+			requestId: request.requestId,
+			method: request.method,
+		});
 	expect(
-		classifySignRequest({
-			requestId: "lighter:changePubKey",
-			venue: "lighter",
-			action: "changePubKey",
-			method: "personal_sign",
-			payload: { message: "exact bytes" },
-		}),
-	).toEqual({
-		method: "personal_sign",
-		venue: "lighter",
-		action: "changePubKey",
-		requestId: "lighter:changePubKey",
+		classifySignRequest(hlRequest("approveAgent"), context).capability,
+	).toBe("trades on Hyperliquid; an agent cannot withdraw");
+});
+
+test("classifySignRequest refuses anything a compromised server could slip into binding", () => {
+	const reject = (request: unknown, venues = ALL) =>
+		expect(() =>
+			classifySignRequest(request, { ...context, venues }),
+		).toThrow();
+	// A USDC permit dressed up as an HL approval.
+	const permit = clone(hlRequest("approveAgent"));
+	set(permit, ["payload"], {
+		domain: {
+			name: "USD Coin",
+			version: "2",
+			chainId: 42161,
+			verifyingContract: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+		},
+		types: {
+			Permit: [
+				{ name: "owner", type: "address" },
+				{ name: "spender", type: "address" },
+				{ name: "value", type: "uint256" },
+				{ name: "nonce", type: "uint256" },
+				{ name: "deadline", type: "uint256" },
+			],
+		},
+		primaryType: "Permit",
+		message: {
+			owner: OWNER,
+			spender: "0x000000000000000000000000000000000000dEaD",
+			value:
+				"115792089237316195423570985008687907853269984665640564039457584007913129639935",
+			nonce: 0,
+			deadline: 4102444800,
+		},
 	});
-	expect(() =>
-		classifySignRequest({ ...typed, payload: { message: {} } }),
-	).toThrow("typed data");
+	reject(permit);
+	// An HL withdrawal under the approveAgent label.
+	const withdraw = clone(hlRequest("approveAgent"));
+	set(withdraw, ["payload", "primaryType"], "HyperliquidTransaction:Withdraw");
+	set(withdraw, ["payload", "types"], {
+		"HyperliquidTransaction:Withdraw": [
+			{ name: "hyperliquidChain", type: "string" },
+			{ name: "destination", type: "string" },
+			{ name: "amount", type: "string" },
+			{ name: "time", type: "uint64" },
+		],
+	});
+	reject(withdraw);
+	const extraField = clone(hlRequest("approveAgent"));
+	set(
+		extraField,
+		["payload", "message", "destination"],
+		"0x000000000000000000000000000000000000dEaD",
+	);
+	reject(extraField);
+	const testnet = clone(hlRequest("approveAgent"));
+	set(testnet, ["payload", "message", "hyperliquidChain"], "Testnet");
+	reject(testnet);
+	const chain = clone(hlRequest("approveAgent"));
+	set(chain, ["payload", "domain", "chainId"], 1);
+	reject(chain);
+	const fee = clone(hlRequest("approveBuilderFee"));
+	set(fee, ["payload", "message", "maxFeeRate"], "1%");
+	reject(fee);
+	const asterWithdraw = clone(asterRequest(OWNER));
+	set(asterWithdraw, ["payload", "message", "CanWithdraw"], true);
+	reject(asterWithdraw);
+	reject(asterRequest("0x000000000000000000000000000000000000dEaD"));
+	const integrator = lighterRequest(
+		"0x000000000000000000000000000000000000dEaD",
+		"lighter",
+		"approveIntegrator",
+	);
+	reject(integrator);
+	const transfer = clone(lighterRequest(OWNER, "lighter", "changePubKey"));
+	set(
+		transfer,
+		["payload", "message"],
+		"Transfer 1000 USDC to 0x000000000000000000000000000000000000dEaD",
+	);
+	reject(transfer);
+	const spoofed = clone(lighterRequest(OWNER, "lighter", "changePubKey"));
+	set(spoofed, ["action"], "changePubKey\u001b[2K\rspoofed");
+	reject(spoofed);
+	const relabelled = clone(hlRequest("approveAgent"));
+	set(relabelled, ["requestId"], "hl:approveBuilderFee");
+	reject(relabelled);
+	// A venue the owner never asked to bind.
+	reject(hlRequest("approveAgent"), ["lighter"]);
 });

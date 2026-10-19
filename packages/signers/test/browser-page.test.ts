@@ -317,7 +317,7 @@ test("page draws every opaque logo pixel and keeps the review order, dark theme 
 	const indexes = ids.map((id) => source.indexOf(`id="${id}"`));
 	expect(indexes).toEqual([...indexes].sort((a, b) => a - b));
 	for (const text of [
-		"It cannot move funds.",
+		"Sign only if this matches what you asked for. Each step names what it allows.",
 		"This signature authorizes:",
 		"prefers-color-scheme: dark",
 		":focus-visible",

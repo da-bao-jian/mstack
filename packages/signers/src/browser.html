@@ -59,7 +59,7 @@
 <p class="eyebrow">Review signature · <span id="id"></span></p>
 <h1><span id="intent">This signature authorizes:</span> <span id="purpose">Loading Proposal…</span></h1>
 <p id="statement" hidden></p>
-<p class="scope">It cannot move funds.</p>
+<p class="scope">Sign only if this matches what you asked for. Each step names what it allows.</p>
 <section aria-label="Account check">
 <dl><dt>Expected owner</dt><dd class="address" id="owner"></dd><dt>Connected account</dt><dd class="address" id="account">Not connected</dd></dl>
 <p id="account-match" aria-live="polite">Connect your wallet to check the owner.</p>
@@ -132,11 +132,10 @@ logoRows.forEach((row, y) => { Array.from(row).forEach((pixel, x) => {
   for (const [key, value] of Object.entries({ x: x * 4, y: y * 4, width: 4, height: 4, fill: logoColors[pixel] })) rect.setAttribute(key, String(value));
   el("logo").append(rect);
 }); });
-const token = new URL(location.href).searchParams.get("t");
 const wallets = [];
 let proposal, provider, address, chainId, loadedAt, selectedIndex = 0, ready = false, busy = false, submitting = false, done = false;
 const api = async (path, body) => {
-  const response = await fetch(`${path}?t=${encodeURIComponent(token)}`, body === undefined ? {} : {
+  const response = await fetch(path, body === undefined ? {} : {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
   });
   const result = await response.json();

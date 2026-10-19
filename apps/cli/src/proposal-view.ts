@@ -1,4 +1,9 @@
-import { type Proposal, publicText, publicValue } from "@mstack/proposals";
+import {
+	type Ceremony,
+	type Proposal,
+	publicText,
+	publicValue,
+} from "@mstack/proposals";
 import { expiry, paint, relative, type Terminal } from "./format.ts";
 import { clean } from "./render.ts";
 
@@ -103,4 +108,47 @@ export function proposalResult(p: Proposal) {
 				? `Nothing is sent until \`mob submit ${p.id}\` runs under the configured policy.`
 				: `Nothing is signed or sent until a human runs \`mob sign ${p.id}\`.`,
 	};
+}
+
+/** The ordered signing steps of a ceremony. */
+export function ceremonySteps(ceremony: Ceremony) {
+	return [
+		...(ceremony.legal ? [ceremony.legal] : []),
+		ceremony.prepare,
+		...ceremony.requests,
+		...(ceremony.read ? [ceremony.read] : []),
+		...(ceremony.key ? [ceremony.key] : []),
+	];
+}
+
+export function ceremonyCard(ceremony: Ceremony, now: number): string {
+	const steps = ceremonySteps(ceremony);
+	const signable = ![
+		"complete",
+		"partial",
+		"rejected",
+		"failed",
+		"expired",
+	].includes(ceremony.status);
+	return [
+		`${ceremony.id} · ceremony · ${ceremony.status} · ${expiry(ceremony.expiresAt, now)}`,
+		`Owner    ${ceremony.owner}`,
+		`Venues   ${ceremony.venues.map((venue) => venue.venue).join(", ")}`,
+		...(ceremony.keyPlan
+			? [
+					`Key      “${ceremony.keyPlan.name}” · cap $${ceremony.keyPlan.maxSizeUsd.toLocaleString("en-US")}${ceremony.keyResult ? ` · stored ${ceremony.keyResult.prefix} in ${ceremony.keyResult.backend}` : ""}`,
+				]
+			: []),
+		"Steps",
+		...steps.map(
+			(step, index) =>
+				`  ${index + 1}. ${step.status === "signed" ? "✓" : "·"} ${step.purpose}`,
+		),
+		...(ceremony.keyPlan && !ceremony.key
+			? [
+					`  ${steps.length + 1}. · Create API key “${ceremony.keyPlan.name}” and store it locally`,
+				]
+			: []),
+		...(signable ? [`Next: mob sign ${ceremony.id}`] : []),
+	].join("\n");
 }

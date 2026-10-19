@@ -38,3 +38,33 @@ export async function loopback(
 		req.end(init.body ? String(init.body) : undefined);
 	});
 }
+
+/**
+ * Opens a signing link like a browser tab: the page load trades the one-time
+ * link token for the session cookie, which every later call carries.
+ */
+export async function openBridge(url: string | URL) {
+	const target = new URL(url);
+	const page = await loopback(target);
+	const cookie = (page.headers.get("set-cookie") ?? "").split(";")[0] ?? "";
+	const api = (
+		path: string,
+		body?: unknown,
+		overrides: { cookie?: string; origin?: string } = {},
+	) =>
+		loopback(`${target.origin}${path}`, {
+			headers: {
+				Cookie: overrides.cookie ?? cookie,
+				...(body === undefined
+					? {}
+					: {
+							"Content-Type": "application/json",
+							Origin: overrides.origin ?? target.origin,
+						}),
+			},
+			...(body === undefined
+				? {}
+				: { method: "POST", body: JSON.stringify(body) }),
+		});
+	return { page, cookie, api };
+}

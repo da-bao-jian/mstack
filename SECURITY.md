@@ -53,7 +53,14 @@ On Claude Code 2.1.295 or newer, a guard that cannot start, crashes, or times ou
 blocks the call. Older versions let such a call continue; the CLI policy, expiry,
 owner, and single-use checks still apply there.
 
-The browser bridge uses loopback, a one-time token, and origin/host checks.
+The browser bridge uses loopback, origin/host checks, and a link that opens once:
+the first page load trades its token for an HttpOnly session cookie, so a copy of
+the link in a terminal or an agent transcript cannot drive the bridge.
+Venue-binding requests prepared by the server are checked against the exact
+request each venue uses (domain, chain, types, and every message field, including
+`CanWithdraw: false` and the owner) and against the venues the owner asked to
+bind, when they arrive and again whenever a stored ceremony loads; anything else,
+such as a token permit or a withdrawal, is refused before any wallet sees it.
 WalletConnect pairing uses its relay with SDK telemetry disabled.
 Submission is not confirmation; use a status read to check execution.
 

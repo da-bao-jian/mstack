@@ -115,8 +115,49 @@ export function ceremonyFingerprint(ceremony: Ceremony): Hex {
 			prepare: ceremony.prepare.digest,
 			legal: ceremony.legal?.digest ?? null,
 			keyPlan: ceremony.keyPlan ?? null,
+			requests: ceremony.requests.map((step) => [
+				step.id,
+				step.purpose,
+				step.digest,
+			]),
 		}),
 	)}`;
+}
+
+function requestPurpose(venue: string, action: string, capability: string) {
+	return `Bind ${venue}: ${action} (${capability})`;
+}
+
+/** Re-checks a stored request step against the binding allow-list. */
+function checkRequestStep(
+	ceremony: Ceremony,
+	step: CeremonyProposal,
+	now?: () => number,
+): void {
+	const classified = classifySignRequest(
+		{
+			requestId: step.requestId,
+			venue: step.venue,
+			action: step.action,
+			method:
+				step.signing.type === "text" ? "personal_sign" : "eth_signTypedData_v4",
+			payload:
+				step.signing.type === "text"
+					? { message: step.signing.message }
+					: step.signing.typedData,
+		},
+		{
+			owner: ceremony.owner,
+			venues: ceremony.venues.map((target) => target.venue),
+			now,
+		},
+	);
+	if (
+		step.id !== `${ceremony.id}:${classified.requestId}` ||
+		step.purpose !==
+			requestPurpose(classified.venue, classified.action, classified.capability)
+	)
+		throw new Error("Ceremony request step mismatch");
 }
 
 function serialize(ceremony: Ceremony): string {
@@ -231,6 +272,14 @@ function validate(ceremony: Ceremony): void {
 			throw new Error("Ceremony Proposal kind does not match signing payload");
 		if (digest(proposal.signing) !== proposal.digest)
 			throw new Error("Ceremony Proposal digest mismatch");
+	}
+	// A stored request is checked again on every load, so an edited ceremony
+	// file cannot carry a payload the server path would have refused.
+	const ids = new Set<string | undefined>();
+	for (const step of ceremony.requests) {
+		checkRequestStep(ceremony, step);
+		if (ids.has(step.requestId)) throw new Error("Duplicate ceremony request");
+		ids.add(step.requestId);
 	}
 }
 
@@ -391,8 +440,13 @@ export class CeremonyStore {
 				throw new Error("Prepared binding owner mismatch");
 			ceremony.bindingId = batch.bindingId;
 			ceremony.latest = structuredClone(batch);
+			const venues = ceremony.venues.map((target) => target.venue);
 			ceremony.requests = batch.signRequests.map((request: SignRequest) => {
-				const classified = classifySignRequest(request);
+				const classified = classifySignRequest(request, {
+					owner: ceremony.owner,
+					venues,
+					now: this.now,
+				});
 				const signing: CeremonySigningPayload =
 					request.method === "personal_sign"
 						? {
@@ -408,7 +462,11 @@ export class CeremonyStore {
 				return ceremonyStep(
 					`${id}:${request.requestId}`,
 					ceremony.owner,
-					`Bind ${classified.venue}: ${classified.action}`,
+					requestPurpose(
+						classified.venue,
+						classified.action,
+						classified.capability,
+					),
 					signing,
 					ceremony.createdAt,
 					ceremony.expiresAt,

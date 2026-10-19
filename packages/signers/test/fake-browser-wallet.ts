@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import type { PrivateKeyAccount } from "viem";
 import { pinnedChain, type SigningView } from "../src/interactive.ts";
-import { loopback } from "./loopback.ts";
+import { openBridge } from "./loopback.ts";
 
 /** Scripted wallet over the real bridge HTTP API; no browser or extension. */
 export async function fakeBrowserWallet(
@@ -9,22 +9,7 @@ export async function fakeBrowserWallet(
 	wallet: PrivateKeyAccount,
 	beforeSign?: () => Promise<void>,
 ) {
-	const target = new URL(url);
-	const api = (path: string, body?: unknown) =>
-		loopback(
-			`${target.origin}${path}?${target.searchParams}`,
-			body === undefined
-				? {}
-				: {
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-							Origin: target.origin,
-						},
-						body: JSON.stringify(body),
-					},
-		);
-	const page = await loopback(url);
+	const { page, api } = await openBridge(url);
 	assert.equal(page.status, 200);
 	assert.ok(page.headers.get("Content-Security-Policy"));
 	let view = (await (await api("/api/proposal")).json()) as SigningView & {

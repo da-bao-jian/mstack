@@ -1,10 +1,16 @@
 import { afterEach, expect, test } from "bun:test";
+import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { bindingMessage, preparePayload } from "@mstack/mobius-api";
 import { privateKeyToAccount } from "viem/accounts";
+import {
+	asterRequest,
+	hlRequest,
+} from "../../mobius-api/test/fake-api-helpers.ts";
 import { CeremonyStore, ceremonyFingerprint } from "../src/ceremony.ts";
+import { digest } from "../src/model.ts";
 
 const account = privateKeyToAccount(`0x${"03".repeat(32)}`);
 const now = 1_800_000_000_000;
@@ -73,38 +79,21 @@ test("ceremony records returned requests in order as collect-only Proposals", as
 				status: "awaiting_signatures",
 			},
 		],
-		signRequests: [
-			{
-				requestId: "hl:approveAgent",
-				venue: "hl",
-				action: "approveAgent",
-				method: "eth_signTypedData_v4",
-				payload: {
-					domain: { name: "HL", chainId: 42161 },
-					types: { Agent: [{ name: "owner", type: "address" }] },
-					primaryType: "Agent",
-					message: { owner: account.address },
-				},
-			},
-			{
-				requestId: "hl:fee",
-				venue: "hl",
-				action: "approveBuilderFee",
-				method: "personal_sign",
-				payload: { message: "exact fee bytes" },
-			},
-		],
+		signRequests: [hlRequest("approveAgent"), hlRequest("approveBuilderFee")],
 	});
 	expect(updated.bindingId).toBe("01234567-89ab-cdef-0123-456789abcdef");
 	expect(updated.status).toBe("awaiting-request-signatures");
 	expect(updated.requests.map((step) => step.requestId)).toEqual([
 		"hl:approveAgent",
-		"hl:fee",
+		"hl:approveBuilderFee",
 	]);
 	expect(updated.requests.map((step) => step.kind)).toEqual([
 		"sign-typed",
-		"sign-text",
+		"sign-typed",
 	]);
+	expect(updated.requests[0]?.purpose).toBe(
+		"Bind hl: approveAgent (trades on Hyperliquid; an agent cannot withdraw)",
+	);
 	expect(
 		updated.requests.every((step) => step.submit.type === "collect-ceremony"),
 	).toBe(true);
@@ -112,6 +101,61 @@ test("ceremony records returned requests in order as collect-only Proposals", as
 		"awaiting-signature",
 		"awaiting-signature",
 	]);
+});
+
+test("ceremony refuses a prepared request outside the binding allow-list", async () => {
+	const h = await store();
+	const ceremony = await h.store.stage({
+		owner: account.address,
+		apiBase: "http://127.0.0.1:9988",
+		venues: [{ venue: "aster" }],
+	});
+	const request = asterRequest(account.address);
+	(
+		request.payload as { message: Record<string, unknown> }
+	).message.CanWithdraw = true;
+	await expect(
+		h.store.recordPrepared(ceremony.id, {
+			bindingId: "01234567-89ab-cdef-0123-456789abcdef",
+			owner: account.address,
+			expiresAt: new Date(ceremony.expiresAt).toISOString(),
+			status: "awaiting_signatures",
+			results: [],
+			signRequests: [request],
+		}),
+	).rejects.toThrow("Unexpected Aster approveAgent request");
+});
+
+test("a stored request rewritten consistently on disk is refused when the ceremony loads", async () => {
+	const h = await store();
+	const ceremony = await h.store.stage({
+		owner: account.address,
+		apiBase: "http://127.0.0.1:9988",
+		venues: [{ venue: "aster" }],
+	});
+	await h.store.recordPrepared(ceremony.id, {
+		bindingId: "01234567-89ab-cdef-0123-456789abcdef",
+		owner: account.address,
+		expiresAt: new Date(ceremony.expiresAt).toISOString(),
+		status: "awaiting_signatures",
+		results: [],
+		signRequests: [asterRequest(account.address)],
+	});
+	const path = join(h.home, "ceremonies", `${ceremony.id}.json`);
+	const { recordHash: _, ...stored } = JSON.parse(await readFile(path, "utf8"));
+	const step = stored.requests[0];
+	step.signing.typedData.message.CanWithdraw = true;
+	step.digest = digest(step.signing);
+	const bytes = `${JSON.stringify(stored, null, 2)}\n`;
+	const recordHash = createHash("sha256").update(bytes).digest("hex");
+	await writeFile(
+		path,
+		`${JSON.stringify({ ...stored, recordHash }, null, 2)}\n`,
+		{ mode: 0o600 },
+	);
+	await expect(h.store.get(ceremony.id)).rejects.toThrow(
+		"Unexpected Aster approveAgent request",
+	);
 });
 
 test("ceremony checksum rejects record edits", async () => {
