@@ -14,14 +14,14 @@ Follow the path for the detected host. Do not ask the user which path to use.
 ```sh
 claude plugin marketplace add da-bao-jian/mstack
 claude plugin install mstack@mstack
-curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.1/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.2/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
 mob --version
 mob doctor
 mob
 ```
 
-`mob --version` must print the version in `v0.4.1`. Check the doctor output against [Verify](#verify).
+`mob --version` must print the version in `v0.4.2`. Check the doctor output against [Verify](#verify).
 Reproduce the complete `mob` output verbatim in a fenced code block as the welcome, without the `<mob-home>` and `</mob-home>` tag lines.
 
 Tell the user exactly: restart Claude Code, then say "set me up".
@@ -29,14 +29,14 @@ Tell the user exactly: restart Claude Code, then say "set me up".
 ## Codex
 
 ```sh
-git clone --branch v0.4.1 https://github.com/da-bao-jian/mstack ~/.mstack && cd ~/.mstack && ./setup --host codex
+git clone --branch v0.4.2 https://github.com/da-bao-jian/mstack ~/.mstack && cd ~/.mstack && ./setup --host codex
 export PATH="$HOME/.agents/skills/mstack/bin:$PATH"
 mob --version
 mob doctor
 mob
 ```
 
-`mob --version` must print the version in `v0.4.1`. Check the doctor output against [Verify](#verify).
+`mob --version` must print the version in `v0.4.2`. Check the doctor output against [Verify](#verify).
 Reproduce the complete `mob` output verbatim in a fenced code block as the welcome, without the `<mob-home>` and `</mob-home>` tag lines.
 
 Tell the user exactly: start a new Codex session and say "set me up".
@@ -46,7 +46,7 @@ Tell the user exactly: start a new Codex session and say "set me up".
 Install the binary and keep the printed PATH export in the current shell.
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.1/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.2/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
 mob --version
 mob doctor
@@ -78,7 +78,7 @@ Keep signing and key import in the terminal. Use `mob onboard` and `mob keys imp
 Run each command exactly.
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.1/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.2/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
 mob --version
 mob doctor

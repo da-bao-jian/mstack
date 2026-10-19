@@ -3,7 +3,7 @@ name: mob-bind
 description: Repair venue binding or use native onboarding. Use for "repair binding", "bind all venues", "onboard without a browser", "bind hyperliquid", or "connect lighter"; every ceremony needs explicit id approval. (mstack)
 license: MIT
 metadata:
-  version: "0.4.1"
+  version: "0.4.2"
 ---
 
 ```bash
