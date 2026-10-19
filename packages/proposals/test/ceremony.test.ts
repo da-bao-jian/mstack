@@ -51,11 +51,11 @@ test("ceremony stage fixes prepare bytes, expiry, targets and idempotency keys",
 		},
 		() => now,
 	);
-	expect(ceremony.prepare.signing).toEqual({
+	expect(ceremony.prepare?.signing).toEqual({
 		type: "text",
 		message: bindingMessage("prepare", payload),
 	});
-	expect(ceremony.prepare.submit).toEqual({ type: "prepare-ceremony" });
+	expect(ceremony.prepare?.submit).toEqual({ type: "prepare-ceremony" });
 	expect(ceremony.requests).toEqual([]);
 	expect((await stat(join(h.home, "ceremonies"))).mode & 0o777).toBe(0o700);
 	expect(

@@ -12,6 +12,7 @@ import {
 	type ApiKeyCreateBody,
 	type ArbitrageVenue,
 	apiKeyMessage,
+	lighterIntegratorApprovalMessage,
 	MobiusClient,
 	type WriteRoutes,
 } from "@mstack/mobius-client";
@@ -72,11 +73,39 @@ function parseVenues(raw: unknown): Venue[] {
 // Readiness reasons that mean MoB holds a key it cannot use for the venue.
 // Prepare refuses such a venue with rebind_required unless the request asks
 // to rebind it (mobius@0e3ff530 api-server/venue-bindings.md, "Prepare").
+// A Lighter key that lacks only its integrator approval stays: the ceremony
+// signs the approval instead.
 const unusableKey: Record<string, string> = {
 	key_invalid: "has a MoB key that no longer works",
 	builder_fee_missing: "has a MoB key without its builder fee approval",
-	integrator_approval_missing: "has a MoB key without its integrator approval",
 };
+
+type LighterVenue = "lighter" | "lighter-mainnet";
+
+/** MoB's integrator for a bound Lighter key; the approval message names it. */
+async function integratorIndex(
+	base: string,
+	owner: string,
+	venue: LighterVenue,
+	rt: Runtime,
+): Promise<number> {
+	const credential = await new MobiusClient({
+		base,
+		version: pkg.version,
+		fetch: rt.fetch,
+	}).read("/api/binding/lighter/credential", { ownerAddress: owner, venue });
+	if (
+		!credential.bound ||
+		credential.chainId !== (venue === "lighter-mainnet" ? 304 : 466324) ||
+		typeof credential.integratorIndex !== "number" ||
+		!Number.isSafeInteger(credential.integratorIndex) ||
+		credential.integratorIndex <= 0
+	)
+		throw new Error(
+			`${venue}: MoB reports no bound key with an integrator to approve`,
+		);
+	return credential.integratorIndex;
+}
 
 async function venueReadiness(base: string, owner: string, rt: Runtime) {
 	try {
@@ -120,12 +149,21 @@ export async function stageCeremony(
 	const strategyBase = String(getConfig(config, "strategy_api_base"));
 	const readiness = await venueReadiness(readinessBase, owner, rt);
 	const requested = parseVenues(values.venues);
+	const ready = requested.filter((venue) => readiness.get(venue)?.ready);
 	const venues = requested.filter((venue) => !readiness.get(venue)?.ready);
 	if (!venues.length) {
 		rt.out("Ready · all selected venues are already bound");
 		return;
 	}
-	const unusable = venues.flatMap((venue) => {
+	const approve = venues.filter(
+		(venue): venue is LighterVenue =>
+			(venue === "lighter" || venue === "lighter-mainnet") &&
+			readiness.get(venue)?.issue === "integrator_approval_missing",
+	);
+	const bind = venues.filter(
+		(venue) => !approve.some((item) => item === venue),
+	);
+	const unusable = bind.flatMap((venue) => {
 		const issue = readiness.get(venue)?.issue;
 		return issue && unusableKey[issue]
 			? [`${venue} ${unusableKey[issue]} (${issue})`]
@@ -139,8 +177,14 @@ export async function stageCeremony(
 		typeof values["lighter-account"] === "string"
 			? numberFlag(values["lighter-account"], "lighter-account", 0, true)
 			: undefined;
-	const accounts = await venueAccounts(owner, venues, rt, lighterAccount);
-	const targets: BindingTarget[] = venues.map((venue) => {
+	const accounts = await venueAccounts(owner, bind, rt, lighterAccount);
+	const integrators = await Promise.all(
+		approve.map(async (venue) => ({
+			venue,
+			integratorIndex: await integratorIndex(readinessBase, owner, venue, rt),
+		})),
+	);
+	const targets: BindingTarget[] = bind.map((venue) => {
 		if (venue === "hl")
 			return {
 				venue,
@@ -164,6 +208,9 @@ export async function stageCeremony(
 				ceremony.status,
 			) &&
 			JSON.stringify(ceremony.venues) === JSON.stringify(targets) &&
+			JSON.stringify(ceremony.integrators ?? []) ===
+				JSON.stringify(integrators) &&
+			JSON.stringify(ceremony.ready ?? []) === JSON.stringify(ready) &&
 			Boolean(ceremony.legal) === Boolean(extras.legal) &&
 			JSON.stringify(ceremony.keyPlan ?? null) ===
 				JSON.stringify(extras.keyPlan ?? null),
@@ -185,11 +232,18 @@ export async function stageCeremony(
 					}
 				: {}),
 			...(extras.keyPlan ? { keyPlan: extras.keyPlan } : {}),
+			ready,
+			integrators,
 		}));
-	if (extras.legal || extras.keyPlan) {
+	if (extras.legal || extras.keyPlan || approve.length) {
 		const parts = [
 			...(extras.legal ? ["accept legal terms"] : []),
-			`bind ${venues.join(", ")}`,
+			...(approve.length
+				? [
+						`approve the zero-fee integrator on ${approve.join(", ")} (keeps the key)`,
+					]
+				: []),
+			...(bind.length ? [`bind ${bind.join(", ")}`] : []),
 			...(extras.keyPlan
 				? [
 						`create key “${extras.keyPlan.name}” (cap $${extras.keyPlan.maxSizeUsd.toLocaleString("en-US")}) and store it locally`,
@@ -197,7 +251,7 @@ export async function stageCeremony(
 				: []),
 		];
 		rt.out(
-			`${ceremony.id} · onboarding ceremony · ${venues.join(", ")} · ${ceremony.status}`,
+			`${ceremony.id} · ${extras.keyPlan ? "onboarding" : "venue binding"} ceremony · ${venues.join(", ")} · ${ceremony.status}`,
 		);
 		rt.out(`One wallet session: ${parts.join(", then ")}.`);
 	} else
@@ -346,9 +400,12 @@ export async function signCeremony(
 				},
 			},
 		);
+		// Integrator approvals are created when signed; prepare follows them.
 		browser.addSteps([
 			...(legalPending && ceremony.legal ? [view(ceremony.legal)] : []),
-			view(ceremony.prepare),
+			...(ceremony.prepare && !ceremony.integrators?.length
+				? [view(ceremony.prepare)]
+				: []),
 		]);
 		session = browser;
 	} else if (backend === "walletconnect") {
@@ -393,19 +450,18 @@ export async function signCeremony(
 		});
 		let card = 0;
 		const find = (record: Ceremony, stepId: string) =>
-			stepId === record.prepare.id
-				? record.prepare
-				: stepId === record.read?.id
-					? record.read
-					: stepId === record.legal?.id
-						? record.legal
-						: stepId === record.key?.id
-							? record.key
-							: record.requests.find((item) => item.id === stepId);
+			[
+				record.legal,
+				...(record.approvals ?? []),
+				record.prepare,
+				...record.requests,
+				record.read,
+				record.key,
+			].find((item) => item?.id === stepId);
 		const total = () =>
 			(ceremony.legal ? 1 : 0) +
-			2 +
-			ceremony.requests.length +
+			(ceremony.integrators?.length ?? 0) +
+			(ceremony.prepare ? 2 + ceremony.requests.length : 0) +
 			(ceremony.keyPlan ? 1 : 0);
 		const sign = async (step: CeremonyProposal) => {
 			if (rt.now() >= step.expiresAt)
@@ -553,9 +609,92 @@ export async function signCeremony(
 			ceremony = await store.get(id);
 		}
 
-		let prepareSignature = ceremony.prepare.signature;
+		// MoB accepts an integrator approval timestamp for 300 seconds, so each
+		// step is created just before it is signed.
+		const approvalBase = String(getConfig(config, "api_base"));
+		const approved: string[] = [];
+		for (const plan of ceremony.integrators ?? []) {
+			let step = ceremony.approvals?.find((item) => item.venue === plan.venue);
+			if (!step) {
+				const createdAt = rt.now();
+				const timestamp = Math.floor(createdAt / 1000);
+				const nonce = crypto.randomUUID();
+				const created = ceremonyStep(
+					`${id}:integrator-${plan.venue}`,
+					ceremony.owner,
+					`Approve the zero-fee Lighter integrator on ${plan.venue} (keeps your key)`,
+					{
+						type: "text",
+						message: lighterIntegratorApprovalMessage({
+							ownerAddress: ceremony.owner,
+							venue: plan.venue,
+							integratorIndex: plan.integratorIndex,
+							nonce,
+							timestamp,
+						}),
+					},
+					createdAt,
+					Math.min(createdAt + 300_000, deadline),
+					{
+						type: "integrator-ceremony",
+						base: approvalBase,
+						body: {
+							ownerAddress: ceremony.owner.toLowerCase(),
+							venue: plan.venue,
+							nonce,
+							timestamp,
+						},
+					},
+					{ venue: plan.venue },
+				);
+				ceremony = await store.update(id, (record) => {
+					record.approvals = [...(record.approvals ?? []), created];
+				});
+				step = created;
+			}
+			if (step.submit.type !== "integrator-ceremony")
+				throw new Error("Invalid integrator step");
+			session.addSteps?.([view(step)]);
+			const signature = step.signature ?? (await sign(step));
+			const answer = await new MobiusClient({
+				base: step.submit.base,
+				version: pkg.version,
+				fetch: rt.fetch,
+			}).write(
+				"/api/binding/lighter/integrator-approve",
+				{
+					...step.submit.body,
+					signature,
+				} as unknown as WriteRoutes["/api/binding/lighter/integrator-approve"]["body"],
+				AbortSignal.timeout(Math.max(1, step.expiresAt - rt.now())),
+			);
+			rt.out(
+				`${plan.venue}: integrator approved${Number.isFinite(answer.expiresAt) ? ` until ${new Date(answer.expiresAt).toISOString().slice(0, 10)}` : ""}`,
+			);
+			approved.push(plan.venue);
+		}
+		// Venues that end ready without a new binding; the key covers them too.
+		const kept = [...(ceremony.ready ?? []), ...approved];
+		const prepare = ceremony.prepare;
+		if (!prepare) {
+			await store.update(id, (record) => {
+				record.status = "complete";
+			});
+			rt.out(`${id} complete · ${approved.length} integrator approved`);
+			if (ceremony.keyPlan) await createKeyInSession(ceremony, kept);
+			else if (ceremony.onComplete === "stage-key")
+				await keysCommand(
+					["create"],
+					{ name: "mstack", venues: kept.join(","), "max-size": "5000" },
+					rt,
+					read,
+				);
+			return;
+		}
+		session.addSteps?.([view(prepare)]);
+		let prepareSignature = prepare.signature;
 		if (!prepareSignature) {
-			prepareSignature = await sign(ceremony.prepare);
+			prepareSignature = await sign(prepare);
 			ceremony = await store.update(id, (record) => {
 				record.status = "preparing";
 			});
@@ -713,10 +852,10 @@ export async function signCeremony(
 			`${id} ${successful.length === latest.results.length ? "complete" : "partial"} · ${successful.length} venues bound`,
 		);
 		if (ceremony.keyPlan && successful.length === latest.results.length)
-			await createKeyInSession(
-				ceremony,
-				successful.map((r) => r.venue),
-			);
+			await createKeyInSession(ceremony, [
+				...kept,
+				...successful.map((r) => r.venue),
+			]);
 		else if (
 			ceremony.onComplete === "stage-key" &&
 			successful.length === latest.results.length
@@ -725,7 +864,9 @@ export async function signCeremony(
 				["create"],
 				{
 					name: "mstack",
-					venues: successful.map((result) => result.venue).join(","),
+					venues: [...kept, ...successful.map((result) => result.venue)].join(
+						",",
+					),
 					"max-size": "5000",
 				},
 				rt,

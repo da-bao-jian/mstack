@@ -69,7 +69,7 @@ export async function bindFlow(log: (line: string) => void = () => {}) {
 		for (const [venue, steps] of [
 			["hl", ["prepare", "approve-agent", "approve-builder-fee"]],
 			["aster", ["prepare", "approve-agent"]],
-			["lighter", ["prepare", "approve-key"]],
+			["lighter", ["prepare", "approve-key", "approve-integrator"]],
 			["lighter-mainnet", ["prepare", "approve-key", "approve-integrator"]],
 		] as const) {
 			for (const step of steps) await stage(["bind", venue], step);
@@ -77,12 +77,12 @@ export async function bindFlow(log: (line: string) => void = () => {}) {
 			await command(["bind", venue]);
 			assert.equal((await store.list()).length, count);
 		}
-		await command(["sign", "p-11"], 1);
+		await command(["sign", "p-12"], 1);
 		assert.deepEqual(server.errors, []);
-		assert.equal(server.writes.length, 13);
+		assert.equal(server.writes.length, 14);
 		for (const write of server.writes) log(`Fake server: ${write}`);
 		log(
-			"11 Proposals; 13 sanctioned POSTs including two stored builder-finalize calls. Every signer recovered, every mutation field checked. Re-entry stages only the next step; repeat sign refused.",
+			"12 Proposals; 14 sanctioned POSTs including two stored builder-finalize calls. Every signer recovered, every mutation field checked. Re-entry stages only the next step; repeat sign refused.",
 		);
 		log(
 			"All endpoints are local fakes. No live binding, legal acceptance or venue mutation occurred.",

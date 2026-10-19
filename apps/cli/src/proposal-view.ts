@@ -114,7 +114,8 @@ export function proposalResult(p: Proposal) {
 export function ceremonySteps(ceremony: Ceremony) {
 	return [
 		...(ceremony.legal ? [ceremony.legal] : []),
-		ceremony.prepare,
+		...(ceremony.approvals ?? []),
+		...(ceremony.prepare ? [ceremony.prepare] : []),
 		...ceremony.requests,
 		...(ceremony.read ? [ceremony.read] : []),
 		...(ceremony.key ? [ceremony.key] : []),
@@ -122,7 +123,19 @@ export function ceremonySteps(ceremony: Ceremony) {
 }
 
 export function ceremonyCard(ceremony: Ceremony, now: number): string {
-	const steps = ceremonySteps(ceremony);
+	// Integrator approvals are created when signed; list the planned ones
+	// in their place, after the legal step.
+	const created = ceremonySteps(ceremony);
+	const planned = (ceremony.integrators ?? [])
+		.filter(
+			(plan) => !ceremony.approvals?.some((step) => step.venue === plan.venue),
+		)
+		.map((plan) => ({
+			status: "planned",
+			purpose: `Approve the zero-fee Lighter integrator on ${plan.venue} (keeps your key)`,
+		}));
+	const at = ceremony.legal ? 1 : 0;
+	const steps = [...created.slice(0, at), ...planned, ...created.slice(at)];
 	const signable = ![
 		"complete",
 		"partial",
@@ -133,7 +146,12 @@ export function ceremonyCard(ceremony: Ceremony, now: number): string {
 	return [
 		`${ceremony.id} · ceremony · ${ceremony.status} · ${expiry(ceremony.expiresAt, now)}`,
 		`Owner    ${ceremony.owner}`,
-		`Venues   ${ceremony.venues.map((venue) => venue.venue).join(", ")}`,
+		`Venues   ${[
+			...ceremony.venues.map((venue) => venue.venue),
+			...(ceremony.integrators ?? []).map(
+				(plan) => `${plan.venue} (integrator approval)`,
+			),
+		].join(", ")}`,
 		...(ceremony.keyPlan
 			? [
 					`Key      “${ceremony.keyPlan.name}” · cap $${ceremony.keyPlan.maxSizeUsd.toLocaleString("en-US")}${ceremony.keyResult ? ` · stored ${ceremony.keyResult.prefix} in ${ceremony.keyResult.backend}` : ""}`,

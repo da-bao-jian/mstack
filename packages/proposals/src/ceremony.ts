@@ -9,6 +9,7 @@ import {
 	type SignRequest,
 	type VenueBindingBatch,
 } from "@mstack/mobius-api";
+import { lighterIntegratorApprovalMessage } from "@mstack/mobius-client";
 import { getAddress, type Hex, type TypedDataDefinition } from "viem";
 import {
 	canonical,
@@ -47,7 +48,8 @@ export interface CeremonyProposal {
 		| { type: "collect-ceremony"; requestId: string }
 		| { type: "read-ceremony" }
 		| { type: "legal-ceremony"; base: string; body: JsonObject }
-		| { type: "key-ceremony"; base: string; body: JsonObject };
+		| { type: "key-ceremony"; base: string; body: JsonObject }
+		| { type: "integrator-ceremony"; base: string; body: JsonObject };
 	requestId?: string;
 	venue?: string;
 	action?: string;
@@ -80,7 +82,8 @@ export interface Ceremony {
 	status: CeremonyStatus;
 	prepareIdempotencyKey: string;
 	submitIdempotencyKey: string;
-	prepare: CeremonyProposal;
+	/** Absent when every selected venue only needs its integrator approval. */
+	prepare?: CeremonyProposal;
 	requests: CeremonyProposal[];
 	signatures: { requestId: string; signature: Hex }[];
 	bindingId?: string;
@@ -92,11 +95,19 @@ export interface Ceremony {
 	legal?: CeremonyProposal;
 	/** A scoped API key created and stored once every venue is bound. */
 	keyPlan?: { name: string; maxSizeUsd: number };
+	/** Selected venues MoB already reports ready; the key covers them too. */
+	ready?: string[];
+	/** Bound Lighter venues that need only the zero-fee integrator approval. */
+	integrators?: { venue: LighterVenue; integratorIndex: number }[];
+	/** Integrator approval steps. Each is created when it is signed, because
+	 * MoB accepts its timestamp for only 300 seconds. */
+	approvals?: CeremonyProposal[];
 	key?: CeremonyProposal;
 	keyResult?: { prefix: string; backend: string };
 }
 
 type Stored = Ceremony & { recordHash: string };
+type LighterVenue = "lighter" | "lighter-mainnet";
 const hash = (text: string) => createHash("sha256").update(text).digest("hex");
 
 /**
@@ -112,9 +123,11 @@ export function ceremonyFingerprint(ceremony: Ceremony): Hex {
 			owner: ceremony.owner,
 			apiBase: ceremony.apiBase,
 			venues: ceremony.venues,
-			prepare: ceremony.prepare.digest,
+			prepare: ceremony.prepare?.digest ?? null,
 			legal: ceremony.legal?.digest ?? null,
 			keyPlan: ceremony.keyPlan ?? null,
+			ready: ceremony.ready ?? null,
+			integrators: ceremony.integrators ?? null,
 			requests: ceremony.requests.map((step) => [
 				step.id,
 				step.purpose,
@@ -226,8 +239,67 @@ function validate(ceremony: Ceremony): void {
 		ceremony.expiresAt <= ceremony.createdAt
 	)
 		throw new Error("Invalid ceremony times");
-	if (!Array.isArray(ceremony.venues) || !ceremony.venues.length)
+	const integrators = ceremony.integrators ?? [];
+	if (
+		!Array.isArray(ceremony.venues) ||
+		!Array.isArray(integrators) ||
+		!(ceremony.venues.length || integrators.length)
+	)
 		throw new Error("Ceremony needs venues");
+	if (Boolean(ceremony.prepare) !== ceremony.venues.length > 0)
+		throw new Error("Ceremony prepare step mismatch");
+	const selected = new Set<string>(
+		ceremony.venues.map((target) => target.venue),
+	);
+	for (const item of integrators) {
+		if (
+			!["lighter", "lighter-mainnet"].includes(item.venue) ||
+			!Number.isSafeInteger(item.integratorIndex) ||
+			item.integratorIndex <= 0 ||
+			selected.has(item.venue)
+		)
+			throw new Error("Invalid ceremony integrator approval");
+		selected.add(item.venue);
+	}
+	if (
+		ceremony.ready !== undefined &&
+		(!Array.isArray(ceremony.ready) ||
+			ceremony.ready.some(
+				(venue) => typeof venue !== "string" || selected.has(venue),
+			))
+	)
+		throw new Error("Invalid ceremony ready venues");
+	for (const step of ceremony.approvals ?? []) {
+		const plan = integrators.find((item) => item.venue === step.venue);
+		const body =
+			step.submit.type === "integrator-ceremony" ? step.submit.body : {};
+		if (
+			!plan ||
+			step.id !== `${ceremony.id}:integrator-${plan.venue}` ||
+			step.owner !== ceremony.owner ||
+			!Number.isSafeInteger(step.createdAt) ||
+			step.createdAt < ceremony.createdAt ||
+			step.expiresAt <= step.createdAt ||
+			step.expiresAt - step.createdAt > 300_000 ||
+			step.kind !== "sign-text" ||
+			step.signing.type !== "text" ||
+			step.submit.type !== "integrator-ceremony" ||
+			body.ownerAddress !== ceremony.owner.toLowerCase() ||
+			body.venue !== plan.venue ||
+			typeof body.nonce !== "string" ||
+			typeof body.timestamp !== "number" ||
+			step.signing.message !==
+				lighterIntegratorApprovalMessage({
+					ownerAddress: ceremony.owner,
+					venue: plan.venue,
+					integratorIndex: plan.integratorIndex,
+					nonce: body.nonce,
+					timestamp: body.timestamp,
+				}) ||
+			digest(step.signing) !== step.digest
+		)
+			throw new Error("Ceremony integrator step mismatch");
+	}
 	if (!Array.isArray(ceremony.requests) || !Array.isArray(ceremony.signatures))
 		throw new Error("Invalid ceremony steps");
 	if (
@@ -256,7 +328,7 @@ function validate(ceremony: Ceremony): void {
 	}
 	for (const proposal of [
 		...(ceremony.legal ? [ceremony.legal] : []),
-		ceremony.prepare,
+		...(ceremony.prepare ? [ceremony.prepare] : []),
 		...ceremony.requests,
 		...(ceremony.read ? [ceremony.read] : []),
 	]) {
@@ -338,6 +410,8 @@ export class CeremonyStore {
 		onComplete?: "stage-key";
 		legal?: { signing: CeremonySigningPayload; base: string; body: JsonObject };
 		keyPlan?: { name: string; maxSizeUsd: number };
+		ready?: string[];
+		integrators?: { venue: LighterVenue; integratorIndex: number }[];
 	}): Promise<Ceremony> {
 		const owner = getAddress(input.owner);
 		await this.ready();
@@ -357,14 +431,23 @@ export class CeremonyStore {
 				const expiresAt = createdAt + 300_000;
 				const nonce = crypto.randomUUID();
 				const venues = structuredClone(input.venues);
-				const payload = preparePayload(
-					{ owner, venues, nonce, expiresAt: Math.floor(expiresAt / 1000) },
-					this.now,
-				);
-				const signing = {
-					type: "text" as const,
-					message: bindingMessage("prepare", payload),
-				};
+				const signing = venues.length
+					? {
+							type: "text" as const,
+							message: bindingMessage(
+								"prepare",
+								preparePayload(
+									{
+										owner,
+										venues,
+										nonce,
+										expiresAt: Math.floor(expiresAt / 1000),
+									},
+									this.now,
+								),
+							),
+						}
+					: undefined;
 				const ceremony: Ceremony = {
 					version: 1,
 					id,
@@ -377,15 +460,19 @@ export class CeremonyStore {
 					status: "awaiting-prepare-signature",
 					prepareIdempotencyKey: `${id}:prepare:${crypto.randomUUID()}`,
 					submitIdempotencyKey: `${id}:${crypto.randomUUID()}`,
-					prepare: ceremonyStep(
-						`${id}:prepare`,
-						owner,
-						"Authorize venue binding preparation",
-						signing,
-						createdAt,
-						expiresAt,
-						{ type: "prepare-ceremony" },
-					),
+					...(signing
+						? {
+								prepare: ceremonyStep(
+									`${id}:prepare`,
+									owner,
+									"Authorize venue binding preparation",
+									signing,
+									createdAt,
+									expiresAt,
+									{ type: "prepare-ceremony" },
+								),
+							}
+						: {}),
 					requests: [],
 					signatures: [],
 					...(input.onComplete ? { onComplete: input.onComplete } : {}),
@@ -407,6 +494,10 @@ export class CeremonyStore {
 							}
 						: {}),
 					...(input.keyPlan ? { keyPlan: { ...input.keyPlan } } : {}),
+					...(input.ready?.length ? { ready: [...input.ready] } : {}),
+					...(input.integrators?.length
+						? { integrators: structuredClone(input.integrators) }
+						: {}),
 				};
 				validate(ceremony);
 				await atomic(join(this.directory, "counter"), `${previous + 1}\n`);

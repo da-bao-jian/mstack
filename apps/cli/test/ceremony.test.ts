@@ -2,8 +2,10 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { lighterIntegratorApprovalMessage } from "@mstack/mobius-client";
 import { CeremonyStore, ProposalStore } from "@mstack/proposals";
 import { importKeystore } from "@mstack/signers";
+import { recoverMessageAddress } from "viem";
 import {
 	fakeOwnerKey,
 	fakeStrategyApi,
@@ -156,6 +158,7 @@ function nativeFetch(
 		legalAccepted: boolean;
 		calls: string[];
 		issues?: Record<string, string>;
+		approvals?: string[];
 	},
 ): Runtime["fetch"] {
 	return async (input, init) => {
@@ -164,6 +167,40 @@ function nativeFetch(
 		options.calls.push(`${method} ${url.host}${url.pathname}`);
 		const account = venueAccountResponse(input, init, api.owner.address);
 		if (account) return account;
+		// A bound Robinhood Lighter key whose integrator approval is missing.
+		if (url.pathname === "/api/binding/lighter/credential")
+			return Response.json({
+				bound: true,
+				publicKey: "0xfixture",
+				slot: 96,
+				accountIndex: 123,
+				chainId:
+					url.searchParams.get("venue") === "lighter-mainnet" ? 304 : 466324,
+				integratorIndex: 994,
+				integratorAddress: null,
+				integratorApproved: false,
+			});
+		if (url.pathname === "/api/binding/lighter/integrator-approve") {
+			const body = JSON.parse(String(init?.body));
+			const signer = await recoverMessageAddress({
+				message: lighterIntegratorApprovalMessage({
+					ownerAddress: body.ownerAddress,
+					venue: body.venue,
+					integratorIndex: 994,
+					nonce: body.nonce,
+					timestamp: body.timestamp,
+				}),
+				signature: body.signature,
+			});
+			if (signer !== api.owner.address)
+				return Response.json({ error: "invalid signature" }, { status: 400 });
+			options.approvals?.push(body.venue);
+			return Response.json({
+				ok: true,
+				integratorIndex: 994,
+				expiresAt: Date.UTC(2030, 0, 1),
+			});
+		}
 		if (url.pathname === "/legal/acceptance" && method !== "POST")
 			return Response.json({
 				accepted: options.legalAccepted,
@@ -422,7 +459,7 @@ test("onboard stops before staging when MoB holds an unusable key, and --rebind 
 		fetch: nativeFetch(api, {
 			legalAccepted: true,
 			calls: [],
-			issues: { hl: "key_invalid", lighter: "integrator_approval_missing" },
+			issues: { hl: "key_invalid" },
 		}),
 		sleep: async () => {},
 		stdinIsTTY: false,
@@ -440,7 +477,7 @@ test("onboard stops before staging when MoB holds an unusable key, and --rebind 
 	];
 	expect(await run(args, rt)).not.toBe(0);
 	expect(lines.join("\n")).toContain(
-		"hl has a MoB key that no longer works (key_invalid); lighter has a MoB key without its integrator approval (integrator_approval_missing). MoB replaces such a key only when asked: run this again with --rebind to bind a new one. Nothing was staged.",
+		"hl has a MoB key that no longer works (key_invalid). MoB replaces such a key only when asked: run this again with --rebind to bind a new one. Nothing was staged.",
 	);
 	expect(await new CeremonyStore(home, () => now).list()).toHaveLength(0);
 	expect(await run([...args, "--rebind"], rt)).toBe(0);
@@ -450,3 +487,64 @@ test("onboard stops before staging when MoB holds an unusable key, and --rebind 
 		{ venue: "lighter", accountIndex: 123, rebind: true },
 	]);
 });
+
+test.each([
+	["hl,lighter", ["lighter", "hl"]],
+	["lighter", ["lighter"]],
+] as const)(
+	"a Lighter key missing only its integrator approval keeps the key: onboard %s signs the approval in the session",
+	async (venues, keyVenues) => {
+		const now = Date.now();
+		const api = fakeStrategyApi({ now: () => now });
+		servers.push(api);
+		const { home, password } = await nativeHome(api);
+		const lines: string[] = [];
+		const approvals: string[] = [];
+		const rt: Partial<Runtime> = {
+			home,
+			now: () => now,
+			fetch: nativeFetch(api, {
+				legalAccepted: true,
+				calls: [],
+				issues: { lighter: "integrator_approval_missing" },
+				approvals,
+			}),
+			sleep: async () => {},
+			stdinIsTTY: false,
+			stdoutIsTTY: false,
+			out: (line) => lines.push(line),
+			err: (line) => lines.push(line),
+			readSecret: async () => password,
+		};
+		const args = ["onboard", "--native", "--owner", api.owner.address];
+		expect(await run([...args, "--venues", venues], rt)).toBe(0);
+		const staged = lines.join("\n");
+		expect(staged).not.toContain("--rebind");
+		expect(staged).toContain(
+			"approve the zero-fee integrator on lighter (keeps the key)",
+		);
+		const store = new CeremonyStore(home, () => now);
+		const [before] = await store.list();
+		expect(before?.integrators).toEqual([
+			{ venue: "lighter", integratorIndex: 994 },
+		]);
+		expect(before?.venues.map((target) => target.venue)).toEqual(
+			venues === "lighter" ? [] : ["hl"],
+		);
+		expect(Boolean(before?.prepare)).toBe(venues !== "lighter");
+		expect(await run(["sign", "c-1"], rt)).toBe(0);
+		const text = lines.join("\n");
+		expect(approvals).toEqual(["lighter"]);
+		expect(text).toContain("lighter: integrator approved until 2030-01-01");
+		expect(text).toContain(
+			`Ready · ${keyVenues.length} venues bound · key mobius_01234567-89ab-cdef-0123-456789abcdef…`,
+		);
+		const ceremony = await store.get("c-1");
+		expect(ceremony.status).toBe("complete");
+		expect(ceremony.approvals?.map((step) => step.status)).toEqual(["signed"]);
+		const stored = await (await cliKeyStore({ home } as Runtime)).get(
+			api.owner.address,
+		);
+		expect(stored?.meta.venues).toEqual([...keyVenues]);
+	},
+);

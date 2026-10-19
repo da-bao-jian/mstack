@@ -142,7 +142,7 @@ test("setup, legal and all binding deployments recover signatures with exact bod
 	for (const [venue, second, third] of [
 		["Hyperliquid", "approve agent", "approve builder fee"],
 		["Aster", "approve agent", "confirm binding"],
-		["Robinhood Lighter", "approve key", "confirm binding"],
+		["Robinhood Lighter", "approve key", "approve integrator"],
 		["Lighter mainnet", "approve key", "approve integrator"],
 	]) {
 		expect(output).toContain(
@@ -152,8 +152,8 @@ test("setup, legal and all binding deployments recover signatures with exact bod
 			`${venue} binding · step 3 of 3 · complete\n✓ prepare binding\n✓ ${second}\n✓ ${third}`,
 		);
 	}
-	expect(result.writes).toBe(13);
-	expect(result.proposals).toHaveLength(11);
+	expect(result.writes).toBe(14);
+	expect(result.proposals).toHaveLength(12);
 	expect(
 		result.proposals.every((p) => p.signatureAttemptedAt !== undefined),
 	).toBe(true);
