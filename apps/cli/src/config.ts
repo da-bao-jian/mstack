@@ -252,3 +252,7 @@ export async function setConfig(
 }
 export const SETUP_FIRST =
 	"Run `mob setup` first (about two minutes). It sets your wallet address, how you sign, and accepts the terms.";
+/** The owner is known but no signer is saved: name one for this signature. */
+export function chooseSigner(id: string): string {
+	return `No signer is saved. Name one for this signature: mob sign ${id} --with browser, --with walletconnect, or --with keystore in your own terminal. mob config set signer <name> saves it.`;
+}

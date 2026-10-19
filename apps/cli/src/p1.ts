@@ -26,7 +26,7 @@ import {
 } from "@mstack/signers";
 import { getAddress } from "viem";
 import pkg from "../package.json";
-import { readConfig, SETUP_FIRST, UsageError } from "./config.ts";
+import { chooseSigner, readConfig, SETUP_FIRST, UsageError } from "./config.ts";
 import { expiry } from "./format.ts";
 import { storeCreatedKey } from "./key-create.ts";
 import { cliKeyStore } from "./key-store.ts";
@@ -258,7 +258,8 @@ export async function p1(
 	if ((config.policy ?? "manual") !== "manual")
 		throw new UsageError("Wallet policy is locked");
 	const backend = values.with ?? config.signer;
-	if (!backend) throw new UsageError(SETUP_FIRST);
+	if (!backend)
+		throw new UsageError(config.owner ? chooseSigner(id) : SETUP_FIRST);
 	if (
 		backend !== "keystore" &&
 		backend !== "browser" &&

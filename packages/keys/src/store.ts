@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { realpathSync } from "node:fs";
 import {
 	chmod,
 	lstat,
@@ -7,7 +9,8 @@ import {
 	unlink,
 	writeFile,
 } from "node:fs/promises";
-import { join } from "node:path";
+import { homedir } from "node:os";
+import { join, resolve } from "node:path";
 import { isApiKey, prefixOf, redactKey } from "./format.ts";
 import type {
 	KeyDescription,
@@ -34,6 +37,29 @@ export interface KeyStoreOptions {
 	run?: CommandRunner;
 	now?: () => number;
 	apiBase?: string;
+	/** The home whose credentials keep the original name (default ~/.mob). */
+	defaultHome?: string;
+}
+
+const SERVICE = "mstack.mobius-api";
+
+function canonical(path: string): string {
+	const absolute = resolve(path);
+	try {
+		return realpathSync(absolute);
+	} catch {
+		return absolute;
+	}
+}
+
+/** The credential-store service name for a home. The default home keeps the
+ * original name, so existing keys still resolve; any other home gets its own,
+ * so two homes for one wallet never read, overwrite, or delete each other's
+ * key while each keeps its own metadata. */
+function serviceFor(home: string, defaultHome: string): string {
+	const path = canonical(home);
+	if (path === canonical(defaultHome)) return SERVICE;
+	return `${SERVICE}:${createHash("sha256").update(path).digest("hex").slice(0, 16)}`;
 }
 
 function ownerId(owner: string): string {
@@ -271,8 +297,14 @@ abstract class CommandStore extends BaseStore {
 	constructor(
 		home: string,
 		protected readonly run: CommandRunner,
+		private readonly defaultHome: string,
 	) {
 		super(home);
+	}
+	/** Creates the home first when writing, so its name never changes later. */
+	protected async service(create = false): Promise<string> {
+		if (create) await privateDirectory(this.home);
+		return serviceFor(this.home, this.defaultHome);
 	}
 	protected async execute(
 		argv: string[],
@@ -306,12 +338,13 @@ class KeychainStore extends CommandStore {
 	constructor(
 		home: string,
 		run: CommandRunner,
+		defaultHome: string,
 		private readonly command: string,
 	) {
-		super(home, run);
+		super(home, run, defaultHome);
 	}
-	private base(owner: string) {
-		return ["-s", "mstack.mobius-api", "-a", ownerId(owner)];
+	private async base(owner: string, create = false) {
+		return ["-s", await this.service(create), "-a", ownerId(owner)];
 	}
 	async put(owner: string, secret: string, meta: KeyMeta) {
 		if (!isApiKey(secret)) throw new Error("Invalid Mobius API key");
@@ -321,7 +354,7 @@ class KeychainStore extends CommandStore {
 			this.command,
 			"add-generic-password",
 			"-U",
-			...this.base(owner),
+			...(await this.base(owner, true)),
 			"-w",
 			secret,
 		]);
@@ -331,7 +364,12 @@ class KeychainStore extends CommandStore {
 		return this.finishGet(
 			owner,
 			await this.execute(
-				[this.command, "find-generic-password", "-w", ...this.base(owner)],
+				[
+					this.command,
+					"find-generic-password",
+					"-w",
+					...(await this.base(owner)),
+				],
 				undefined,
 				true,
 			),
@@ -342,7 +380,7 @@ class KeychainStore extends CommandStore {
 		await this.execute([
 			this.command,
 			"delete-generic-password",
-			...this.base(owner),
+			...(await this.base(owner)),
 		]);
 		await this.deleteMeta(owner);
 		return true;
@@ -354,12 +392,15 @@ class SecretToolStore extends CommandStore {
 	constructor(
 		home: string,
 		run: CommandRunner,
+		defaultHome: string,
 		private readonly command: string,
 	) {
-		super(home, run);
+		super(home, run, defaultHome);
 	}
-	private attrs(owner: string) {
-		return ["service", "mstack.mobius-api", "owner", ownerId(owner)];
+	// A distinct service value, not an extra attribute: a lookup matches items
+	// that carry more attributes than it names.
+	private async attrs(owner: string, create = false) {
+		return ["service", await this.service(create), "owner", ownerId(owner)];
 	}
 	async put(owner: string, secret: string, meta: KeyMeta) {
 		if (!isApiKey(secret)) throw new Error("Invalid Mobius API key");
@@ -369,7 +410,7 @@ class SecretToolStore extends CommandStore {
 				"store",
 				"--label",
 				"mstack Mobius API key",
-				...this.attrs(owner),
+				...(await this.attrs(owner, true)),
 			],
 			`${secret}\n`,
 		);
@@ -379,7 +420,7 @@ class SecretToolStore extends CommandStore {
 		return this.finishGet(
 			owner,
 			await this.execute(
-				[this.command, "lookup", ...this.attrs(owner)],
+				[this.command, "lookup", ...(await this.attrs(owner))],
 				undefined,
 				true,
 			),
@@ -387,7 +428,7 @@ class SecretToolStore extends CommandStore {
 	}
 	async delete(owner: string) {
 		if (!(await this.get(owner))) return false;
-		await this.execute([this.command, "clear", ...this.attrs(owner)]);
+		await this.execute([this.command, "clear", ...(await this.attrs(owner))]);
 		await this.deleteMeta(owner);
 		return true;
 	}
@@ -416,12 +457,14 @@ export async function createKeyStore(
 					: "file"
 			: selection;
 	const run = options.run ?? defaultRun;
+	const defaultHome = options.defaultHome ?? join(homedir(), ".mob");
 	if (backend === "keychain") {
 		if (platform !== "darwin")
 			throw new Error("keychain is available only on macOS");
 		return new KeychainStore(
 			options.home,
 			run,
+			defaultHome,
 			options.securityPath ?? "/usr/bin/security",
 		);
 	}
@@ -430,7 +473,7 @@ export async function createKeyStore(
 			throw new Error("secret-tool is available only on Linux");
 		const command = which("secret-tool");
 		if (!command) throw new Error("secret-tool is not installed");
-		return new SecretToolStore(options.home, run, command);
+		return new SecretToolStore(options.home, run, defaultHome, command);
 	}
 	return new FileStore(options.home);
 }

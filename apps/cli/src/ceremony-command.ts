@@ -35,6 +35,7 @@ import {
 import { getAddress, type Hex } from "viem";
 import pkg from "../package.json";
 import {
+	chooseSigner,
 	getConfig,
 	numberFlag,
 	readConfig,
@@ -298,7 +299,7 @@ export async function signCeremony(
 			`${id} changed after it was shown; nothing was signed`,
 		);
 	const backend = values.with ?? config.signer;
-	if (!backend) throw new UsageError(SETUP_FIRST);
+	if (!backend) throw new UsageError(chooseSigner(id));
 	if (!["keystore", "browser", "walletconnect"].includes(String(backend)))
 		throw new UsageError(`${backend} signer is not available in this build`);
 	if (backend === "walletconnect" && !config.walletconnect_project_id)
