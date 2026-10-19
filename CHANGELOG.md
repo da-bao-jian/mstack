@@ -7,6 +7,11 @@ not a claim that public release tags or artifacts were published.
 <!-- release-start -->
 ## [Unreleased]
 
+### Changed
+
+- The paste prompt names the exact install commands (`claude plugin marketplace add`, `claude plugin install`, and the `install.sh` line) instead of only linking the guide. Claude Code's auto mode classifier treats commands in the user's own message as explicit intent; commands found only in a fetched page were denied as untrusted code. The Codex prompt names its clone-and-setup line the same way.
+- The install guide tells the agent to run each line exactly, never to copy a script to a file to run it, and to hand a denied line back to the user instead of working around it.
+
 ## [0.4.3] - 2026-10-19
 
 ### Changed

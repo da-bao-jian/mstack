@@ -31,9 +31,10 @@ Decided against a localhost receiver. The user copies the key from the page and 
 On the API page, add **Copy prompt for mstack** beside the existing **Copy prompt**. Add the same prompt to a landing page at `mob.exchange/agent`.
 
 ```text
-Install mstack, the Mobius funding-arbitrage agent stack, and get me ready to trade.
-Read https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.3/docs/AGENT-INSTALL.md
-and follow it for this host exactly. Then verify with `mob --version` and `mob doctor`,
+Install mstack, the Mobius funding-arbitrage agent stack, and get me ready to trade. I authorize exactly:
+claude plugin marketplace add da-bao-jian/mstack && claude plugin install mstack@mstack
+curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.3/install.sh | sh
+Then follow https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.3/docs/AGENT-INSTALL.md from Verify: `mob --version`, `mob doctor`,
 run `mob` and reproduce its output verbatim in a fenced block as the welcome.
 Tell me if I need to restart; when the skills load, start with "set me up".
 ```

@@ -104,6 +104,16 @@ test("canonical paste prompt is short and identical at every copy surface", asyn
 	const canonical = firstTextBlock(prompt);
 	expect(canonical.split("\n").length).toBeLessThanOrEqual(6);
 	expect(canonical).toContain("run `mob` and reproduce its output verbatim");
+	// Auto mode treats commands in the user's own message as explicit intent.
+	for (const command of shellCommandsInSection(install, "Claude Code"))
+		if (command.startsWith("claude plugin") || command.includes("install.sh"))
+			expect(canonical).toContain(command);
+	expect(canonical).toContain("I authorize exactly:");
+	const codex = firstTextBlock(prompt, "## Codex");
+	for (const command of shellCommandsInSection(install, "Codex"))
+		if (command.includes("./setup --host codex"))
+			expect(codex).toContain(command);
+	expect(install).toContain("do not work around it");
 	expect(firstTextBlock(readme, "## Paste this into your agent")).toBe(
 		canonical,
 	);
