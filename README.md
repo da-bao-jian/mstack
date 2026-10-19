@@ -112,7 +112,7 @@ GUI clients may not inherit your shell's PATH. MCP reads public, onboarding, and
 ## What you can do
 
 1. **Install.** Use the plugin, binary installer, or clone setup above. Run `mob --version`.
-2. **Onboard.** Run `mob onboard`. Open the printed Mobius API page, connect the wallet, accept legal terms, bind venues, and create a key with a modest cap. Paste it into the chat for one agent import through the shell builtin `printf` and `mob keys import --stdin`, or run `mob keys import` yourself for a hidden terminal paste. Run `mob onboard` again and require the `Ready · …` line.
+2. **Onboard.** Say "set me up", or run `mob onboard --native --owner 0x… --venues hl,lighter --max-size 5000`, then `mob sign c-N --with browser`. One wallet session accepts the legal terms, binds the venues, creates a scoped key with that cap, and stores it locally; the key never prints. Require the `Ready · …` line. Without a wallet on this machine, `mob onboard` prints the Mobius API page instead: paste the key once for `mob keys import --stdin`, or run `mob keys import` yourself for a hidden terminal paste.
 3. **Scan.** Run `mob scan --size 1000` to compare executable pairs and the best pairs anywhere.
    Funding annualization is simple, not compounded: `ratePerInterval / intervalHours × 24 × 365 × 100`.
    Fees and mark entry costs are estimates. Failed venues remain visible.
@@ -120,7 +120,7 @@ GUI clients may not inherit your shell's PATH. MCP reads public, onboarding, and
 5. **Submit.** Under the default `manual` policy, say the verb and the exact id in your latest message, e.g. `submit p-2`, before the agent runs `mob submit p-N`. Under opt-in `auto`, the agent may submit inside the key caps and must say it did so.
 6. **Status.** Run `mob status`. API acceptance is **submitted, not confirmed**; status reports the worker state.
 
-Use `mob bind --all` or `mob onboard --native` for repair and terminal-native onboarding. Protection, neutralization, auto-close, size-mismatch edits, legal acceptance, venue binding, and key administration still use wallet approval.
+Use `mob bind --all` to repair a partial binding. Protection, neutralization, auto-close, size-mismatch edits, legal acceptance, venue binding, and key administration still use wallet approval.
 
 Wallet Proposals still require the verb and the exact id, for example, “Sign p-7 in the browser wallet.” The wallet asks you to approve. Keystore signing belongs in your own terminal.
 

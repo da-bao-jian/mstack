@@ -100,7 +100,6 @@ esac
 printf '%s\n' '' 'Next steps:' \
   '  mob                         # open the home screen' \
   '  In Claude Code:' \
-  '    The current Bash authorization hook requires Bun.' \
   '    /plugin marketplace add da-bao-jian/mstack' \
   '    /plugin install mstack' \
   '  Alternative: clone the repository and run ./setup --host claude or ./setup --host codex.'

@@ -780,6 +780,8 @@ test.each([
 
 test.each([
 	"mob config set default_size_usd 5000",
+	// AGENT-INSTALL saves the address from the paste prompt for the restart.
+	"mob config set owner '0x1111111111111111111111111111111111111111'",
 	"mob config get policy",
 	"MOB_HOME=/tmp/x bun test",
 	'bash "/Users/someone/.claude/skills/mob-open/scripts/preamble.sh"',
