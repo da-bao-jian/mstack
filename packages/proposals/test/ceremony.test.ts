@@ -32,7 +32,10 @@ test("ceremony stage fixes prepare bytes, expiry, targets and idempotency keys",
 	const ceremony = await h.store.stage({
 		owner: account.address,
 		apiBase: "http://127.0.0.1:9988",
-		venues: [{ venue: "hl", signatureChainId: 42161 }, { venue: "lighter" }],
+		venues: [
+			{ venue: "hl", signatureChainId: 42161 },
+			{ venue: "lighter", accountIndex: 123 },
+		],
 	});
 	expect(ceremony.id).toBe("c-1");
 	expect(ceremony.status).toBe("awaiting-prepare-signature");
@@ -185,7 +188,7 @@ test("ceremony stage carries a legal step and a key plan that round-trip through
 	const ceremony = await h.store.stage({
 		owner: account.address,
 		apiBase: "http://127.0.0.1:9988",
-		venues: [{ venue: "lighter" }],
+		venues: [{ venue: "lighter", accountIndex: 123 }],
 		legal: {
 			signing,
 			base: "https://auth.example.test",
@@ -233,7 +236,7 @@ test("ceremony stage carries a legal step and a key plan that round-trip through
 		h.store.stage({
 			owner: account.address,
 			apiBase: "http://127.0.0.1:9988",
-			venues: [{ venue: "lighter" }],
+			venues: [{ venue: "lighter", accountIndex: 123 }],
 			keyPlan: { name: "", maxSizeUsd: 5000 },
 		}),
 	).rejects.toThrow("key plan");

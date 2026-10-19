@@ -12,6 +12,7 @@ import {
 import { setConfig } from "../src/config.ts";
 import { cliKeyStore } from "../src/key-store.ts";
 import { type Runtime, run } from "../src/run.ts";
+import { venueAccountResponse } from "./fixtures/venue-accounts.ts";
 
 const homes: string[] = [];
 const servers: { stop(): void }[] = [];
@@ -49,7 +50,9 @@ test("bind --all stages one ceremony and keystore signs the batch with one unloc
 	const rt: Partial<Runtime> = {
 		home,
 		now: () => now,
-		fetch: loopbackFetch,
+		fetch: async (input, init) =>
+			venueAccountResponse(input, init, api.owner.address) ??
+			loopbackFetch(input, init),
 		sleep: async () => {},
 		out: (line) => out.push(line),
 		err: (line) => err.push(line),
@@ -155,6 +158,8 @@ function nativeFetch(
 		const url = new URL(String(input));
 		const method = init?.method ?? "GET";
 		options.calls.push(`${method} ${url.host}${url.pathname}`);
+		const account = venueAccountResponse(input, init, api.owner.address);
+		if (account) return account;
 		if (url.pathname === "/legal/acceptance" && method !== "POST")
 			return Response.json({
 				accepted: options.legalAccepted,
@@ -286,6 +291,11 @@ test("native onboard binds, creates the key, and stores it in one wallet session
 	const ceremony = await new CeremonyStore(home, () => now).get("c-1");
 	expect(ceremony.status).toBe("complete");
 	expect(ceremony.key?.status).toBe("signed");
+	// The signed prepare payload names the wallet's main Lighter account.
+	expect(ceremony.venues).toEqual([
+		{ venue: "hl", signatureChainId: 42161 },
+		{ venue: "lighter", accountIndex: 123 },
+	]);
 	expect(ceremony.keyResult).toEqual({
 		prefix: "mobius_01234567-89ab-cdef-0123-456789abcdef…",
 		backend: "file",

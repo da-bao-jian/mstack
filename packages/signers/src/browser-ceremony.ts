@@ -27,47 +27,13 @@ type PublicStep = Pick<SigningView, "id" | "purpose" | "digest"> & {
 	status: "pending" | "current" | "signed" | "rejected";
 };
 
+// The page reads ceremony mode from the `steps` in each view.
 function ceremonyHtml(nonce: string): string {
-	return (baseHtml as unknown as string)
-		.replace("mstack — Review signature", "mstack — Review ceremony")
-		.replace(
-			'Review signature · <span id="id"></span>',
-			'Review ceremony · <span id="id"></span>',
-		)
-		.replace(
-			'<p class="scope">Sign only if this matches what you asked for. Each step names what it allows.</p>',
-			'<p class="scope">Sign only if this matches what you asked for. Each step names what it allows.</p><section><h2>Ceremony steps</h2><ol id="steps"></ol></section>',
-		)
-		.replace(
-			"let proposal, provider, address, chainId, loadedAt, selectedIndex = 0, ready = false, busy = false, submitting = false, done = false;",
-			"let proposal, provider, address, chainId, loadedAt, selectedIndex = 0, ready = false, busy = false, submitting = false, done = false;",
-		)
-		.replace(
-			'el("sign").disabled = done || busy || !ready || !matches() || wrongChain();',
-			'el("sign").disabled = done || busy || !ready || !matches();',
-		)
-		.replace(
-			"if (wrongChain()) { accountStatus(); return; }\n    await reportAccount();",
-			'if (wrongChain()) {\n      status("chain", "Switching to " + chainName() + ". Confirm the chain change in your wallet.");\n      await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x" + Number(pinned()).toString(16) }] });\n      chainId = Number(await provider.request({ method: "eth_chainId" }));\n      if (wrongChain()) throw new Error("Wallet did not switch to " + chainName() + ".");\n    }\n    await reportAccount();',
-		)
-		.replace(
-			'await api("/api/signature", { address, signature });',
-			'await api("/api/signature", { stepId: proposal.id, address, signature });',
-		)
-		.replace(
-			'done = true; status("accepted", "Done. You can close this tab.");',
-			'status("accepted", "Signature accepted. Review the next step, then click Sign again."); proposal = undefined; ready = false;',
-		)
-		.replace(
-			'await api("/api/reject", {})',
-			'await api("/api/reject", { stepId: proposal?.id })',
-		)
-		.replace(
-			"if (!proposal) {\n      proposal = view; loadedAt = Date.now();",
-			'el("steps").replaceChildren(...view.steps.map(item => { const li = document.createElement("li"); li.textContent = (item.status === "signed" ? "✓" : item.status === "current" ? "▶" : "·") + " " + item.purpose + " · " + item.digest; return li; }));\n    if (!proposal || proposal.id !== view.id) {\n      proposal = view; loadedAt = Date.now();',
-		)
-		.replaceAll("_MSTACK_NONCE_", nonce);
+	return (baseHtml as unknown as string).replaceAll("_MSTACK_NONCE_", nonce);
 }
+
+// The page polls every 350 ms, so it reads the final state before the server stops.
+const LINGER_MS = 1_200;
 
 function checked(
 	input: SigningView,
@@ -118,6 +84,7 @@ export function browserCeremonySigner(
 	let server: ReturnType<typeof Bun.serve> | undefined;
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	let terminal: Error | undefined;
+	let final: { ok: boolean; message: string } | undefined;
 	let accepting = false;
 	let origin = "";
 	let closing: Promise<void> = Promise.resolve();
@@ -133,15 +100,16 @@ export function browserCeremonySigner(
 		for (const item of pending.values()) item.reject(error);
 		pending.clear();
 	};
-	function finish(error?: Error, drain = false) {
+	function finish(error?: Error, lingerMs = 0) {
 		if (terminal) return;
 		if (timer) clearTimeout(timer);
 		terminal = error ?? new Error("Browser ceremony completed");
-		closing = drain
+		final = { ok: !error, message: terminal.message };
+		closing = lingerMs
 			? new Promise((resolve) => {
 					setTimeout(
 						() => void Promise.resolve(server?.stop(true)).then(resolve),
-						10,
+						lingerMs,
 					);
 				})
 			: Promise.resolve(server?.stop(true));
@@ -191,7 +159,12 @@ export function browserCeremonySigner(
 							? "This signing link was already opened; use the tab it opened"
 							: "Invalid session",
 					);
-				if (terminal) return reply(409, terminal.message);
+				if (terminal)
+					return final &&
+						req.method === "GET" &&
+						url.pathname === "/api/proposal"
+						? Response.json({ final, steps: publicSteps() }, { headers })
+						: reply(409, terminal.message);
 				if (now() >= expiresAt) {
 					finish(
 						new Error("Ceremony expired while waiting for browser wallet"),
@@ -232,7 +205,7 @@ export function browserCeremonySigner(
 				}
 				if (url.pathname === "/api/reject") {
 					if (current) states.set(current.id, "rejected");
-					finish(new Error("Browser wallet rejected the ceremony"), true);
+					finish(new Error("Browser wallet rejected the ceremony"), 10);
 					return Response.json({ ok: true }, { headers });
 				}
 				if (
@@ -332,8 +305,17 @@ export function browserCeremonySigner(
 			return connected.promise;
 		},
 		sign,
-		async close() {
-			if (!terminal) finish();
+		/** With a failure, the open page shows it before the server stops. */
+		async close(failure?: unknown) {
+			if (!terminal)
+				finish(
+					failure === undefined
+						? undefined
+						: failure instanceof Error
+							? failure
+							: new Error(String(failure)),
+					server ? LINGER_MS : 0,
+				);
 			await closing;
 		},
 	};

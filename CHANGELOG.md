@@ -7,7 +7,14 @@ not a claim that public release tags or artifacts were published.
 <!-- release-start -->
 ## [Unreleased]
 
+### Fixed
+
+- Native onboarding never reached MoB with a Lighter venue: the prepare request had no `accountIndex`, so the API answered `HTTP 400: Lighter requires accountIndex and selects its own chain ID.` after the wallet had signed. `mob onboard --native` and `mob bind --all` now look up the wallet's main account on each Lighter deployment and sign it into the request. A venue with no account (Hyperliquid `userRole` or Lighter `accountsByL1Address`) stops onboarding before anything is staged or signed, names the venue, and prints a `--venues` list without it. `--lighter-account` applies to one Lighter venue and must belong to the wallet. The fake Strategy API now refuses a Lighter target without an account, as the live API does.
+- The browser signing page ended on "Failed to fetch" whenever `mob` finished or failed, because the local server stopped while the page was still polling. The server now reports how the session ended for about a second before it stops, and the page shows it: "All signatures are done" or "Stopped." with the error. A dropped connection reads "Lost the connection to mob."
+
 ### Changed
+
+- The browser signing page is simpler: one Connect wallet button (with several wallet extensions it asks which one), then Sign in wallet in a bar that stays on screen. Ceremony steps show their progress, the exact message folds away with the digest still in view, and controls hide once the session ends. The page reads ceremony mode from the steps in each view instead of patching the page text.
 
 - The exchange is called MoB in every prompt, guide, skill, and CLI message. Strings the server verifies keep their upstream spelling: signed message prefixes, the legal statement, the `mobius_` key prefix, the `mobius-bot` agent name, the keychain service, and `MOBIUS_API_KEY`, which MoB's own quick start exports.
 - The install ends with `/reload-plugins` in the same Claude Code session, so the chat keeps its context; the next step is "set up mstack", which names the product. A bare "set me up" in a new session had no context. The welcome's Next line and the setup skill's trigger phrases match.

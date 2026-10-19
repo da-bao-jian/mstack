@@ -12,13 +12,14 @@ export interface TypedPayload {
 	message: Record<string, unknown>;
 }
 
-// Ported from mobius@0e3ff530 funding-server/src/binding/apiTypes.ts
+// Ported from mobius@0e3ff530 funding-server/src/binding/apiTypes.ts. API 1.2.0
+// requires a Lighter accountIndex; each deployment has its own account.
 export type BindingTarget =
 	| { venue: "hl"; signatureChainId?: number; rebind?: boolean }
 	| { venue: "aster"; rebind?: boolean }
 	| {
 			venue: "lighter" | "lighter-mainnet";
-			accountIndex?: number;
+			accountIndex: number;
 			rebind?: boolean;
 	  };
 

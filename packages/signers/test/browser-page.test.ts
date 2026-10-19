@@ -24,8 +24,11 @@ class Element {
 	onclick: (() => Promise<void> | void) | undefined;
 	onchange: (() => void) | undefined;
 	children: Element[] = [];
-	append(child: Element) {
-		this.children.push(child);
+	append(...children: Element[]) {
+		this.children.push(...children);
+	}
+	replaceChildren(...children: Element[]) {
+		this.children = children;
 	}
 }
 async function page(
@@ -44,6 +47,9 @@ async function page(
 		copyError?: boolean;
 		pause?: string;
 		pauseApi?: string;
+		view?: Record<string, unknown>;
+		secondWallet?: boolean;
+		offline?: boolean;
 	} = {},
 ) {
 	const elements = new Map<string, Element>();
@@ -60,6 +66,8 @@ async function page(
 	let chain = 1;
 	let now = 1_000;
 	let ready = options.ready ?? true;
+	let view = options.view;
+	let offline = options.offline ?? false;
 	let release: (() => void) | undefined;
 	const clipboard: string[] = [];
 	const states: string[] = [];
@@ -140,7 +148,7 @@ async function page(
 					event.type === "eip6963:requestProvider" &&
 					!options.fallback &&
 					!options.noWallet
-				)
+				) {
 					listeners.get("eip6963:announceProvider")?.({
 						detail: {
 							info: {
@@ -150,6 +158,14 @@ async function page(
 							provider,
 						},
 					});
+					if (options.secondWallet)
+						listeners.get("eip6963:announceProvider")?.({
+							detail: {
+								info: { name: "Second wallet" },
+								provider: { ...provider },
+							},
+						});
+				}
 			},
 		},
 		setTimeout: (fn: () => void, delay: number) => {
@@ -157,6 +173,7 @@ async function page(
 		},
 		setInterval: (fn: () => void) => intervals.push(fn),
 		fetch: async (path: string, init?: RequestInit) => {
+			if (offline) throw new TypeError("Failed to fetch");
 			const post = init?.method === "POST";
 			if (post)
 				posts.push({
@@ -183,6 +200,7 @@ async function page(
 									expiresAt: 11_000,
 									ready,
 									connectionOnly: options.connectionOnly,
+									...view,
 								},
 			};
 		},
@@ -209,6 +227,22 @@ async function page(
 		changeChain: (value: number) => {
 			chain = value;
 			providerListeners.get("chainChanged")?.(value);
+		},
+		setView: async (next: Record<string, unknown>) => {
+			view = next;
+			timers
+				.filter((timer) => timer.delay === 350)
+				.at(-1)
+				?.fn();
+			await Bun.sleep(0);
+		},
+		goOffline: async () => {
+			offline = true;
+			timers
+				.filter((timer) => timer.delay === 350)
+				.at(-1)
+				?.fn();
+			await Bun.sleep(0);
 		},
 		makeReady: async () => {
 			ready = true;
@@ -307,10 +341,10 @@ test("page draws every opaque logo pixel and keeps the review order, dark theme 
 		"purpose",
 		"owner",
 		"account",
-		"wallet",
 		"message",
 		"digest",
 		"countdown",
+		"wallet",
 		"sign",
 		"reject",
 	];
@@ -506,4 +540,106 @@ test("legal typed statement appears beneath headline before owner and exact JSON
 	expect((html as unknown as string).indexOf('id="statement"')).toBeLessThan(
 		(html as unknown as string).indexOf('id="owner"'),
 	);
+});
+
+const step = (id: string, status: string, purpose = `Purpose ${id}`) => ({
+	id,
+	purpose,
+	digest: `0x${"ab".repeat(32)}`,
+	status,
+});
+
+test("one Connect button: several wallets ask which one, and the choice connects", async () => {
+	const p = await page({ secondWallet: true });
+	expect(p.el("wallet").children).toHaveLength(2);
+	expect(p.el("picker").hidden).toBe(true);
+	expect(p.el("sign").hidden).toBe(true);
+	await p.el("connect").onclick?.();
+	expect(p.el("picker").hidden).toBe(false);
+	expect(p.calls).toHaveLength(0);
+	await p.el("wallet").children[1].onclick?.();
+	expect(p.el("wallet").children[1].getAttribute("aria-pressed")).toBe("true");
+	expect(p.el("account").className).toContain("match");
+	expect(p.el("picker").hidden).toBe(true);
+	expect(p.el("connect").hidden).toBe(true);
+	expect(p.el("sign").hidden).toBe(false);
+});
+
+test("a ceremony view lists its steps, signs each with its step id, and stays open between steps", async () => {
+	const p = await page({
+		view: {
+			id: "c-1:prepare",
+			steps: [step("c-1:prepare", "current"), step("c-1:hl", "pending")],
+		},
+	});
+	expect(p.el("kind").textContent).toBe("Wallet session");
+	expect(p.el("steps-card").hidden).toBe(false);
+	expect(
+		p.el("steps").children.map((li) => li.getAttribute("data-status")),
+	).toEqual(["current", "pending"]);
+	expect(
+		p.el("steps").children[0].children.map((part) => part.textContent),
+	).toEqual(["1", "Purpose c-1:prepare", "0xababab…ababab"]);
+	await p.el("connect").onclick?.();
+	await p.el("sign").onclick?.();
+	expect(p.posts.at(-1)).toEqual({
+		path: "/api/signature",
+		body: { stepId: "c-1:prepare", address: owner, signature: "0xfixture" },
+	});
+	expect(p.el("status").textContent).toBe(
+		"Signature accepted. Waiting for the next step…",
+	);
+	expect(p.el("sign").disabled).toBe(true);
+	expect(p.el("reject").disabled).toBe(false);
+	await p.setView({
+		id: "c-1:hl",
+		purpose: "Approve the HL agent",
+		steps: [step("c-1:prepare", "signed"), step("c-1:hl", "current")],
+	});
+	expect(p.el("purpose").textContent).toBe("Approve the HL agent");
+	expect(p.el("steps").children[0].children[0].textContent).toBe("✓");
+	expect(p.el("status").textContent).toBe(
+		"Next step ready. Review it, then sign in your wallet.",
+	);
+	expect(p.el("sign").disabled).toBe(false);
+});
+
+test("a ceremony step switches to its chain when signing instead of blocking", async () => {
+	const p = await page({
+		typed: true,
+		view: { id: "c-1:hl", steps: [step("c-1:hl", "current")] },
+	});
+	await p.el("connect").onclick?.();
+	p.changeChain(1);
+	expect(p.el("sign").disabled).toBe(false);
+	await p.el("sign").onclick?.();
+	expect(
+		p.calls.filter((call) => call.method === "wallet_switchEthereumChain"),
+	).toHaveLength(2);
+	expect(p.calls.at(-1)?.method).toBe("eth_signTypedData_v4");
+	expect(p.posts.at(-1)?.body).toMatchObject({ stepId: "c-1:hl" });
+});
+
+test("the page ends on the server's final state, not on a dropped connection", async () => {
+	const complete = await page({ view: { steps: [] } });
+	await complete.setView({
+		final: { ok: true, message: "Browser ceremony completed" },
+	});
+	expect(complete.el("status").getAttribute("data-state")).toBe("complete");
+	expect(complete.el("status").textContent).toBe(
+		"All signatures are done. Your terminal shows the result; you can close this tab.",
+	);
+	expect(complete.el("reject").disabled).toBe(true);
+	const failed = await page({ view: { steps: [] } });
+	const reason =
+		"/v1/venue-bindings/prepare: HTTP 400: Lighter requires accountIndex and selects its own chain ID.";
+	await failed.setView({ final: { ok: false, message: reason } });
+	expect(failed.el("status").textContent).toBe(`Stopped. ${reason}`);
+	expect(failed.el("status").className).toBe("error");
+	const lost = await page();
+	await lost.goOffline();
+	expect(lost.el("status").textContent).toBe(
+		"Error. Lost the connection to mob. Your terminal shows what happened.",
+	);
+	expect(lost.el("sign").disabled).toBe(true);
 });

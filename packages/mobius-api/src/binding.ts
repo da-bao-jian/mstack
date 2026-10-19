@@ -77,7 +77,6 @@ export function preparePayload(
 			throw new Error("HL signatureChainId must be a positive integer.");
 		if (
 			(target.venue === "lighter" || target.venue === "lighter-mainnet") &&
-			target.accountIndex !== undefined &&
 			(!Number.isSafeInteger(target.accountIndex) || target.accountIndex < 0)
 		)
 			throw new Error("Lighter accountIndex must be a nonnegative integer.");

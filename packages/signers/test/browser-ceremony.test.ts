@@ -94,7 +94,7 @@ test("browser ceremony signs five displayed steps in one wallet session with cha
 	);
 	expect(page.headers.get("content-security-policy")).toContain("nonce-");
 	const html = await page.text();
-	expect(html).toContain("Ceremony steps");
+	expect(html).toContain('id="steps"');
 	expect(html).toContain("stepId: proposal.id");
 	expect(html).toContain("wallet_switchEthereumChain");
 	const source = html.match(/<script[^>]*>([\s\S]*?)<\/script>/)?.[1];
@@ -174,4 +174,32 @@ test("browser ceremony rejection ends the session and leaves later steps unsigne
 	expect((rejection as Error).message).toContain("rejected");
 	await expect(session.sign(steps[2])).rejects.toThrow("rejected");
 	await session.close();
+});
+
+test("the open page reads how the ceremony ended before the server stops", async () => {
+	for (const [id, failure, final] of [
+		[
+			"c-3",
+			new Error("HTTP 400: Lighter requires accountIndex"),
+			{ ok: false, message: "HTTP 400: Lighter requires accountIndex" },
+		],
+		["c-4", undefined, { ok: true, message: "Browser ceremony completed" }],
+	] as const) {
+		const opened = deferred<string>();
+		const session = browserCeremonySigner(id, wallet.address, expiresAt, {
+			openUrl: async (url) => opened.resolve(url),
+		});
+		session.addSteps([text(`${id}:prepare`, "prepare")]);
+		void session.address().catch(() => {});
+		const { api } = await openBridge(new URL(await opened.promise));
+		const closed = session.close(failure);
+		expect(await (await api("/api/proposal")).json()).toEqual({
+			final,
+			steps: [
+				expect.objectContaining({ id: `${id}:prepare`, status: "pending" }),
+			],
+		});
+		await closed;
+		await expect(api("/api/proposal")).rejects.toThrow();
+	}
 });

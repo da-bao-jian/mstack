@@ -19,6 +19,7 @@ import {
 	fakePositionServer,
 	loopbackFetch as fundingFetch,
 } from "./fixtures/fake-funding-server.ts";
+import { venueAccountResponse } from "./fixtures/venue-accounts.ts";
 
 // End-to-end journey for the streamlined signing and onboarding UX:
 // one wallet session onboards (legal, binding, key), the key path opens with
@@ -61,6 +62,8 @@ test("onboard once, open with one consent, restage after expiry, interview once 
 		const url = new URL(String(input));
 		const method = init?.method ?? "GET";
 		calls.push(`${method} ${url.host}${url.pathname}`);
+		const account = venueAccountResponse(input, init, strategy.owner.address);
+		if (account) return account;
 		if (url.host === "auth.example.test") {
 			if (url.pathname === "/legal/acceptance" && method !== "POST")
 				return Response.json({
