@@ -3,6 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ObservedFundingRate, Snapshot } from "@mstack/funding";
+import { selectedVenues } from "../src/commands/runtime.ts";
 import {
 	collectHomeMarket,
 	HOME_MARKET_BUDGET_MS,
@@ -91,7 +92,7 @@ test("live greeting uses the five-second budget and excludes a stalled venue", a
 	expect(market.freshness).toMatchObject({
 		state: "live",
 		succeeded: 2,
-		total: 7,
+		total: selectedVenues().length,
 		failed: ["okx"],
 	});
 });
@@ -121,6 +122,10 @@ test("offline uses only the cache and reports empty offline state without one", 
 	expect(market).toMatchObject({
 		topPairs: [],
 		trending: [],
-		freshness: { state: "offline", succeeded: 0, total: 7 },
+		freshness: {
+			state: "offline",
+			succeeded: 0,
+			total: selectedVenues().length,
+		},
 	});
 });

@@ -436,8 +436,14 @@ test("show JSON and delete never reveal the secret", async () => {
 	expect(JSON.parse(shown.out).prefix).toContain("…");
 	const homeScreen = await invoke(home, ["hello", "--plain"]);
 	expect(homeScreen.out).toContain(
-		"Key       mobius_01234567-89ab-cdef-0123-456789abcdef… (file) · ok",
+		"key mobius_01234567-89ab-cdef-0123-456789abcdef…",
 	);
+	expect(homeScreen.out).not.toContain(key);
+	const doctorText = await invoke(home, ["doctor"]);
+	expect(doctorText.out).toContain(
+		"mobius_01234567-89ab-cdef-0123-456789abcdef... (file) . ok",
+	);
+	expect(doctorText.out).not.toContain(key);
 	const doctor = await invoke(home, ["doctor", "--json"]);
 	expect(
 		JSON.parse(doctor.out).checks.find(

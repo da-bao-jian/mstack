@@ -84,7 +84,7 @@ test("open stages an immutable api Proposal, submits once, and status uses the k
 	);
 	const homeScreen = await invoke(["hello", "--plain", "--offline"]);
 	expect(homeScreen.out).toContain(
-		"Policy    auto · the agent may submit inside the key's caps",
+		"Policy     auto · the agent may submit inside the key's caps",
 	);
 
 	const opened = await invoke([
