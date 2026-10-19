@@ -15,7 +15,7 @@ import {
 } from "./config.ts";
 import { paint } from "./format.ts";
 import { home } from "./home.ts";
-import { cliKeyStore } from "./key-store.ts";
+import { cliKeyStore, keyFor } from "./key-store.ts";
 import type { Runtime } from "./run.ts";
 
 const venuesAllowed = ["hl", "lighter", "aster", "lighter-mainnet"] as const;
@@ -163,7 +163,7 @@ async function snapshot(
 	if (!stored) throw new Error("Stored key metadata has no key");
 	const checked = await verifyApiKey(
 		strategyApiBase,
-		stored.key,
+		keyFor(stored, strategyApiBase),
 		rt.fetch,
 		rt.now,
 	);

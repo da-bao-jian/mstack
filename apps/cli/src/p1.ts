@@ -29,7 +29,7 @@ import pkg from "../package.json";
 import { chooseSigner, readConfig, SETUP_FIRST, UsageError } from "./config.ts";
 import { expiry } from "./format.ts";
 import { storeCreatedKey } from "./key-create.ts";
-import { cliKeyStore } from "./key-store.ts";
+import { cliKeyStore, requireWritableKeyStore } from "./key-store.ts";
 import { keyListTable } from "./keys-command.ts";
 import { object, submitPlan } from "./onboarding-http.ts";
 import { CheckFailure, Checks, configChecks } from "./preflight/checks.ts";
@@ -242,6 +242,10 @@ export async function p1(
 			"Set walletconnect_project_id with mob config set walletconnect_project_id <Reown project ID>",
 		);
 	if (!config.owner) throw new UsageError(SETUP_FIRST);
+	// The server shows a created key once: check that the store can keep it
+	// before the wallet signs, and again just before submission.
+	if (proposal.submit.onAnswer === "store-api-key")
+		await requireWritableKeyStore(rt, proposal.owner);
 	let close: (() => Promise<void>) | undefined;
 	let waiting: ReturnType<typeof walletWait> | undefined;
 	const cancellation = new AbortController();
@@ -348,6 +352,8 @@ export async function p1(
 					}
 					return answer;
 				}
+				if (p.submit.onAnswer === "store-api-key")
+					await requireWritableKeyStore(rt, p.owner);
 				let answer: Json;
 				try {
 					const client = new MobiusClient({

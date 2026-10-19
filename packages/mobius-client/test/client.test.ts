@@ -70,6 +70,37 @@ test("writes carry exact body and client headers, with no retries on readiness f
 	expect(isVenueReadinessError(readiness)).toBe(true);
 	expect(isVenueReadinessError({ readiness: { venues: [] } })).toBe(false);
 });
+test("an error excerpt redacts before it cuts, so a key crossing the cut leaves no run of its secret", async () => {
+	const secret = "0123456789abcdef".repeat(4);
+	const key = `mobius_00000000-0000-4000-8000-000000000001.${secret}`;
+	for (let pad = 140; pad <= 250; pad++) {
+		const client = new MobiusClient({
+			version: "0.3.0",
+			limit: async () => {},
+			fetch: async () =>
+				new Response(`<html>${"x".repeat(pad)}${key}</html>`, {
+					status: 502,
+				}),
+		});
+		const error = await client
+			.read("/api/arbitrage/list", { owner: "0x1" })
+			.catch((caught) => caught);
+		expect(error).toBeInstanceOf(ApiError);
+		for (const text of [String(error), JSON.stringify(error)])
+			for (let i = 0; i + 16 <= secret.length; i++)
+				expect(text).not.toContain(secret.slice(i, i + 16));
+	}
+});
+test("public and wallet-signed requests go only over HTTPS or to loopback", () => {
+	for (const base of [
+		"http://127.0.0.1:1",
+		"http://[::1]:1",
+		"http://localhost",
+	])
+		expect(new MobiusClient({ base, version: "0" }).base).toBe(base);
+	for (const base of ["http://203.0.113.9", "http://funding.test"])
+		expect(() => new MobiusClient({ base, version: "0" })).toThrow("HTTPS");
+});
 test("staging freezes native names, marks, timestamp, nonce, and zero minimum", () => {
 	const a = stageOpenBody(
 		{

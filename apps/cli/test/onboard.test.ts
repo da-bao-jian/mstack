@@ -192,6 +192,7 @@ test("non-TTY onboard requires owner and imported key makes the checklist Ready"
 
 	await setConfig("owner", owner, path);
 	await setConfig("api_base", "http://127.0.0.1:9988", path);
+	await setConfig("strategy_api_base", "http://127.0.0.1:9989", path);
 	const imported = await invoke(
 		path,
 		[
@@ -206,6 +207,20 @@ test("non-TTY onboard requires owner and imported key makes the checklist Ready"
 		{ readStdin: async () => key },
 	);
 	expect(imported.code).toBe(0);
+	// The key goes only to the base it was verified against.
+	await setConfig("strategy_api_base", "http://127.0.0.1:9990", path);
+	const moved = await invoke(path, ["onboard", "--venues", "hl,lighter"], {
+		fetch: async (input, init) => {
+			const url = new URL(String(input));
+			if (url.pathname === "/v1/delta-neutral/tasks")
+				throw new Error("the key must not be sent to another base");
+			return fakeFetch({ hl: "bound", lighter: "bound" })(input, init);
+		},
+	});
+	expect(moved.code).toBe(1);
+	expect(moved.err).toContain(
+		"belongs to http://127.0.0.1:9989, not http://127.0.0.1:9990; it was not sent",
+	);
 	await setConfig("strategy_api_base", "http://127.0.0.1:9989", path);
 	const ready = await invoke(path, ["onboard", "--venues", "hl,lighter"], {
 		fetch: async (input, init) => {

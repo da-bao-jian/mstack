@@ -10,7 +10,7 @@ import {
 	SETUP_FIRST,
 	UsageError,
 } from "../config.ts";
-import { cliKeyStore } from "../key-store.ts";
+import { cliKeyStore, keyFor } from "../key-store.ts";
 import { bindingReadiness } from "../preflight/readiness.ts";
 import type { Runtime } from "./runtime.ts";
 
@@ -67,7 +67,7 @@ export async function status(options: StatusOptions, rt: Runtime) {
 		);
 		const client = new StrategyApiClient({
 			base: strategyBase,
-			key: stored.key,
+			key: keyFor(stored, strategyBase),
 			version: pkg.version,
 			fetch: rt.fetch,
 			now: rt.now,

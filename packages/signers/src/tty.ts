@@ -6,6 +6,35 @@ export type SecretReader = (
 	prompt: string,
 	signal?: AbortSignal,
 ) => Promise<string>;
+type LineEvent = "more" | "done" | "cancel" | "invalid";
+
+/** Line editing for a hidden secret, one input byte at a time. Backspace
+ * removes a whole UTF-8 code point, and the value is NFC-normalized, so the
+ * same visible passphrase always yields the same string. */
+export function secretLine(limit = 4096) {
+	const bytes: number[] = [];
+	return {
+		push(byte: number): LineEvent {
+			if (byte === 3 || byte === 4) return "cancel";
+			if (byte === 10 || byte === 13) return "done";
+			if (byte === 127 || byte === 8) {
+				// Continuation bytes are 10xxxxxx; drop them, then the lead byte.
+				while (bytes.length && ((bytes.at(-1) as number) & 0xc0) === 0x80)
+					bytes.pop();
+				bytes.pop();
+				return "more";
+			}
+			if (byte >= 32 && bytes.length < limit) {
+				bytes.push(byte);
+				return "more";
+			}
+			return "invalid";
+		},
+		value: () => Buffer.from(bytes).toString("utf8").normalize("NFC"),
+		clear: () => bytes.fill(0),
+	};
+}
+
 export const readSecretFromTty: SecretReader = async (prompt, signal) => {
 	signal?.throwIfAborted();
 	let fd: number;
@@ -22,7 +51,7 @@ export const readSecretFromTty: SecretReader = async (prompt, signal) => {
 		throw new Error("A controlling TTY (/dev/tty) is required");
 	}
 	const wasRaw = tty.isRaw;
-	const bytes: number[] = [];
+	const line = secretLine();
 	let cancel: (() => void) | undefined;
 	try {
 		if (!tty.isTTY) throw new Error("A controlling TTY (/dev/tty) is required");
@@ -36,7 +65,7 @@ export const readSecretFromTty: SecretReader = async (prompt, signal) => {
 				tty.pause();
 				writeSync(fd, "\n");
 				if (error) reject(error);
-				else resolve(Buffer.from(bytes).toString("utf8"));
+				else resolve(line.value());
 			};
 			cancel = () => finish(new Error("TTY input cancelled"));
 			signal?.addEventListener("abort", cancel, { once: true });
@@ -44,17 +73,16 @@ export const readSecretFromTty: SecretReader = async (prompt, signal) => {
 			tty.on("data", (chunk: Buffer) => {
 				for (const byte of chunk) {
 					if (finished) break;
-					if (byte === 3 || byte === 4) {
+					const event = line.push(byte);
+					if (event === "cancel") {
 						finish(new Error("TTY input cancelled"));
 						break;
 					}
-					if (byte === 10 || byte === 13) {
+					if (event === "done") {
 						finish();
 						break;
 					}
-					if (byte === 127 || byte === 8) bytes.pop();
-					else if (byte >= 32 && bytes.length < 4096) bytes.push(byte);
-					else {
+					if (event === "invalid") {
 						finish(new Error("Invalid or excessive TTY input"));
 						break;
 					}
@@ -66,7 +94,7 @@ export const readSecretFromTty: SecretReader = async (prompt, signal) => {
 		});
 	} finally {
 		if (cancel) signal?.removeEventListener("abort", cancel);
-		bytes.fill(0);
+		line.clear();
 		if (tty.isTTY) tty.setRawMode(wasRaw);
 		tty.destroy();
 	}

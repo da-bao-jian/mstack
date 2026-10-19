@@ -18,7 +18,7 @@ import {
 	SETUP_FIRST,
 	UsageError,
 } from "./config.ts";
-import { cliKeyStore } from "./key-store.ts";
+import { cliKeyStore, requireWritableKeyStore } from "./key-store.ts";
 import { object } from "./onboarding-http.ts";
 import { stageOnboarding } from "./onboarding-stage.ts";
 import { table } from "./render.ts";
@@ -209,6 +209,7 @@ async function stage(
 			throw new UsageError(
 				"max-size must be at most 1000000000 with at most 6 decimals",
 			);
+		await requireWritableKeyStore(rt, owner);
 		readiness = await requireReadiness(base, owner, venues, rt);
 		body = {
 			owner,

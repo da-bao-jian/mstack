@@ -562,7 +562,7 @@ test("session skills keep keys off argv and require exact ids for manual mutatio
 			);
 			expect(body.toLowerCase()).toContain("never echo");
 			expect(body).toContain("shell builtin");
-			expect(body).toContain("does not appear in a process list");
+			expect(body).toContain("carries it on its own command line");
 			expect(body).toContain("could not verify; not stored");
 			expect(body.toLowerCase()).toContain(
 				"use `--unverified` only when the user explicitly asks for it",

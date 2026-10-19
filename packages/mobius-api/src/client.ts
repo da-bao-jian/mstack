@@ -10,6 +10,7 @@ import {
 	ApiKeyScope,
 	ApiRateLimited,
 	IdempotencyConflict,
+	redactExcerpt,
 	redactKey,
 	StrategyApiError,
 	StrategyApiUnavailable,
@@ -38,17 +39,28 @@ type WalletRead = RequestOptions & {
 	signature: string;
 };
 
+const LOOPBACK = new Set(["127.0.0.1", "[::1]", "localhost"]);
+
+/** HTTPS, or plain HTTP only to this machine: an API key or a signed request
+ * never crosses the network in cleartext. */
+export function isSecureBase(url: URL): boolean {
+	return (
+		url.protocol === "https:" ||
+		(url.protocol === "http:" && LOOPBACK.has(url.hostname))
+	);
+}
+
 function apiBase(value: string): string {
 	const url = new URL(value);
 	if (
-		!["https:", "http:"].includes(url.protocol) ||
+		!isSecureBase(url) ||
 		url.username ||
 		url.password ||
 		url.search ||
 		url.hash
 	)
 		throw new Error(
-			"base must be an HTTP(S) URL without credentials, query, or fragment",
+			"base must be an HTTPS URL (HTTP only for 127.0.0.1, ::1, or localhost) without credentials, query, or fragment",
 		);
 	return url.href.replace(/\/$/, "");
 }
@@ -332,7 +344,7 @@ export class StrategyApiClient {
 				route: options.route,
 				status: response.status,
 				requestId: response.headers.get("X-Request-Id"),
-				message: `${options.route}: malformed JSON response: ${redactKey(raw.slice(0, 240))}`,
+				message: `${options.route}: malformed JSON response: ${redactExcerpt(raw)}`,
 			});
 		}
 		if (!response.ok) {

@@ -5,17 +5,28 @@ import { readRoutes, writeRoutes } from "./routes.ts";
 import { logPage, record, validateTask } from "./tasks.ts";
 import type { Fetch, ReadRoutes, WriteRoutes } from "./types.ts";
 
+const LOOPBACK = new Set(["127.0.0.1", "[::1]", "localhost"]);
+
+/** Keep equivalent to @mstack/mobius-api isSecureBase: HTTPS, or plain HTTP
+ * only to this machine. */
+function isSecureBase(url: URL): boolean {
+	return (
+		url.protocol === "https:" ||
+		(url.protocol === "http:" && LOOPBACK.has(url.hostname))
+	);
+}
+
 export function apiBase(value: string): string {
 	const url = new URL(value);
 	if (
-		!["https:", "http:"].includes(url.protocol) ||
+		!isSecureBase(url) ||
 		url.username ||
 		url.password ||
 		url.search ||
 		url.hash
 	)
 		throw new Error(
-			"api_base must be an HTTP(S) URL without credentials, query, or fragment",
+			"api_base must be an HTTPS URL (HTTP only for 127.0.0.1, ::1, or localhost) without credentials, query, or fragment",
 		);
 	return url.href.replace(/\/$/, "");
 }
@@ -32,6 +43,17 @@ export class ApiError extends Error {
 const keyPattern = /mobius_([0-9a-fA-F-]{36})\.[0-9a-fA-F]{64}/g;
 const redact = (text: string) => text.replace(keyPattern, "mobius_$1…");
 const clean = (text: string) => redact(text).replace(/[\p{Cc}\p{Cf}]/gu, " ");
+const looseKey = /mobius_([0-9a-fA-F-]{36})\.[0-9a-fA-F]+/g;
+const trailingFragment = /mobius_[0-9a-fA-F-]*(?:\.[0-9a-fA-F]*)?$/;
+/** Keep equivalent to @mstack/mobius-api redactExcerpt: redact, then cut, then
+ * drop a key fragment the cut leaves, so no part of a secret survives. */
+function excerpt(text: string, limit = 240): string {
+	const redacted = clean(text).replace(looseKey, "mobius_$1…");
+	if (redacted.length <= limit) return redacted;
+	return `${redacted.slice(0, limit).replace(trailingFragment, "")}…`;
+}
+// A key creation answer carries the one-time secret: never echo it.
+const secretRoutes = new Set(["/api/keys/create"]);
 function safe(value: unknown): unknown {
 	if (typeof value === "string") return clean(value);
 	if (Array.isArray(value)) return value.map(safe);
@@ -254,11 +276,12 @@ export class MobiusClient {
 		});
 		const raw = await response.text();
 		const label = route;
+		const secret = secretRoutes.has(route);
 		const fail = (reason: string, value: unknown) =>
 			new ApiError(
-				`${label}: HTTP ${response.status}: ${reason}; body: ${clean(raw.slice(0, 240))}`,
+				`${label}: HTTP ${response.status}: ${reason}; ${secret ? "body not shown for key creation" : `body: ${excerpt(raw)}`}`,
 				response.status,
-				safe(value),
+				secret ? null : safe(value),
 			);
 		let body: unknown;
 		try {
@@ -268,6 +291,7 @@ export class MobiusClient {
 		}
 		if (!response.ok) {
 			if (
+				!secret &&
 				response.status < 500 &&
 				response.status !== 429 &&
 				isVenueReadinessError(body)

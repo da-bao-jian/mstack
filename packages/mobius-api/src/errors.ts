@@ -4,6 +4,19 @@ export function redactKey(text: string): string {
 	return text.replace(KEY_PATTERN, "mobius_$1…");
 }
 
+// Also a malformed key (any secret length) and a key fragment a cut leaves.
+const LOOSE_KEY = /mobius_([0-9a-fA-F-]{36})\.[0-9a-fA-F]+/g;
+const TRAILING_FRAGMENT = /mobius_[0-9a-fA-F-]*(?:\.[0-9a-fA-F]*)?$/;
+
+/** A bounded excerpt of a response body for an error message. It redacts
+ * before it cuts, so a key that crosses the cut leaves no partial secret,
+ * and it drops a key fragment the cut leaves at the end. */
+export function redactExcerpt(text: string, limit = 240): string {
+	const redacted = redactKey(text).replace(LOOSE_KEY, "mobius_$1…");
+	if (redacted.length <= limit) return redacted;
+	return `${redacted.slice(0, limit).replace(TRAILING_FRAGMENT, "")}…`;
+}
+
 export class StrategyApiError extends Error {
 	readonly route: string;
 	readonly status: number;
