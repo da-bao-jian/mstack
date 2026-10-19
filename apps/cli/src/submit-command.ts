@@ -10,7 +10,7 @@ import type { Json } from "@mstack/proposals";
 import { ProposalStore } from "@mstack/proposals";
 import pkg from "../package.json";
 import { readConfig, UsageError } from "./config.ts";
-import { cliKeyStore } from "./key-store.ts";
+import { cliKeyStore, keyFor } from "./key-store.ts";
 import { proposalView } from "./proposal-view.ts";
 import { restageProposal } from "./restage.ts";
 import type { Runtime } from "./run.ts";
@@ -43,7 +43,7 @@ export async function submitCommand(
 				if (!stored) throw new UsageError("no key: run mob onboard");
 				client = new StrategyApiClient({
 					base: proposal.submit.base,
-					key: stored.key,
+					key: keyFor(stored, proposal.submit.base),
 					version: pkg.version,
 					fetch: rt.fetch,
 					now: rt.now,

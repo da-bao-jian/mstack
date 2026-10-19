@@ -11,6 +11,12 @@ export function prefixOf(value: string): string {
 	return `${value.slice(0, value.indexOf("."))}…`;
 }
 
+/** The public key id: the UUID between `mobius_` and the secret. */
+export function keyIdOf(value: string): string {
+	if (!isApiKey(value)) throw new Error("Invalid Mobius API key");
+	return value.slice("mobius_".length, value.indexOf("."));
+}
+
 /** Keep this byte-for-byte equivalent to @mstack/mobius-api redactKey (W18). */
 export function redactKey(text: string): string {
 	return text.replace(KEY_PATTERN, "mobius_$1…");

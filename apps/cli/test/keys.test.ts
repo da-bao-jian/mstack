@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
-import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { apiKeyMessage } from "@mstack/mobius-client";
@@ -335,6 +335,65 @@ test("keys create refuses an unbound requested venue", async () => {
 	expect(result.code).toBe(1);
 	expect(result.err).toContain("lighter is not bound");
 	expect(await readdir(home)).not.toContain("proposals");
+});
+
+test("keys create refuses a key store that cannot keep the key, at staging and again before signing and submission", async () => {
+	const create = [
+		"keys",
+		"create",
+		"--name",
+		"desk",
+		"--venues",
+		"hl,lighter",
+		"--max-size",
+		"5000",
+	];
+	const requests: string[] = [];
+	const fetch = async (input: string | URL | Request) => {
+		requests.push(String(input));
+		return Response.json([
+			{ venue: "hl", bound: true },
+			{ venue: "lighter", bound: true },
+		]);
+	};
+	const withEnv = await setup({ signer: "browser" });
+	const refused = await invoke(withEnv, create, {
+		fetch,
+		env: { MOBIUS_API_KEY: key },
+	});
+	expect(refused.code).toBe(1);
+	expect(refused.err).toContain("MOBIUS_API_KEY is set");
+	expect(refused.err).toContain("No key was created");
+	expect(refused.err).not.toContain(key);
+	expect(requests).toEqual([]);
+	expect(await readdir(withEnv)).not.toContain("proposals");
+
+	const unsafe = await setup({ signer: "browser" });
+	await mkdir(join(unsafe, "keys"), { mode: 0o755 });
+	await chmod(join(unsafe, "keys"), 0o755);
+	const blocked = await invoke(unsafe, create, { fetch, env: {} });
+	expect(blocked.code).toBe(1);
+	expect(blocked.err).toContain("file key store cannot save a key");
+	expect(requests).toEqual([]);
+
+	// Staged while the store worked; the store breaks before the signature.
+	const later = await setup({ signer: "browser" });
+	expect((await invoke(later, create, { fetch, env: {} })).code).toBe(0);
+	requests.length = 0;
+	const opened: string[] = [];
+	const signed = await invoke(later, ["sign", "p-1"], {
+		fetch,
+		env: { MOBIUS_API_KEY: key },
+		openUrl: async (url) => {
+			opened.push(url);
+		},
+	});
+	expect(signed.code).toBe(1);
+	expect(signed.err).toContain("MOBIUS_API_KEY is set");
+	expect(opened).toEqual([]);
+	expect(requests.filter((url) => url.includes("/api/keys/create"))).toEqual(
+		[],
+	);
 });
 
 test("keys list and revoke stage read and revoke Proposals", async () => {

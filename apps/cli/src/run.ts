@@ -285,7 +285,7 @@ export async function run(
 	const rt: Runtime = {
 		fetch: globalThis.fetch,
 		now: Date.now,
-		home: configHome(),
+		home: "",
 		out: console.log,
 		err: console.error,
 		stdinIsTTY: supplied.prompt !== undefined || !!process.stdin.isTTY,
@@ -304,6 +304,8 @@ export async function run(
 			rt.out(pkg.version);
 			return 0;
 		}
+		// Resolved inside the try, so a relative MOB_HOME is a usage error.
+		if (supplied.home === undefined) rt.home = configHome();
 		if (!args.length || args[0].startsWith("--")) args = ["hello", ...args];
 		const command = args[0];
 		if (!Object.hasOwn(definitions, command))

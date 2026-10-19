@@ -1,6 +1,7 @@
 import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
+import { isSecureBase } from "@mstack/mobius-api";
 import { DEFAULT_TAKER_FEE_BPS } from "@mstack/opportunities";
 import { getAddress } from "viem";
 
@@ -34,17 +35,15 @@ export function apiBase(value: string, name = "api_base"): string {
 	try {
 		url = new URL(value);
 	} catch {
-		throw new UsageError(`${name} must be an absolute HTTP(S) URL`);
+		throw new UsageError(`${name} must be an absolute HTTPS URL`);
 	}
-	if (
-		!["https:", "http:"].includes(url.protocol) ||
-		url.username ||
-		url.password ||
-		url.search ||
-		url.hash
-	)
+	if (!isSecureBase(url))
 		throw new UsageError(
-			`${name} must be an HTTP(S) URL without credentials, query, or fragment`,
+			`${name} must be an HTTPS URL; plain HTTP is allowed only for 127.0.0.1, ::1, or localhost`,
+		);
+	if (url.username || url.password || url.search || url.hash)
+		throw new UsageError(
+			`${name} must be a URL without credentials, query, or fragment`,
 		);
 	return url.href.replace(/\/$/, "");
 }
@@ -145,8 +144,14 @@ export function parsedValue(
 	return result;
 }
 
-export function configHome(): string {
-	return process.env.MOB_HOME ?? join(homedir(), ".mob");
+/** MOB_HOME, or ~/.mob when it is unset or empty. A relative MOB_HOME would
+ * follow the current directory, so it is refused. */
+export function configHome(env = process.env): string {
+	const home = env.MOB_HOME;
+	if (!home) return join(homedir(), ".mob");
+	if (!isAbsolute(home))
+		throw new UsageError(`MOB_HOME must be an absolute path, not ${home}`);
+	return home;
 }
 
 export async function readConfig(home = configHome()): Promise<Config> {

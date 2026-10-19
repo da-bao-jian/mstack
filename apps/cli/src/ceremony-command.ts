@@ -43,7 +43,7 @@ import {
 	UsageError,
 } from "./config.ts";
 import { storeCreatedKey } from "./key-create.ts";
-import { cliKeyStore } from "./key-store.ts";
+import { cliKeyStore, requireWritableKeyStore } from "./key-store.ts";
 import { keysCommand } from "./keys-command.ts";
 import type { Runtime } from "./run.ts";
 import { type LegalPlan, legalPlan, stageLegal } from "./setup-command.ts";
@@ -211,6 +211,7 @@ export async function nativeOnboard(
 		"max-size",
 		10,
 	);
+	await requireWritableKeyStore(rt, config.owner);
 	const ceremony = await stageCeremony(values, rt, undefined, {
 		legal,
 		keyPlan: { name, maxSizeUsd },
@@ -468,6 +469,9 @@ export async function signCeremony(
 				throw new Error("Ceremony key step was not stored");
 			session.addSteps?.([view(keyStep)]);
 			try {
+				// The server shows the secret once: never create it into a store
+				// that cannot keep it.
+				await requireWritableKeyStore(rt, current.owner);
 				const signature = keyStep.signature ?? (await sign(keyStep));
 				const answer = (await new MobiusClient({
 					base: keyStep.submit.base,

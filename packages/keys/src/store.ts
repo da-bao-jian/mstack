@@ -1,17 +1,17 @@
 import { createHash } from "node:crypto";
 import { realpathSync } from "node:fs";
-import {
-	chmod,
-	lstat,
-	mkdir,
-	readFile,
-	rename,
-	unlink,
-	writeFile,
-} from "node:fs/promises";
+import { lstat, unlink } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
-import { isApiKey, prefixOf, redactKey } from "./format.ts";
+import { isSecureBase } from "@mstack/mobius-api";
+import { isApiKey, keyIdOf, prefixOf, redactKey } from "./format.ts";
+import {
+	assertPrivateTarget,
+	atomicPrivate,
+	privateDirectory,
+	readPrivate,
+	stagePrivate,
+} from "./private-file.ts";
 import type {
 	KeyDescription,
 	KeyMeta,
@@ -42,6 +42,7 @@ export interface KeyStoreOptions {
 }
 
 const SERVICE = "mstack.mobius-api";
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 function canonical(path: string): string {
 	const absolute = resolve(path);
@@ -92,8 +93,9 @@ function validateMeta(meta: KeyMeta): KeyMeta {
 	)
 		throw new Error("Invalid key maxSizeUsd");
 	const url = new URL(meta.apiBase);
+	// The key is sent to this base, so it must be HTTPS or this machine.
 	if (
-		!["https:", "http:"].includes(url.protocol) ||
+		!isSecureBase(url) ||
 		url.username ||
 		url.password ||
 		url.search ||
@@ -103,6 +105,24 @@ function validateMeta(meta: KeyMeta): KeyMeta {
 	return structuredClone(meta);
 }
 
+/** Per-home metadata: the public KeyMeta plus the stored key's id. */
+interface MetaRecord {
+	meta: KeyMeta;
+	keyId?: string;
+}
+
+function parseMetaRecord(value: unknown): MetaRecord {
+	if (!value || typeof value !== "object" || Array.isArray(value))
+		throw new Error("Invalid key metadata");
+	const { keyId, ...meta } = value as KeyMeta & { keyId?: unknown };
+	if (keyId !== undefined && (typeof keyId !== "string" || !UUID.test(keyId)))
+		throw new Error("Invalid key id");
+	return {
+		meta: validateMeta(meta),
+		...(keyId === undefined ? {} : { keyId }),
+	};
+}
+
 function validateStored(value: unknown): StoredKey {
 	if (!value || typeof value !== "object" || Array.isArray(value))
 		throw new Error("Invalid stored key record");
@@ -110,56 +130,6 @@ function validateStored(value: unknown): StoredKey {
 	if (typeof record.key !== "string" || !isApiKey(record.key))
 		throw new Error("Invalid stored Mobius API key");
 	return { key: record.key, meta: validateMeta(record.meta as KeyMeta) };
-}
-
-async function status(path: string) {
-	try {
-		return await lstat(path);
-	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
-		throw error;
-	}
-}
-
-async function privateDirectory(path: string): Promise<void> {
-	const existing = await status(path);
-	if (!existing) {
-		await mkdir(path, { recursive: true, mode: 0o700 });
-		await chmod(path, 0o700);
-		return;
-	}
-	if (existing.isSymbolicLink())
-		throw new Error(`${path}: symlink is not allowed`);
-	if (!existing.isDirectory()) throw new Error(`${path}: expected a directory`);
-	if ((existing.mode & 0o777) !== 0o700)
-		throw new Error(`${path}: expected mode 0700`);
-}
-
-async function readPrivate(path: string): Promise<string | null> {
-	const file = await status(path);
-	if (!file) return null;
-	if (file.isSymbolicLink()) throw new Error(`${path}: symlink is not allowed`);
-	if (!file.isFile()) throw new Error(`${path}: expected a regular file`);
-	if ((file.mode & 0o777) !== 0o600)
-		throw new Error(`${path}: expected mode 0600`);
-	return readFile(path, "utf8");
-}
-
-async function atomicPrivate(path: string, contents: string): Promise<void> {
-	const current = await status(path);
-	if (current && (current.isSymbolicLink() || !current.isFile()))
-		throw new Error(`${path}: symlink or non-file target is not allowed`);
-	if (current && (current.mode & 0o777) !== 0o600)
-		throw new Error(`${path}: expected mode 0600`);
-	const temporary = `${path}.${process.pid}.${crypto.randomUUID()}.tmp`;
-	await writeFile(temporary, contents, { flag: "wx", mode: 0o600 });
-	await chmod(temporary, 0o600);
-	try {
-		await rename(temporary, path);
-	} catch (error) {
-		await unlink(temporary).catch(() => {});
-		throw error;
-	}
 }
 
 const defaultRun: CommandRunner = async (argv, stdin) => {
@@ -186,6 +156,7 @@ abstract class BaseStore implements KeyStore {
 	abstract put(owner: string, key: string, meta: KeyMeta): Promise<void>;
 	abstract get(owner: string): Promise<StoredKey | null>;
 	abstract delete(owner: string): Promise<boolean>;
+	abstract checkWritable(owner: string): Promise<void>;
 	async describe(owner: string): Promise<KeyDescription | null> {
 		const stored = await this.get(owner);
 		return stored
@@ -199,36 +170,9 @@ abstract class BaseStore implements KeyStore {
 	protected directory() {
 		return join(this.home, "keys");
 	}
-	protected metaPath(owner: string) {
-		return join(this.directory(), `${ownerId(owner)}.meta.json`);
-	}
-	protected async writeMeta(owner: string, meta: KeyMeta) {
+	protected async privateDirectories() {
 		await privateDirectory(this.home);
 		await privateDirectory(this.directory());
-		await atomicPrivate(
-			this.metaPath(owner),
-			`${JSON.stringify(validateMeta(meta), null, 2)}\n`,
-		);
-	}
-	protected async readMeta(owner: string): Promise<KeyMeta | null> {
-		await privateDirectory(this.home);
-		await privateDirectory(this.directory());
-		const raw = await readPrivate(this.metaPath(owner));
-		if (raw === null) return null;
-		try {
-			return validateMeta(JSON.parse(raw));
-		} catch (error) {
-			throw new Error(
-				`${this.metaPath(owner)}: ${error instanceof Error ? error.message : String(error)}`,
-			);
-		}
-	}
-	protected async deleteMeta(owner: string) {
-		const path = this.metaPath(owner);
-		await readPrivate(path);
-		await unlink(path).catch((error) => {
-			if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-		});
 	}
 }
 
@@ -253,6 +197,11 @@ class EnvStore extends BaseStore {
 	async delete(): Promise<boolean> {
 		throw new Error("MOBIUS_API_KEY is read-only");
 	}
+	async checkWritable(): Promise<void> {
+		throw new Error(
+			"MOBIUS_API_KEY is set and read-only, so mob cannot store a new key; unset it first",
+		);
+	}
 }
 
 class FileStore extends BaseStore {
@@ -262,16 +211,14 @@ class FileStore extends BaseStore {
 	}
 	async put(owner: string, secret: string, meta: KeyMeta) {
 		if (!isApiKey(secret)) throw new Error("Invalid Mobius API key");
-		await privateDirectory(this.home);
-		await privateDirectory(this.directory());
+		await this.privateDirectories();
 		await atomicPrivate(
 			this.path(owner),
 			`${JSON.stringify({ key: secret, meta: validateMeta(meta) }, null, 2)}\n`,
 		);
 	}
 	async get(owner: string): Promise<StoredKey | null> {
-		await privateDirectory(this.home);
-		await privateDirectory(this.directory());
+		await this.privateDirectories();
 		const raw = await readPrivate(this.path(owner));
 		if (raw === null) return null;
 		try {
@@ -283,16 +230,21 @@ class FileStore extends BaseStore {
 		}
 	}
 	async delete(owner: string): Promise<boolean> {
-		await privateDirectory(this.home);
-		await privateDirectory(this.directory());
+		await this.privateDirectories();
 		const path = this.path(owner);
 		const existing = await readPrivate(path);
 		if (existing === null) return false;
 		await unlink(path);
 		return true;
 	}
+	async checkWritable(owner: string): Promise<void> {
+		await this.privateDirectories();
+		await assertPrivateTarget(this.path(owner));
+	}
 }
 
+/** Keychain and Secret Service: the secret lives in the OS store under a
+ * per-home service name; its metadata lives in `keys/<owner>.meta.json`. */
 abstract class CommandStore extends BaseStore {
 	constructor(
 		home: string,
@@ -301,37 +253,159 @@ abstract class CommandStore extends BaseStore {
 	) {
 		super(home);
 	}
+	protected abstract lookup(
+		service: string,
+		owner: string,
+	): Promise<string | null>;
+	protected abstract store(
+		service: string,
+		owner: string,
+		secret: string,
+	): Promise<void>;
+	/** True when an item existed and was removed. */
+	protected abstract remove(service: string, owner: string): Promise<boolean>;
+	/** Throws unless the store answers (found or not found) for this item. */
+	protected abstract probe(service: string, owner: string): Promise<void>;
+
 	/** Creates the home first when writing, so its name never changes later. */
 	protected async service(create = false): Promise<string> {
 		if (create) await privateDirectory(this.home);
 		return serviceFor(this.home, this.defaultHome);
 	}
+	/** Runs the store command. A failure that `missing` accepts is "not found"
+	 * (null); any other failure (locked, denied, no D-Bus) throws. */
 	protected async execute(
 		argv: string[],
 		stdin?: string,
-		missing = false,
+		missing?: (result: RunResult) => boolean,
 	): Promise<string | null> {
 		const result = await this.run(argv, stdin);
 		if (result.code === 0) return result.stdout.trim();
-		if (missing) return null;
+		if (missing?.(result)) return null;
 		throw new Error(
 			redactKey(
 				`Credential store failed (${result.code}): ${result.stderr.trim() || "no detail"}`,
 			),
 		);
 	}
-	protected async finishGet(
+	private metaPath(owner: string) {
+		return join(this.directory(), `${ownerId(owner)}.meta.json`);
+	}
+	private async readMetaRecord(owner: string): Promise<MetaRecord | null> {
+		await this.privateDirectories();
+		const raw = await readPrivate(this.metaPath(owner));
+		if (raw === null) return null;
+		try {
+			return parseMetaRecord(JSON.parse(raw));
+		} catch (error) {
+			throw new Error(
+				`${this.metaPath(owner)}: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
+	}
+	/** The key id in this home's metadata; null when absent or unreadable, so
+	 * a delete still removes the credential. */
+	private async metaKeyId(owner: string): Promise<string | null> {
+		try {
+			return (await this.readMetaRecord(owner))?.keyId ?? null;
+		} catch {
+			return null;
+		}
+	}
+	/** The default home owns the legacy name while it has metadata there. */
+	private async defaultHomeClaims(owner: string): Promise<boolean> {
+		return lstat(
+			join(this.defaultHome, "keys", `${ownerId(owner)}.meta.json`),
+		).then(
+			() => true,
+			() => false,
+		);
+	}
+	/** A non-default home stored its key under the legacy name before names
+	 * were per home. Move that item only when its key id is the one this home's
+	 * metadata names; otherwise it may be another home's key. */
+	private async migrate(
+		service: string,
 		owner: string,
-		secret: string | null,
-	): Promise<StoredKey | null> {
+		keyId: string | null,
+	): Promise<string | null> {
+		if (service === SERVICE || !keyId) return null;
+		const legacy = await this.lookup(SERVICE, owner);
+		if (legacy === null || !isApiKey(legacy) || keyIdOf(legacy) !== keyId)
+			return null;
+		await this.store(service, owner, legacy);
+		if (!(await this.defaultHomeClaims(owner)))
+			await this.remove(SERVICE, owner);
+		return legacy;
+	}
+	async put(owner: string, secret: string, meta: KeyMeta) {
+		if (!isApiKey(secret)) throw new Error("Invalid Mobius API key");
+		const service = await this.service(true);
+		await this.privateDirectories();
+		// Metadata is written and checked first and committed last, so a put
+		// that fails never leaves a secret without its metadata.
+		const staged = await stagePrivate(
+			this.metaPath(owner),
+			`${JSON.stringify({ ...validateMeta(meta), keyId: keyIdOf(secret) }, null, 2)}\n`,
+		);
+		try {
+			await this.store(service, owner, secret);
+		} catch (error) {
+			await staged.abort();
+			throw error;
+		}
+		try {
+			await staged.commit();
+		} catch (error) {
+			await this.remove(service, owner).catch(() => false);
+			throw error;
+		}
+	}
+	async get(owner: string): Promise<StoredKey | null> {
+		const service = await this.service();
+		const secret =
+			(await this.lookup(service, owner)) ??
+			(await this.migrate(service, owner, await this.metaKeyId(owner)));
 		if (secret === null) return null;
 		if (!isApiKey(secret))
 			throw new Error("Credential store returned an invalid Mobius API key");
-		const meta = await this.readMeta(owner);
-		if (!meta) throw new Error("Key metadata is missing");
-		return { key: secret, meta };
+		const record = await this.readMetaRecord(owner);
+		if (!record)
+			throw new Error(
+				"Key metadata is missing; delete the stored key (mob keys delete) and import it again",
+			);
+		return { key: secret, meta: record.meta };
+	}
+	async delete(owner: string): Promise<boolean> {
+		const service = await this.service();
+		await this.privateDirectories();
+		await this.migrate(service, owner, await this.metaKeyId(owner));
+		const removed = await this.remove(service, owner);
+		const path = this.metaPath(owner);
+		const hadMeta = (await readPrivate(path).catch(() => "")) !== null;
+		await unlink(path).catch((error) => {
+			if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+		});
+		return removed || hadMeta;
+	}
+	async checkWritable(owner: string): Promise<void> {
+		const service = await this.service(true);
+		await this.privateDirectories();
+		await assertPrivateTarget(this.metaPath(owner));
+		await this.probe(service, owner);
 	}
 }
+
+/** Quotes one argument for the `security -i` command parser, which reads
+ * double-quoted words with backslash escapes, one command per line. */
+function securityWord(value: string): string {
+	if (/[\0\r\n]/.test(value))
+		throw new Error("Invalid credential store argument");
+	return `"${value.replace(/[\\"]/g, "\\$&")}"`;
+}
+
+// errSecItemNotFound: the only `security` failure that means "no such item".
+const keychainMissing = (result: RunResult) => result.code === 44;
 
 class KeychainStore extends CommandStore {
 	readonly backend = "keychain" as const;
@@ -343,49 +417,77 @@ class KeychainStore extends CommandStore {
 	) {
 		super(home, run, defaultHome);
 	}
-	private async base(owner: string, create = false) {
-		return ["-s", await this.service(create), "-a", ownerId(owner)];
-	}
-	async put(owner: string, secret: string, meta: KeyMeta) {
-		if (!isApiKey(secret)) throw new Error("Invalid Mobius API key");
-		// macOS security accepts the password only on argv. This creates a brief
-		// same-user process-list exposure while this single child runs.
-		await this.execute([
-			this.command,
-			"add-generic-password",
-			"-U",
-			...(await this.base(owner, true)),
-			"-w",
-			secret,
-		]);
-		await this.writeMeta(owner, meta);
-	}
-	async get(owner: string) {
-		return this.finishGet(
-			owner,
-			await this.execute(
-				[
-					this.command,
-					"find-generic-password",
-					"-w",
-					...(await this.base(owner)),
-				],
-				undefined,
-				true,
-			),
+	protected lookup(service: string, owner: string) {
+		return this.execute(
+			[
+				this.command,
+				"find-generic-password",
+				"-w",
+				"-s",
+				service,
+				"-a",
+				ownerId(owner),
+			],
+			undefined,
+			keychainMissing,
 		);
 	}
-	async delete(owner: string) {
-		if (!(await this.get(owner))) return false;
-		await this.execute([
-			this.command,
-			"delete-generic-password",
-			...(await this.base(owner)),
-		]);
-		await this.deleteMeta(owner);
-		return true;
+	protected async store(service: string, owner: string, secret: string) {
+		// `security -i` reads the command from stdin, so the key is on no
+		// process's argv. It exits with the last command's status and can
+		// report success for a failed add, so the item is read back.
+		const result = await this.run(
+			[this.command, "-i"],
+			`add-generic-password -U -s ${securityWord(service)} -a ${securityWord(ownerId(owner))} -w ${securityWord(secret)}\n`,
+		);
+		if (result.code !== 0 || /\breturned -?\d+/.test(result.stderr))
+			throw new Error(
+				redactKey(
+					`Credential store failed (${result.code}): ${result.stderr.replaceAll(secret, "…").trim() || "no detail"}`,
+				),
+			);
+		if ((await this.lookup(service, owner)) !== secret)
+			throw new Error(
+				"Credential store did not keep the key (read-back mismatch)",
+			);
+	}
+	protected async remove(service: string, owner: string) {
+		return (
+			(await this.execute(
+				[
+					this.command,
+					"delete-generic-password",
+					"-s",
+					service,
+					"-a",
+					ownerId(owner),
+				],
+				undefined,
+				keychainMissing,
+			)) !== null
+		);
+	}
+	protected async probe(service: string, owner: string) {
+		// Without -w: attributes only, never the secret.
+		await this.execute(
+			[
+				this.command,
+				"find-generic-password",
+				"-s",
+				service,
+				"-a",
+				ownerId(owner),
+			],
+			undefined,
+			keychainMissing,
+		);
 	}
 }
+
+// secret-tool lookup exits 1 with no output for a missing item; a locked
+// collection or a missing D-Bus session prints an error.
+const secretToolMissing = (result: RunResult) =>
+	result.code === 1 && !result.stdout.trim() && !result.stderr.trim();
 
 class SecretToolStore extends CommandStore {
 	readonly backend = "secret-tool" as const;
@@ -399,38 +501,36 @@ class SecretToolStore extends CommandStore {
 	}
 	// A distinct service value, not an extra attribute: a lookup matches items
 	// that carry more attributes than it names.
-	private async attrs(owner: string, create = false) {
-		return ["service", await this.service(create), "owner", ownerId(owner)];
+	private attrs(service: string, owner: string) {
+		return ["service", service, "owner", ownerId(owner)];
 	}
-	async put(owner: string, secret: string, meta: KeyMeta) {
-		if (!isApiKey(secret)) throw new Error("Invalid Mobius API key");
+	protected lookup(service: string, owner: string) {
+		return this.execute(
+			[this.command, "lookup", ...this.attrs(service, owner)],
+			undefined,
+			secretToolMissing,
+		);
+	}
+	protected async store(service: string, owner: string, secret: string) {
 		await this.execute(
 			[
 				this.command,
 				"store",
 				"--label",
 				"mstack Mobius API key",
-				...(await this.attrs(owner, true)),
+				...this.attrs(service, owner),
 			],
 			`${secret}\n`,
 		);
-		await this.writeMeta(owner, meta);
 	}
-	async get(owner: string) {
-		return this.finishGet(
-			owner,
-			await this.execute(
-				[this.command, "lookup", ...(await this.attrs(owner))],
-				undefined,
-				true,
-			),
-		);
-	}
-	async delete(owner: string) {
-		if (!(await this.get(owner))) return false;
-		await this.execute([this.command, "clear", ...(await this.attrs(owner))]);
-		await this.deleteMeta(owner);
+	protected async remove(service: string, owner: string) {
+		// clear succeeds whether or not an item matched.
+		if ((await this.lookup(service, owner)) === null) return false;
+		await this.execute([this.command, "clear", ...this.attrs(service, owner)]);
 		return true;
+	}
+	protected async probe(service: string, owner: string) {
+		await this.lookup(service, owner);
 	}
 }
 

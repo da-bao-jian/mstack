@@ -1,9 +1,8 @@
 import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { homedir } from "node:os";
 import { join } from "node:path";
 import { ProposalStore } from "@mstack/proposals";
-import { readConfig } from "./config.ts";
+import { configHome, readConfig } from "./config.ts";
 
 function deny(reason: string): never {
 	throw new Error(reason);
@@ -203,10 +202,11 @@ function chosenAnswers(content: unknown): string[] {
 export async function signGuard(
 	raw: string,
 	err: (text: string) => void,
-	home = process.env.MOB_HOME ?? join(homedir(), ".mob"),
+	home?: string,
 ): Promise<number> {
 	try {
-		await check(raw, home);
+		// The CLI's own home rule: an empty MOB_HOME is unset, a relative one blocks.
+		await check(raw, home ?? configHome());
 		return 0;
 	} catch (error) {
 		err(

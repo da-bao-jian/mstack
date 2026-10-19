@@ -1,7 +1,15 @@
 import { afterAll, expect, test } from "bun:test";
 import {
+	createCipheriv,
+	createDecipheriv,
+	randomBytes,
+	scryptSync,
+} from "node:crypto";
+import {
 	chmod,
+	mkdir,
 	mkdtemp,
+	readdir,
 	readFile,
 	rm,
 	stat,
@@ -11,6 +19,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+	type Hex,
 	recoverMessageAddress,
 	recoverTypedDataAddress,
 	type TypedDataDefinition,
@@ -39,7 +48,8 @@ test("create encrypts a new key in a 0600 file and signs text and typed data", a
 	const raw = await readFile(file, "utf8");
 	expect(raw).not.toContain(password);
 	const value = JSON.parse(raw);
-	expect(value.kdf).toMatchObject({ name: "scrypt", N: 32768, r: 8, p: 1 });
+	expect(value.version).toBe(2);
+	expect(value.kdf).toMatchObject({ name: "scrypt", N: 131072, r: 8, p: 1 });
 	expect(Buffer.from(value.kdf.salt, "base64")).toHaveLength(32);
 	expect(Object.keys(value.crypto).sort()).toEqual([
 		"authTag",
@@ -135,9 +145,179 @@ test("invalid key and mismatched confirmation fail without writing", async () =>
 		importKeystore(home, async () => "invalid secret"),
 	).rejects.toThrow("Invalid private key");
 	let i = 0;
-	await expect(createKeystore(home, async () => String(i++))).rejects.toThrow(
-		"do not match",
-	);
+	await expect(
+		createKeystore(home, async () => `long passphrase ${i++}`),
+	).rejects.toThrow("do not match");
+});
+test("a new or imported keystore needs a passphrase of at least 12 characters", async () => {
+	const isolated = await mkdtemp(join(tmpdir(), "mstack-keystore-short-"));
+	try {
+		for (const short of ["", "short", "elevenchars", "ünïcödé-ñ1"]) {
+			await expect(createKeystore(isolated, async () => short)).rejects.toThrow(
+				"at least 12 characters",
+			);
+			const inputs = [generatePrivateKey(), short, short];
+			await expect(
+				importKeystore(isolated, async () => inputs.shift() ?? ""),
+			).rejects.toThrow("at least 12 characters");
+		}
+		expect(await listKeystores(isolated)).toEqual([]);
+		expect(await createKeystore(isolated, async () => "twelve chars")).toMatch(
+			/^0x/,
+		);
+	} finally {
+		await rm(isolated, { recursive: true, force: true });
+	}
+});
+
+/** A keystore file exactly as version 1 wrote it (scrypt N = 2^15). */
+function versionOne(privateKey: Hex, passphrase: string) {
+	const address = privateKeyToAccount(privateKey).address;
+	const salt = randomBytes(32),
+		iv = randomBytes(12);
+	const key = scryptSync(passphrase, salt, 32, {
+		N: 32768,
+		r: 8,
+		p: 1,
+		maxmem: 128 * 1024 * 1024,
+	});
+	const cipher = createCipheriv("aes-256-gcm", key, iv);
+	cipher.setAAD(Buffer.from(`mstack-keystore-v1:${address.toLowerCase()}`));
+	const ciphertext = Buffer.concat([
+		cipher.update(Buffer.from(privateKey.slice(2), "hex")),
+		cipher.final(),
+	]);
+	return {
+		address,
+		value: {
+			version: 1,
+			address,
+			kdf: {
+				name: "scrypt",
+				salt: salt.toString("base64"),
+				N: 32768,
+				r: 8,
+				p: 1,
+			},
+			crypto: {
+				iv: iv.toString("base64"),
+				authTag: cipher.getAuthTag().toString("base64"),
+				ciphertext: ciphertext.toString("base64"),
+			},
+		},
+	};
+}
+
+test("a version 1 keystore still unlocks and is rewritten atomically as version 2", async () => {
+	const isolated = await mkdtemp(join(tmpdir(), "mstack-keystore-v1-"));
+	try {
+		const privateKey = generatePrivateKey();
+		const { address, value } = versionOne(privateKey, password);
+		await mkdir(join(isolated, "keystore"), { recursive: true, mode: 0o700 });
+		await chmod(isolated, 0o700);
+		const file = join(isolated, "keystore", `${address.toLowerCase()}.json`);
+		await writeFile(file, JSON.stringify(value), { mode: 0o600 });
+		await expect(
+			unlockKeystore(isolated, address, async () => "wrong passphrase"),
+		).rejects.toThrow("Cannot unlock");
+		expect(JSON.parse(await readFile(file, "utf8")).version).toBe(1);
+		const signer = await unlockKeystore(isolated, address, secret);
+		const message = "v1 upgrade";
+		expect(
+			await recoverMessageAddress({
+				message,
+				signature: await signer.signMessage({ message }),
+			}),
+		).toBe(address);
+		const upgraded = JSON.parse(await readFile(file, "utf8"));
+		expect(upgraded.version).toBe(2);
+		expect(upgraded.kdf).toMatchObject({ N: 131072, r: 8, p: 1 });
+		expect(upgraded.kdf.salt).not.toBe(value.kdf.salt);
+		expect((await stat(file)).mode & 0o777).toBe(0o600);
+		expect(await readdir(join(isolated, "keystore"))).toEqual([
+			`${address.toLowerCase()}.json`,
+		]);
+		expect(JSON.stringify(upgraded)).not.toContain(privateKey.slice(2));
+		expect(await listKeystores(isolated)).toEqual([address]);
+		expect(
+			await (await unlockKeystore(isolated, address, secret)).address(),
+		).toBe(address);
+	} finally {
+		await rm(isolated, { recursive: true, force: true });
+	}
+});
+
+test("version 2 binds the format and every KDF parameter into the associated data", async () => {
+	const isolated = await mkdtemp(join(tmpdir(), "mstack-keystore-v2-"));
+	try {
+		const address = await createKeystore(isolated, secret);
+		const file = join(isolated, "keystore", `${address.toLowerCase()}.json`);
+		const raw = await readFile(file, "utf8");
+		const value = JSON.parse(raw);
+		const key = scryptSync(
+			password,
+			Buffer.from(value.kdf.salt, "base64"),
+			32,
+			{
+				N: 131072,
+				r: 8,
+				p: 1,
+				maxmem: 256 * 1024 * 1024,
+			},
+		);
+		const open = (aad: string) => {
+			const cipher = createDecipheriv(
+				"aes-256-gcm",
+				key,
+				Buffer.from(value.crypto.iv, "base64"),
+			);
+			cipher.setAAD(Buffer.from(aad));
+			cipher.setAuthTag(Buffer.from(value.crypto.authTag, "base64"));
+			cipher.update(Buffer.from(value.crypto.ciphertext, "base64"));
+			cipher.final();
+		};
+		const lower = address.toLowerCase();
+		open(
+			`mstack-keystore-v2:${lower}:scrypt:N=131072:r=8:p=1:salt=${value.kdf.salt}`,
+		);
+		for (const aad of [
+			`mstack-keystore-v1:${lower}`,
+			`mstack-keystore-v2:${lower}`,
+			`mstack-keystore-v2:${lower}:scrypt:N=32768:r=8:p=1:salt=${value.kdf.salt}`,
+		])
+			expect(() => open(aad)).toThrow();
+		for (const kdf of [
+			{ ...value.kdf, N: 32768 },
+			{ ...value.kdf, N: 262144 },
+			{ ...value.kdf, r: 16 },
+			{ ...value.kdf, p: 2 },
+		]) {
+			await writeFile(file, JSON.stringify({ ...value, kdf }));
+			await expect(unlockKeystore(isolated, address, secret)).rejects.toThrow(
+				"Invalid keystore metadata",
+			);
+		}
+		await writeFile(
+			file,
+			JSON.stringify({
+				...value,
+				kdf: { ...value.kdf, salt: randomBytes(32).toString("base64") },
+			}),
+		);
+		await expect(unlockKeystore(isolated, address, secret)).rejects.toThrow(
+			"Cannot unlock",
+		);
+		await writeFile(file, JSON.stringify({ ...value, version: 1 }));
+		await expect(unlockKeystore(isolated, address, secret)).rejects.toThrow(
+			"Invalid keystore metadata",
+		);
+		await writeFile(file, raw);
+		expect(
+			await (await unlockKeystore(isolated, address, secret)).address(),
+		).toBe(address);
+	} finally {
+		await rm(isolated, { recursive: true, force: true });
+	}
 });
 test("keystore refuses symlinks", async () => {
 	const isolated = await mkdtemp(join(tmpdir(), "mstack-keystore-link-"));

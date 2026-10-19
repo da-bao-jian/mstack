@@ -121,3 +121,42 @@ test("a malformed create response cannot put the one-time key in an error", asyn
 		expect(JSON.stringify(error)).not.toContain(secret);
 	}
 });
+
+/** True when any 16-character run of the secret survives in the text. */
+function leaksSecret(text: string, secret: string): boolean {
+	for (let i = 0; i + 16 <= secret.length; i++)
+		if (text.includes(secret.slice(i, i + 16))) return true;
+	return false;
+}
+
+test("a key creation answer is never echoed, even when the key crosses the excerpt cut", async () => {
+	const uuid = "00000000-0000-4000-8000-000000000001";
+	const secret = "0123456789abcdef".repeat(4);
+	for (let pad = 100; pad <= 220; pad += 3) {
+		// Schema drift: the record comes first and fails validation.
+		const raw = JSON.stringify({
+			record: { id: uuid, name: "d".repeat(pad), max_size_usd: 1000 },
+			key: `mobius_${uuid}.${secret}`,
+		});
+		const client = new MobiusClient({
+			version: "0.3.0",
+			limit: async () => {},
+			fetch: async () => new Response(raw, { status: 200 }),
+		});
+		const error = await client
+			.write("/api/keys/create", {
+				owner,
+				name: "terminal",
+				venues: ["hl"],
+				nonce: "00000000-0000-4000-8000-000000000001",
+				timestamp,
+				signature: `0x${"1".repeat(130)}`,
+			})
+			.catch((caught) => caught);
+		expect(error).toBeInstanceOf(Error);
+		expect(String(error)).toContain("body not shown for key creation");
+		expect(String(error)).not.toContain("ddd");
+		expect(leaksSecret(String(error), secret)).toBe(false);
+		expect(leaksSecret(JSON.stringify(error), secret)).toBe(false);
+	}
+});

@@ -76,7 +76,7 @@ See `docs/MOBIUS-ASKS.md`. Every package below works against the API as it is to
 ## 5. Security notes
 
 - After import the CLI never prints the key: not in cards, Proposal files, logs or errors. Errors redact `mobius_<uuid>.<secret>` to `mobius_<uuid>…`. The one exposure is the user's own paste in the chat, accepted above.
-- The agent puts the already-pasted key once in a single-quoted shell-builtin `printf` input and pipes it to `mob keys import --stdin`. The key is not on `mob`'s argv or in a process list. The command remains part of the accepted agent session record. An unverified import needs an explicit user request.
+- The agent puts the already-pasted key once in a single-quoted shell-builtin `printf` input and pipes it to `mob keys import --stdin`. `mob` never puts the key on its own or a child's argv, but the host shell's command line (for example `/bin/zsh -c '…'`) carries it while that one command runs, visible to same-user process listings. That command remains part of the accepted agent session record. An unverified import needs an explicit user request.
 - Idempotency keys are persisted in the Proposal before the first send, so a retry never duplicates a position.
 - A leaked key is bounded by its venues and cap and cannot move funds. `mob keys revoke` and the API page end it.
 - `auto` policy is opt-in and prints a warning line on every home screen while active.

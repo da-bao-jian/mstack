@@ -32,4 +32,6 @@ export interface KeyStore {
 	get(owner: string): Promise<StoredKey | null>;
 	delete(owner: string): Promise<boolean>;
 	describe(owner: string): Promise<KeyDescription | null>;
+	/** Throws when a put would fail: read-only, locked, or unavailable. */
+	checkWritable(owner: string): Promise<void>;
 }

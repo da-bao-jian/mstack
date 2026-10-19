@@ -4,6 +4,7 @@ import {
 	ApiKeyScope,
 	ApiRateLimited,
 	IdempotencyConflict,
+	redactExcerpt,
 	redactKey,
 	StrategyApiClient,
 	StrategyApiUnavailable,
@@ -206,4 +207,50 @@ test("transport and malformed JSON failures redact the configured key", async ()
 			expect(JSON.stringify(error)).not.toContain(key);
 		}
 	}
+});
+
+/** True when any 16-character run of the secret survives in the text. */
+function leaksSecret(text: string, secret: string): boolean {
+	for (let i = 0; i + 16 <= secret.length; i++)
+		if (text.includes(secret.slice(i, i + 16))) return true;
+	return false;
+}
+
+test("a key that crosses the 240-character excerpt cut leaves no run of its secret", async () => {
+	const secret = "0123456789abcdef".repeat(4);
+	const uuid = "00000000-0000-4000-8000-000000000001";
+	for (const leaked of [
+		`mobius_${uuid}.${secret}`,
+		`mobius_${uuid}.${secret.slice(1)}`,
+	])
+		for (let pad = 140; pad <= 250; pad++) {
+			const raw = `not-json ${"x".repeat(pad)}${leaked} tail`;
+			expect(leaksSecret(redactExcerpt(raw), secret)).toBe(false);
+			const client = new StrategyApiClient({
+				base: "https://api.example",
+				key,
+				version: "0.3.0",
+				fetch: async () => new Response(raw, { status: 502 }),
+			});
+			const error = await client.listTasks().catch((caught) => caught);
+			expect(error).toBeInstanceOf(Error);
+			expect(leaksSecret(String(error), secret)).toBe(false);
+			expect(leaksSecret(JSON.stringify(error), secret)).toBe(false);
+		}
+});
+
+test("the Strategy API client sends a key only over HTTPS or to loopback", () => {
+	for (const base of [
+		"https://api.example",
+		"http://127.0.0.1:4000",
+		"http://[::1]:4000",
+		"http://localhost:4000",
+	])
+		expect(new StrategyApiClient({ base, key, version: "0.3.0" }).base).toBe(
+			base,
+		);
+	for (const base of ["http://203.0.113.9", "http://api.example", "ftp://x"])
+		expect(
+			() => new StrategyApiClient({ base, key, version: "0.3.0" }),
+		).toThrow("HTTPS");
 });

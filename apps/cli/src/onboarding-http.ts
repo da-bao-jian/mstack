@@ -1,3 +1,4 @@
+import { redactExcerpt, redactKey } from "@mstack/mobius-api";
 import {
 	ApiError,
 	type Fetch,
@@ -71,14 +72,14 @@ export async function request(
 		data = JSON.parse(raw);
 	} catch {
 		throw new ApiError(
-			`HTTP ${response.status}: malformed JSON: ${raw.slice(0, 240)}`,
+			`HTTP ${response.status}: malformed JSON: ${redactExcerpt(raw)}`,
 			response.status,
-			raw,
+			redactKey(raw),
 		);
 	}
 	if (!response.ok)
 		throw new ApiError(
-			`HTTP ${response.status}: ${raw}`,
+			`HTTP ${response.status}: ${redactKey(raw)}`,
 			response.status,
 			data,
 		);

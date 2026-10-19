@@ -452,9 +452,9 @@ test("onboarding and key status tools return safe read-only state", async () => 
 	const secret = `mobius_01234567-89ab-cdef-0123-456789abcdef.${"ab".repeat(32)}`;
 	await setConfig("owner", owner, statusHome);
 	await setConfig("key_store", "file", statusHome);
-	await setConfig("auth_base", "http://auth.test", statusHome);
-	await setConfig("api_base", "http://funding.test", statusHome);
-	await setConfig("strategy_api_base", "http://strategy.test", statusHome);
+	await setConfig("auth_base", "https://auth.test", statusHome);
+	await setConfig("api_base", "https://funding.test", statusHome);
+	await setConfig("strategy_api_base", "https://strategy.test", statusHome);
 	const fetch = async (input: string | URL | Request, init?: RequestInit) => {
 		const url = new URL(String(input));
 		if (url.pathname === "/legal/acceptance")

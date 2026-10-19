@@ -1,5 +1,15 @@
 import { afterEach, expect, test } from "bun:test";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import {
+	chmod,
+	lstat,
+	mkdir,
+	mkdtemp,
+	readdir,
+	readFile,
+	rm,
+	symlink,
+	writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildAgentGrantMessage } from "@mstack/mobius-client";
@@ -8,6 +18,7 @@ import { importKeystore } from "@mstack/signers";
 import { verifyMessage } from "viem";
 import { fakeOwnerKey } from "../../../packages/mobius-api/test/fake-api.ts";
 import { setConfig } from "../src/config.ts";
+import { agentKey, grantCommand } from "../src/grant-command.ts";
 import { run } from "../src/run.ts";
 import { loopbackFetch } from "./fixtures/fake-funding-server.ts";
 
@@ -75,6 +86,91 @@ function fakeGrantServer(
 	servers.push({ stop: () => server.stop(true) });
 	return { base: `http://127.0.0.1:${server.port}`, grants, revoked };
 }
+
+const createArgs = [
+	"grant",
+	"create",
+	"--scopes",
+	"open",
+	"--max-notional",
+	"100",
+	"--max-tasks",
+	"1",
+	"--venues",
+	"hl,aster",
+];
+
+test("concurrent grant creates name the one agent key on disk, kept 0600 in a 0700 directory", async () => {
+	const h = await home();
+	const rt = {
+		home: h.dir,
+		now: Date.now,
+		// The probe answers at once, so every run reaches the agent key together.
+		fetch: async () => Response.json([]),
+		out: () => {},
+		err: () => {},
+		stdoutIsTTY: false,
+	};
+	const values = {
+		scopes: "open",
+		"max-notional": "100",
+		"max-tasks": "1",
+		venues: "hl,aster",
+	};
+	await Promise.all(
+		Array.from({ length: 4 }, () => grantCommand(["create"], values, rt)),
+	);
+	const file = join(h.dir, "grants", `${h.owner.toLowerCase()}.agent.json`);
+	const onDisk = JSON.parse(await readFile(file, "utf8")).address;
+	const agents = (await new ProposalStore(h.dir).list()).map(
+		(p) => p.submit.body.agent,
+	);
+	expect(agents).toEqual([onDisk, onDisk, onDisk, onDisk]);
+	expect((await lstat(file)).mode & 0o777).toBe(0o600);
+	expect((await lstat(join(h.dir, "grants"))).mode & 0o777).toBe(0o700);
+	expect(await readdir(join(h.dir, "grants"))).toEqual([
+		`${h.owner.toLowerCase()}.agent.json`,
+	]);
+});
+
+test("racing agent key loads create one key and every caller gets it", async () => {
+	const h = await home();
+	const keys = await Promise.all(
+		Array.from({ length: 8 }, () => agentKey(h.dir, h.owner)),
+	);
+	const file = join(h.dir, "grants", `${h.owner.toLowerCase()}.agent.json`);
+	const onDisk = JSON.parse(await readFile(file, "utf8"));
+	for (const key of keys) {
+		expect(key.address).toBe(onDisk.address);
+		expect(key.privateKey).toBe(onDisk.privateKey);
+	}
+	expect(await readdir(join(h.dir, "grants"))).toEqual([
+		`${h.owner.toLowerCase()}.agent.json`,
+	]);
+});
+
+test("grant create refuses a symlinked or loosened agent key file and grants directory", async () => {
+	const h = await home();
+	const api = fakeGrantServer(h.owner, { supported: true });
+	await setConfig("api_base", api.base, h.dir);
+	const grants = join(h.dir, "grants");
+	const file = join(grants, `${h.owner.toLowerCase()}.agent.json`);
+	await mkdir(grants, { mode: 0o700 });
+	await writeFile(join(h.dir, "planted.json"), "{}", { mode: 0o600 });
+	await symlink(join(h.dir, "planted.json"), file);
+	expect(await h.invoke(createArgs)).toBe(1);
+	expect(h.err.join("\n")).toContain("symlink is not allowed");
+	await rm(file);
+	expect(await h.invoke(createArgs)).toBe(0);
+	await chmod(file, 0o644);
+	expect(await h.invoke(createArgs)).toBe(1);
+	expect(h.err.join("\n")).toContain("expected mode 0600");
+	await chmod(file, 0o600);
+	await chmod(grants, 0o755);
+	expect(await h.invoke(createArgs)).toBe(1);
+	expect(h.err.join("\n")).toContain("expected mode 0700");
+	expect(await readFile(join(h.dir, "planted.json"), "utf8")).toBe("{}");
+});
 
 async function home() {
 	const dir = await mkdtemp(join(tmpdir(), "mstack-grant-"));

@@ -95,9 +95,21 @@ For agent-mediated import, paste the key into chat. The chat transcript and agen
 printf '%s' 'mobius_…' | mob keys import --stdin --name 'agent' --venues 'hl,lighter' --max-size '5000'
 ```
 
-Replace `mobius_…` only in that import command. Because `printf` is a shell builtin, the key does not appear in a process list or on `mob`'s argv. Never use `echo`, a file, or an environment variable. If verification reports `could not verify; not stored`, stop and report that the Strategy API is unreachable. Use `--unverified` only after an explicit user request.
+Replace `mobius_…` only in that import command. `printf` is a shell builtin, so no `printf` process carries the key, and `mob` never puts the key on its own argv or on the argv of the `security` or `secret-tool` child it runs. The host shell that runs the command (for example `/bin/zsh -c '…'`) does carry the key on its own command line, where same-user process listings can see it, for the duration of that one command. That exposure is part of the chat-paste trade-off. Never use `echo`, a file, or an environment variable. If verification reports `could not verify; not stored`, stop and report that the Strategy API is unreachable. Use `--unverified` only after an explicit user request.
 
 A human can run `mob keys import` and paste into the hidden `/dev/tty` prompt. `mob keys show` reports prefix, backend, scope, cap, and verification. `mob keys delete` removes only the local copy. `mob keys list` and `mob keys revoke <uuid>` are wallet Proposals; revoke ends the server key. Run `mob onboard` again and require its `Ready · …` line.
+
+The CLI sends the stored key only over HTTPS, or plain HTTP to `127.0.0.1`, `::1`, or `localhost`, and only to the API base it was verified against. If `strategy_api_base` changes after import, commands that need the key stop and send nothing. Set the base back, or run `mob keys delete` and import a key for the new base.
+
+Keychain and Secret Service items are named per home. `~/.mob` uses the service `mstack.mobius-api`; any other `MOB_HOME` uses `mstack.mobius-api:<id>`, where `<id>` is the first 16 hex characters of the SHA-256 of the home's real path. A non-default home that stored its key under the old shared name moves that item on its next read, but only when the item's key id matches the home's metadata. Metadata from before this check has no key id, so that home reports no key; import the key again. `mob keys delete` removes the item even when its metadata is missing. Deleting a home directory leaves its item behind. To find and remove such an orphan on macOS:
+
+```sh
+security dump-keychain | grep '"mstack.mobius-api:'
+printf '%s' '/real/path/of/old/home' | shasum -a 256 | cut -c1-16
+security delete-generic-password -s 'mstack.mobius-api:<id>'
+```
+
+On Linux, run `secret-tool clear service 'mstack.mobius-api:<id>'`. Neither command prints the key.
 
 ## Native onboarding and binding repair
 

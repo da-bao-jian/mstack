@@ -26,6 +26,16 @@ The browser and WalletConnect backends leave the owner key in the wallet.
 The optional local keystore encrypts a key on the user's machine; only a human
 terminal may supply its key or passphrase through `/dev/tty`.
 Agents must never receive those secrets or run keystore commands.
+New keystores use scrypt N = 2^17 with the parameters bound into the encryption, and need
+a passphrase of at least 12 characters; older files are rewritten after their next unlock.
+
+The scoped Mobius API key lives in Keychain, Secret Service, or a private `0600` file,
+named per home. `mob` never puts it on any process's argv: Keychain writes go through
+`security -i` on stdin and are read back. When an agent imports a pasted key with
+`printf '%s' '…' | mob keys import --stdin`, the host shell's own command line (for example
+`/bin/zsh -c '…'`) carries the key while that one command runs, visible to same-user process
+listings; this is part of the documented chat-paste trade-off. The CLI sends the key only
+over HTTPS (plain HTTP only to loopback) and only to the API base it was verified against.
 
 ## Signing boundary
 

@@ -1,5 +1,11 @@
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
+import {
+	atomicPrivate,
+	createPrivate,
+	privateDirectory,
+	readPrivate,
+} from "@mstack/keys";
 import {
 	AGENT_GRANT_SCOPES,
 	type AgentGrantBody,
@@ -47,31 +53,56 @@ interface AgentKey {
 	privateKey: Hex;
 }
 
-/** The local agent key for an owner; generated once, never printed. */
-async function agentKey(home: string, owner: string): Promise<AgentKey> {
+async function grantsPrivateDirectory(home: string): Promise<string> {
+	await privateDirectory(home);
 	const directory = grantsDirectory(home);
-	await mkdir(directory, { recursive: true, mode: 0o700 });
-	const path = join(directory, `${owner.toLowerCase()}.agent.json`);
+	await privateDirectory(directory);
+	return directory;
+}
+
+function parseAgentKey(raw: string, path: string): AgentKey {
+	let value: Partial<AgentKey>;
 	try {
-		const raw = JSON.parse(await readFile(path, "utf8")) as Partial<AgentKey>;
-		if (
-			typeof raw.privateKey !== "string" ||
-			!/^0x[0-9a-fA-F]{64}$/.test(raw.privateKey)
-		)
-			throw new Error(`Invalid agent key record at ${path}`);
-		const account = privateKeyToAccount(raw.privateKey as Hex);
-		return { address: account.address, privateKey: raw.privateKey as Hex };
-	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+		value = JSON.parse(raw) as Partial<AgentKey>;
+	} catch {
+		throw new Error(`Invalid agent key record at ${path}`);
 	}
-	const privateKey = generatePrivateKey();
-	const account = privateKeyToAccount(privateKey);
-	await writeFile(
-		path,
-		`${JSON.stringify({ address: account.address, privateKey }, null, 2)}\n`,
-		{ mode: 0o600 },
+	if (
+		typeof value.privateKey !== "string" ||
+		!/^0x[0-9a-fA-F]{64}$/.test(value.privateKey)
+	)
+		throw new Error(`Invalid agent key record at ${path}`);
+	const account = privateKeyToAccount(value.privateKey as Hex);
+	return { address: account.address, privateKey: value.privateKey as Hex };
+}
+
+/**
+ * The local agent key for an owner; generated once, never printed. This is
+ * the only function that stores or loads it, so moving it to the OS keychain
+ * (PRD 6.6; still open) changes nothing else. The file is 0600 in the 0700
+ * grants directory, never a symlink, and created exclusively: when two
+ * `grant create` runs race, the second uses the first one's key, so every
+ * staged grant names the key on disk.
+ */
+export async function agentKey(home: string, owner: string): Promise<AgentKey> {
+	const path = join(
+		await grantsPrivateDirectory(home),
+		`${owner.toLowerCase()}.agent.json`,
 	);
-	return { address: account.address, privateKey };
+	const existing = await readPrivate(path);
+	if (existing !== null) return parseAgentKey(existing, path);
+	const privateKey = generatePrivateKey();
+	const { address } = privateKeyToAccount(privateKey);
+	if (
+		await createPrivate(
+			path,
+			`${JSON.stringify({ address, privateKey }, null, 2)}\n`,
+		)
+	)
+		return { address, privateKey };
+	const winner = await readPrivate(path);
+	if (winner === null) throw new Error(`${path}: agent key disappeared`);
+	return parseAgentKey(winner, path);
 }
 
 interface LocalGrant {
@@ -112,8 +143,7 @@ export async function recordGrantAnswer(
 	p: Proposal,
 	answer: Json,
 ): Promise<void> {
-	const directory = grantsDirectory(rt.home);
-	await mkdir(directory, { recursive: true, mode: 0o700 });
+	const directory = await grantsPrivateDirectory(rt.home);
 	if (p.submit.onAnswer === "store-agent-grant") {
 		const grant = object(object(answer).grant);
 		const grantId = String(grant.grantId);
@@ -140,10 +170,9 @@ export async function recordGrantAnswer(
 			expiresAt: new Date(Number(p.submit.body.expires) * 1000).toISOString(),
 			revokedAt: null,
 		};
-		await writeFile(
+		await atomicPrivate(
 			join(directory, `${grantId}.json`),
 			`${JSON.stringify(record, null, 2)}\n`,
-			{ mode: 0o600 },
 		);
 		return;
 	}
@@ -156,10 +185,9 @@ export async function recordGrantAnswer(
 		for (const grant of await localGrants(rt.home))
 			if (getAddress(grant.agent) === agent && !grant.revokedAt) {
 				grant.revokedAt = new Date(rt.now()).toISOString();
-				await writeFile(
+				await atomicPrivate(
 					join(directory, `${grant.grantId}.json`),
 					`${JSON.stringify(grant, null, 2)}\n`,
-					{ mode: 0o600 },
 				);
 			}
 	}
