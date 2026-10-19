@@ -6,9 +6,9 @@ Each item has a fallback in mstack, listed so nothing here blocks the client wor
 
 Decided against a localhost receiver. The user copies the key from the page and pastes it into the agent chat. One optional nicety on the page: under the revealed key, a line "Using mstack? Paste this key into your agent chat; it stores the key and never shows it again." No other change.
 
-## B. Deploy API 1.2.0
+## B. (done 2026-10-19) Deploy API 1.2.0
 
-`api.mob.exchange/openapi.json` serves 1.1.0 without `/v1/venue-bindings/*`. PR #1460 is merged to `dev`. mstack's native path targets 1.2.0; its tests run against a fake until the deploy.
+`api.mob.exchange/openapi.json` serves 1.2.0 with `/v1/venue-bindings/prepare`, `/v1/venue-bindings/{bindingId}`, and `/v1/venue-bindings/{bindingId}/submit`, which mstack's native onboarding uses. Unit tests still use a fake server.
 
 ## C. Key expiry and last-used
 
