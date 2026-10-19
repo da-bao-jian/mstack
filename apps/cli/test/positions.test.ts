@@ -158,9 +158,10 @@ test("CLI failures stage nothing; readiness error is verbatim; snapshot is never
 		for (const [key, value] of [
 			["owner", owner],
 			["signer", "keystore"],
-			["api_base", server.base],
 		])
 			expect(await invoke(["config", "set", key, value])).toBe(0);
+		// api_base needs the human's terminal through the CLI; write it directly.
+		await setConfig("api_base", server.base, home);
 		const open = [
 			"open",
 			"BTC",

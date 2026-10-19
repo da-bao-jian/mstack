@@ -181,8 +181,15 @@ test("key_store config defaults to auto and validates backend names", async () =
 	const home = await mkdtemp(join(tmpdir(), "mstack-cli-key-config-"));
 	homes.push(home);
 	expect((await invoke(home, ["config", "get", "key_store"])).out).toBe("auto");
+	// key_store is a protected key: the human's terminal confirms it.
 	expect(
-		(await invoke(home, ["config", "set", "key_store", "secret-tool"])).out,
+		(
+			await invoke(home, ["config", "set", "key_store", "secret-tool"], {
+				stdinIsTTY: true,
+				stdoutIsTTY: true,
+				readSecret: async () => "yes",
+			})
+		).out,
 	).toBe("secret-tool");
 	const invalid = await invoke(home, ["config", "set", "key_store", "memory"]);
 	expect(invalid.code).toBe(1);

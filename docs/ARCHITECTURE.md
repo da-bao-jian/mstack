@@ -46,7 +46,8 @@ manifests; standalone downloaded upgrades select the latest release.
 The release workflow produces five platform binaries, `VERSION`, and `SHA256SUMS`.
 It verifies checksums before publication. The installer and downloaded upgrade path
 verify the selected asset before replacing a cache file or command link. Releases
-use HTTPS and SHA-256, without platform signatures or macOS notarization.
+use HTTPS and SHA-256, without platform signatures or macOS notarization; both
+download paths refuse a non-https base except a loopback test server.
 W14 and W16 add no packages; see [third-party notices](../THIRD_PARTY_NOTICES.md).
 
 `packages/funding` fetches and validates public venue data. `packages/opportunities`
@@ -64,8 +65,9 @@ expiry. API Proposals pin the Strategy API body and an idempotency key before
 the first send. Policy, expiry, owner, and single-use checks fail closed.
 Submission does not prove execution.
 
-Manual policy requires the latest user message to name the exact id before
-`mob submit` or browser signing. Auto policy permits only API Proposals inside
+Manual policy requires the latest human message to say the verb and the exact
+id, e.g. `submit p-2`, before `mob submit` or browser signing; `mob submit` runs
+the stored preflight again before it sends. Auto policy permits only API Proposals inside
 the stored key scope and cap. Keystore secrets belong in the human's terminal.
 MCP has no key import/reveal, submission, signing, rejection, or config-write tool.
 See [security boundaries](../SECURITY.md) and [usage](USAGE.md).

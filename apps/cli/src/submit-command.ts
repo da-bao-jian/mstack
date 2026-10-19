@@ -6,17 +6,102 @@ import {
 	IdempotencyConflict,
 	StrategyApiClient,
 } from "@mstack/mobius-api";
-import type { Json } from "@mstack/proposals";
-import { ProposalStore } from "@mstack/proposals";
+import { MobiusClient } from "@mstack/mobius-client";
+import type { Json, Proposal } from "@mstack/proposals";
+import { ProposalStore, publicText, runPreflight } from "@mstack/proposals";
 import pkg from "../package.json";
-import { readConfig, UsageError } from "./config.ts";
+import { type Config, getConfig, readConfig, UsageError } from "./config.ts";
 import { cliKeyStore, keyFor } from "./key-store.ts";
+import { CheckFailure, Checks, configChecks } from "./preflight/checks.ts";
 import { proposalView } from "./proposal-view.ts";
 import { restageProposal } from "./restage.ts";
 import type { Runtime } from "./run.ts";
 
 function taskId(route: string): string | undefined {
 	return route.match(/^\/v1\/delta-neutral\/tasks\/([^/]+)\//)?.[1];
+}
+
+/**
+ * Runs the stored preflight again on the exact record about to be sent, and
+ * checks the body against the evidence and purpose the human was shown. The
+ * record is a local file the agent's OS user can edit; the server's key caps
+ * remain the hard limit.
+ */
+async function recheck(p: Proposal, config: Config, rt: Runtime) {
+	const refuse = (reason: string): never => {
+		throw new UsageError(
+			`${p.id} ${reason}; nothing was sent. Run the original command again.`,
+		);
+	};
+	// Read checks target the public Mobius API, as they did at staging.
+	const result = await runPreflight(
+		p,
+		new MobiusClient({
+			base: String(getConfig(config, "api_base")),
+			version: pkg.version,
+			fetch: rt.fetch,
+		}),
+		rt.now,
+	);
+	const checks = new Checks(rt.now);
+	try {
+		await configChecks(config, checks, p.owner, true);
+	} catch (error) {
+		if (!(error instanceof CheckFailure)) throw error;
+	}
+	const failed = [...result.checks, ...checks.checks].find((c) => !c.ok);
+	if (failed)
+		refuse(
+			`failed its preflight again (${failed.name ?? failed.route}: ${failed.error})`,
+		);
+	const body = p.submit.body;
+	const fact = (name: string) => {
+		const check = p.preflightPlan.checks.find(
+			(c) => c.route === "staged" && c.name === name,
+		);
+		return check && "detail" in check ? check.detail : undefined;
+	};
+	if (p.submit.route === "/v1/delta-neutral/tasks") {
+		const legs = [
+			`${body.longVenue}:${body.longMarket}`,
+			`${body.shortVenue}:${body.shortMarket}`,
+		];
+		const venues = fact("key.venues")?.match(/^covered · (.+)$/)?.[1];
+		const cap = fact("key.maxSizeUsd")?.match(/^(\S+) <= /)?.[1];
+		const shown = /^Open \S+: long (\S+), short (\S+), \$(\S+) per leg$/.exec(
+			p.purpose,
+		);
+		if (
+			(venues !== undefined &&
+				venues !== `${body.longVenue}, ${body.shortVenue}`) ||
+			(cap !== undefined && Number(cap) !== body.sizeUsd) ||
+			(shown &&
+				(shown[1] !== legs[0] ||
+					shown[2] !== legs[1] ||
+					Number(shown[3]) !== body.sizeUsd))
+		)
+			refuse("no longer matches the request its preflight checked");
+		return `long ${legs[0]} · short ${legs[1]} · $${body.sizeUsd} per leg`;
+	}
+	const task = taskId(p.submit.route);
+	if (
+		!task ||
+		!p.purpose.startsWith(
+			`${p.submit.route.slice(p.submit.route.lastIndexOf("/") + 1)} task ${task}.`,
+		) ||
+		p.preflightPlan.checks.some(
+			(c) =>
+				c.route === "/api/arbitrage/task" &&
+				(c.params as { taskId?: string }).taskId !== task,
+		)
+	)
+		refuse("no longer matches the request its preflight checked");
+	return [
+		`task ${task}`,
+		...["longTargetBase", "shortTargetBase"]
+			.filter((key) => body[key] !== undefined)
+			.map((key) => `${key} ${body[key]}`),
+	].join(" · ");
 }
 
 export async function submitCommand(
@@ -39,6 +124,7 @@ export async function submitCommand(
 		const result = await store.submitApi(id, {
 			policy: config.policy ?? "manual",
 			prepare: async (proposal) => {
+				const request = await recheck(proposal, config, rt);
 				const stored = await (await cliKeyStore(rt)).get(proposal.owner);
 				if (!stored) throw new UsageError("no key: run mob onboard");
 				client = new StrategyApiClient({
@@ -48,6 +134,12 @@ export async function submitCommand(
 					fetch: rt.fetch,
 					now: rt.now,
 				});
+				// The final request, printed before anything is sent.
+				(json ? rt.err : rt.out)(
+					publicText(
+						`Sending ${id}: POST ${proposal.submit.route} · ${request}`,
+					),
+				);
 			},
 			submit: async (proposal) => {
 				if (!client) throw new Error("API key client was not prepared");

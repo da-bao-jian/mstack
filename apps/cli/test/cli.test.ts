@@ -224,6 +224,77 @@ test.each(
 	expect(result.calls).toHaveLength(0);
 });
 
+test("protected config keys need the human's terminal and a typed yes", async () => {
+	const gateHome = await mkdtemp(join(tmpdir(), "mob-config-gate-"));
+	try {
+		const set = (key: string, value: string, overrides: Partial<Runtime>) =>
+			invoke(["config", "set", key, value], { home: gateHome, ...overrides });
+		const get = async (key: string) =>
+			(await invoke(["config", "get", key], { home: gateHome })).out;
+		// An agent shell has no TTY; a scripted "yes" never reaches the prompt.
+		const agent: Partial<Runtime> = {
+			stdinIsTTY: false,
+			stdoutIsTTY: false,
+			readSecret: async () => "yes",
+		};
+		for (const [key, value] of [
+			["policy", "auto"],
+			["api_base", "https://example.test"],
+			["strategy_api_base", "https://example.test"],
+			["auth_base", "https://example.test"],
+			["app_base", "https://example.test"],
+			["key_store", "file"],
+			["walletconnect_project_id", "0123456789abcdef0123456789abcdef"],
+		]) {
+			const result = await set(key, value, agent);
+			expect(result.code).toBe(1);
+			expect(result.err).toContain(
+				`mob config set ${key} needs your own terminal`,
+			);
+		}
+		expect(
+			(await set("policy", "auto", { ...agent, stdinIsTTY: true })).code,
+		).toBe(1);
+		expect(
+			(await set("policy", "auto", { ...agent, stdoutIsTTY: true })).code,
+		).toBe(1);
+		expect(await get("policy")).toBe("manual");
+		const prompts: string[] = [];
+		const human = { stdinIsTTY: true, stdoutIsTTY: true };
+		const declined = await set("policy", "auto", {
+			...human,
+			readSecret: async (prompt) => {
+				prompts.push(prompt);
+				return "y";
+			},
+		});
+		expect(declined.code).toBe(1);
+		expect(declined.err).toContain("policy unchanged");
+		expect(prompts).toEqual([
+			"Type yes and press Enter to set policy to auto (input is hidden): ",
+		]);
+		expect(await get("policy")).toBe("manual");
+		const accepted = await set("policy", "auto", {
+			...human,
+			readSecret: async () => "yes",
+		});
+		expect(accepted.code).toBe(0);
+		expect(await get("policy")).toBe("auto");
+		// Ordinary preferences still work from any shell.
+		expect((await set("default_size_usd", "5000", agent)).code).toBe(0);
+		expect(await get("default_size_usd")).toBe("5000");
+	} finally {
+		await rm(gateHome, { recursive: true, force: true });
+	}
+});
+
+test("mob upgrade refuses an agent shell without a terminal", async () => {
+	const result = await invoke(["upgrade"], { stdinIsTTY: false });
+	expect(result.code).toBe(1);
+	expect(result.err).toContain("mob upgrade needs your own terminal");
+	expect(result.calls).toHaveLength(0);
+});
+
 test("version and help expose only delivered commands", async () => {
 	expect((await invoke(["--version"])).out).toBe(pkg.version);
 	const result = await invoke(["--help"]);
@@ -279,8 +350,16 @@ test("config stores only allowed settings at mode 0600 and affects scans", async
 			["builder_fee_tenths_bps", "0"],
 			["api_base", "https://funding.mob.exchange"],
 		]) {
+			// api_base is protected: the human's terminal confirms it.
 			expect(
-				(await invoke(["config", "set", key, value], { home: isolated })).code,
+				(
+					await invoke(["config", "set", key, value], {
+						home: isolated,
+						stdinIsTTY: true,
+						stdoutIsTTY: true,
+						readSecret: async () => "yes",
+					})
+				).code,
 			).toBe(0);
 			expect(
 				(await invoke(["config", "get", key], { home: isolated })).out,

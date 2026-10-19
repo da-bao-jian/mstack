@@ -1,0 +1,3 @@
+{"type":"user","origin":{"kind":"human"},"promptSource":"typed","message":{"role":"user","content":"Open BTC and show me the preview."}}
+{"type":"assistant","message":{"role":"assistant","content":"Staged p-2. Please authorize."}}
+{"type":"user","origin":{"kind":"human"},"promptSource":"typed","message":{"role":"user","content":"Sign p-2 in the browser wallet, or submit p-2 with the key."}}

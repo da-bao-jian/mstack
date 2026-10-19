@@ -16,6 +16,7 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { setConfig } from "../apps/cli/src/config.ts";
 import pkg from "../package.json";
 import { renderSkills } from "../scripts/gen-skill-docs.ts";
 import { setup } from "../scripts/setup.ts";
@@ -290,15 +291,8 @@ test("preamble fixtures block CLI network reads even without the source preload"
 		},
 	});
 	try {
-		expect(
-			(
-				await command(
-					["mob", "config", "set", "api_base", origin.url.href],
-					home,
-					path,
-				)
-			).code,
-		).toBe(0);
+		// api_base needs the human's terminal through the CLI; write it directly.
+		await setConfig("api_base", origin.url.href, join(home, ".mob"));
 		const hello = await command(["mob", "hello", "--json"], home, path);
 		expect(hello.code).toBe(0);
 		expect(JSON.parse(hello.out).api.state).toBe("unreachable");
@@ -573,14 +567,15 @@ test("session skills keep keys off argv and require exact ids for manual mutatio
 		for (const name of ["mob-open", "mob-manage", "mob-close"]) {
 			const body = outputs.get(`${host}/${name}/SKILL.md`) as string;
 			expect(body).toContain("`mob submit p-N`");
-			expect(body).toContain("latest user message names that exact id");
+			expect(body).toContain("latest user message says `submit p-N`");
+			expect(body).toContain("latest user message says `sign p-N`");
 			expect(body).toContain("auto policy allowed");
 			expect(body).toContain("submitted, not confirmed");
 		}
 		const bind = outputs.get(`${host}/mob-bind/SKILL.md`) as string;
 		expect(bind).toContain("mob bind --all");
 		expect(bind).toContain("mob onboard --native");
-		expect(bind).toContain("latest message names that exact `c-N`");
+		expect(bind).toContain("latest message says `sign c-N`");
 		const router = outputs.get(`${host}/mob/SKILL.md`) as string;
 		for (const name of [
 			"mob-open",
@@ -604,10 +599,8 @@ test.each(["keystore", "browser", "walletconnect"])(
 			(await command(["mob", "config", "set", "signer", signer], home, path))
 				.code,
 		).toBe(0);
-		expect(
-			(await command(["mob", "config", "set", "policy", "locked"], home, path))
-				.code,
-		).toBe(0);
+		// policy needs the human's terminal through the CLI; write it directly.
+		await setConfig("policy", "locked", join(home, ".mob"));
 		const result = await command(
 			[
 				"/bin/bash",

@@ -21,10 +21,12 @@ For import, run exactly one command. Put the already-pasted key in the single-qu
 printf '%s' 'mobius_…' | mob keys import --stdin --name '<name>' --venues '<a,b>' --max-size '<usd>'
 ```
 
+Before you run it, check that the pasted text matches exactly `^mobius_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[0-9a-f]{64}$`; if it does not, run nothing and ask the human to run `mob keys import` in their own terminal.
+
 Use the printed `MOB_BIN` path. `printf` is a shell builtin and `mob` never puts the key on any argv, but the shell running this one command carries it on its own command line while it runs; that is part of the chat-paste trade-off. Never echo the key. Never use `echo`, a file, a positional key, an environment variable, or `--from-env`. Never repeat the key in a reply or any other command. Report only the stored prefix and backend.
 
 If import answers `could not verify; not stored`, report that the Strategy API is unreachable and stop. Use `--unverified` only when the user explicitly asks for it. A human can instead run `mob keys import` and use the hidden prompt.
 
 ## Wallet Proposal rule
 
-For list or revoke, show the id, exact purpose, owner, preflight, expiry, message, and digest. STOP. Never run `mob sign p-N` unless the latest user message names that exact id and authorizes the browser path. The agent never runs keystore signing and never requests a passphrase.
+For list or revoke, show the id, exact purpose, owner, preflight, expiry, message, and digest. STOP. Never run `mob sign p-N` unless the latest user message says `sign p-N` and authorizes the browser path. The agent never runs keystore signing and never requests a passphrase.

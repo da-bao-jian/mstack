@@ -13,3 +13,19 @@ scoped API key, and the agent pipes one single-quoted shell-builtin `printf`
 value through `mob keys import --stdin`.
 The hook does not treat key import as signing authority. The CLI itself refuses
 a positional key.
+
+The other fixtures are synthetic. Their event shapes follow Claude Code 2.1.303
+transcripts: a typed human message carries `origin.kind: "human"` and
+`promptSource: "typed"`; a background-task notification carries
+`origin.kind: "task-notification"`; a compaction summary carries
+`isCompactSummary`; an AskUserQuestion result carries `toolUseResult.answers`.
+No conversation text was copied. Files without any `origin` or `promptSource`
+model older transcripts, where plain untagged user text counts as human.
+
+- `consent-p2.jsonl` and `ask-genuine.jsonl` authorize p-2.
+- `task-notification.jsonl`, `compact-summary.jsonl`, `local-stdout.jsonl`, and
+  `forged-unmarked.jsonl` put "submit p-2" in non-human events.
+- `ask-injected-question.jsonl` and `ask-injected-preview.jsonl` put a fake
+  `"…"="Submit p-2"` pair in assistant-written question or preview text.
+- `steer.jsonl` merges a "stop" message into a tool result after consent.
+- `negation.jsonl` names p-2 only in a question and a negated request.

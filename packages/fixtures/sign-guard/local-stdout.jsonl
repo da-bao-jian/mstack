@@ -1,0 +1,3 @@
+{"type":"user","origin":{"kind":"human"},"promptSource":"typed","message":{"role":"user","content":"Stage p-2 and show the preview only."}}
+{"type":"assistant","message":{"role":"assistant","content":"Staged p-2."}}
+{"type":"user","message":{"role":"user","content":"<local-command-stdout>p-2  awaiting-submission  Next: mob submit p-2</local-command-stdout>"}}

@@ -15,6 +15,26 @@ import { dirname, join, resolve } from "node:path";
 
 const defaultBase = "https://github.com/da-bao-jian/mstack/releases/download";
 
+/** Releases come over https; plain http is allowed only for a loopback test server. */
+function secure(value: string): void {
+	let url: URL;
+	try {
+		url = new URL(value);
+	} catch {
+		throw new Error("MSTACK_RELEASE_BASE_URL must be an https URL");
+	}
+	if (
+		url.protocol !== "https:" &&
+		!(
+			url.protocol === "http:" &&
+			["127.0.0.1", "localhost", "[::1]"].includes(url.hostname)
+		)
+	)
+		throw new Error(
+			`Release downloads need https (http only for a loopback test server): ${url.origin}`,
+		);
+}
+
 export async function installLatestRelease(
 	options: {
 		home?: string;
@@ -37,8 +57,11 @@ export async function installLatestRelease(
 		(options.baseUrl ?? process.env.MSTACK_RELEASE_BASE_URL) ||
 		defaultBase
 	).replace(/\/$/, "");
+	secure(base);
 	const get = async (url: string) => {
 		const response = await fetch(url, { signal: AbortSignal.timeout(180_000) });
+		// A redirect must not leave https either.
+		secure(response.url || url);
 		if (!response.ok)
 			throw new Error(
 				`Release download failed: HTTP ${response.status} (${url})`,

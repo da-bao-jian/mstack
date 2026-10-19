@@ -39,7 +39,14 @@ else
 fi
 base=${MSTACK_RELEASE_BASE_URL:-https://github.com/da-bao-jian/mstack/releases/download}
 base=${base%/}
-fetch() { curl -fSL --connect-timeout 10 --max-time 180 --silent --show-error "$1" -o "$2"; }
+# Releases come over https, redirects included; plain http only reaches a loopback test server.
+proto='=https'
+case "$base" in
+  https://*) ;;
+  http://127.0.0.1:*|http://127.0.0.1/*|http://localhost:*|http://localhost/*|'http://[::1]:'*|'http://[::1]/'*) proto='=http' ;;
+  *) fail 'MSTACK_RELEASE_BASE_URL must be an https URL (http only for a loopback test server)' ;;
+esac
+fetch() { curl --proto "$proto" --proto-redir "$proto" --tlsv1.2 -fSL --connect-timeout 10 --max-time 180 --silent --show-error "$1" -o "$2"; }
 umask 077
 cache="$HOME/.mob/bin"
 local_bin="$HOME/.local/bin"
