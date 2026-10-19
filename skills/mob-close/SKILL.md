@@ -3,7 +3,7 @@ name: mob-close
 description: Close a position with a scoped API key. Use for "close this position", "close task", or "exit this pair"; stages one Proposal and submits only under the configured policy. (mstack)
 license: MIT
 metadata:
-  version: "0.4.3"
+  version: "0.4.4"
 allowed-tools: Bash Read AskUserQuestion Bash(${CLAUDE_SKILL_DIR}/scripts/preamble.sh *)
 ---
 

@@ -3,14 +3,14 @@
 	"owner": { "name": "mstack contributors" },
 	"metadata": {
 		"description": "mstack funding, onboarding, key, and Proposal skills",
-		"version": "0.4.3"
+		"version": "0.4.4"
 	},
 	"plugins": [
 		{
 			"name": "mstack",
 			"source": "./",
 			"description": "Funding reads, scoped key onboarding, and policy-gated Proposal workflows.",
-			"version": "0.4.3"
+			"version": "0.4.4"
 		}
 	]
 }
