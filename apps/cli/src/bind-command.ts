@@ -236,10 +236,11 @@ export async function bindCommand(
 			if (credential.chainId !== (venue === "lighter-mainnet" ? 304 : 466324))
 				throw new Error("Bound Lighter credential is on the wrong deployment");
 		} else getAddress(credential.agentAddress);
+		// Each Lighter deployment that names an integrator needs its approval.
 		if (
-			venue !== "lighter-mainnet" ||
 			!("integratorApproved" in credential) ||
-			credential.integratorApproved
+			credential.integratorApproved ||
+			credential.integratorIndex === null
 		) {
 			if ("builderApproved" in credential && !credential.builderApproved)
 				throw new Error(
@@ -247,7 +248,7 @@ export async function bindCommand(
 				);
 			rt.out(bindingSteps(venue, "complete"));
 			rt.out(
-				`${venue}: bound${venue === "lighter-mainnet" ? "; integrator approved" : ""}. No Proposal needed.`,
+				`${venue}: bound${"integratorApproved" in credential && credential.integratorApproved ? "; integrator approved" : ""}. No Proposal needed.`,
 			);
 			return;
 		}

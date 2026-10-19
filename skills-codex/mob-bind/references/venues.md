@@ -15,7 +15,9 @@ uses the configured signing chain, default Arbitrum `0xa4b1`.
 
 Aster uses prepare then typed agent approval on chain 56, including the server's
 builder terms. Lighter uses prepare, exact-message key approval, and a stored
-sendTx plan. Mainnet also asks for one zero-fee integrator approval.
+sendTx plan. Both deployments need the zero-fee integrator approval, which expires;
+when a bound key lacks only that approval, the ceremony signs the approval and
+keeps the key.
 Robinhood Lighter uses chain 466324; mainnet uses chain 304.
 
 Explain status polling and builder finalization from the stored plan.

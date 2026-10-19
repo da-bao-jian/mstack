@@ -18,7 +18,7 @@ export function bindingSteps(
 		venue.startsWith("lighter") ? "approve key" : "approve agent",
 		venue === "hl" && !confirmOnly
 			? "approve builder fee"
-			: venue === "lighter-mainnet"
+			: venue.startsWith("lighter")
 				? "approve integrator"
 				: "confirm binding",
 	];

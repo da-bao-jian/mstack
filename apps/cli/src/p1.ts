@@ -144,6 +144,7 @@ export async function p1(
 							owner: ceremony.owner,
 							status: ceremony.status,
 							venues: ceremony.venues.map((venue) => venue.venue),
+							integrators: ceremony.integrators ?? [],
 							createdAt: ceremony.createdAt,
 							expiresAt: ceremony.expiresAt,
 							keyPlan: ceremony.keyPlan ?? null,

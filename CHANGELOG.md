@@ -7,6 +7,12 @@ not a claim that public release tags or artifacts were published.
 <!-- release-start -->
 ## [Unreleased]
 
+### Fixed
+
+- A Lighter key that lacked only its zero-fee integrator approval could be fixed only by replacing the key with `--rebind`. Onboarding and `mob bind --all` now keep the key and add an "Approve the zero-fee Lighter integrator" signing step to the same wallet session, sent to MoB's `/api/binding/lighter/integrator-approve`. Each approval step is created just before it is signed, because MoB accepts its timestamp for 300 seconds. When every selected venue needs only that approval, the ceremony has no prepare step. `--rebind` is asked only for a key that no longer works.
+- The trading key created at the end of onboarding covered only the venues bound in that session. It now also covers selected venues that MoB already reports ready and venues whose integrator approval the session signed.
+- `mob bind lighter` treated a Robinhood Lighter key without its integrator approval as bound.
+
 ## [0.4.6] - 2026-10-19
 
 ### Fixed

@@ -56,12 +56,12 @@ try {
 		);
 		assert.match(staged, /c-1 · venue binding ceremony · aster/);
 		assert.match(await compiled(["proposals"], realHome), /c-1/);
-		const ceremony = await new CeremonyStore(realHome).get("c-1");
-		assert.equal(ceremony.prepare.signing.type, "text");
-		if (ceremony.prepare.signing.type !== "text")
+		const { prepare } = await new CeremonyStore(realHome).get("c-1");
+		assert.equal(prepare?.signing.type, "text");
+		if (prepare?.signing.type !== "text")
 			throw new Error("prepare must use text signing");
 		const payload = JSON.parse(
-			ceremony.prepare.signing.message.split("payload=")[1],
+			prepare.signing.message.split("payload=")[1],
 		) as { expiresAt: number };
 		const after = Math.floor(Date.now() / 1000);
 		assert.ok(Number.isSafeInteger(payload.expiresAt));

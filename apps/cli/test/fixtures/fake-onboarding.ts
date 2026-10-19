@@ -298,18 +298,17 @@ export function fakeOnboarding(owner: Address, now = Date.now()) {
 						writes.push(`${venue} prepare: signer recovered; exact body`);
 						return json(prepared(venue));
 					}
+					// MoB names an integrator on both Lighter deployments.
 					assert.equal(route, "integrator-approve");
-					assert.equal(venue, "lighter-mainnet");
+					assert.ok(venue === "lighter" || venue === "lighter-mainnet");
 					assert.equal(b.ownerAddress, owner);
 					await recover(
 						hashMessage(
-							`Approve zero-fee Lighter integrator owner=${owner.toLowerCase()} venue=lighter-mainnet integratorIndex=7 nonce=${b.nonce} timestamp=${b.timestamp}`,
+							`Approve zero-fee Lighter integrator owner=${owner.toLowerCase()} venue=${venue} integratorIndex=7 nonce=${b.nonce} timestamp=${b.timestamp}`,
 						),
 						b.signature as Hex,
 					);
-					writes.push(
-						"lighter-mainnet integrator: signer recovered; exact body",
-					);
+					writes.push(`${venue} integrator: signer recovered; exact body`);
 					if (state.integratorRefused)
 						return json(
 							{ error: "venue tier does not permit integrator approval" },
