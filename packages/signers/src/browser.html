@@ -179,9 +179,24 @@ const api = async (path, body) => {
   if (!response.ok) throw new Error(result.error || "Bridge request failed");
   return result;
 };
+let stateSince = 0, hinted = false;
 const status = (state, text, error = false) => {
   el("status").textContent = text; el("status").className = error ? "error" : ""; el("status").setAttribute("data-state", state);
+  stateSince = Date.now(); hinted = false;
 };
+// The same rejection test MoB's web app uses (frontend/src/lib/errors.ts).
+const rejected = error => error?.code === 4001 || /user rejected|user denied|rejected the request|denied transaction|action[_ ]?rejected|rejected by user|request rejected|user cancell?ed|denied by the user/i.test(String(error?.message));
+function walletMessage(error) {
+  const chain = pinned() !== undefined ? chainName() : "the required network";
+  switch (error?.code) {
+    case -32002: return "Your wallet already has a request open. Open the wallet, finish or close that request, then try again.";
+    case 4100: return "Your wallet has not allowed this page yet. Unlock the wallet and connect this site, then try again.";
+    case 4200: return "Your wallet cannot sign this kind of request. Use a wallet such as Rabby or MetaMask.";
+    case 4900: case 4901: return "Your wallet is not connected to a network. Reconnect it in the wallet, then try again.";
+    case 4902: return `Your wallet does not have ${chain} yet. Add ${chain} in the wallet, then try again.`;
+    default: return `Error. ${error?.message ?? error}`;
+  }
+}
 const matches = () => address && proposal && address.toLowerCase() === proposal.owner.toLowerCase();
 const pinned = () => proposal?.signing.type === "typed" ? proposal.signing.typedData.domain?.chainId : undefined;
 const wrongChain = () => pinned() !== undefined && Number(pinned()) !== chainId;
@@ -204,6 +219,11 @@ function refresh() {
   // Once the session ends, nothing is left to press.
   el("buttons").hidden = done;
   el("timer").hidden = done && !expired;
+  // A wallet window can open behind the browser or not at all.
+  const waiting = ["connecting", "waiting", "chain"].includes(el("status").getAttribute("data-state"));
+  if (waiting && !el("status").className && !hinted && Date.now() - stateSince > 15_000) {
+    hinted = true; el("status").textContent += " No wallet window? Click the wallet's icon in the browser toolbar.";
+  }
   if (proposal && !done) {
     const seconds = Math.max(0, Math.ceil((proposal.expiresAt - Date.now()) / 1000));
     el("countdown").textContent = `Expires in ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
@@ -260,6 +280,7 @@ async function connect() {
     provider = selected;
     const accounts = await provider.request({ method: "eth_requestAccounts" });
     if (!active()) return;
+    if (!accounts?.length) throw new Error("The wallet returned no account. Unlock it, choose the expected owner, then try again.");
     address = accounts[0]; choosing = false;
     chainId = Number(await provider.request({ method: "eth_chainId" }));
     if (!active()) return;
@@ -285,11 +306,12 @@ async function connect() {
     else accountStatus();
   } catch (error) {
     if (!active()) return;
-    if (wrongChain() && matches()) status("chain", `Chain switch needed. Switch to ${chainName()} in your wallet. ${error.message}`, true);
+    if (wrongChain() && matches()) status("chain", rejected(error) ? `You declined the switch to ${chainName()}. Click Connect wallet again and approve the switch.` : `Chain switch needed. Switch to ${chainName()} in your wallet. ${error.message}`, true);
+    else if (rejected(error)) status("error", "You declined the connection in your wallet. Click Connect wallet to try again.", true);
     else fail(error);
   } finally { busy = false; refresh(); }
 }
-function fail(error) { if (active()) status("error", `Error. ${error.message}`, true); }
+function fail(error) { if (active()) status("error", walletMessage(error), true); }
 el("copy").onclick = async () => {
   try { await navigator.clipboard.writeText(el("message").textContent); el("copy-status").textContent = "Copied exact message."; }
   catch { el("copy-status").textContent = "Copy failed. Select the exact message and copy it manually."; }
@@ -307,7 +329,13 @@ el("sign").onclick = async () => {
     if (wrongChain()) {
       if (!ceremony) { accountStatus(); return; }
       status("chain", `Switching to ${chainName()}. Confirm the chain change in your wallet.`);
-      await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: `0x${Number(pinned()).toString(16)}` }] });
+      try {
+        await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: `0x${Number(pinned()).toString(16)}` }] });
+      } catch (error) {
+        // Declining the switch is not declining the step: the user can retry.
+        if (active()) status("chain", rejected(error) ? `You declined the switch to ${chainName()}. Click Sign in wallet again and approve the switch.` : walletMessage(error), true);
+        return;
+      }
       if (!active()) return;
       chainId = Number(await provider.request({ method: "eth_chainId" }));
       if (wrongChain()) throw new Error(`Wallet did not switch to ${chainName()}.`);
@@ -327,7 +355,7 @@ el("sign").onclick = async () => {
     else { done = true; status("accepted", "Done. You can close this tab."); }
   } catch (error) {
     if (!active()) return;
-    if (error.code === 4001) {
+    if (rejected(error)) {
       done = true; status("rejected", "Rejected in wallet. No signature was submitted.");
       await api("/api/reject", ceremony ? { stepId: proposal?.id } : {}).catch(() => {});
     } else fail(error);

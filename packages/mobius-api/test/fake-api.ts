@@ -207,7 +207,7 @@ export function fakeStrategyApi(
 								if (unusable.has(target.venue) && !target.rebind)
 									return json(
 										{
-											error: "Explicit rebind required.",
+											error: `${target.venue} credential is not usable; explicitly request rebind.`,
 											code: "rebind_required",
 										},
 										409,

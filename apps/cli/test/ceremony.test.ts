@@ -11,6 +11,7 @@ import {
 	fakeStrategyApi,
 	loopbackFetch,
 } from "../../../packages/mobius-api/test/fake-api.ts";
+import { openBridge } from "../../../packages/signers/test/loopback.ts";
 import { setConfig } from "../src/config.ts";
 import { cliKeyStore } from "../src/key-store.ts";
 import { type Runtime, run } from "../src/run.ts";
@@ -548,3 +549,77 @@ test.each([
 		expect(stored?.meta.venues).toEqual([...keyVenues]);
 	},
 );
+
+test("a browser session with only an integrator approval left shows that step first", async () => {
+	// Legal already accepted and lighter needs only its approval: the page
+	// once loaded with no steps and stopped ("Ceremony has no signing steps").
+	const now = Date.now();
+	const api = fakeStrategyApi({ now: () => now });
+	servers.push(api);
+	const { home } = await nativeHome(api);
+	const opened = Promise.withResolvers<string>();
+	const rt: Partial<Runtime> = {
+		home,
+		now: () => now,
+		fetch: nativeFetch(api, {
+			legalAccepted: true,
+			calls: [],
+			issues: { lighter: "integrator_approval_missing" },
+		}),
+		sleep: async () => {},
+		stdinIsTTY: false,
+		stdoutIsTTY: false,
+		out: () => {},
+		err: () => {},
+		openUrl: async (url) => opened.resolve(url),
+	};
+	const args = ["onboard", "--native", "--owner", api.owner.address];
+	expect(await run([...args, "--venues", "hl,lighter"], rt)).toBe(0);
+	const signing = run(["sign", "c-1", "--with", "browser"], rt);
+	const { api: bridge } = await openBridge(await opened.promise);
+	const view = (await (await bridge("/api/proposal")).json()) as {
+		id: string;
+		steps: { id: string }[];
+	};
+	expect(view.id).toBe("c-1:integrator-lighter");
+	expect(view.steps.map((step) => step.id)).toEqual([
+		"c-1:integrator-lighter",
+		"c-1:prepare",
+	]);
+	expect((await bridge("/api/reject", {})).status).toBe(200);
+	expect(await signing).not.toBe(0);
+});
+
+test("a prepare MoB refuses after signing ends with what to do, not the raw error", async () => {
+	const now = Date.now();
+	const api = fakeStrategyApi({ now: () => now });
+	servers.push(api);
+	// Readiness cannot see it, but MoB holds an unusable hl key.
+	api.unusable.add("hl");
+	const { home, password } = await nativeHome(api);
+	const lines: string[] = [];
+	const rt: Partial<Runtime> = {
+		home,
+		now: () => now,
+		fetch: nativeFetch(api, { legalAccepted: true, calls: [] }),
+		sleep: async () => {},
+		stdinIsTTY: false,
+		stdoutIsTTY: false,
+		out: (line) => lines.push(line),
+		err: (line) => lines.push(line),
+		readSecret: async () => password,
+	};
+	const args = ["onboard", "--native", "--owner", api.owner.address];
+	expect(await run([...args, "--venues", "hl"], rt)).toBe(0);
+	expect(await run(["sign", "c-1"], rt)).not.toBe(0);
+	const text = lines.join("\n");
+	expect(text).toContain(
+		"Hyperliquid already has a MoB key that is not usable. Stage again with --rebind to replace it",
+	);
+	expect(text).toContain(
+		'MoB said: "hl credential is not usable; explicitly request rebind."',
+	);
+	expect((await new CeremonyStore(home, () => now).get("c-1")).status).toBe(
+		"failed",
+	);
+});
