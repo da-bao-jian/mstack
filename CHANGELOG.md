@@ -7,6 +7,8 @@ not a claim that public release tags or artifacts were published.
 <!-- release-start -->
 ## [Unreleased]
 
+## [0.4.2] - 2026-10-19
+
 ### Added
 
 - Native onboarding in one wallet session: `mob onboard --native` stages one ceremony that accepts the legal terms when needed, binds the venues, creates the scoped API key, and stores it locally; `mob sign c-N` walks every step on one page and the key never prints. Flags `--name` and `--max-size` set the key.

@@ -32,7 +32,7 @@ On the API page, add **Copy prompt for mstack** beside the existing **Copy promp
 
 ```text
 Install mstack, the Mobius funding-arbitrage agent stack, and get me ready to trade.
-Read https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.1/docs/AGENT-INSTALL.md
+Read https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.2/docs/AGENT-INSTALL.md
 and follow it for this host exactly. Then verify with `mob --version` and `mob doctor`,
 run `mob` and reproduce its output verbatim in a fenced block as the welcome.
 Tell me if I need to restart; when the skills load, start with "set me up". My wallet address is 0x…

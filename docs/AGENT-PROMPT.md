@@ -2,7 +2,7 @@
 
 ```text
 Install mstack, the Mobius funding-arbitrage agent stack, and get me ready to trade.
-Read https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.1/docs/AGENT-INSTALL.md
+Read https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.2/docs/AGENT-INSTALL.md
 and follow it for this host exactly. Then verify with `mob --version` and `mob doctor`,
 run `mob` and reproduce its output verbatim in a fenced block as the welcome.
 Tell me if I need to restart; when the skills load, start with "set me up". My wallet address is 0x…
@@ -12,7 +12,7 @@ Tell me if I need to restart; when the skills load, start with "set me up". My w
 
 ```text
 Install mstack, the Mobius funding-arbitrage agent stack, and get me ready to trade.
-Read https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.1/docs/AGENT-INSTALL.md
+Read https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.2/docs/AGENT-INSTALL.md
 and follow it for this host exactly. Then verify with `mob --version` and `mob doctor`,
 run `mob` and reproduce its output verbatim in a fenced block as the welcome.
 Tell me if I need to restart; start with "set me up". Ask for my wallet address only when needed.
@@ -22,7 +22,7 @@ Tell me if I need to restart; start with "set me up". Ask for my wallet address 
 
 ```text
 Install mstack, the Mobius funding-arbitrage agent stack, and get me ready to trade.
-Read https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.1/docs/AGENT-INSTALL.md
+Read https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.2/docs/AGENT-INSTALL.md
 and follow it for this host exactly. Then verify with `mob --version` and `mob doctor`,
 run `mob` and reproduce its output verbatim in a fenced block as the welcome.
 Tell me if I need a new session; when the skills load, start with "set me up". My wallet address is 0x…
@@ -59,7 +59,7 @@ The agent detects its host, installs one supported path, verifies the CLI, and s
 
 ```text
 Install mstack, the Mobius funding-arbitrage agent stack, and get me ready to trade.
-Read https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.1/docs/AGENT-INSTALL.md
+Read https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.2/docs/AGENT-INSTALL.md
 and follow it for this host exactly. Then verify with `mob --version` and `mob doctor`,
 run `mob` and reproduce its output verbatim in a fenced block as the welcome.
 Tell me if I need to restart; when the skills load, start with "set me up". My wallet address is 0x…
