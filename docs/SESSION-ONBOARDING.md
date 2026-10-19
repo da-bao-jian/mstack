@@ -4,10 +4,10 @@ Decided 2026-10-12. Supersedes the per-signature browser page as the main onboar
 
 ## 0. Decision
 
-- **The Mobius API key is the session key.** One wallet signature creates a key scoped to venues and a USD cap per leg. It can open, cancel, close and resize positions. It cannot withdraw, bind venues, approve fees or create keys. After onboarding, trading needs no wallet.
-- **Onboarding is one browser visit.** `mob onboard` opens the Mobius API page (`app.mob.exchange/?nav=api`). The user connects a wallet once, accepts the legal terms (the app's gate), binds venues in the page's own dialog, and creates the key. Then the user copies the key and pastes it into the chat; the agent stores it with `mob keys import --stdin` and the CLI never prints it again. No localhost receiver, no page change on the Mobius side. A human at a terminal may instead run `mob keys import` and paste it hidden.
+- **The MoB API key is the session key.** One wallet signature creates a key scoped to venues and a USD cap per leg. It can open, cancel, close and resize positions. It cannot withdraw, bind venues, approve fees or create keys. After onboarding, trading needs no wallet.
+- **Onboarding is one browser visit.** `mob onboard` opens the MoB API page (`app.mob.exchange/?nav=api`). The user connects a wallet once, accepts the legal terms (the app's gate), binds venues in the page's own dialog, and creates the key. Then the user copies the key and pastes it into the chat; the agent stores it with `mob keys import --stdin` and the CLI never prints it again. No localhost receiver, no page change on the MoB side. A human at a terminal may instead run `mob keys import` and paste it hidden.
 - **Accepted cost (decided 2026-10-12).** A key pasted into the chat lives in the transcript and in the agent's session logs on disk. It cannot withdraw, it is scoped to venues and a USD cap, and `mob keys revoke` or the API page ends it. The skill tells the user to create a key with a modest cap for the agent.
-- **Native signing stays for terminals without a browser.** `mob onboard --native` runs the same steps with a keystore or WalletConnect signer through the API's batch venue-binding routes (Mobius PR #1460, API 1.2.0): one prepare signature, one signature per venue request, one submit. The browser signer gets one page with one connection for the whole batch.
+- **Native signing stays for terminals without a browser.** `mob onboard --native` runs the same steps with a keystore or WalletConnect signer through the API's batch venue-binding routes (MoB PR #1460, API 1.2.0): one prepare signature, one signature per venue request, one submit. The browser signer gets one page with one connection for the whole batch.
 - **Approval model.** Policy `manual` (default): the agent stages a Proposal; the user names it; `mob submit p-N` sends it with the key, no wallet. Policy `auto` (opt-in, needs a key): the agent may submit inside the key's caps without naming each Proposal. Policy `locked`: no submission. The existing sign-guard hook covers `mob submit` exactly as it covers `mob sign`.
 
 ## 1. What the key can and cannot do
@@ -16,11 +16,11 @@ Decided 2026-10-12. Supersedes the per-signature browser page as the main onboar
 |---|---|---|
 | scan, rates, history, status | public reads, or owner-scoped reads with the key | public reads |
 | open, cancel, close, resize | `mob submit` through `api.mob.exchange` | wallet signature per action on the funding server |
-| protection, auto-close, neutralize, size-mismatch edits | not in the Strategy API (Mobius ask D) | wallet signature per action |
+| protection, auto-close, neutralize, size-mismatch edits | not in the Strategy API (MoB ask D) | wallet signature per action |
 | legal acceptance, venue binding, builder/integrator approval, key create/revoke | never | wallet signature |
 | withdraw | never | never |
 
-A key is `mobius_<uuid>.<64 hex>`. The server stores only its hash. Keys have no expiry (Mobius ask C); `mob keys revoke` and the API page revoke them.
+A key is `mobius_<uuid>.<64 hex>`. The server stores only its hash. Keys have no expiry (MoB ask C); `mob keys revoke` and the API page revoke them.
 
 ## 2. Flows
 
@@ -65,13 +65,13 @@ mob submit p-7           # policy manual: only after the user names p-7
 | Binding authorization | `@mstack/mobius-api` (W18) | Byte-exact port of `bindingMessage` and `canonical` from `funding-server/src/binding/apiService.ts` at `0e3ff530`. |
 | Key routes | `@mstack/mobius-client` (W18) | `/api/keys/create|list|revoke` with the byte-exact `apiKeyMessage`. |
 | Key store | `@mstack/keys` (W19) | `MOBIUS_API_KEY` env → keychain/secret-tool/file. `mob keys import|create|list|revoke|show`. |
-| Onboarding | `apps/cli` (W20) | Mobius page, checklist, `--watch`, native ceremony, multi-request sign page. Key import is W19's `mob keys import --stdin`. |
+| Onboarding | `apps/cli` (W20) | MoB page, checklist, `--watch`, native ceremony, multi-request sign page. Key import is W19's `mob keys import --stdin`. |
 | Submit | `apps/cli` (W21) | Proposal kind `api-submit`, `mob submit`, policy `auto`, status with the key, hook coverage. |
 | Skills, MCP, docs, QA | W22 | `/mob-setup` → onboard; `/mob-open` → submit; journeys E and F; 0.4.0. |
 
-## 4. Mobius dependencies and fallbacks
+## 4. MoB dependencies and fallbacks
 
-See `docs/MOBIUS-ASKS.md`. Every package below works against the API as it is today except the native binding path (B: API 1.2.0 is merged but not yet deployed to `api.mob.exchange`; the fake server stands in until it is). No Mobius page change is needed for the browser path.
+See `docs/MOB-ASKS.md`. Every package below works against the API as it is today except the native binding path (B: API 1.2.0 is merged but not yet deployed to `api.mob.exchange`; the fake server stands in until it is). No MoB page change is needed for the browser path.
 
 ## 5. Security notes
 

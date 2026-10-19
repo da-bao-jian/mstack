@@ -37,7 +37,7 @@ The compiled `mob` binary supports `scan`, `rates`, `history`, `explain`, `statu
 | `mob status --owner 0x…` | Read public tasks and estimated funding accrued |
 | `mob config get api_base` | Read or set local settings, including the public owner address |
 
-Scans show Executable on Mobius (top five) and Best anywhere (top ten), each sorted by net APY for a seven-day hold. Use `--hold-days`, `--top-exec`, and `--top` to change these defaults. Each view limit is capped at 200. Negative mark entry estimates do not count as gains in net APY. Funding output reports snapshot age, source, simple annualization, failures, and unmatched symbols. Scans also report thin pairs hidden by the default $1 million per-leg volume filter. Status reports API base, fetch age, and task/log counts. JSON stays on stdout; its human footer goes to stderr. `mob scan --json` returns bounded views and counts; `--json-full` opts into every opportunity and can exceed 3 MB. Fee defaults are estimates. Entry costs use marks and do not measure executable depth.
+Scans show Executable on MoB (top five) and Best anywhere (top ten), each sorted by net APY for a seven-day hold. Use `--hold-days`, `--top-exec`, and `--top` to change these defaults. Each view limit is capped at 200. Negative mark entry estimates do not count as gains in net APY. Funding output reports snapshot age, source, simple annualization, failures, and unmatched symbols. Scans also report thin pairs hidden by the default $1 million per-leg volume filter. Status reports API base, fetch age, and task/log counts. JSON stays on stdout; its human footer goes to stderr. `mob scan --json` returns bounded views and counts; `--json-full` opts into every opportunity and can exceed 3 MB. Fee defaults are estimates. Entry costs use marks and do not measure executable depth.
 
 ## Use from any MCP client
 
@@ -85,7 +85,7 @@ A staging call returns `{ proposal, message }`. The view contains the exact mess
 
 ## Onboard and manage keys
 
-Run `mob onboard`. It always prints the Mobius API page URL and then reads legal acceptance, venue readiness, and local key state. An agent shell prints once. A terminal watches every five seconds by default. The page flow connects the wallet, accepts legal terms, binds venues, and creates one key.
+Run `mob onboard`. It always prints the MoB API page URL and then reads legal acceptance, venue readiness, and local key state. An agent shell prints once. A terminal watches every five seconds by default. The page flow connects the wallet, accepts legal terms, binds venues, and creates one key.
 
 Create the key with only the required venues and a modest USD cap per leg. The key can open, cancel, close, and resize positions inside those limits. It cannot withdraw, bind venues, approve fees, accept legal terms, or create another key. It has no expiry.
 
@@ -117,7 +117,7 @@ The default browser path does not need local wallet signing. Use `mob bind --all
 
 The older `mob setup` command configures a manual signer and can stage legal acceptance. `mob bind <venue>` remains the single-venue repair path.
 
-Setup checks your current legal acceptance. If needed, it stages **Accept Mobius legal terms**, shows the exact typed message, expiry and digest, and stops. Review the terms and privacy links before signing. An unconfigured legal service (503) is reported without discarding your settings. Stale terms (409) produce a new Proposal that needs separate approval. Locked policy saves settings without offering a signature.
+Setup checks your current legal acceptance. If needed, it stages **Accept MoB legal terms**, shows the exact typed message, expiry and digest, and stops. Review the terms and privacy links before signing. An unconfigured legal service (503) is reported without discarding your settings. Stale terms (409) produce a new Proposal that needs separate approval. Locked policy saves settings without offering a signature.
 
 Run `mob bind <venue>` again after each approved step. Every invocation selects one next Proposal from the server's credential and session state. A pending Proposal is shown again; it is not signed automatically.
 
@@ -128,7 +128,7 @@ Run `mob bind <venue>` again after each approved step. Every invocation selects 
 | `lighter` | Robinhood deployment, chain 466324: account lookup, prepare, approve key and submit the stored transaction. |
 | `lighter-mainnet` | Mainnet, chain 304: the same key steps, then one integrator approval attempt. The venue's refusal is shown without retry. |
 
-**A Lighter key can withdraw to your own address, not trade-only.** It can also trade, cancel, adjust leverage and isolated margin, and approve integrators. Third-party transfers require your L1 signature. The key has no expiry. The Mobius server creates and holds the encrypted venue key.
+**A Lighter key can withdraw to your own address, not trade-only.** It can also trade, cancel, adjust leverage and isolated margin, and approve integrators. Third-party transfers require your L1 signature. The key has no expiry. The MoB server creates and holds the encrypted venue key.
 
 For HL browser staging, a connection-only page first reads your current wallet chain. It requests no signature. The staged Proposal then pins that chain. Keystore and WalletConnect HL use public config `hl_signature_chain_id`, default `0xa4b1` (Arbitrum). Aster pins chain 56. Approval plans include status polling and any builder finalization; answers remain recorded if completion fails or expires. Existing standalone builder-only repairs fail explicitly without replacing a key.
 
@@ -148,7 +148,7 @@ The Claude Code plugin's Bash hook checks plain `mob sign <id>` and manual `mob 
 
 ## Session grants (preview)
 
-PRD section 6.6 lets the owner sign one message that authorizes a locally generated agent key under scopes, caps, venues, and an expiry the server enforces, so routine mutations need one wallet interaction per session instead of one per action. The client side ships here: `mob grant create --scopes open,close --max-notional 5000 --max-tasks 3 --venues hl,lighter [--markets *] [--expires-hours 24]` generates the agent key once (a private file under `~/.mob/grants/`, never printed), stages the exact `Authorize Mobius agent: …` message for your wallet, and records the server's grant after `mob sign p-N`. `mob grant show` lists local records; `mob grant revoke <agent>` stages the revoke message. `--markets` takes base assets such as `BTC` or `NVDA`, not venue market strings. The Mobius API routes (`/api/agent-grants`, `/create`, `/revoke`) are roadmap item 9 and do not exist yet, so `create` and `revoke` probe first and refuse with a clear message. A grant is recorded locally only for the agent address you signed, and a revoke only when the server confirms it. Agent-signed mutations under a grant are not implemented until the server accepts them; `policy auto` still covers only API-key submissions.
+PRD section 6.6 lets the owner sign one message that authorizes a locally generated agent key under scopes, caps, venues, and an expiry the server enforces, so routine mutations need one wallet interaction per session instead of one per action. The client side ships here: `mob grant create --scopes open,close --max-notional 5000 --max-tasks 3 --venues hl,lighter [--markets *] [--expires-hours 24]` generates the agent key once (a private file under `~/.mob/grants/`, never printed), stages the exact `Authorize Mobius agent: …` message for your wallet, and records the server's grant after `mob sign p-N`. `mob grant show` lists local records; `mob grant revoke <agent>` stages the revoke message. `--markets` takes base assets such as `BTC` or `NVDA`, not venue market strings. The MoB API routes (`/api/agent-grants`, `/create`, `/revoke`) are roadmap item 9 and do not exist yet, so `create` and `revoke` probe first and refuse with a clear message. A grant is recorded locally only for the agent address you signed, and a revoke only when the server confirms it. Agent-signed mutations under a grant are not implemented until the server accepts them; `policy auto` still covers only API-key submissions.
 
 ## Setup flags and signature review
 

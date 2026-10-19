@@ -3,7 +3,7 @@ import { isApiKey, prefixOf, redactKey } from "../src/index.ts";
 
 const key = `mobius_01234567-89ab-cdef-0123-456789abcdef.${"ab".repeat(32)}`;
 
-test("validates, prefixes, and redacts a Mobius API key", () => {
+test("validates, prefixes, and redacts a MoB API key", () => {
 	expect(isApiKey(key)).toBe(true);
 	expect(isApiKey(key.toUpperCase())).toBe(false);
 	expect(prefixOf(key)).toBe("mobius_01234567-89ab-cdef-0123-456789abcdef…");
@@ -14,7 +14,7 @@ test("validates, prefixes, and redacts a Mobius API key", () => {
 
 test("redacts key-shaped text without requiring prior validation", () => {
 	expect(redactKey(`error: ${key}`)).not.toContain("ab".repeat(32));
-	expect(() => prefixOf("bad")).toThrow("Invalid Mobius API key");
+	expect(() => prefixOf("bad")).toThrow("Invalid MoB API key");
 });
 
 test("redactKey matches the W18 @mstack/mobius-api contract", () => {

@@ -154,7 +154,7 @@ test("human scan includes costs, execution flags, and footer even when empty", a
 		"break-even h",
 		"entry (mark est.)",
 		"net APY",
-		"Executable on Mobius",
+		"Executable on MoB",
 		"Best anywhere",
 		"vol24h",
 		"OI (long/short)",

@@ -355,7 +355,7 @@ test("native onboard signs the legal terms first when they are not accepted", as
 	const shown = lines.join("\n");
 	expect(shown).toContain("c-1 · ceremony · awaiting-prepare-signature");
 	expect(shown).toContain("Key      “desk” · cap $2,500");
-	expect(shown).toContain("1. · Accept Mobius legal terms");
+	expect(shown).toContain("1. · Accept MoB legal terms");
 	expect(shown).toContain("2. · Authorize venue binding preparation");
 	expect(shown).toContain("· Create API key “desk” and store it locally");
 	expect(shown).toContain("Next: mob sign c-1");

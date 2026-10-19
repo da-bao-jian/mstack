@@ -100,7 +100,7 @@ test("agent install doc stays short and exposes executable host commands", async
 test("canonical paste prompt is short and identical at every copy surface", async () => {
 	const prompt = await readFile(resolve(root, "docs/AGENT-PROMPT.md"), "utf8");
 	const readme = await readFile(resolve(root, "README.md"), "utf8");
-	const asks = await readFile(resolve(root, "docs/MOBIUS-ASKS.md"), "utf8");
+	const asks = await readFile(resolve(root, "docs/MOB-ASKS.md"), "utf8");
 	const canonical = firstTextBlock(prompt);
 	expect(canonical.split("\n").length).toBeLessThanOrEqual(6);
 	expect(canonical).toContain("run `mob` and reproduce its output verbatim");
@@ -114,6 +114,16 @@ test("canonical paste prompt is short and identical at every copy surface", asyn
 		if (command.includes("./setup --host codex"))
 			expect(codex).toContain(command);
 	expect(install).toContain("do not work around it");
+	// A restart drops the install chat, so the next step reloads in place and
+	// names the product; a bare "set me up" means nothing to a new session.
+	expect(canonical).toContain("/reload-plugins");
+	expect(install).toContain(
+		'type `/reload-plugins` in this session, then say "set up mstack"',
+	);
+	for (const block of [canonical, codex]) {
+		expect(block).toContain('"set up mstack"');
+		expect(block).not.toContain('"set me up"');
+	}
 	expect(firstTextBlock(readme, "## Paste this into your agent")).toBe(
 		canonical,
 	);

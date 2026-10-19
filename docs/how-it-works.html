@@ -60,7 +60,7 @@
   <div class="coords right"><span>A</span><span>B</span><span>C</span><span>D</span></div>
 
   <h1>mstack — how the system works</h1>
-  <p class="sub">An open-source funding-rate scanner and Mobius agent stack. <b>P0 (scan) and P1 (open) are built and verified</b> on <code>main</code> at <code>6a41cc9</code>: 677 tests, every mutation exercised end to end against fake Mobius and venue servers (no live trade was placed). Panels marked <span class="tag p1">P1 built</span> were design on 2026-10-10 and shipped on 2026-10-11.</p>
+  <p class="sub">An open-source funding-rate scanner and MoB agent stack. <b>P0 (scan) and P1 (open) are built and verified</b> on <code>main</code> at <code>6a41cc9</code>: 677 tests, every mutation exercised end to end against fake MoB and venue servers (no live trade was placed). Panels marked <span class="tag p1">P1 built</span> were design on 2026-10-10 and shipped on 2026-10-11.</p>
 
   <div class="grid">
 
@@ -106,7 +106,7 @@
         <path class="arrow" d="M720,66 L720,108"/><path class="arrow" d="M655,133 L457,133"/><path class="arrow" d="M325,133 L292,133"/><path class="arrow" d="M160,133 L127,133"/>
         <text class="lbl" x="330" y="90">snapshot.ts:77-94 · classify.ts:10 · rank.ts:151-255 · scan-view.ts:47-51</text>
       </svg>
-      <p>One live run on 2026-10-10 (my QA, not a fixture): 3,560 rows from 7 venue instances in 2.1 s, 0 failures, 2,997 pairs ranked, 31 qualifying, 585 executable on Mobius, 2,033 hidden as thin, 3 symbols unmatched. The CLI printed in 3.5 s.</p>
+      <p>One live run on 2026-10-10 (my QA, not a fixture): 3,560 rows from 7 venue instances in 2.1 s, 0 failures, 2,997 pairs ranked, 31 qualifying, 585 executable on MoB, 2,033 hidden as thin, 3 symbols unmatched. The CLI printed in 3.5 s.</p>
     </section>
 
     <!-- C ANATOMY -->
@@ -199,9 +199,9 @@ MOB_MISSING              <span class="mut">← the one line that stops the skill
       <p>Why the API check first used a 5 s timeout and failed: the production API takes 3–5 s to first byte. Measured, then raised to 10 s.</p>
     </section>
 
-    <!-- I MOBIUS API -->
+    <!-- I MOB API -->
     <section class="panel c7">
-      <div class="ph"><span class="chip">I</span><h2>The Mobius API as mstack uses it</h2><span class="cap">funding.mob.exchange</span></div>
+      <div class="ph"><span class="chip">I</span><h2>The MoB API as mstack uses it</h2><span class="cap">funding.mob.exchange</span></div>
       <p><b>Reads are public by owner address</b> (P0 uses them): <code>/api/arbitrage/list?owner=</code>, <code>task</code>, <code>liq-trims</code>, <code>resizes</code>, and the binding <code>credential</code> routes. <code>mob status</code> validates all 40 <code>publicTask</code> fields and labels <code>funding_usd</code> an estimate.</p>
       <p><b>Writes are wallet-signed plain text</b> <span class="tag p1">P1 built</span>: EIP-191 <code>personal_sign</code>, no EIP-712 domain, EOAs only, <code>|now − timestamp| ≤ 300 s</code>, CORS <code>*</code>, no API keys. The open message, byte-exact with the frontend builder:</p>
       <pre>Open arbitrage task: long=lighter:HYPE short=hl:HYPE sizeUsd=5000 longPrice=22.17 shortPrice=22.18 minFundingApy=0 nonce=&lt;uuid&gt; timestamp=1791640000
@@ -253,14 +253,14 @@ MOB_MISSING              <span class="mut">← the one line that stops the skill
       <div class="wrap"><table>
         <tr><th>Thing</th><th>Holder</th><th>Can it move funds?</th></tr>
         <tr><td>Owner wallet key</td><td>The user's wallet, always</td><td><span class="ok">✓</span> only the user</td></tr>
-        <tr><td>HL agent key (179 d)</td><td>Minted and held encrypted by the Mobius server</td><td><span class="bad">✗</span> trade, cancel, margin only; cannot withdraw</td></tr>
-        <tr><td>Aster agent key (365 d)</td><td>Mobius server</td><td><span class="bad">✗</span> perp-only, no spot, no withdraw</td></tr>
-        <tr><td>Lighter API key (no expiry)</td><td>Mobius server</td><td><span class="bad">!</span> can withdraw, but only to the owner's own L1 address. Not "trade-only"; the bind skill says so before the signature</td></tr>
-        <tr><td>Funds</td><td>The user's own venue accounts</td><td>Mobius never holds or routes them</td></tr>
+        <tr><td>HL agent key (179 d)</td><td>Minted and held encrypted by the MoB server</td><td><span class="bad">✗</span> trade, cancel, margin only; cannot withdraw</td></tr>
+        <tr><td>Aster agent key (365 d)</td><td>MoB server</td><td><span class="bad">✗</span> perp-only, no spot, no withdraw</td></tr>
+        <tr><td>Lighter API key (no expiry)</td><td>MoB server</td><td><span class="bad">!</span> can withdraw, but only to the owner's own L1 address. Not "trade-only"; the bind skill says so before the signature</td></tr>
+        <tr><td>Funds</td><td>The user's own venue accounts</td><td>MoB never holds or routes them</td></tr>
         <tr><td>mstack config, proposals, keystore</td><td><code>~/.mob</code>, mode 0600</td><td>Keystore: only with the TTY passphrase</td></tr>
         <tr><td>Session grant (P3)</td><td>Server stores the grant, never the key</td><td>Scoped: open/resize/close within caps; never bind, deposit or withdraw</td></tr>
       </table></div>
-      <p>Everything the agent reads is public by wallet address on the Mobius API. Anyone who knows the address can see the tasks.</p>
+      <p>Everything the agent reads is public by wallet address on the MoB API. Anyone who knows the address can see the tasks.</p>
     </section>
 
     <!-- L LIMITS -->
@@ -287,7 +287,7 @@ MOB_MISSING              <span class="mut">← the one line that stops the skill
       <div class="ph"><span class="chip">M</span><h2>How it was built, and what only live data showed</h2><span class="cap">docs/reports, docs/prompts</span></div>
       <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
         <div>
-          <p><b>Timeline, all 2026-10-10.</b> PRD 014 written (repo <code>mobius</code>) → P0 packages W0–W5 built by Codex (<code>gpt-6-astra</code>) with Fable as coordinator and QA, five fix rounds → repo moved to <code>da-bao-jian/mstack</code>, renamed, CI green → P1 plan written client-only because the Mobius server cannot change now → P1 built 2026-10-11 (W7 proposals, W8 browser + WalletConnect, W9 setup/legal/bind, W10 open/manage, W11 skills + MCP + sign-guard hook), through a 13-hour npm/GitHub outage that forced the Hyperliquid approvals to be ported from SDK sources instead of installed.</p>
+          <p><b>Timeline, all 2026-10-10.</b> PRD 014 written (MoB repo) → P0 packages W0–W5 built by Codex (<code>gpt-6-astra</code>) with Fable as coordinator and QA, five fix rounds → repo moved to <code>da-bao-jian/mstack</code>, renamed, CI green → P1 plan written client-only because the MoB server cannot change now → P1 built 2026-10-11 (W7 proposals, W8 browser + WalletConnect, W9 setup/legal/bind, W10 open/manage, W11 skills + MCP + sign-guard hook), through a 13-hour npm/GitHub outage that forced the Hyperliquid approvals to be ported from SDK sources instead of installed.</p>
           <p><b>The loop.</b> <code>AGENTS.md</code> fixes the rules, <code>docs/BUILD-PLAN.md</code> the packages. Each brief goes to one Codex thread; Codex commits and writes <code>docs/reports/Wn.md</code>; Fable reruns every gate, runs the binary on live venues, reads the code, and answers with APPROVED or a numbered fix list. Codex never pushes.</p>
           <p><b>Gates on every commit:</b> <code>tsc --build</code>, Biome with zero warnings, 379 tests on recorded fixtures with the network blocked, knip dead-code, build, <code>claude plugin validate</code>, skill regeneration diff.</p>
         </div>

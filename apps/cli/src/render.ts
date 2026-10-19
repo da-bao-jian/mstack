@@ -84,7 +84,7 @@ export function renderScan(
 ): string {
 	return [
 		`Net APY estimate: ${holdDays}-day hold; annualized = simple, not compounded`,
-		paint("Executable on Mobius", "sky", terminal),
+		paint("Executable on MoB", "sky", terminal),
 		scanTable(view.executable, true),
 		...(executableOnly
 			? []

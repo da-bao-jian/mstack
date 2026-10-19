@@ -74,7 +74,7 @@ Usage:
   mob risk-ack                 (records the first-open risk questions for 24 hours)
   mob approver [--idle-minutes N=30]   (your terminal: unlock the keystore once, approve each card with y)
   mob grant create --scopes a,b --max-notional <usd> --max-tasks <n> --venues a,b [--markets *|BTC,ETH] [--expires-hours N=24]
-  mob grant show | mob grant revoke <agent>   (session grants, PRD 6.6; needs Mobius API support)
+  mob grant show | mob grant revoke <agent>   (session grants, PRD 6.6; needs MoB API support)
   mob upgrade
   mob mcp
   mob hook sign-guard

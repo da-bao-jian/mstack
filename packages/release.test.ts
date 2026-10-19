@@ -48,7 +48,7 @@ async function fixture() {
 		"README.md": "Read docs at <tag>. Last release v0.1.0.\n",
 		"docs/AGENT-INSTALL.md": "Install release <tag> from <tag>.\n",
 		"docs/AGENT-PROMPT.md": "Prompt for <tag>.\n",
-		"docs/MOBIUS-ASKS.md": "Ask G quotes <tag>.\n",
+		"docs/MOB-ASKS.md": "Ask G quotes <tag>.\n",
 		"skills/mob/SKILL.md": "version: 0.1.0\n",
 	};
 	for (const [file, body] of Object.entries(files)) {
@@ -211,7 +211,7 @@ test("release tag dry run reports every placeholder without editing", async () =
 	).toEqual([
 		{ file: "docs/AGENT-INSTALL.md", replacements: 2 },
 		{ file: "docs/AGENT-PROMPT.md", replacements: 1 },
-		{ file: "docs/MOBIUS-ASKS.md", replacements: 1 },
+		{ file: "docs/MOB-ASKS.md", replacements: 1 },
 		{ file: "README.md", replacements: 2 },
 	]);
 	expect(formatReleaseTagPlan(plan)).toContain("docs/AGENT-INSTALL.md: 2");

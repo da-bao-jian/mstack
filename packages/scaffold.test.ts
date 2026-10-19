@@ -6,7 +6,7 @@ test("README states the session-key custody boundary", async () => {
 	).text();
 	for (const statement of [
 		"Your wallet key never leaves your wallet.",
-		"The Mobius API key is a scoped trading key.",
+		"The MoB API key is a scoped trading key.",
 		"It cannot withdraw, bind venues, approve fees, accept legal terms, or create keys.",
 		"A key pasted for onboarding remains in the chat transcript and local agent session logs.",
 		"Your funds stay in your own venue accounts.",

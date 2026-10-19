@@ -8,9 +8,9 @@ One sitting, about an hour, with a wallet that holds a little collateral on two 
 - Fund the two venues you will use. Hyperliquid refuses agent approval from a wallet that never deposited.
 - Keep `docs/READINESS.md` open; its checklist is the same list in short form.
 
-## 1. Onboard on the Mobius API page (about 10 minutes)
+## 1. Onboard on the MoB API page (about 10 minutes)
 
-In the chat, say: **set me up, my wallet is 0x…**. The agent runs `mob onboard`, prints the page link and a checklist like this:
+In the chat, say: **set up mstack, my wallet is 0x…**. The agent runs `mob onboard`, prints the page link and a checklist like this:
 
 ```text
 Open https://app.mob.exchange/?nav=api

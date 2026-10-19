@@ -243,7 +243,7 @@ export async function setup(
 				`Installed ${host}: mob, mob-scan, mob-explain, mob-status, mob-setup, mob-bind, mob-open, mob-manage, mob-close, mob-keys. Binary: ${join(home, host === "codex" ? ".agents" : ".claude", "skills/mstack/bin/mob")}`,
 			);
 			out(
-				`Optional AGENTS.md integration:\nUse ${host === "claude" ? "/mob" : "$mob"} for funding and Mobius questions. The installed mstack skills cover scanning, explanations, status, onboarding, keys, binding repair, opening, managing, and closing. Manual submit and wallet signing require the latest user message to name the Proposal id; keystore signing needs the human's own terminal.`,
+				`Optional AGENTS.md integration:\nUse ${host === "claude" ? "/mob" : "$mob"} for funding and MoB questions. The installed mstack skills cover scanning, explanations, status, onboarding, keys, binding repair, opening, managing, and closing. Manual submit and wallet signing require the latest user message to name the Proposal id; keystore signing needs the human's own terminal.`,
 			);
 		}
 	}

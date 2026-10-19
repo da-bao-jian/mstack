@@ -31,7 +31,7 @@ afterEach(async () => {
 	);
 });
 
-/** A fake Mobius API implementing the proposed agent-grant contract. */
+/** A fake MoB API implementing the proposed agent-grant contract. */
 function fakeGrantServer(
 	owner: string,
 	options: { supported: boolean; answerAgent?: string },

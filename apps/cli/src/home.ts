@@ -244,7 +244,7 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 	const next = awaiting
 		? `mob sign ${awaiting}`
 		: !ready
-			? 'say "set me up"'
+			? 'say "set up mstack"'
 			: market.topPairs[0]
 				? `say "open ${market.topPairs[0].base}"   or   mob scan`
 				: "mob scan";

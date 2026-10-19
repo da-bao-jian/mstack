@@ -156,7 +156,7 @@ export async function openFlow(
 			`Fake funding-server: ${server.writes.length} POSTs; each signer recovered with hashMessage + recoverAddress; every body field matched. Repeat signing refused.`,
 		);
 		log(
-			"Task execution is simulated by the fixture; no live venue or Mobius write occurred.",
+			"Task execution is simulated by the fixture; no live venue or MoB write occurred.",
 		);
 		return {
 			writes: server.writes.length,

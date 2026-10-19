@@ -7,6 +7,11 @@ not a claim that public release tags or artifacts were published.
 <!-- release-start -->
 ## [Unreleased]
 
+### Changed
+
+- The exchange is called MoB in every prompt, guide, skill, and CLI message. Strings the server verifies keep their upstream spelling: signed message prefixes, the legal statement, the `mobius_` key prefix, the `mobius-bot` agent name, the keychain service, and `MOBIUS_API_KEY`, which MoB's own quick start exports.
+- The install ends with `/reload-plugins` in the same Claude Code session, so the chat keeps its context; the next step is "set up mstack", which names the product. A bare "set me up" in a new session had no context. The welcome's Next line and the setup skill's trigger phrases match.
+
 ## [0.4.4] - 2026-10-19
 
 ### Changed

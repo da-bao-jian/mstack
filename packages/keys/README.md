@@ -1,6 +1,6 @@
 # `@mstack/keys`
 
-This package stores one Mobius API key per owner. Public methods return the full
+This package stores one MoB API key per owner. Public methods return the full
 secret only from `get`. `describe` returns the prefix, backend, and metadata.
 
 Backend selection uses `MOBIUS_API_KEY` first. That backend is read-only. With

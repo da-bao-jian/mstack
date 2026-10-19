@@ -9,21 +9,21 @@ const version = (await Bun.file(join(root, "package.json")).json()).version;
 
 test("every skill description starts with its task and quotes trigger phrases, including first contact", () => {
 	const tasks: Record<string, string> = {
-		mob: "Start here for mstack and Mobius.",
+		mob: "Start here for mstack and MoB.",
 		"mob-scan": "Compare perpetual funding rates",
 		"mob-setup": "Onboard to API-key trading",
-		"mob-status": "Read Mobius position status",
+		"mob-status": "Read MoB position status",
 		"mob-bind": "Repair venue binding or use native onboarding",
-		"mob-explain": "Explain funding and Mobius mechanics",
+		"mob-explain": "Explain funding and MoB mechanics",
 		"mob-open": "Open a position with a scoped API key",
 		"mob-manage": "Manage a position with the API key when supported",
 		"mob-close": "Close a position with a scoped API key",
-		"mob-keys": "Manage the scoped Mobius API key safely",
+		"mob-keys": "Manage the scoped MoB API key safely",
 	};
 	const everyday: Record<string, string> = {
 		mob: "what can you do",
 		"mob-scan": "where is the best funding right now",
-		"mob-setup": "set me up",
+		"mob-setup": "set up mstack",
 		"mob-status": "what positions do I have",
 	};
 	for (const [file, content] of generated) {
@@ -149,4 +149,31 @@ test("plugin manifest pins one version, no MCP registration, a guarded hook, and
 			expect(hook.onFailure).toBe("block");
 			expect(hook.timeout).toBeGreaterThanOrEqual(10);
 		}
+});
+
+test("text calls the exchange MoB; Mobius stays only where the server checks it", async () => {
+	// Records, the PRD, vendored upstream files and the changelog keep their wording.
+	const history =
+		/^(?:docs\/(?:reports|prompts)\/|docs\/PRD\.md$|reference\/|CHANGELOG\.md$|bun\.lock$|packages\/mobius-api\/src\/openapi-1\.2\.0\.json$)/;
+	// Signed messages, key formats, agent and builder names, the keychain
+	// service, provenance, package names and MoB's own quick-start variable.
+	const kept =
+		/mobius@[0-9a-f]{7,}|@mobius\/liquidation|mobius-(?:client|api|bot)|MobiusClient|MOBIUS_API_KEY|mobius_|X-Mobius-Client|Mobius (?:Legal|API keys: |venue binding v1|Terms of Service and Privacy Policy|agent:)|BuilderName: "Mobius"|builderName: "mobius"/g;
+	const files = Bun.spawnSync(["git", "ls-files", "-z"], { cwd: root })
+		.stdout.toString()
+		.split("\0")
+		.filter(
+			(file) =>
+				file && !history.test(file) && join(root, file) !== import.meta.path,
+		);
+	expect(files.length).toBeGreaterThan(100);
+	const found: string[] = [];
+	for (const file of files) {
+		const lines = (await readFile(join(root, file), "utf8")).split("\n");
+		lines.forEach((line, index) => {
+			if (/mobius/i.test(line.replace(kept, "")))
+				found.push(`${file}:${index + 1}`);
+		});
+	}
+	expect(found).toEqual([]);
 });

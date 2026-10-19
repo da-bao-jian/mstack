@@ -172,7 +172,7 @@ export const mcpTools = [
 	),
 	tool<{ topic?: string; simple?: boolean }>(
 		"explain",
-		"Read bundled Markdown about funding, basis, fees, and Mobius protection. Omit topic to list topics.",
+		"Read bundled Markdown about funding, basis, fees, and MoB protection. Omit topic to list topics.",
 		{
 			topic: text(
 				"Bundled topic name, such as funding, annualization, or liquidation-protection.",

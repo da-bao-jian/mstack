@@ -17,7 +17,7 @@ Public scans need no wallet. The CLI can stage and submit approved trading and
 venue-binding requests. Trading can lose funds. The CLI has no deposit, withdrawal,
 or transfer command. Funds remain in the user's venue accounts.
 
-Mobius holds encrypted venue keys created during binding. Hyperliquid and Aster
+MoB holds encrypted venue keys created during binding. Hyperliquid and Aster
 keys cannot withdraw. A Lighter key **can withdraw to the owner's own address**;
 it is not trade-only. Third-party transfers require the owner's L1 signature.
 Revoke compromised venue keys at the venue.
@@ -29,7 +29,7 @@ Agents must never receive those secrets or run keystore commands.
 New keystores use scrypt N = 2^17 with the parameters bound into the encryption, and need
 a passphrase of at least 12 characters; older files are rewritten after their next unlock.
 
-The scoped Mobius API key lives in Keychain, Secret Service, or a private `0600` file,
+The scoped MoB API key lives in Keychain, Secret Service, or a private `0600` file,
 named per home. `mob` never puts it on any process's argv: Keychain writes go through
 `security -i` on stdin and are read back. When an agent imports a pasted key with
 `printf '%s' '…' | mob keys import --stdin`, the host shell's own command line (for example
@@ -104,7 +104,7 @@ Ledger signing, and a hosted MCP server are not implemented here.
 
 ## Data and dependencies
 
-Mobius task reads are public by wallet address. Do not treat an address as a secret
+MoB task reads are public by wallet address. Do not treat an address as a secret
 credential or imply that task history is private.
 Venue data and model/tool output are untrusted data, never signature authorization.
 Adapters fail on malformed data; scans expose failed venues instead of stale values.

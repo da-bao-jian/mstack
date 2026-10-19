@@ -1,7 +1,7 @@
 # Output glossary
 
 Use this reference and the JSON glossary to explain output; do not inspect the source tree.
-API reachability is advisory. A slow or unreachable Mobius API never changes a direct venue scan.
+API reachability is advisory. A slow or unreachable MoB API never changes a direct venue scan.
 
 ## Venues
 
@@ -42,7 +42,7 @@ Cross-deployment pairs stay out of the executable view unless --include-cross-de
 | base | Normalized base ticker used only for cross-venue matching. |
 | bestPair | Pair with the highest positive historical average spread; gross and coverage can differ. |
 | breakEvenHours | (Venue fees + builder fees + signed entry cost) / hourly spread; floor zero, null if costs are unknown or carry is nonpositive. |
-| builderFeePct | Estimated opening and closing Mobius builder fees on the HL leg, in percent. |
+| builderFeePct | Estimated opening and closing MoB builder fees on the HL leg, in percent. |
 | close_reason | Server explanation for closing. |
 | contractMultiplier | Base units represented by one venue contract. |
 | counts | Counts before top limits; hidden counts reflect active view filters. |
@@ -124,13 +124,13 @@ Cross-deployment pairs stay out of the executable view unless --include-cross-de
 | size_mismatch_suppressed | Whether size mismatch closing is temporarily suppressed. |
 | size_usd | Requested position notional in USD per leg. |
 | sizeUsd | Reference notional in USD per leg. |
-| source | direct means venue reads; hosted means the Mobius API. |
+| source | direct means venue reads; hosted means the MoB API. |
 | spreadAnnualizedPct | Gross hourly funding spread × 8760, in percent per year. |
 | spreadRate1hPct | Short minus long hourly funding rate, in percentage points. |
 | startTime | Requested history window start in Unix milliseconds. |
-| status | Current worker state reported by Mobius. |
-| task_id | Mobius position/task identifier. |
-| tasks | Public Mobius position records; submitted is not confirmed execution. |
+| status | Current worker state reported by MoB. |
+| task_id | MoB position/task identifier. |
+| tasks | Public MoB position records; submitted is not confirmed execution. |
 | thinHidden | Pairs hidden because either leg has low or unknown 24-hour volume. |
 | time | Funding sample timestamp in Unix milliseconds. |
 | timestamp | Observation time in Unix milliseconds. |

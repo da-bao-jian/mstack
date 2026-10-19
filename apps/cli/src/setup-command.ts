@@ -113,7 +113,7 @@ export async function stageLegal(rt: Runtime, fresh = false) {
 			!fresh &&
 			(await client.read("/legal/acceptance", { wallet: owner })).accepted
 		) {
-			rt.out("Current Mobius legal terms already accepted.");
+			rt.out("Current MoB legal terms already accepted.");
 			return;
 		}
 		if ((config.policy ?? "manual") === "locked") {
@@ -170,7 +170,7 @@ export async function stageLegal(rt: Runtime, fresh = false) {
 			{
 				kind: "sign-typed",
 				owner,
-				purpose: "Accept Mobius legal terms",
+				purpose: "Accept MoB legal terms",
 				signing: {
 					type: "typed",
 					typedData: {

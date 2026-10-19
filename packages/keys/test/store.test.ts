@@ -260,7 +260,7 @@ test("secret-tool sends the secret only on stdin", async () => {
 			"/fake/secret-tool",
 			"store",
 			"--label",
-			"mstack Mobius API key",
+			"mstack MoB API key",
 			"service",
 			"mstack.mobius-api",
 			"owner",

@@ -7,13 +7,13 @@ export function isApiKey(value: string): boolean {
 }
 
 export function prefixOf(value: string): string {
-	if (!isApiKey(value)) throw new Error("Invalid Mobius API key");
+	if (!isApiKey(value)) throw new Error("Invalid MoB API key");
 	return `${value.slice(0, value.indexOf("."))}…`;
 }
 
 /** The public key id: the UUID between `mobius_` and the secret. */
 export function keyIdOf(value: string): string {
-	if (!isApiKey(value)) throw new Error("Invalid Mobius API key");
+	if (!isApiKey(value)) throw new Error("Invalid MoB API key");
 	return value.slice("mobius_".length, value.indexOf("."));
 }
 

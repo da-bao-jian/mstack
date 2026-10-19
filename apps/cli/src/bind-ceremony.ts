@@ -38,7 +38,7 @@ export function bindingCeremony(p: Proposal): string {
 	const { venue, step } = binding;
 	const action =
 		step === "prepare"
-			? "This signature asks Mobius to prepare a venue key."
+			? "This signature asks MoB to prepare a venue key."
 			: step === "approve-builder-fee"
 				? "This signature approves the builder fee shown in the Proposal."
 				: step === "approve-integrator"
@@ -50,5 +50,5 @@ export function bindingCeremony(p: Proposal): string {
 			: p.submit.completion
 				? "After submission, mob checks binding status and completes the stored finalization steps."
 				: `After submission, run mob bind ${venue} to check the next step.`;
-	return `${bindingSteps(venue, step, venue === "hl" && step === "approve-agent" && !!p.submit.completion)}\n${action}\n${after}\nThe Mobius server creates and holds this venue key.`;
+	return `${bindingSteps(venue, step, venue === "hl" && step === "approve-agent" && !!p.submit.completion)}\n${action}\n${after}\nThe MoB server creates and holds this venue key.`;
 }

@@ -130,7 +130,7 @@ test("no args home: live market, account standing and next action share the logo
 	expect(r.out).toContain("Top pairs  BTC");
 	expect(r.out).toContain("Trending   BTC");
 	expect(r.out).toContain("Onboarding legal ✓");
-	expect(r.out).toContain('Next       say "set me up"');
+	expect(r.out).toContain('Next       say "set up mstack"');
 	expect(r.out).toContain("live · 2 of 14 venues");
 	expect(r.out.split("\n")[0].indexOf("mstack")).toBe(35);
 	expect(fake.calls).toHaveLength(7);
@@ -242,7 +242,7 @@ test("big has 25 art rows; compact uses the 13-row home and offline makes no HTT
 		"--offline",
 	]);
 	expect(compactOffline.out).toStartWith("<mob-home>\n");
-	expect(compactOffline.out).toContain('Next       say "set me up"');
+	expect(compactOffline.out).toContain('Next       say "set up mstack"');
 	expect(compactOffline.out).not.toContain("sky  ");
 	const big = await invoke(["--big", "--plain", "--offline"]);
 	expect(big.out.split("\n").filter((line) => /[░▒█]/.test(line))).toHaveLength(
@@ -258,7 +258,7 @@ test("big has 25 art rows; compact uses the 13-row home and offline makes no HTT
 test("no config Next setup and auth terms read; no owner-specific routes", async () => {
 	const { invoke, fake } = await context(false);
 	const r = await invoke(["--plain"]);
-	expect(r.out).toContain('Next       say "set me up"');
+	expect(r.out).toContain('Next       say "set up mstack"');
 	expect(r.out).toContain("new account");
 	expect(fake.calls.map((c) => new URL(c.url).pathname).sort()).toEqual([
 		"/api/client-ip",
@@ -272,7 +272,7 @@ test("configured but unbound Next bind; empty tasks and absent acceptance", asyn
 	fake.state.accepted = false;
 	const { out } = await invoke(["hello"]);
 	expect(out).toContain("Onboarding legal ✗");
-	expect(out).toContain('Next       say "set me up"');
+	expect(out).toContain('Next       say "set up mstack"');
 });
 test("JSON includes local Proposals and gives pending Proposal Next priority", async () => {
 	const { invoke, home } = await context();

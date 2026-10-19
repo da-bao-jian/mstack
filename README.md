@@ -21,17 +21,17 @@
  ░░░░░░░░░░░░░░░░░█
 ```
 
-Scan funding rates, onboard one scoped Mobius API key, and trade within its venue and USD caps.
+Scan funding rates, onboard one scoped MoB API key, and trade within its venue and USD caps.
 
 ## Paste this into your agent
 
 ```text
-Install mstack, the Mobius funding-arbitrage agent stack, and get me ready to trade. I authorize exactly:
+Install mstack, the MoB funding-arbitrage agent stack, and get me ready to trade. I authorize exactly:
 claude plugin marketplace add da-bao-jian/mstack && claude plugin install mstack@mstack
 curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.4/install.sh | sh
 Then follow https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.4/docs/AGENT-INSTALL.md from Verify: `mob --version`, `mob doctor`,
 run `mob` and reproduce its output verbatim in a fenced block as the welcome.
-Tell me if I need to restart; when the skills load, start with "set me up".
+Finish by telling me to type /reload-plugins, then say "set up mstack".
 ```
 
 ## Install
@@ -113,7 +113,7 @@ GUI clients may not inherit your shell's PATH. MCP reads public, onboarding, and
 ## What you can do
 
 1. **Install.** Use the plugin, binary installer, or clone setup above. Run `mob --version`.
-2. **Onboard.** Say "set me up". Setup first asks whether you bring your own wallet (a browser extension, a phone wallet over WalletConnect, or your key imported into mstack's encrypted keystore with `mob keystore import`) or create a new one with `mob keystore create`; keystore commands run in your own terminal, never in the chat. Or run `mob onboard --native --owner 0x… --venues hl,lighter --max-size 5000`, then `mob sign c-N --with browser`. One wallet session accepts the legal terms, binds the venues, creates a scoped key with that cap, and stores it locally; the key never prints. Require the `Ready · …` line. Without a wallet on this machine, `mob onboard` prints the Mobius API page instead: paste the key once for `mob keys import --stdin`, or run `mob keys import` yourself for a hidden terminal paste.
+2. **Onboard.** Say "set up mstack". Setup first asks whether you bring your own wallet (a browser extension, a phone wallet over WalletConnect, or your key imported into mstack's encrypted keystore with `mob keystore import`) or create a new one with `mob keystore create`; keystore commands run in your own terminal, never in the chat. Or run `mob onboard --native --owner 0x… --venues hl,lighter --max-size 5000`, then `mob sign c-N --with browser`. One wallet session accepts the legal terms, binds the venues, creates a scoped key with that cap, and stores it locally; the key never prints. Require the `Ready · …` line. Without a wallet on this machine, `mob onboard` prints the MoB API page instead: paste the key once for `mob keys import --stdin`, or run `mob keys import` yourself for a hidden terminal paste.
 3. **Scan.** Run `mob scan --size 1000` to compare executable pairs and the best pairs anywhere.
    Funding annualization is simple, not compounded: `ratePerInterval / intervalHours × 24 × 365 × 100`.
    Fees and mark entry costs are estimates. Failed venues remain visible.
@@ -141,11 +141,11 @@ See [usage and signing details](docs/USAGE.md) and the [CLI reference](apps/cli/
 ## Custody
 
 - **Your wallet key never leaves your wallet.** mstack signs through your browser wallet, WalletConnect, or a keystore only you can unlock. Nothing in the agent, the MCP server or the skills can produce that wallet signature.
-- **The Mobius API key is a scoped trading key.** It can open, cancel, close, and resize only for its named venues and USD cap per leg. It cannot withdraw, bind venues, approve fees, accept legal terms, or create keys. It has no expiry; revoke it on the API page or through the signed revoke flow.
+- **The MoB API key is a scoped trading key.** It can open, cancel, close, and resize only for its named venues and USD cap per leg. It cannot withdraw, bind venues, approve fees, accept legal terms, or create keys. It has no expiry; revoke it on the API page or through the signed revoke flow.
 - **Chat paste is an explicit trade-off.** A key pasted for onboarding remains in the chat transcript and local agent session logs. The agent places it once in a single-quoted shell-builtin `printf` input and pipes it to `mob keys import --stdin`. `mob` never puts the key on its own or a child's argv, in a file, an environment variable, or a reply. The host shell's command line (for example `/bin/zsh -c '…'`) carries it while that one command runs, which is part of this trade-off. The CLI stores it in Keychain, Secret Service, or a private `0600` file, under a name scoped to its `MOB_HOME`. The MCP server never imports or reveals it. An unverified import needs an explicit user request.
-- **Your funds stay in your own venue accounts.** Mobius never holds, routes or custodies funds. The Mobius worker places and closes orders with venue keys that cannot withdraw (Hyperliquid, Aster) or can withdraw only to your own address (Lighter). You can revoke every key at the venue at any time.
-- **What Mobius does hold:** a hash of the API key, encrypted venue trading keys minted during binding, and task history. The server never stores the API key secret in plaintext.
-- **Everything the agent reads is public** by wallet address on the Mobius API. Anyone who knows your address can see your tasks.
+- **Your funds stay in your own venue accounts.** MoB never holds, routes or custodies funds. The MoB worker places and closes orders with venue keys that cannot withdraw (Hyperliquid, Aster) or can withdraw only to your own address (Lighter). You can revoke every key at the venue at any time.
+- **What MoB does hold:** a hash of the API key, encrypted venue trading keys minted during binding, and task history. The server never stores the API key secret in plaintext.
+- **Everything the agent reads is public** by wallet address on the MoB API. Anyone who knows your address can see your tasks.
 
 The current release supports scoped API-key trading plus browser, WalletConnect, and terminal keystore signing. Ledger remains planned.
 

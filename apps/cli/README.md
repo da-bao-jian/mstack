@@ -20,7 +20,7 @@ Run `mob --help` or `mob --version` for local information. Unknown commands, fla
 
 ## Scan and rates
 
-`scan` defaults to size USD 1,000 and a seven-day hold (`--hold-days`). It shows two sections: Executable on Mobius (five rows, `--top-exec`) and Best anywhere (ten rows, `--top`). Both limits must be integers from 1 to 200; larger values are usage errors, including with full JSON output. Each section sorts by estimated net APY descending, null last, and independently picks the first pair per base. `--all-pairs` keeps alternatives in both. `--executable` shows only the first section, using `--top`. `--min-apy` continues to filter the gross simple annualized spread; `--market` filters both sections. `--venues` selects which adapters are called.
+`scan` defaults to size USD 1,000 and a seven-day hold (`--hold-days`). It shows two sections: Executable on MoB (five rows, `--top-exec`) and Best anywhere (ten rows, `--top`). Both limits must be integers from 1 to 200; larger values are usage errors, including with full JSON output. Each section sorts by estimated net APY descending, null last, and independently picks the first pair per base. `--all-pairs` keeps alternatives in both. `--executable` shows only the first section, using `--top`. `--min-apy` continues to filter the gross simple annualized spread; `--market` filters both sections. `--venues` selects which adapters are called.
 
 Net APY subtracts `(taker + builder + max(mark entry cost, 0)) × 365 / holdDays` from the gross annualized spread. Negative mark entry cost never counts as a gain. Break-even retains the signed upstream calculation. This is a simple annualized estimate for a fixed hold, not compounding or a promise that rates persist. The first section omits EXEC; the second includes it.
 
@@ -48,7 +48,7 @@ Fetchers and offline fixtures live in `packages/funding/src/history/` and `packa
 
 `status` uses `--owner` or the saved `owner` config key. Without either, it exits 1 and names the missing key. Without `--task`, it reads the owner's task list. With a task ID, it reads that task. `--trims` and `--resizes` require `--task` and read every available log page. The output displays every field projected by the pinned upstream `publicTask`, including funding accrued labeled **estimate**, protection/mismatch controls, notices, close reason, error context, and timestamps. Its footer shows API base, fetch age, task count, and requested trim/resize counts.
 
-The API base defaults to `https://funding.mob.exchange`. `--api-base` overrides config for that request. Every Mobius request sends `X-Mobius-Client: mstack/<version>` and `User-Agent: mstack/<version>`, using the built package version. Non-2xx and malformed responses fail with HTTP status and a bounded body excerpt. JSON status output wraps tasks/logs with observation and source metadata. Reads by owner address are public. No populated task was verified live; tests use the explicitly hand-written public-task fixture.
+The API base defaults to `https://funding.mob.exchange`. `--api-base` overrides config for that request. Every MoB request sends `X-Mobius-Client: mstack/<version>` and `User-Agent: mstack/<version>`, using the built package version. Non-2xx and malformed responses fail with HTTP status and a bounded body excerpt. JSON status output wraps tasks/logs with observation and source metadata. Reads by owner address are public. No populated task was verified live; tests use the explicitly hand-written public-task fixture.
 
 ## Config
 
@@ -96,7 +96,7 @@ Set `mob config set owner 0x…` and `mob config set signer keystore`, `browser`
 
 Proposals expire after 300 seconds. A signed attempt cannot be retried, even after a server failure. Submission acknowledgement does not confirm execution. MCP can stage and inspect Proposals but cannot sign, submit, or reject them. See [Proposal storage](../../packages/proposals/README.md) and [keystores](../../packages/signers/README.md).
 
-Run `bun apps/cli/scripts/smoke-proposals.ts` from the repository root for a disposable-keystore transcript against a loopback fake server. It injects a test-only secret reader, verifies the signer and every request field, and removes its temporary home. It makes no live Mobius or venue requests.
+Run `bun apps/cli/scripts/smoke-proposals.ts` from the repository root for a disposable-keystore transcript against a loopback fake server. It injects a test-only secret reader, verifies the signer and every request field, and removes its temporary home. It makes no live MoB or venue requests.
 
 ## Setup and binding
 
@@ -114,7 +114,7 @@ The browser backend works from an agent's shell without a secret or TTY. It prin
 
 The HTML is bundled into `mob` and loads no external resources. Its local server uses a fresh in-memory token and strict CSP, checks the POST Origin and signature recovery, and closes after one accepted signature, human rejection, or expiry. Invalid HTTP submissions do not consume the token. Closing the tab leaves the request waiting until expiry; use the page's Reject button to cancel immediately.
 
-Run `bun run smoke:browser` from the root for the fake wallet and fake funding-server transcript. No real browser, relay, venue, or Mobius write is used.
+Run `bun run smoke:browser` from the root for the fake wallet and fake funding-server transcript. No real browser, relay, venue, or MoB write is used.
 
 ## Open and manage
 
@@ -155,7 +155,7 @@ A typed-data domain's chain ID pins the session and request chain. Unpinned text
 
 The backend uses `@walletconnect/sign-client` 2.25.0 and `qrcode-terminal` 0.12.0. Relay communication is required for this backend. SDK telemetry and logging are disabled. Pairing state and protocol keys stay in memory, with a separate storage namespace for each interaction. The relay connection and heartbeat are closed at the end. The SDK runs in a short-lived worker, which is terminated after cleanup to discard pending protocol timers.
 
-`bun run smoke:walletconnect:mock` uses a mocked sign-client and a real loopback fake funding-server. It does not contact a relay. With your owner and project ID configured, `MOB_LIVE=1 bun run smoke:walletconnect` prints a real pairing URI and waits up to 60 seconds for a mobile wallet to sign a harmless test message. It makes no Mobius or venue submission. Without `MOB_LIVE=1`, the live script refuses before contacting a relay.
+`bun run smoke:walletconnect:mock` uses a mocked sign-client and a real loopback fake funding-server. It does not contact a relay. With your owner and project ID configured, `MOB_LIVE=1 bun run smoke:walletconnect` prints a real pairing URI and waits up to 60 seconds for a mobile wallet to sign a harmless test message. It makes no MoB or venue submission. Without `MOB_LIVE=1`, the live script refuses before contacting a relay.
 
 ## Home and doctor
 

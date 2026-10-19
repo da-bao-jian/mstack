@@ -51,7 +51,7 @@ function nativeLeg(value: string | undefined) {
 	const venue = value.slice(0, separator),
 		market = value.slice(separator + 1);
 	if (!(executionVenues as readonly string[]).includes(venue))
-		throw new UsageError(`${venue} is not executable on Mobius`);
+		throw new UsageError(`${venue} is not executable on MoB`);
 	return { venue, market };
 }
 function resolveRow(
@@ -420,7 +420,7 @@ export async function stagePosition(
 			)
 		)
 			purpose +=
-				" · not available through the API key yet (Mobius ask D); sign with your wallet";
+				" · not available through the API key yet (MoB ask D); sign with your wallet";
 		if (["close", "cancel", "resize"].includes(command)) {
 			apiRoute = `/v1/delta-neutral/tasks/${args[0]}/${command}`;
 			apiBody =

@@ -394,7 +394,7 @@ export class CeremonyStore {
 								legal: ceremonyStep(
 									`${id}:legal`,
 									owner,
-									"Accept Mobius legal terms",
+									"Accept MoB legal terms",
 									structuredClone(input.legal.signing),
 									createdAt,
 									expiresAt,
