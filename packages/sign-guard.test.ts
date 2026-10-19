@@ -762,6 +762,10 @@ test.each([
 		"mob setup --policy",
 	],
 	["mob upgrade", "mob upgrade"],
+	// Agents never run keystore commands; /mob-setup hands them to the human.
+	["mob keystore create", "mob keystore"],
+	['"$MOB_BIN" keystore import', "mob keystore"],
+	["~/.mob/bin/mob-0.4.2 keystore list", "mob keystore"],
 	[
 		"mob onboard --owner 0x0000000000000000000000000000000000000001 --app-base https://example.test",
 		"mob onboard --app-base",
@@ -780,9 +784,11 @@ test.each([
 
 test.each([
 	"mob config set default_size_usd 5000",
-	// AGENT-INSTALL saves the address from the paste prompt for the restart.
+	// Saving the public owner address is not a safety setting.
 	"mob config set owner '0x1111111111111111111111111111111111111111'",
 	"mob config get policy",
+	// Reading which signer is in use still names the keystore.
+	"mob doctor | grep -i keystore",
 	"MOB_HOME=/tmp/x bun test",
 	'bash "/Users/someone/.claude/skills/mob-open/scripts/preamble.sh"',
 	"curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/main/install.sh | sh",

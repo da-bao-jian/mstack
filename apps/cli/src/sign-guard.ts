@@ -102,6 +102,13 @@ function commandChecks(text: string, invocations: number): void {
 		deny(
 			"mob onboard --app-base saves the onboarding page URL; ask the human to run it in their own terminal",
 		);
+	if (
+		mentioned(flat) &&
+		/(?<![\w./=-])keystore[ \t]+(?:create|import|list)(?![\w-])/.test(flat)
+	)
+		deny(
+			"mob keystore reads a wallet key and passphrase; ask the human to run it in a separate terminal window",
+		);
 	if (mentioned(flat) && /(?<![\w./-])upgrade(?![\w./-])/.test(flat))
 		deny(
 			"mob upgrade replaces the binary; ask the human to run it in their own terminal",

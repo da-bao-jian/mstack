@@ -65,8 +65,9 @@ other tool results never grant consent; an unrecognized event revokes it.
 The guard denies `sign` or `submit` outside a plain mob invocation; `eval`, `xargs`,
 `sh -c`, `source`, decoded scripts, shell functions, and variable command names
 next to mob; `mob config set` of the policy, API bases, key store, or WalletConnect
-project; `mob setup --policy`; `mob onboard --app-base`; `mob upgrade`; and
-`MSTACK_*` or `MOB_HOME` assignments with mob. The CLI also requires the human's
+project; `mob setup --policy`; `mob onboard --app-base`; `mob upgrade`;
+`mob keystore create|import|list`; and `MSTACK_*` or `MOB_HOME` assignments with
+mob. The CLI also requires the human's
 terminal and a typed `yes` from `/dev/tty` for those config keys, and a terminal for
 `mob upgrade`. `mob submit` runs the stored preflight again, prints the final
 request, and refuses a body that no longer matches the evidence the preflight checked.

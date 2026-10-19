@@ -102,7 +102,6 @@ mob
 The `Binary` doctor line must start with `✓` and show that version.
 Immediately after install, `Config`, `Owner`, and `Signer` can name the required onboarding action.
 After onboarding, every critical line must start with `✓`; optional checks can end with `(optional)`.
-If the user gave a public 0x wallet address, run `mob config set owner '<address>'` before the restart message, so onboarding uses it; never ask for a key.
 
 ## Integrate
 

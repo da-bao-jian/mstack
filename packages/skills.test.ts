@@ -587,8 +587,28 @@ test("session skills keep keys off argv and require exact ids for manual mutatio
 		])
 			expect(router).toContain(`${invocation}${name}`);
 	}
-	for (const [, body] of skills)
-		expect(body).not.toMatch(/\bmob\s+(keystore|config set)\b/);
+	// Only /mob-setup names keystore or config commands, and only for the human
+	// to run in a separate terminal; the hook denies them to the agent.
+	for (const [path, body] of skills) {
+		const named = [
+			...body.matchAll(/\bmob\s+(?:keystore|config set)\b[^`]*/g),
+		].map((match) => match[0]);
+		if (!path.endsWith("/mob-setup/SKILL.md")) {
+			expect(named).toEqual([]);
+			continue;
+		}
+		expect(new Set(named)).toEqual(
+			new Set([
+				"mob config set walletconnect_project_id <id>",
+				"mob keystore import",
+				"mob keystore create",
+			]),
+		);
+		expect(body).toContain("in a separate terminal window, never in this chat");
+		expect(body).toContain(
+			"Never ask for or accept a private key, seed phrase, or passphrase in the chat.",
+		);
+	}
 });
 
 test.each(["keystore", "browser", "walletconnect"])(
