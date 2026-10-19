@@ -69,24 +69,32 @@ function parseVenues(raw: unknown): Venue[] {
 	return venues;
 }
 
-async function alreadyBound(base: string, owner: string, rt: Runtime) {
+// Readiness reasons that mean MoB holds a key it cannot use for the venue.
+// Prepare refuses such a venue with rebind_required unless the request asks
+// to rebind it (mobius@0e3ff530 api-server/venue-bindings.md, "Prepare").
+const unusableKey: Record<string, string> = {
+	key_invalid: "has a MoB key that no longer works",
+	builder_fee_missing: "has a MoB key without its builder fee approval",
+	integrator_approval_missing: "has a MoB key without its integrator approval",
+};
+
+async function venueReadiness(base: string, owner: string, rt: Runtime) {
 	try {
 		const value = await new MobiusClient({
 			base,
 			version: pkg.version,
 			fetch: rt.fetch,
 		}).read("/api/binding/readiness", { ownerAddress: owner });
-		const rows = value.venues;
-		return new Set(
-			rows.flatMap((row) => {
-				return row.ready === true && typeof row.venue === "string"
-					? [row.venue]
-					: [];
-			}),
+		return new Map(
+			value.venues.flatMap((row) =>
+				typeof row.venue === "string"
+					? [[row.venue, { ready: row.ready === true, issue: row.issue }]]
+					: [],
+			),
 		);
 	} catch {
 		// The batch API remains authoritative when the legacy readiness route is absent.
-		return new Set<string>();
+		return new Map<string, { ready: boolean; issue?: string }>();
 	}
 }
 
@@ -110,13 +118,23 @@ export async function stageCeremony(
 	const owner = getAddress(config.owner);
 	const readinessBase = String(getConfig(config, "api_base"));
 	const strategyBase = String(getConfig(config, "strategy_api_base"));
-	const bound = await alreadyBound(readinessBase, owner, rt);
+	const readiness = await venueReadiness(readinessBase, owner, rt);
 	const requested = parseVenues(values.venues);
-	const venues = requested.filter((venue) => !bound.has(venue));
+	const venues = requested.filter((venue) => !readiness.get(venue)?.ready);
 	if (!venues.length) {
 		rt.out("Ready · all selected venues are already bound");
 		return;
 	}
+	const unusable = venues.flatMap((venue) => {
+		const issue = readiness.get(venue)?.issue;
+		return issue && unusableKey[issue]
+			? [`${venue} ${unusableKey[issue]} (${issue})`]
+			: [];
+	});
+	if (unusable.length && values.rebind !== true)
+		throw new UsageError(
+			`${unusable.join("; ")}. MoB replaces such a key only when asked: run this again with --rebind to bind a new one. Nothing was staged.`,
+		);
 	const lighterAccount =
 		typeof values["lighter-account"] === "string"
 			? numberFlag(values["lighter-account"], "lighter-account", 0, true)
@@ -572,7 +590,7 @@ export async function signCeremony(
 					error.code === "rebind_required"
 				)
 					throw new UsageError(
-						"A venue requires repair. Review active tasks, then rerun with --rebind.",
+						`MoB refused to prepare: ${error.error ?? "a venue's MoB key is not usable"}. Stage it again with --rebind to replace the key; an active position on that venue blocks the rebind.`,
 					);
 				throw error;
 			}
