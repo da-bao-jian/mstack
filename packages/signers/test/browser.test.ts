@@ -8,7 +8,7 @@ import {
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { browserSigner } from "../src/browser.ts";
 import { deferred, type SigningView } from "../src/interactive.ts";
-import { loopback } from "./loopback.ts";
+import { loopback, openBridge } from "./loopback.ts";
 
 const wallet = privateKeyToAccount(generatePrivateKey());
 const stranger = privateKeyToAccount(generatePrivateKey());
@@ -39,25 +39,8 @@ async function harness(proposal = view()) {
 	const account = signer.address();
 	void account.catch(() => {});
 	const url = new URL(await opened.promise);
-	const api = (
-		path: string,
-		body?: unknown,
-		overrides: { token?: string; origin?: string } = {},
-	) =>
-		loopback(
-			`${url.origin}${path}?t=${overrides.token ?? url.searchParams.get("t")}`,
-			body === undefined
-				? {}
-				: {
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-							Origin: overrides.origin ?? url.origin,
-						},
-						body: JSON.stringify(body),
-					},
-		);
-	return { signer, account, url, api, proposal };
+	const { api, page } = await openBridge(url);
+	return { signer, account, url, api, page, proposal };
 }
 test.each([false, true])(
 	"browser accepts exact bytes and recovers owner (typed=%s)",
@@ -110,12 +93,23 @@ test("browser rejects unauthenticated requests without consuming the signing att
 	try {
 		expect((await loopback(`${h.url.origin}/api/proposal`)).status).toBe(403);
 		expect(
-			(await h.api("/api/proposal", undefined, { token: "a".repeat(64) }))
-				.status,
+			(
+				await h.api("/api/proposal", undefined, {
+					cookie: `mob_${h.url.port}=${"a".repeat(64)}`,
+				})
+			).status,
 		).toBe(403);
 		expect(
-			(await h.api("/api/proposal", undefined, { token: "é".repeat(64) }))
-				.status,
+			(
+				await h.api("/api/proposal", undefined, {
+					cookie: `mob_${h.url.port}=${"é".repeat(64)}`,
+				})
+			).status,
+		).toBe(403);
+		// The printed link worked once; a copy of it opens nothing now.
+		expect((await loopback(h.url)).status).toBe(403);
+		expect(
+			(await loopback(`${h.url.origin}/api/proposal${h.url.search}`)).status,
 		).toBe(403);
 		const body = { address: wallet.address, chainId: 1 };
 		expect(
@@ -127,14 +121,11 @@ test("browser rejects unauthenticated requests without consuming the signing att
 		).toBe(403);
 		expect(
 			(
-				await loopback(
-					`${h.url.origin}/api/account?t=${h.url.searchParams.get("t")}`,
-					{
-						method: "POST",
-						body: JSON.stringify(body),
-						headers: { "Content-Type": "application/json" },
-					},
-				)
+				await loopback(`${h.url.origin}/api/account${h.url.search}`, {
+					method: "POST",
+					body: JSON.stringify(body),
+					headers: { "Content-Type": "application/json" },
+				})
 			).status,
 		).toBe(403);
 		expect(
@@ -151,7 +142,7 @@ test("browser rejects unauthenticated requests without consuming the signing att
 				await h.api(
 					"/api/signature",
 					{ address: wallet.address, signature },
-					{ token: "bad" },
+					{ cookie: "" },
 				)
 			).status,
 		).toBe(403);
@@ -248,7 +239,7 @@ test("browser rejection and opener errors close pending handshakes", async () =>
 test("browser serves only authenticated self-contained HTML with nonce CSP", async () => {
 	const h = await harness();
 	try {
-		const response = await loopback(h.url);
+		const response = h.page;
 		const html = await response.text();
 		const csp = response.headers.get("Content-Security-Policy") ?? "";
 		expect(csp).toContain("default-src 'none'");

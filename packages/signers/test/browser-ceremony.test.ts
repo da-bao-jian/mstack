@@ -9,7 +9,7 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 import { browserCeremonySigner } from "../src/browser-ceremony.ts";
 import { deferred, pinnedChain, type SigningView } from "../src/interactive.ts";
-import { loopback } from "./loopback.ts";
+import { loopback, openBridge } from "./loopback.ts";
 
 const wallet = privateKeyToAccount(`0x${"04".repeat(32)}`);
 const expiresAt = Date.now() + 30_000;
@@ -42,23 +42,35 @@ function typed(id: string, purpose: string, chainId: number): SigningView {
 	};
 }
 
-function apiFor(url: string) {
-	const target = new URL(url);
-	return (path: string, body?: unknown) =>
-		loopback(
-			`${target.origin}${path}?${target.searchParams}`,
-			body === undefined
-				? {}
-				: {
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-							Origin: target.origin,
-						},
-						body: JSON.stringify(body),
-					},
-		);
-}
+test("the wallet account is accepted before any step is current, so the CLI can wait for it first", async () => {
+	const opened = deferred<string>();
+	const session = browserCeremonySigner("c-1", wallet.address, expiresAt, {
+		openUrl: async (url) => opened.resolve(url),
+	});
+	session.addSteps([text("c-1:prepare", "prepare")]);
+	// The CLI awaits the address before it asks for the first signature.
+	const address = session.address();
+	const url = new URL(await opened.promise);
+	const { api, cookie } = await openBridge(url);
+	const reported = await api("/api/account", {
+		address: wallet.address,
+		chainId: 1,
+	});
+	expect(reported.status).toBe(200);
+	expect(await address).toBe(wallet.address);
+	const junk = await loopback(`${url.origin}/api/account`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			Origin: url.origin,
+			Cookie: cookie,
+		},
+		body: "{not json",
+	});
+	expect(junk.status).toBe(400);
+	expect(await junk.text()).not.toContain("<html");
+	await session.close();
+});
 
 test("browser ceremony signs five displayed steps in one wallet session with chain switches", async () => {
 	const steps = [
@@ -75,8 +87,11 @@ test("browser ceremony signs five displayed steps in one wallet session with cha
 	session.addSteps(steps);
 	const address = session.address();
 	const url = await opened.promise;
-	const page = await loopback(url);
+	const { page, api } = await openBridge(url);
 	expect(page.status).toBe(200);
+	expect(page.headers.get("set-cookie")).toMatch(
+		/^mob_\d+=[0-9a-f]{64}; HttpOnly; SameSite=Strict; Path=\/$/,
+	);
 	expect(page.headers.get("content-security-policy")).toContain("nonce-");
 	const html = await page.text();
 	expect(html).toContain("Ceremony steps");
@@ -85,7 +100,6 @@ test("browser ceremony signs five displayed steps in one wallet session with cha
 	const source = html.match(/<script[^>]*>([\s\S]*?)<\/script>/)?.[1];
 	expect(source).toBeDefined();
 	expect(() => new Script(source as string)).not.toThrow();
-	const api = apiFor(url);
 	const chains: number[] = [];
 	for (const step of steps) {
 		const pending = session.sign(step);
@@ -143,7 +157,7 @@ test("browser ceremony rejection ends the session and leaves later steps unsigne
 	});
 	session.addSteps(steps);
 	void session.address().catch(() => {});
-	const api = apiFor(await opened.promise);
+	const { api } = await openBridge(await opened.promise);
 	const first = session.sign(steps[0]);
 	await api("/api/account", { address: wallet.address, chainId: 1 });
 	await api("/api/signature", {

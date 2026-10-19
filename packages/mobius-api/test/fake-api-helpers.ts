@@ -5,7 +5,6 @@ import type {
 	CreateTask,
 	SignRequest,
 	Task,
-	Venue,
 } from "../src/types.ts";
 
 export const loopbackFetch = async (
@@ -48,38 +47,137 @@ export const fakeOwner = privateKeyToAccount(fakeOwnerKey);
 export const fakeApiKey =
 	"mobius_00000000-0000-4000-8000-000000000001.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
-function typed(owner: string, venue: Venue, action: string): SignRequest {
+// The exact shapes of mobius@0e3ff530 api-server/demo/venue-binding-payloads.json.
+const AGENT = "0x2222222222222222222222222222222222222222";
+const ZERO = "0x0000000000000000000000000000000000000000" as const;
+const hlDomain = {
+	name: "HyperliquidSignTransaction",
+	version: "1",
+	chainId: 42161,
+	verifyingContract: ZERO,
+};
+
+export function hlRequest(
+	action: "approveAgent" | "approveBuilderFee",
+): SignRequest {
+	const nonce = 1_791_800_000_000;
 	return {
-		requestId: `${venue}:${action}`,
-		venue,
+		requestId: `hl:${action}`,
+		venue: "hl",
 		action,
+		method: "eth_signTypedData_v4",
+		payload:
+			action === "approveAgent"
+				? {
+						domain: hlDomain,
+						types: {
+							"HyperliquidTransaction:ApproveAgent": [
+								{ name: "hyperliquidChain", type: "string" },
+								{ name: "agentAddress", type: "address" },
+								{ name: "agentName", type: "string" },
+								{ name: "nonce", type: "uint64" },
+							],
+						},
+						primaryType: "HyperliquidTransaction:ApproveAgent",
+						message: {
+							signatureChainId: "0xa4b1",
+							hyperliquidChain: "Mainnet",
+							type: "approveAgent",
+							agentAddress: AGENT,
+							agentName: "mobius-bot valid_until 1807265600000",
+							nonce,
+						},
+					}
+				: {
+						domain: hlDomain,
+						types: {
+							"HyperliquidTransaction:ApproveBuilderFee": [
+								{ name: "hyperliquidChain", type: "string" },
+								{ name: "maxFeeRate", type: "string" },
+								{ name: "builder", type: "address" },
+								{ name: "nonce", type: "uint64" },
+							],
+						},
+						primaryType: "HyperliquidTransaction:ApproveBuilderFee",
+						message: {
+							signatureChainId: "0xa4b1",
+							hyperliquidChain: "Mainnet",
+							type: "approveBuilderFee",
+							builder: "0x1eda138b7de2bd6628217fe143c499365367de84",
+							maxFeeRate: "0.1%",
+							nonce: nonce + 1,
+						},
+					},
+	};
+}
+
+export function asterRequest(owner: string): SignRequest {
+	const fields = [
+		["AgentName", "string"],
+		["AgentAddress", "string"],
+		["IpWhitelist", "string"],
+		["Expired", "uint256"],
+		["CanSpotTrade", "bool"],
+		["CanPerpTrade", "bool"],
+		["CanWithdraw", "bool"],
+		["Builder", "string"],
+		["MaxFeeRate", "string"],
+		["BuilderName", "string"],
+		["AsterChain", "string"],
+		["User", "string"],
+		["Nonce", "uint256"],
+	];
+	return {
+		requestId: "aster:approveAgent",
+		venue: "aster",
+		action: "approveAgent",
 		method: "eth_signTypedData_v4",
 		payload: {
 			domain: {
-				name: "Mobius Fake Binding",
+				name: "AsterSignTransaction",
 				version: "1",
-				chainId: 1,
-				verifyingContract: "0x0000000000000000000000000000000000000001",
+				verifyingContract: ZERO,
+				chainId: 56,
 			},
 			types: {
-				Approval: [
-					{ name: "owner", type: "address" },
-					{ name: "action", type: "string" },
-				],
+				ApproveAgent: fields.map(([name, type]) => ({ name, type })),
 			},
-			primaryType: "Approval",
-			message: { owner, action },
+			primaryType: "ApproveAgent",
+			message: {
+				AgentName: "mobius-bot",
+				AgentAddress: AGENT,
+				IpWhitelist: "",
+				Expired: 4_102_444_800_000,
+				CanSpotTrade: false,
+				CanPerpTrade: true,
+				CanWithdraw: false,
+				Builder: "0xca267a715d2fc07e4a6b59c13b156f9c0cb14512",
+				MaxFeeRate: "0.001",
+				BuilderName: "Mobius",
+				AsterChain: "Mainnet",
+				User: owner.toLowerCase(),
+				Nonce: 1_791_800_000_000_000,
+			},
 		},
 	};
 }
 
-function personal(owner: string, venue: Venue, action: string): SignRequest {
+export function lighterRequest(
+	owner: string,
+	venue: "lighter" | "lighter-mainnet",
+	action: "changePubKey" | "approveIntegrator",
+): SignRequest {
 	return {
 		requestId: `${venue}:${action}`,
 		venue,
 		action,
 		method: "personal_sign",
-		payload: { message: `Mobius fake ${action} owner=${owner} venue=${venue}` },
+		payload: {
+			message:
+				action === "changePubKey"
+					? `Register Lighter Account\n\npubkey: 0x${"e0a2".repeat(20)}\nnonce: 0x0000000000000000\naccount index: 0x000000000000007b\napi key index: 0x000000000000002a\nOnly sign this message for a trusted client!`
+					: `Approve zero-fee Lighter integrator owner=${owner.toLowerCase()} venue=${venue} integratorIndex=994 nonce=00000000-0000-4000-8000-000000000001 timestamp=1791800000`,
+		},
 	};
 }
 
@@ -88,14 +186,11 @@ export function makeSignRequests(
 	target: BindingTarget,
 ): SignRequest[] {
 	if (target.venue === "hl")
-		return [
-			typed(owner, "hl", "approveAgent"),
-			typed(owner, "hl", "approveBuilderFee"),
-		];
-	if (target.venue === "aster") return [typed(owner, "aster", "approveAgent")];
+		return [hlRequest("approveAgent"), hlRequest("approveBuilderFee")];
+	if (target.venue === "aster") return [asterRequest(owner)];
 	return [
-		personal(owner, target.venue, "changePubKey"),
-		personal(owner, target.venue, "approveIntegrator"),
+		lighterRequest(owner, target.venue, "changePubKey"),
+		lighterRequest(owner, target.venue, "approveIntegrator"),
 	];
 }
 
