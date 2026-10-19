@@ -133,6 +133,15 @@ test("sign validates existence, expiry/terminal state, policy, configuration, th
 	expect((await h.invoke(["sign", p.id])).err).toContain("terminal");
 });
 
+test("sign with a known owner but no saved signer names the --with choices", async () => {
+	const h = await harness();
+	const p = await stage(h.home, h.rt.now?.() as number);
+	await setConfig("owner", owner, h.home);
+	const { err } = await h.invoke(["sign", p.id]);
+	expect(err).toContain(`mob sign ${p.id} --with browser`);
+	expect(err).toContain("--with keystore in your own terminal");
+});
+
 test("unknown options are concise and command help has only its usage, defaults and two examples", async () => {
 	const h = await harness();
 	expect((await h.invoke(["scan", "--sizee", "5"])).err).toBe(

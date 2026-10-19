@@ -33,6 +33,8 @@ not a claim that public release tags or artifacts were published.
 - Compact readiness rows name only the venues they mention, skip the scan-only glossary notes, and document `issue` and `check`.
 - After signing through the approver, Ctrl-C no longer kills it without cleanup: Bun drops its native signal handler when the sign path removes its own listeners, so signing inside the approver now cancels through the approver's signal instead of process listeners.
 - The Claude overlay's signing question keeps four choices: the approver choice replaces the keystore-myself choice while an approver runs.
+- A new user's first `mob sign c-N` no longer stops at "Run `mob setup` first": native onboarding saves the owner but no signer, so the signing choice now maps to an explicit `--with browser`, `--with walletconnect`, or `--with approver` (each with a ten-minute tool timeout), and with an owner but no signer the CLI names the `--with` choices instead of sending the user back to setup.
+- Keychain and Secret Service entries are per home. They were keyed by owner only, so a second `MOB_HOME` for the same wallet overwrote the first home's API key, paired one home's metadata (caps, API base) with the other's key, and `mob keys delete` in one home deleted the other's. `~/.mob` keeps the service `mstack.mobius-api`; any other home uses `mstack.mobius-api:<home id>`. A non-default home that stored its key before this change imports it again.
 
 ## [0.4.1] - 2026-10-18
 

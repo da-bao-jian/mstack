@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { CeremonyStore, ProposalStore } from "@mstack/proposals";
@@ -205,6 +205,38 @@ function nativeFetch(
 		return loopbackFetch(input, init);
 	};
 }
+
+test("a fresh user with no saved signer is told to name one, then --with signs", async () => {
+	const now = 1_800_000_000_000;
+	const api = fakeStrategyApi({ now: () => now });
+	servers.push(api);
+	const { home, password } = await nativeHome(api);
+	const path = join(home, "config.json");
+	const { signer: _, ...config } = JSON.parse(await readFile(path, "utf8"));
+	await writeFile(path, `${JSON.stringify(config, null, 2)}\n`, {
+		mode: 0o600,
+	});
+	const lines: string[] = [];
+	const rt: Partial<Runtime> = {
+		home,
+		now: () => now,
+		fetch: nativeFetch(api, { legalAccepted: true, calls: [] }),
+		sleep: async () => {},
+		stdinIsTTY: false,
+		stdoutIsTTY: false,
+		out: (line) => lines.push(line),
+		err: (line) => lines.push(line),
+		readSecret: async () => password,
+	};
+	const args = ["--owner", api.owner.address, "--venues", "hl,lighter"];
+	expect(await run(["onboard", "--native", ...args], rt)).toBe(0);
+	expect(await run(["sign", "c-1"], rt)).toBe(1);
+	expect(lines.join("\n")).toContain(
+		"No signer is saved. Name one for this signature: mob sign c-1 --with browser",
+	);
+	expect(await run(["sign", "c-1", "--with", "keystore"], rt)).toBe(0);
+	expect(lines.join("\n")).toContain("Ready · 2 venues bound");
+});
 
 test("native onboard binds, creates the key, and stores it in one wallet session", async () => {
 	const now = 1_800_000_000_000;

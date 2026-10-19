@@ -96,8 +96,10 @@ for (const backend of ["keychain", "secret-tool", "file"] as const) {
 
 test("keychain uses the fixed security command and the required arguments", async () => {
 	const fake = memoryRunner();
+	const root = await home();
 	const store = await createKeyStore({
-		home: await home(),
+		home: root,
+		defaultHome: root,
 		selection: "keychain",
 		env: {},
 		platform: "darwin",
@@ -150,8 +152,10 @@ test("keychain uses the fixed security command and the required arguments", asyn
 
 test("secret-tool sends the secret only on stdin", async () => {
 	const fake = memoryRunner();
+	const root = await home();
 	const store = await createKeyStore({
-		home: await home(),
+		home: root,
+		defaultHome: root,
 		selection: "secret-tool",
 		env: {},
 		platform: "linux",
@@ -174,6 +178,69 @@ test("secret-tool sends the secret only on stdin", async () => {
 	});
 	expect(fake.calls[0].argv.join(" ")).not.toContain(key);
 });
+
+/** A credential store shared by every home, keyed like the real one. */
+function sharedRunner() {
+	const items = new Map<string, string>();
+	const calls: string[][] = [];
+	const after = (argv: string[], flag: string) =>
+		argv[argv.indexOf(flag) + 1] ?? "";
+	const id = (argv: string[]) =>
+		argv.includes("-s")
+			? `${after(argv, "-s")}|${after(argv, "-a")}`
+			: `${after(argv, "service")}|${after(argv, "owner")}`;
+	const run: FakeRun = async (argv, stdin) => {
+		calls.push(argv);
+		if (argv.includes("add-generic-password"))
+			items.set(id(argv), argv.at(-1) ?? "");
+		else if (argv.includes("store"))
+			items.set(id(argv), stdin?.trimEnd() ?? "");
+		else if (argv.includes("delete-generic-password") || argv.includes("clear"))
+			items.delete(id(argv));
+		else {
+			const secret = items.get(id(argv));
+			if (!secret) return { code: 1, stdout: "", stderr: "missing" };
+			return { code: 0, stdout: `${secret}\n`, stderr: "" };
+		}
+		return { code: 0, stdout: "", stderr: "" };
+	};
+	return { run, calls, items };
+}
+
+for (const backend of ["keychain", "secret-tool"] as const) {
+	test(`${backend}: two homes for one wallet keep separate keys; the default home keeps the original name`, async () => {
+		const shared = sharedRunner();
+		const defaultHome = await home();
+		const sandbox = await home();
+		const open = (root: string) =>
+			createKeyStore({
+				home: root,
+				defaultHome,
+				selection: backend,
+				env: {},
+				platform: backend === "keychain" ? "darwin" : "linux",
+				which: () => "/fake/secret-tool",
+				securityPath: "/fake/security",
+				run: shared.run,
+			});
+		const real = await open(defaultHome);
+		const lab = await open(sandbox);
+		const labKey = `mobius_00000000-0000-4000-8000-000000000001.${"cd".repeat(32)}`;
+		const labMeta = { ...meta, apiBase: "http://127.0.0.1:4000" };
+		await real.put(owner, key, meta);
+		await lab.put(owner, labKey, labMeta);
+		expect(await real.get(owner)).toEqual({ key, meta });
+		expect(await lab.get(owner)).toEqual({ key: labKey, meta: labMeta });
+		const services = [...shared.items.keys()].map((item) => item.split("|")[0]);
+		expect(services).toContain("mstack.mobius-api");
+		expect(
+			services.filter((name) => /^mstack\.mobius-api:[0-9a-f]{16}$/.test(name)),
+		).toHaveLength(1);
+		expect(await lab.delete(owner)).toBe(true);
+		expect(await lab.get(owner)).toBeNull();
+		expect(await real.get(owner)).toEqual({ key, meta });
+	});
+}
 
 test("env always wins, is read-only, and does not write files", async () => {
 	const root = await home();
