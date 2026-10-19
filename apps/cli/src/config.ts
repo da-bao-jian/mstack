@@ -255,6 +255,26 @@ export async function setConfig(
 	await rename(temporary, join(home, "config.json"));
 	return parsed;
 }
+/**
+ * A signer named with --with becomes the saved one, so later wallet
+ * Proposals (key list, revoke, a new cap) do not ask for `mob setup`.
+ */
+export async function rememberSigner(
+	backend: string,
+	config: { signer?: string },
+	rt: { home: string; out: (line: string) => void },
+) {
+	if (
+		config.signer ||
+		!["keystore", "browser", "walletconnect"].includes(backend)
+	)
+		return;
+	await setConfig("signer", backend, rt.home);
+	rt.out(
+		`Saved ${backend} as your signer for later signatures (change it with mob config set signer <keystore|browser|walletconnect>).`,
+	);
+}
+
 export const SETUP_FIRST =
 	"Run `mob setup` first (about two minutes). It sets your wallet address, how you sign, and accepts the terms.";
 /** The owner is known but no signer is saved: name one for this signature. */

@@ -7,8 +7,21 @@ export function venueAccountResponse(
 ): Response | undefined {
 	const url = new URL(String(input));
 	if (url.host === "api.hyperliquid.xyz" && url.pathname === "/info") {
-		if (JSON.parse(String(init?.body)).type !== "userRole") return undefined;
-		return Response.json({ role: missing.includes("hl") ? "missing" : "user" });
+		const { type } = JSON.parse(String(init?.body));
+		if (type === "userRole")
+			return Response.json({
+				role: missing.includes("hl") ? "missing" : "user",
+			});
+		// "hl-deposit" in `missing` is a wallet that exists but never deposited.
+		if (type === "clearinghouseState")
+			return Response.json({
+				marginSummary: {
+					accountValue: missing.includes("hl-deposit") ? "0.0" : "250.5",
+				},
+			});
+		if (type === "spotClearinghouseState")
+			return Response.json({ balances: [] });
+		return undefined;
 	}
 	if (url.pathname !== "/api/v1/accountsByL1Address") return undefined;
 	const venue =

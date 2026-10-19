@@ -186,6 +186,15 @@ const status = (state, text, error = false) => {
 };
 // The same rejection test MoB's web app uses (frontend/src/lib/errors.ts).
 const rejected = error => error?.code === 4001 || /user rejected|user denied|rejected the request|denied transaction|action[_ ]?rejected|rejected by user|request rejected|user cancell?ed|denied by the user/i.test(String(error?.message));
+// Wallets built on MetaMask's eth-sig-util hash a missing EIP712Domain type as
+// an empty domain, so the signature would not match the digest shown here.
+// Declare it from the domain fields, in viem's order, as viem's own signer does.
+const domainFields = [["name", "string"], ["version", "string"], ["chainId", "uint256"], ["verifyingContract", "address"], ["salt", "bytes32"]];
+function walletTypedData(typedData) {
+  if (typedData.types?.EIP712Domain) return typedData;
+  const domain = typedData.domain ?? {};
+  return { ...typedData, types: { EIP712Domain: domainFields.filter(([key]) => domain[key] !== undefined).map(([name, type]) => ({ name, type })), ...typedData.types } };
+}
 function walletMessage(error) {
   const chain = pinned() !== undefined ? chainName() : "the required network";
   switch (error?.code) {
@@ -202,7 +211,9 @@ const pinned = () => proposal?.signing.type === "typed" ? proposal.signing.typed
 const wrongChain = () => pinned() !== undefined && Number(pinned()) !== chainId;
 const chainName = () => ({ 1: "Ethereum", 56: "BNB Smart Chain", 97: "BNB Smart Chain Testnet", 42161: "Arbitrum One" })[Number(pinned())] || `chain ${pinned()}`;
 function refresh() {
-  const expired = proposal && Date.now() >= proposal.expiresAt;
+  // A ceremony's terminal stops at a step's expiry and reports how to restart,
+  // so the page waits briefly for that final message.
+  const expired = proposal && Date.now() >= proposal.expiresAt + (ceremony ? 5_000 : 0);
   if (expired && !done) { done = true; status("expired", "Expired. Return to your terminal to stage a new Proposal.", true); }
   const connected = Boolean(matches());
   el("account").textContent = address || "Not connected";
@@ -346,7 +357,7 @@ el("sign").onclick = async () => {
     const messageHex = signing.type === "text" ? `0x${Array.from(new TextEncoder().encode(signing.message), byte => byte.toString(16).padStart(2, "0")).join("")}` : undefined;
     const signature = await provider.request(signing.type === "text"
       ? { method: "personal_sign", params: [messageHex, address] }
-      : { method: "eth_signTypedData_v4", params: [address, JSON.stringify(signing.typedData)] });
+      : { method: "eth_signTypedData_v4", params: [address, JSON.stringify(walletTypedData(signing.typedData))] });
     if (!active()) return;
     submitting = true; refresh();
     await api("/api/signature", ceremony ? { stepId: proposal.id, address, signature } : { address, signature });

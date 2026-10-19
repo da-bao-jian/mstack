@@ -25,6 +25,7 @@ import { object, request, textField } from "./onboarding-http.ts";
 import { printStaged, stageOnboarding } from "./onboarding-stage.ts";
 import { Checks, configChecks } from "./preflight/checks.ts";
 import type { Runtime } from "./run.ts";
+import { HL_DEPOSIT_HINT, hlDeposited } from "./venue-accounts.ts";
 
 const capabilities = {
 	hl: "key can trade, cancel and adjust margin; cannot withdraw; expires after 179 days",
@@ -49,33 +50,7 @@ function positive(value: unknown, label: string, zero = false): number {
 	return value;
 }
 async function funded(owner: Address, rt: Runtime) {
-	const [clearing, spot] = await Promise.all([
-		request(rt.fetch, "https://api.hyperliquid.xyz/info", "POST", {
-			type: "clearinghouseState",
-			user: owner,
-		}),
-		request(rt.fetch, "https://api.hyperliquid.xyz/info", "POST", {
-			type: "spotClearinghouseState",
-			user: owner,
-		}),
-	]);
-	const amount = (value: unknown) => {
-		if (
-			typeof value !== "string" ||
-			!value.trim() ||
-			!Number.isFinite(Number(value))
-		)
-			throw new Error("Malformed HL balance");
-		return Number(value);
-	};
-	const balance = amount(object(object(clearing).marginSummary).accountValue);
-	const balances = object(spot).balances;
-	if (!Array.isArray(balances)) throw new Error("Malformed HL spot balances");
-	const totals = balances.map((b) => amount(object(b).total));
-	if (balance <= 0 && !totals.some((v) => v > 0))
-		throw new Error(
-			"HL refuses agent approval from a wallet that never deposited. Deposit on Hyperliquid first.",
-		);
+	if (!(await hlDeposited(owner, rt))) throw new Error(`${HL_DEPOSIT_HINT}.`);
 }
 async function hlChain(owner: Address, rt: Runtime) {
 	const config = await readConfig(rt.home);

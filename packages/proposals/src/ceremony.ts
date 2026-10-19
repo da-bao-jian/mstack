@@ -107,6 +107,8 @@ export interface Ceremony {
 }
 
 type Stored = Ceremony & { recordHash: string };
+/** MoB's binding session after prepare (api-server venue-bindings.md). */
+const REQUEST_WINDOW = 600_000;
 type LighterVenue = "lighter" | "lighter-mainnet";
 const hash = (text: string) => createHash("sha256").update(text).digest("hex");
 
@@ -326,15 +328,20 @@ function validate(ceremony: Ceremony): void {
 		)
 			throw new Error("Ceremony key step mismatch");
 	}
+	const own = new Set([...ceremony.requests, ceremony.read]);
 	for (const proposal of [
 		...(ceremony.legal ? [ceremony.legal] : []),
 		...(ceremony.prepare ? [ceremony.prepare] : []),
 		...ceremony.requests,
 		...(ceremony.read ? [ceremony.read] : []),
 	]) {
+		// Request and read steps carry their own window inside MoB's session.
 		if (
 			proposal.owner !== ceremony.owner ||
-			proposal.expiresAt !== ceremony.expiresAt
+			(own.has(proposal)
+				? proposal.expiresAt < ceremony.expiresAt ||
+					proposal.expiresAt > ceremony.expiresAt + REQUEST_WINDOW
+				: proposal.expiresAt !== ceremony.expiresAt)
 		)
 			throw new Error("Ceremony Proposal identity mismatch");
 		if (
@@ -532,6 +539,13 @@ export class CeremonyStore {
 			ceremony.bindingId = batch.bindingId;
 			ceremony.latest = structuredClone(batch);
 			const venues = ceremony.venues.map((target) => target.venue);
+			// MoB keeps a binding session for 10 minutes after prepare; the
+			// request steps share that window instead of the staging window.
+			const requestsExpireAt = Math.min(
+				Date.parse(batch.expiresAt) || ceremony.expiresAt,
+				ceremony.expiresAt + REQUEST_WINDOW,
+			);
+			const preparedAt = Math.min(this.now(), requestsExpireAt - 1);
 			ceremony.requests = batch.signRequests.map((request: SignRequest) => {
 				const classified = classifySignRequest(request, {
 					owner: ceremony.owner,
@@ -559,8 +573,8 @@ export class CeremonyStore {
 						classified.capability,
 					),
 					signing,
-					ceremony.createdAt,
-					ceremony.expiresAt,
+					preparedAt,
+					Math.max(requestsExpireAt, ceremony.expiresAt),
 					{ type: "collect-ceremony", requestId: request.requestId },
 					{
 						requestId: request.requestId,

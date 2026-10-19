@@ -3,7 +3,7 @@ import { ApiError } from "@mstack/mobius-client";
 import { UsageError } from "./config.ts";
 
 // Every failure a binding ceremony can hit, said as what happened and what to
-// do next. Codes and texts come from MoB's servers (lu-bann/mobius
+// do next. Codes and texts come from MoB's servers (the upstream repo
 // funding-server/src/binding/apiService.ts, apiAdapters.ts, apiWorker.ts,
 // server/routes/lighter.ts and apiKeys.ts, auth-server/src/legal.ts). MoB's
 // own text stays at the end for diagnosis.
@@ -98,6 +98,8 @@ function funding(error: ApiError, ctx: FailureContext): string {
 	// API key creation (funding-server routes/apiKeys.ts).
 	if (/at most 10 active API keys/.test(text))
 		return "This wallet already has 10 active MoB API keys. Revoke an unused one with `mob keys revoke <id>` (see `mob keys list`), then create the key again.";
+	if (text === "Venue binding check is temporarily unavailable. Try again.")
+		return "MoB could not confirm that every venue for the key is usable. For Hyperliquid this means the wallet has not deposited: deposit USDC on Hyperliquid (app.hyperliquid.xyz, from Arbitrum). Then run `mob doctor`; when every venue shows ready, create the key again.";
 	if (text === "Bind the selected venues before creating an API key.")
 		return "A venue for the key is not bound yet. Run `mob doctor`, bind the venue, then create the key again.";
 	if (text === "Valid wallet signature required.")
@@ -141,7 +143,7 @@ export function explainCeremonyFailure(
 		);
 	if (/expired/i.test(text))
 		return new UsageError(
-			`The wallet session ran out of time before every step was signed. Run \`${ctx.restage}\` and sign each step within 5 minutes.`,
+			`The wallet session ran out of time before every step was signed. Run \`${ctx.restage}\`, keep the wallet open, and sign each step as soon as the page shows it.`,
 		);
 	if (/Owner does not match signer/.test(text))
 		return new UsageError(

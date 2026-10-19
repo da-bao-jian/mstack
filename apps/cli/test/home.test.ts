@@ -133,7 +133,7 @@ test("no args home: live market, account standing and next action share the logo
 	expect(r.out).toContain('Next       say "set up mstack"');
 	expect(r.out).toContain("live · 2 of 14 venues");
 	expect(r.out.split("\n")[0].indexOf("mstack")).toBe(35);
-	expect(fake.calls).toHaveLength(7);
+	expect(fake.calls).toHaveLength(8);
 	expect(fake.calls.every((c) => c.method === "GET")).toBe(true);
 	expect(fake.calls.some((c) => c.url.includes("rebind-check"))).toBe(false);
 });
@@ -252,7 +252,7 @@ test("big has 25 art rows; compact uses the 13-row home and offline makes no HTT
 	const compact = await invoke(["hello", "--compact", "--ascii"]);
 	expect(compact.out).toContain("Top pairs");
 	expect(compact.out).not.toContain("Owner");
-	expect(fake.calls).toHaveLength(7);
+	expect(fake.calls).toHaveLength(8);
 });
 
 test("no config Next setup and auth terms read; no owner-specific routes", async () => {
@@ -336,7 +336,7 @@ test("doctor passes healthy configured state with optional unbound venues", asyn
 	expect(r.code).toBe(0);
 	expect(data.ok).toBe(true);
 	expect(data.checks).toHaveLength(19);
-	expect(fake.calls).toHaveLength(10);
+	expect(fake.calls).toHaveLength(11);
 	expect(
 		data.checks.find((c: { name: string }) => c.name === "Venue aster"),
 	).toMatchObject({ status: "fail", critical: false });

@@ -355,6 +355,19 @@ export async function collectHome(
 		);
 		const owner = config.owner;
 		if (owner) {
+			// MoB's own verdict, which also sees deposits and venue outages.
+			const verdict = client
+				.read("/api/binding/readiness", { ownerAddress: owner }, signal)
+				.then(
+					(value) =>
+						new Map(
+							value.venues.map((row) => [
+								row.venue,
+								{ ready: row.ready === true, issue: row.issue },
+							]),
+						),
+				)
+				.catch(() => undefined);
 			for (const venue of homeVenues)
 				read(
 					async () => {
@@ -376,9 +389,14 @@ export async function collectHome(
 											{ ownerAddress: owner, venue },
 											signal,
 										);
+						const local = credentialReadiness(venue, credential, rt.now());
+						const remote = (await verdict)?.get(venue);
+						// A bound key MoB still refuses is shown with MoB's reason.
 						return {
 							bound: credential.bound,
-							...credentialReadiness(venue, credential, rt.now()),
+							...(local.ready && remote && !remote.ready
+								? { venue, ready: false, issue: remote.issue ?? "unavailable" }
+								: local),
 						};
 					},
 					(value) => {

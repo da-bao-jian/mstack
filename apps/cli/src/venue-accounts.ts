@@ -86,6 +86,44 @@ async function hlMissing(owner: string, rt: Runtime): Promise<boolean> {
 }
 
 /**
+ * True when the wallet's Hyperliquid perps account holds value. MoB reports
+ * the venue as unavailable without it, which blocks key creation and opens.
+ */
+export async function hlDeposited(
+	owner: string,
+	rt: Runtime,
+): Promise<boolean> {
+	let clearing: unknown;
+	try {
+		clearing = await request(
+			rt.fetch,
+			"https://api.hyperliquid.xyz/info",
+			"POST",
+			{ type: "clearinghouseState", user: owner },
+		);
+	} catch (error) {
+		throw new Error(`Cannot check the hl deposit: ${reason(error)}`);
+	}
+	const value = object(object(clearing).marginSummary).accountValue;
+	if (
+		typeof value !== "string" ||
+		!value.trim() ||
+		!Number.isFinite(Number(value))
+	)
+		throw new Error("Cannot check the hl deposit: malformed balance");
+	return Number(value) > 0;
+}
+
+export const HL_DEPOSIT_HINT =
+	"This wallet's Hyperliquid perps account holds no USDC, so MoB reports Hyperliquid as unavailable and cannot create a key for it. Deposit USDC into Hyperliquid perps (app.hyperliquid.xyz, from Arbitrum), then run this again";
+/** MoB's readiness reason that is not a binding problem. */
+export function unavailableHint(venue: string): string {
+	return venue === "hl"
+		? HL_DEPOSIT_HINT
+		: `MoB cannot confirm ${venue} is usable right now (unavailable). Wait a minute, then run this again`;
+}
+
+/**
  * Returns the account index for each selected Lighter deployment. Stops before
  * staging when a venue has no account for the owner, or when an explicit
  * Lighter account does not belong to it.
@@ -95,6 +133,8 @@ export async function venueAccounts(
 	venues: readonly string[],
 	rt: Runtime,
 	explicitLighter?: number,
+	/** Every venue the user asked for, for the "leave it out" hint. */
+	selected: readonly string[] = venues,
 ): Promise<Map<Lighter, number>> {
 	const lighters = venues.filter(isLighter);
 	if (explicitLighter !== undefined && lighters.length !== 1)
@@ -110,7 +150,7 @@ export async function venueAccounts(
 		...lighters.filter((_, index) => !found[index]?.length),
 	];
 	if (missing.length) {
-		const rest = venues.filter((venue) => !missing.includes(venue));
+		const rest = selected.filter((venue) => !missing.includes(venue));
 		throw new UsageError(
 			`No ${missing.map((venue) => names[venue]).join(" or ")} account for ${owner}. Create it on the venue's official website, then run this again${rest.length ? `, or leave it out with --venues ${rest.join(",")}` : ""}. Nothing was staged.`,
 		);

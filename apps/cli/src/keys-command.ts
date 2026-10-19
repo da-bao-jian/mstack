@@ -23,6 +23,7 @@ import { object } from "./onboarding-http.ts";
 import { stageOnboarding } from "./onboarding-stage.ts";
 import { table } from "./render.ts";
 import type { Runtime } from "./run.ts";
+import { unavailableHint } from "./venue-accounts.ts";
 
 const venuesAllowed = new Set(["hl", "aster", "lighter", "lighter-mainnet"]);
 const uuidPattern =
@@ -166,7 +167,9 @@ async function requireReadiness(
 		const row = rows.find((item) => item.venue === venue);
 		if (!row || !(row.bound === true || row.ready === true))
 			throw new UsageError(
-				`${venue} is not bound; key creation preflight failed`,
+				row?.issue === "unavailable"
+					? `${unavailableHint(venue)}. No key was created.`
+					: `${venue} is not bound on MoB${typeof row?.issue === "string" ? ` (${row.issue})` : ""}. Bind it first (\`mob onboard --native --venues '${venues.join(",")}'\`), then create the key again. No key was created.`,
 			);
 	}
 	return `${venues.join(", ")} bound`;
