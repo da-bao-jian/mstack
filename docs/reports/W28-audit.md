@@ -60,7 +60,7 @@ glossary changing no value.
 |---|---|
 | `bun run check`, `bun run lint`, `bun run deadcode` | Passed (lint reports one pre-existing info in `ceremony.test.ts`). |
 | `bun run gen:skills` twice | Stable. |
-| `bun run test` | 1,090 passed, 0 failed, 59 files. |
+| `bun run test` | 1,090 passed, 0 failed, 59 files. Correction (2026-10-19): this covered `packages/` only. The root script did not run `apps/cli/test` until `84cad27`; see `W28-security-audit.md` for the full counts. |
 | `bun run build` | `apps/cli/dist/mob` rebuilt; `mob approver` starts under a pty and asks for the passphrase. |
 | `claude plugin validate --strict .` and `.claude-plugin/plugin.json` | Passed. |
 | `MOB_EVAL=1 bun run eval:skills` | 6 of 6. |
