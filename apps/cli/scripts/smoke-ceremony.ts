@@ -45,12 +45,10 @@ try {
 	realFunding.readinessUnbound.add("aster");
 	try {
 		await compiled(["config", "set", "owner", realApi.owner.address], realHome);
-		await compiled(["config", "set", "policy", "manual"], realHome);
-		await compiled(["config", "set", "api_base", realFunding.base], realHome);
-		await compiled(
-			["config", "set", "strategy_api_base", realApi.base],
-			realHome,
-		);
+		// Protected keys need the human's terminal through the CLI.
+		await setConfig("policy", "manual", realHome);
+		await setConfig("api_base", realFunding.base, realHome);
+		await setConfig("strategy_api_base", realApi.base, realHome);
 		const before = Math.floor(Date.now() / 1000);
 		const staged = await compiled(
 			["bind", "--all", "--venues", "aster"],

@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { ProposalStore } from "@mstack/proposals";
 import { listKeystores } from "@mstack/signers";
 import { metadataContext } from "../../../../packages/funding/test/metadata-fixtures.ts";
+import { setConfig } from "../../src/config.ts";
 import { run } from "../../src/run.ts";
 import { fakePositionServer, loopbackFetch } from "./fake-funding-server.ts";
 
@@ -44,7 +45,8 @@ export async function openFlow(
 		server = fakePositionServer(owner, () => now);
 		await command(["config", "set", "owner", owner]);
 		await command(["config", "set", "signer", "keystore"]);
-		await command(["config", "set", "api_base", server.base]);
+		// api_base needs the human's terminal through the CLI; write it directly.
+		await setConfig("api_base", server.base, home);
 		await command([
 			"open",
 			"BTC",

@@ -1,0 +1,2 @@
+{"type":"user","origin":{"kind":"human"},"promptSource":"typed","message":{"role":"user","content":"What is p-2? Do NOT submit p-2."}}
+{"type":"assistant","message":{"role":"assistant","content":"p-2 opens BTC."}}

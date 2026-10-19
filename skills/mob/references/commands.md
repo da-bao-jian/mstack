@@ -46,8 +46,8 @@ disconnects first, and `mob proposal show <id>` tells the outcome either way.
 `mob doctor` checks the installation, public config, signer, API access, legal
 acceptance, readiness, and local Proposals; `--json` returns the checklist and a
 failed critical item exits 1. `mob upgrade` fast-forwards a checkout and rebuilds,
-or downloads and verifies the latest release binary; run it only when the user
-asks to upgrade. Uninstall by host: `claude plugin uninstall mstack@mstack` for the
+or downloads and verifies the latest release binary; it needs the human's own
+terminal, so ask the human to run it there. Uninstall by host: `claude plugin uninstall mstack@mstack` for the
 plugin, `./setup --host claude --uninstall` or `./setup --host codex --uninstall`
 in the checkout for linked skills. `mob keys delete` first removes the local key
 copy; revoking the server key needs the API page or a wallet Proposal.

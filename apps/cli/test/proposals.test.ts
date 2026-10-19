@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { stageOpenBody } from "@mstack/mobius-client";
 import { ProposalStore } from "@mstack/proposals";
 import { listKeystores } from "@mstack/signers";
+import { setConfig } from "../src/config.ts";
 import { run } from "../src/run.ts";
 import {
 	fakeFundingServer,
@@ -77,9 +78,7 @@ test.each([false, true])(
 			expect(prompts).toBe(2);
 			expect(server.writes()).toBe(0);
 			// Config may change after staging; the persisted submit plan remains authoritative.
-			expect(
-				await invoke(["config", "set", "api_base", "https://ignored.invalid"]),
-			).toBe(0);
+			await setConfig("api_base", "https://ignored.invalid", home);
 			expect(await invoke(["sign", p.id, "--with", "keystore"])).toBe(
 				readinessFailure ? 1 : 0,
 			);

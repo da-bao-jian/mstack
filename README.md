@@ -87,7 +87,7 @@ Release assets cover macOS and Linux on x64/arm64, plus Windows x64 (`mob-window
 
 The Claude Code Bash authorization hook runs `mob hook sign-guard` in the compiled binary. Binary-only plugin installs need no Bun.
 
-For local release fixtures, set `MSTACK_RELEASE_BASE_URL=http://127.0.0.1:<port>/releases/download`. The matching `/releases/latest/download/VERSION` route supplies the latest version. Versioned binaries and `SHA256SUMS` use `/releases/download/v<version>/`. The shim also accepts `MSTACK_MOB_BIN=/path/to/mob`. Normal binary resolution is quiet; set `MSTACK_VERBOSE=1` to log the selected binary to stderr. Builds, downloads, and failures always log to stderr.
+For local release fixtures, set `MSTACK_RELEASE_BASE_URL=http://127.0.0.1:<port>/releases/download`; any other base must use https. The matching `/releases/latest/download/VERSION` route supplies the latest version. Versioned binaries and `SHA256SUMS` use `/releases/download/v<version>/`. The shim also accepts `MSTACK_MOB_BIN=/path/to/mob`. Normal binary resolution is quiet; set `MSTACK_VERBOSE=1` to log the selected binary to stderr. Builds, downloads, and failures always log to stderr.
 
 Maintainers can run `bun scripts/release.ts <version> --prepare` in a clean checkout to update all versions, regenerate the skills, and date the Unreleased notes. Add an Unreleased section when new work starts. This runs all gates and leaves changes for review. After committing, `bun scripts/release.ts <version>` runs the gates and tags that commit locally. Without `--prepare`, a new version also gets a release commit. The helper never pushes; the release coordinator pushes the tag, which starts the release workflow.
 <!-- release-end -->
@@ -117,12 +117,12 @@ GUI clients may not inherit your shell's PATH. MCP reads public, onboarding, and
    Funding annualization is simple, not compounded: `ratePerInterval / intervalHours × 24 × 365 × 100`.
    Fees and mark entry costs are estimates. Failed venues remain visible.
 4. **Open.** Run a staged command such as `mob open ETH --long hl:ETH --short lighter:ETH --size 500`. With a matching key, it creates an `api-submit` Proposal and prints `mob submit p-N`.
-5. **Submit.** Under the default `manual` policy, name the exact id in your latest message before the agent runs `mob submit p-N`. Under opt-in `auto`, the agent may submit inside the key caps and must say it did so.
+5. **Submit.** Under the default `manual` policy, say the verb and the exact id in your latest message, e.g. `submit p-2`, before the agent runs `mob submit p-N`. Under opt-in `auto`, the agent may submit inside the key caps and must say it did so.
 6. **Status.** Run `mob status`. API acceptance is **submitted, not confirmed**; status reports the worker state.
 
 Use `mob bind --all` or `mob onboard --native` for repair and terminal-native onboarding. Protection, neutralization, auto-close, size-mismatch edits, legal acceptance, venue binding, and key administration still use wallet approval.
 
-Wallet Proposals still require the exact id, for example, “Sign p-7 in the browser wallet.” The wallet asks you to approve. Keystore signing belongs in your own terminal.
+Wallet Proposals still require the verb and the exact id, for example, “Sign p-7 in the browser wallet.” The wallet asks you to approve. Keystore signing belongs in your own terminal.
 
 Run `mob` for the home screen, `mob doctor` for diagnostics, and `mob explain funding --simple` for a plain explanation.
 The home screen shows a live market view, account standing and the next action. `mob hello --offline` uses the cached market view;

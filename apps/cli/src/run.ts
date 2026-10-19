@@ -486,6 +486,11 @@ export async function run(
 		if (command === "upgrade") {
 			if (positionals.length)
 				throw new UsageError("upgrade does not accept positional arguments");
+			// Replacing the binary that enforces the boundary is the human's call.
+			if (!rt.stdinIsTTY)
+				throw new UsageError(
+					"mob upgrade needs your own terminal; run it there",
+				);
 			rt.out(await upgrade(await installationRoot()));
 			return 0;
 		}

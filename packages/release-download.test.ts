@@ -335,6 +335,39 @@ test.each(["wrong", "duplicate", "missing-sums", "bad-version", "offline"])(
 	},
 );
 
+test.each([
+	"http://example.test/releases/download",
+	"http://127.0.0.1.example.test/releases/download",
+	"ftp://127.0.0.1/releases/download",
+	"file:///tmp/releases/download",
+])(
+	"installer and upgrade refuse a non-https release base: %s",
+	async (base) => {
+		const taskHome = await home();
+		for (const args of [installer, upgrade]) {
+			const result = await run(args, taskHome, base);
+			expect(result.code).toBe(1);
+			expect(result.err).toContain("https");
+		}
+		expect(await readdir(taskHome)).not.toContain(".local");
+		expect(
+			await Bun.file(join(taskHome, `.mob/bin/mob-${version}`)).exists(),
+		).toBe(false);
+	},
+);
+
+test("installer pins every curl to https and TLS 1.2", async () => {
+	const script = await readFile(join(root, "install.sh"), "utf8");
+	const curls = script.split("\n").filter((line) => /\bcurl\s+-/.test(line));
+	expect(curls.length).toBeGreaterThan(0);
+	for (const line of curls) {
+		expect(line).toContain('--proto "$proto"');
+		expect(line).toContain('--proto-redir "$proto"');
+		expect(line).toContain("--tlsv1.2");
+	}
+	expect(script).toContain("proto='=https'");
+});
+
 test("shell scripts pass POSIX syntax checks", async () => {
 	for (const file of ["bin/mob", "install.sh"])
 		expect(

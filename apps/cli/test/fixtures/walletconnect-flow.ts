@@ -6,6 +6,7 @@ import { stageOpenBody } from "@mstack/mobius-client";
 import { ProposalStore } from "@mstack/proposals";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { fakeWalletConnect } from "../../../../packages/signers/test/fake-walletconnect-client.ts";
+import { setConfig } from "../../src/config.ts";
 import { run } from "../../src/run.ts";
 import { fakeFundingServer, loopbackFetch } from "./fake-funding-server.ts";
 
@@ -64,12 +65,8 @@ export async function walletConnectFlow(
 		await command(["config", "get", "walletconnect_project_id"]);
 		await command(sign, 1);
 		assert.equal(fake.calls.projectIds.length, 0);
-		await command([
-			"config",
-			"set",
-			"walletconnect_project_id",
-			"c".repeat(32),
-		]);
+		// Protected keys need the human's terminal through the CLI.
+		await setConfig("walletconnect_project_id", "c".repeat(32), home);
 		const p = await new ProposalStore(home).stage({
 			kind: "sign-text",
 			owner: wallet.address,
@@ -95,10 +92,10 @@ export async function walletConnectFlow(
 		});
 		out(`Staged ${p.id} through @mstack/proposals`);
 		await command(["preview", p.id]);
-		await command(["config", "set", "policy", "locked"]);
+		await setConfig("policy", "locked", home);
 		await command(sign, 1);
 		assert.equal(fake.calls.projectIds.length, 0);
-		await command(["config", "set", "policy", "manual"]);
+		await setConfig("policy", "manual", home);
 		await command(sign);
 		await command(sign, 1);
 		assert.equal(fake.calls.projectIds.length, 1);

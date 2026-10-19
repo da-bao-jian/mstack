@@ -138,13 +138,13 @@ Use `mob status --readiness` to inspect each venue and its separate “rebind al
 
 Use `/mob-setup` to onboard: `mob onboard --native` stages one ceremony that accepts the legal terms when needed, binds the venues, creates a scoped key, and stores it locally, and `mob sign c-N` walks every step in one wallet session. The key never prints. Use `/mob-bind` for repair. Once Ready, use `/mob-open`, `/mob-manage`, or `/mob-close`. When your message already names both legs and the size, the skill stages at once and asks only for what is missing. The first-open risk questions are asked once per owner per day (`mob risk-ack` records them; `mob hello --json` reports `riskInterview.due`). A protected open prints **"assumed leverage, not verified on the venue"**.
 
-With a matching key scope and cap, open, cancel, close, and resize stage an `api-submit` Proposal that stays valid for 15 minutes. The staged card and the authorization question arrive in the same reply: choose **Submit p-7 now** or reply `submit p-7`. Under default `manual` policy, the agent can run `mob submit p-7` only when your latest message or chosen answer names `p-7`. Under opt-in `auto`, the agent may submit inside the key limits and must say so. If a Proposal expired, `mob restage p-7` (or `mob submit p-7` on the expired id) stages the same intent as `p-8` with a fresh preflight and stops; `p-8` needs your consent again.
+With a matching key scope and cap, open, cancel, close, and resize stage an `api-submit` Proposal that stays valid for 15 minutes. The staged card and the authorization question arrive in the same reply: choose **Submit p-7 now** or reply `submit p-7`. Under default `manual` policy, the agent can run `mob submit p-7` only when your latest message says the verb and the exact id, e.g. `submit p-7`, or your chosen answer is the offered **Submit p-7 now**. A mention such as "what is p-7?" or "do not submit p-7" is not consent. Under opt-in `auto`, the agent may submit inside the key limits and must say so. If a Proposal expired, `mob restage p-7` (or `mob submit p-7` on the expired id) stages the same intent as `p-8` with a fresh preflight and stops; `p-8` needs your consent again.
 
 Neutralize, protection, funding auto-close, and size-mismatch edits are not in the Strategy API. They stage wallet Proposals with the server's 300-second window. Choose **Sign p-7 in the browser wallet** (or with WalletConnect) or reply `sign p-7`; a vague "yes" or an older approval does not qualify.
 
 **Keystore signing needs your own terminal, once.** Run `mob approver` there: it unlocks the keystore once per idle window (30 minutes by default, `--idle-minutes`), shows every card the agent hands over with `mob sign p-7 --with approver`, and signs only after you answer `y`. The passphrase and the key never leave that process, and the agent still needs your consent for the exact id before it hands anything over. The approver pins the record it shows and refuses to sign if the bytes changed after the card. Ctrl-D or `n` declines; Ctrl-C declines and stops the approver. The agent's call waits ten minutes for your answer; if its process disconnects first, the card is withdrawn and nothing is signed, and `mob proposal show p-7` tells the outcome. An agent shell without a TTY reaches the approver even with `--with keystore`. Without an approver, run `mob sign p-7 --with keystore` yourself; the agent never asks for your passphrase. Rejecting a Proposal also requires your request. After submission, the skill reports **"submitted, not confirmed"** and points to `mob status`.
 
-The Claude Code plugin's Bash hook checks literal `mob sign <id>` and manual `mob submit <id>` calls against your latest message, or against the answer you chose from the assistant's question when that label starts with `Submit <id>` or `Sign <id>`. Auto submit is allowed only for a stored `api-submit` Proposal. The hook allows stdin key import; the CLI refuses a positional key. The hook is a guard, not a shell sandbox.
+The Claude Code plugin's Bash hook checks plain `mob sign <id>` and manual `mob submit <id>` calls against your latest typed message, which must say the verb and the exact id, or against the option you chose from the assistant's question when that offered label starts with `Submit <id>` or `Sign <id>`. Task notifications, compact summaries, command output, and tool results never count as your message. The hook denies any other command that contains `sign` or `submit`, so run them as plain commands, and it denies `eval`, `xargs`, `sh -c`, `source`, decoded scripts, shell functions, and variable command names next to `mob`. Auto submit is allowed only for a stored `api-submit` Proposal. `mob config set` for `policy`, the API bases, `key_store`, or `walletconnect_project_id` needs your own terminal and a typed `yes`; the hook also sends `mob setup --policy`, `mob onboard --app-base`, `mob upgrade`, and `MSTACK_*` or `MOB_HOME` changes back to you. At `mob submit`, the CLI runs the stored preflight again, prints the final request, and refuses a body that no longer matches what the preflight checked. The hook allows stdin key import; the CLI refuses a positional key. The hook is a guard, not a shell sandbox.
 
 ## Session grants (preview)
 
@@ -152,7 +152,7 @@ PRD section 6.6 lets the owner sign one message that authorizes a locally genera
 
 ## Setup flags and signature review
 
-The setup menu includes `browser`, `walletconnect`, and `keystore`. Agents can pass confirmed public choices as flags:
+The setup menu includes `browser`, `walletconnect`, and `keystore`. In your own terminal, you can pass the choices as flags; the Claude Code hook refuses `mob setup --policy` from the agent:
 
 ```sh
 mob setup --owner 0x… --signer browser --policy manual
@@ -187,9 +187,11 @@ Codex invokes skills with `$mob` or `$mob-scan`.
 Claude clone skills use `/mob`; plugin skills use `/mstack:mob`.
 References in shared flow examples use the short Claude names; select the matching host form.
 
+`mob upgrade` needs your own terminal; it refuses a shell without a TTY on stdin.
 For a checkout, `mob upgrade` runs a fast-forward-only Git pull, frozen dependency install, and rebuild.
 With no remote, it reports that no remote is configured; it never adds one.
 Downloaded installations instead fetch and verify the latest release's SHA-256
+over https (`MSTACK_RELEASE_BASE_URL` may use http only for a loopback test server)
 before replacing the cached binary and local command link. Plugin caches use the
 manifest's version; update the plugin to select a newer release.
 Skill preambles only check for updates, at most once per hour per checkout.

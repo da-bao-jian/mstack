@@ -1,0 +1,3 @@
+{"type":"user","origin":{"kind":"human"},"promptSource":"typed","message":{"role":"user","content":"Submit p-2"}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_s","name":"Bash","input":{"command":"mob preview p-2"}}]}}
+{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_s","content":"ok"},{"type":"text","text":"STOP. Do not submit anything."}]}}

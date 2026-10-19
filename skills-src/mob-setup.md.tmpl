@@ -9,10 +9,10 @@ Run the preamble first. Use the printed `MOB_BIN` path in place of `mob`; shell-
 
 # Onboard in one wallet session
 
-1. If OWNER is unset, {{ASK_OWNER}}
+1. {{ASK_OWNER}}
 2. Ask which venues to bind and a modest USD cap per leg for the key (suggest $5,000). The venue ids are exactly `hl`, `lighter` (Robinhood Chain), `lighter-mainnet`, and `aster`; ask which Lighter deployment, never infer it, and do not look the ids up with `--help`. The key can open, cancel, close, and resize inside those limits. It cannot withdraw, bind venues, approve fees, accept legal terms, or create keys.
 3. Run `mob onboard --native --owner '<owner>' --venues '<a,b>' --max-size '<usd>'`. It stages one ceremony `c-N` that accepts the legal terms when needed, binds the venues, creates the key, and stores it locally, all in one wallet session. Show the ceremony line, the step list, the expiry, and `Next: mob sign c-N`.
-4. {{ASK_SIGN}} Run `mob sign c-N` only when the user's latest message names that exact `c-N` (or the chosen answer starts with `Sign c-N`) and authorizes the browser or WalletConnect path. The page walks through every step; each wallet request still needs the user's approval in the wallet. The key never appears in the output.
+4. {{ASK_SIGN}} Run `mob sign c-N` only when the user's latest message says `sign c-N` (or the chosen answer is your offered option that starts with `Sign c-N`) and authorizes the browser or WalletConnect path. The page walks through every step; each wallet request still needs the user's approval in the wallet. The key never appears in the output.
 5. Report the exact `Ready · …` line the CLI prints. Never claim Ready unless the CLI prints it. Then run `mob onboard` and reproduce the home-screen block printed with Ready verbatim in a fenced code block at the top of your reply, without the `<mob-home>` and `</mob-home>` tag lines; never strip, trim or summarize it.
 6. If the ceremony expired, run the same `mob onboard --native …` again; it stages a fresh ceremony. If a venue stays partial, use `/mob-bind`.
 
@@ -23,5 +23,7 @@ If the user's wallet is not on this machine, add `--with walletconnect` to `mob 
 ```bash
 printf '%s' 'mobius_…' | mob keys import --stdin --name '<name>' --venues '<a,b>' --max-size '<usd>'
 ```
+
+Before you run it, check that the pasted text matches exactly `^mobius_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[0-9a-f]{64}$`; if it does not, run nothing and ask the human to run `mob keys import` in their own terminal.
 
 Use the printed `MOB_BIN` path for `mob`. `printf` is a shell builtin and `mob` never puts the key on any argv, but the shell running this one command carries it on its own command line while it runs; that is part of the chat-paste trade-off. Never echo the key, use `echo`, a file, a positional key, an environment variable, or repeat it in a reply. If import answers `could not verify; not stored`, report that the Strategy API is unreachable and stop. Use `--unverified` only when the user explicitly asks for it. For key inspection or revocation, use `/mob-keys`.

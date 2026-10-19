@@ -44,7 +44,7 @@ preflight. `mob sign <id>` is the only signing entrypoint. It checks policy,
 expiry, owner recovery, and single-use state. Failed checks stop the operation.
 There is no `--yes`, private-key flag, automatic policy, or fallback signer.
 
-Skills stop for explicit approval of the exact id. Browser wallet approval is
+Skills stop until the human says the verb and the exact id, e.g. `submit p-2`. Browser wallet approval is
 still required. `mob approver` runs only in the human's terminal: it caches the passphrase in
 memory for its idle window, answers a local socket inside the 0700 home, and signs a
 Proposal only after the human answers y to its card; the agent sees the relayed output and
@@ -54,10 +54,22 @@ human's y. The approver pins the record it shows and refuses to sign bytes that 
 after the card, and it withdraws a card whose requester disconnected before the answer. The Claude Code plugin registers no MCP server, so every agent
 command in that host passes through the Bash sign guard. `mob mcp`, for other
 clients, can read and stage; it cannot sign, reject, or change config.
-The Claude Bash sign guard checks literal commands against the latest user
-message, or against the answer the user chose from an AskUserQuestion the assistant
-asked when that label starts with `Submit <id>` or `Sign <id>`; other tool results
-never grant consent.
+The Claude Bash sign guard allows a plain `mob sign <id>` or `mob submit <id>`
+only when the latest human input says the verb and the exact id, e.g. `submit p-2`,
+with no negation in the three words before the verb, or when the human chose an
+option the assistant offered in AskUserQuestion whose exact label starts with
+`Submit <id>` or `Sign <id>`. Human input is a message Claude Code marks as typed by
+the human, or the structured answer to the assistant's own question. Task
+notifications, compact summaries, command output, free-text "Other" answers, and
+other tool results never grant consent; an unrecognized event revokes it.
+The guard denies `sign` or `submit` outside a plain mob invocation; `eval`, `xargs`,
+`sh -c`, `source`, decoded scripts, shell functions, and variable command names
+next to mob; `mob config set` of the policy, API bases, key store, or WalletConnect
+project; `mob setup --policy`; `mob onboard --app-base`; `mob upgrade`; and
+`MSTACK_*` or `MOB_HOME` assignments with mob. The CLI also requires the human's
+terminal and a typed `yes` from `/dev/tty` for those config keys, and a terminal for
+`mob upgrade`. `mob submit` runs the stored preflight again, prints the final
+request, and refuses a body that no longer matches the evidence the preflight checked.
 It is not a shell sandbox and cannot inspect arbitrary scripts or other hosts.
 On Claude Code 2.1.295 or newer, a guard that cannot start, crashes, or times out
 blocks the call. Older versions let such a call continue; the CLI policy, expiry,
@@ -77,6 +89,17 @@ Submission is not confirmation; use a status read to check execution.
 Close and management requests can be replayed within the server's 300-second
 window. Client single-use checks do not add server nonces. Session grants,
 Ledger signing, and a hosted MCP server are not implemented here.
+
+## Known limits
+
+- The agent runs as the same OS user as the human, so `~/.mob`, Proposal files,
+  the config, and the Claude Code transcript are writable by it. The sign guard
+  protects against mistakes and prompt injection that stay inside the tool
+  interface. It does not stop an agent that deliberately edits local files or
+  forges transcript lines. The wallet signature and the server's key caps are the
+  hard limits; the Proposal content hash is unkeyed.
+- TODO: releases carry SHA-256 sums from the same origin as the binaries and no
+  signature yet. Downloads require https, except a loopback test server.
 
 ## Data and dependencies
 

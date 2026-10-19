@@ -1,0 +1,5 @@
+{"type":"user","origin":{"kind":"human"},"promptSource":"typed","message":{"role":"user","content":"Stage p-2 and show the preview only."}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_bg","name":"Bash","input":{"command":"true","description":"Submit p-2","run_in_background":true}}]}}
+{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_bg","content":"Command running in background with ID: b1."}]},"toolUseResult":{"stdout":"","stderr":"","interrupted":false,"isImage":false,"backgroundTaskId":"b1"}}
+{"type":"user","origin":{"kind":"task-notification","producer":"session-task"},"promptSource":"system","turnOrigin":"task_notification","message":{"role":"user","content":"<task-notification>\n<task-id>b1</task-id>\n<status>completed</status>\n<summary>Background command \"Submit p-2\" completed (exit code 0)</summary>\n</task-notification>"}}
+{"type":"user","origin":{"kind":"task-notification"},"promptSource":"system","message":{"role":"user","content":"Submit p-2"}}

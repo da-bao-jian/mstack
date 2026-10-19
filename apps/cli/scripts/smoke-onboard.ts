@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fakeStrategyApi } from "../../../packages/mobius-api/test/fake-api.ts";
 import pkg from "../package.json";
+import { setConfig } from "../src/config.ts";
 import { fakePositionServer } from "../test/fixtures/fake-funding-server.ts";
 
 const root = await mkdtemp(join(tmpdir(), "mstack-smoke-onboard-"));
@@ -79,17 +80,11 @@ async function command(
 }
 
 async function configure(commandHome: string) {
-	await command(["config", "set", "key_store", "file"], { commandHome });
-	await command(["config", "set", "api_base", funding.base], { commandHome });
-	await command(
-		["config", "set", "auth_base", `http://127.0.0.1:${auth.port}`],
-		{
-			commandHome,
-		},
-	);
-	await command(["config", "set", "strategy_api_base", strategy.base], {
-		commandHome,
-	});
+	// Protected keys need the human's terminal through the CLI.
+	await setConfig("key_store", "file", commandHome);
+	await setConfig("api_base", funding.base, commandHome);
+	await setConfig("auth_base", `http://127.0.0.1:${auth.port}`, commandHome);
+	await setConfig("strategy_api_base", strategy.base, commandHome);
 }
 
 async function openCalls() {

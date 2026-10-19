@@ -51,6 +51,15 @@ not a claim that public release tags or artifacts were published.
 - Backspace at a hidden passphrase or key prompt removes a whole character instead of one byte of a multi-byte UTF-8 character, and the input is NFC-normalized.
 - `mob keys create`, native onboarding, and `mob sign` of a key-creation Proposal check that the key store can save a key before the server creates it, so a key is no longer created into a read-only `MOBIUS_API_KEY` override or a locked store and lost.
 - An empty `MOB_HOME` means `~/.mob` instead of the current directory, and a relative `MOB_HOME` is refused, in the CLI and in the Bash sign guard.
+- `mob config set` of `policy`, `api_base`, `strategy_api_base`, `auth_base`, `app_base`, `key_store`, or `walletconnect_project_id` now needs the human's terminal (TTY on stdin and stdout) and a typed `yes` from `/dev/tty`; an agent shell could switch to `policy auto` and then submit without consent.
+- The Bash sign guard reads consent only from messages Claude Code marks as typed by the human; task notifications, compact summaries, command output, and unmarked or merged events no longer count, and an unrecognized event revokes consent.
+- The guard reads AskUserQuestion answers from Claude Code's structured answers and accepts only an exact offered label for the matching question; assistant-written question or preview text can no longer supply a fake answer, and free-text "Other" answers do not authorize.
+- When mob is in play (named anywhere in the command, through `MOB`/`MOB_BIN`, or the CLI's dev entry) or `sign`/`submit` is followed by a Proposal id, the guard denies anything outside a plain `mob sign|submit <id>` command, including `eval`, `xargs`, `sh -c`, `source`, decoded scripts, shell functions, and variable command names; quoting, backslashes, copied binaries, `bun main.ts`, and wrappers no longer slip past it. Plain paths such as `~/.mob/bin/mob-<version>` are now checked instead of ignored. Commands that never involve mob, such as `git commit -m 'sign …'` or `grep submit`, are left alone.
+- Text consent needs the verb right before the exact id, such as `submit p-2` or `sign c-1`, and a negation such as "do not" just before the verb denies it; a bare mention of the id no longer counts.
+- `mob submit` runs the stored preflight again, prints the final request (route, legs, size), and refuses a record whose body no longer matches the evidence and purpose shown at staging.
+- The guard sends `mob setup --policy`, `mob onboard --app-base`, `mob upgrade`, and `MSTACK_*` or `MOB_HOME` changes next to mob back to the human; `mob upgrade` also refuses a shell without a TTY.
+- Release downloads in `install.sh` and `mob upgrade` require https (http only for a loopback test server), including redirects; every installer `curl` uses `--proto`, `--proto-redir`, and `--tlsv1.2`. GitHub Actions are pinned to commit SHAs.
+- The key-import instructions tell the agent to check the exact `mobius_…` key format before running the import, and otherwise to ask the human to run `mob keys import`.
 
 ## [0.4.1] - 2026-10-18
 

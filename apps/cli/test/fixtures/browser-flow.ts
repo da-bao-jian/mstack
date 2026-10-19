@@ -6,6 +6,7 @@ import { stageOpenBody } from "@mstack/mobius-client";
 import { ProposalStore } from "@mstack/proposals";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { fakeBrowserWallet } from "../../../../packages/signers/test/fake-browser-wallet.ts";
+import { setConfig } from "../../src/config.ts";
 import { run } from "../../src/run.ts";
 import { fakeFundingServer, loopbackFetch } from "./fake-funding-server.ts";
 
@@ -81,10 +82,11 @@ export async function browserFlow(
 		});
 		out(`Staged ${p.id} through @mstack/proposals`);
 		await command(["preview", p.id]);
-		await command(["config", "set", "policy", "locked"]);
+		// Policy changes need the human's terminal through the CLI.
+		await setConfig("policy", "locked", home);
 		await command(["sign", p.id, "--with", "browser"], 1);
 		assert.equal(opens, 0);
-		await command(["config", "set", "policy", "manual"]);
+		await setConfig("policy", "manual", home);
 		const sign = ["sign", p.id, ...(override ? ["--with", "browser"] : [])];
 		await command(sign);
 		await driven;

@@ -11,9 +11,9 @@ Never request, echo, log, or put a key, seed, or passphrase in command text. Ask
 
 Run `mob close <task>`. Show the Proposal kind, id, task, venues, size, controls, preflight, expiry, and digest when present. Read [close semantics](references/close.md).
 
-In the same reply, ask for authorization. For an `api-submit` Proposal: {{ASK_SUBMIT}} Under `manual`, run `mob submit p-N` only when the latest user message names that exact id or the chosen answer starts with `Submit p-N`. Under `auto`, you may run it inside the key limits and must say that auto policy allowed it.
+In the same reply, ask for authorization. For an `api-submit` Proposal: {{ASK_SUBMIT}} Under `manual`, run `mob submit p-N` only when the latest user message says `submit p-N` or the chosen answer is your offered option that starts with `Submit p-N`. Under `auto`, you may run it inside the key limits and must say that auto policy allowed it.
 
-If the CLI stages a wallet Proposal, state why the key path was unavailable, then: {{ASK_SIGN}} Never run `mob sign p-N` unless the latest user message names that exact id (or the chosen answer starts with `Sign p-N`) and authorizes the browser, WalletConnect, or approver path. The agent never runs keystore signing itself; with `approver.running` true in `mob hello --json`, use `mob sign p-N --with approver`.
+If the CLI stages a wallet Proposal, state why the key path was unavailable, then: {{ASK_SIGN}} Never run `mob sign p-N` unless the latest user message says `sign p-N` (or the chosen answer is your offered option that starts with `Sign p-N`) and authorizes the browser, WalletConnect, or approver path. The agent never runs keystore signing itself; with `approver.running` true in `mob hello --json`, use `mob sign p-N --with approver`.
 
 If the Proposal expired, run `mob restage p-N`: same intent, new id, fresh preflight; ask again for the new id.
 
