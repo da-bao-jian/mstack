@@ -7,6 +7,8 @@ not a claim that public release tags or artifacts were published.
 <!-- release-start -->
 ## [Unreleased]
 
+## [0.4.6] - 2026-10-19
+
 ### Fixed
 
 - Native onboarding staged a venue whose stored MoB key no longer works without asking to rebind it. MoB refused the prepare request with `409 rebind_required` only after the wallet had signed. `mob onboard --native` and `mob bind --all` now read MoB's readiness reason first; a venue reported as `key_invalid`, `builder_fee_missing` or `integrator_approval_missing` stops onboarding before anything is staged, names the venue and the reason, and asks for `--rebind`. The setup skill asks the user before it adds `--rebind`. The error after a refused prepare now quotes MoB's reason.
