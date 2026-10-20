@@ -160,7 +160,7 @@ async function signerStatus(
 				: "keystore missing or not a regular file with mode 0600",
 		};
 	}
-	return { usable: false, detail: "not set → run mob setup" };
+	return { usable: false, detail: 'not set → say "set up mstack"' };
 }
 
 export async function collectHome(

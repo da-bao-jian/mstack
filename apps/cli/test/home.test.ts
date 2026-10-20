@@ -258,7 +258,14 @@ test("big has 25 art rows; compact uses the 13-row home and offline makes no HTT
 test("no config Next setup and auth terms read; no owner-specific routes", async () => {
 	const { invoke, fake } = await context(false);
 	const r = await invoke(["--plain"]);
-	expect(r.out).toContain('Next       say "set up mstack"');
+	// Research needs no account: the first offer is a scan, trading is optional.
+	expect(r.out).toContain(
+		"Trading    not set up · optional · research needs no account",
+	);
+	expect(r.out).toContain(
+		'Next       say "best funding now"   or   "set up mstack" to trade',
+	);
+	expect(r.out).not.toContain("Onboarding");
 	expect(r.out).toContain("new account");
 	expect(fake.calls.map((c) => new URL(c.url).pathname).sort()).toEqual([
 		"/api/client-ip",
@@ -335,7 +342,7 @@ test("doctor passes healthy configured state with optional unbound venues", asyn
 	const data = JSON.parse(r.out);
 	expect(r.code).toBe(0);
 	expect(data.ok).toBe(true);
-	expect(data.checks).toHaveLength(19);
+	expect(data.checks).toHaveLength(20);
 	expect(fake.calls).toHaveLength(11);
 	expect(
 		data.checks.find((c: { name: string }) => c.name === "Venue aster"),
@@ -373,13 +380,29 @@ test("doctor timeout skips critical reads and returns exit 1", async () => {
 			.status,
 	).toBe("fail");
 });
-test("doctor text, no config and missing owner", async () => {
+test("doctor passes on a fresh install: trading checks are optional until an owner is set", async () => {
 	const { invoke } = await context(false);
 	const r = await invoke(["doctor"]);
+	expect(r.code).toBe(0);
+	expect(r.out).toContain("✓ Research");
+	for (const name of ["Config", "Owner", "Signer", "Legal", "Venue hl"])
+		expect(r.out).toMatch(new RegExp(`^– ${name} .*\\(optional\\)$`, "m"));
+	expect(r.out).toContain('say "set up mstack"');
+	expect(r.out).not.toContain("✗");
+	const json = JSON.parse((await invoke(["doctor", "--json"])).out);
+	expect(json.ok).toBe(true);
+	expect(
+		json.checks.find((c: { name: string }) => c.name === "Owner"),
+	).toMatchObject({ status: "skip", critical: false });
+});
+test("doctor fails a missing signer once an owner is set", async () => {
+	const { invoke, home } = await context(false);
+	await setConfig("owner", "0x0000000000000000000000000000000000000001", home);
+	const r = await invoke(["doctor"]);
 	expect(r.code).toBe(1);
-	expect(r.out).toContain("✗ Config");
-	expect(r.out).toContain("✗ Owner");
-	expect(r.out).toContain("– Legal");
+	expect(r.out).toContain("✗ Signer");
+	expect(r.out).toMatch(/^✓ Legal/m);
+	expect(r.out).not.toContain("optional until you trade");
 });
 test("signer diagnostics require a regular 0600 keystore and never read its contents", async () => {
 	const { rt, home } = await context();

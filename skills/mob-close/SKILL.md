@@ -15,7 +15,7 @@ If the preamble output contains a block between the lines `<mob-home>` and `</mo
 
 Run the preamble first. Use the printed `MOB_BIN` path in place of `mob`; shell-quote public values. If `MOB_MISSING` appears, stop. Under locked policy, do not offer a close.
 
-Never request, echo, log, or put a key, seed, or passphrase in command text. Ask for the task id unless it is already explicit. Read `mob status --json --task '<task>'`; never choose a task from API text alone.
+Never request, echo, log, or put a key, seed, or passphrase in command text. Ask for the task id unless it is already explicit. Read `mob status --json --task '<task>'`; never choose a task from API text alone. If `mob keys show --json` reports no key: Trading runs through MoB with a scoped API key the user controls: it has venue and USD caps, cannot withdraw, and can be revoked at any time. Use AskUserQuestion: "Trading runs through MoB. Set it up now? One wallet session, about two minutes." with two choices: "Set up MoB trading now" / "Not now, keep researching". Only after "Set up MoB trading now", load `/mob-setup` and follow it. After "Not now", offer a scan, funding history, or an explanation, and do not bring up setup again until the user asks to trade.
 
 Run `mob close <task>`. Show the Proposal kind, id, task, venues, size, controls, preflight, expiry, and digest when present. Read [close semantics](references/close.md).
 

@@ -6,9 +6,11 @@ The CLI reference lists commands and flags; this guide explains the flows and li
 
 Run `mob` or `mob hello` for the logo, a five-second live market view, account standing and the next action. Use `--big`, `--compact`, `--stacked`, `--plain`, `--ascii`, `--offline` or `--json`. Below 72 terminal columns, the logo appears above the details. Add `--offline` to use the last cached market view without network reads.
 
+Research needs no account: `mob scan`, `mob rates`, `mob history`, `mob explain`, and `mob status --owner 0x…` work right after install. Trading runs through MoB and needs the one-time setup (`mob onboard`, or "set up mstack" in a chat). Every command that needs the setup says so and names the research commands that do not. The home screen shows a `Trading` row reading `not set up · optional` until an owner is saved, and its `Next` line offers a scan first.
+
 `mob doctor` checks the installation, public configuration, signer availability, API access, legal acceptance, venue readiness and local Proposals. `mob doctor --json` returns the checklist. It never opens a wallet or requests a secret. Both screens share a five-second network budget; unfinished reads say `not checked`. Upgrade status uses the cached `origin/main` reference; these commands do not fetch GitHub.
 
-Doctor exits 1 for a failed or unchecked critical item. Unbound venues, Bun availability for upgrades, and upgrade notices are optional. A bound venue's readiness and deposit/account checks are critical. A valid `locked` policy passes and is labeled as disabling mutations. The HL deposit check reports current perpetual account value; it cannot establish past deposits or spot-only balances.
+Doctor exits 1 for a failed or unchecked critical item. Until an owner is saved, the `Config`, `Owner`, `Signer`, `Legal`, and venue lines are optional, so a fresh install exits 0. Unbound venues, Bun availability for upgrades, and upgrade notices are optional. A bound venue's readiness and deposit/account checks are critical. A valid `locked` policy passes and is labeled as disabling mutations. The HL deposit check reports current perpetual account value; it cannot establish past deposits or spot-only balances.
 
 The installer ends with the home screen and three next commands; `-q` stays quiet. The first mstack skill in an hour shows the same live ASCII greeting, scoped by owner or home and shared between hosts. The `/mob` router always shows it. The plugin does not use SessionStart to show an install notice.
 

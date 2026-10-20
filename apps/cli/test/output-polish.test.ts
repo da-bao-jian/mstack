@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ProposalStore } from "@mstack/proposals";
 import { fixtureContext } from "../../../packages/funding/test/fixtures.ts";
-import { SETUP_FIRST, setConfig } from "../src/config.ts";
+import { OWNER_NEEDED, SETUP_FIRST, setConfig } from "../src/config.ts";
 import { expiry, number, usd } from "../src/format.ts";
 import { withGlossary } from "../src/glossary.ts";
 import { helpInvocations } from "../src/help.ts";
@@ -90,9 +90,18 @@ async function stage(home: string, now: number) {
 
 test("every config-dependent command has the exact first-run sentence without reads", async () => {
 	const h = await harness();
+	// Status is a public read by address: it asks for --owner, not for setup.
+	for (const args of [["status"], ["status", "--readiness"]])
+		expect(await h.invoke(args)).toEqual({
+			code: 1,
+			out: "",
+			err: `mob: ${OWNER_NEEDED}`,
+		});
+	// Trading commands name MoB, the setup, and the research commands that work without it.
+	expect(SETUP_FIRST).toContain("Trading runs through MoB");
+	expect(SETUP_FIRST).toContain('say "set up mstack"');
+	expect(SETUP_FIRST).toContain("Research needs no account");
 	for (const args of [
-		["status"],
-		["status", "--readiness"],
 		["bind", "hl"],
 		["open", "BTC"],
 		["close", "1842"],

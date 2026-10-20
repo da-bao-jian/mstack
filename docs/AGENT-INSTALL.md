@@ -25,7 +25,7 @@ mob
 Reproduce the complete `mob` output verbatim in a fenced code block as the welcome, without the `<mob-home>` and `</mob-home>` tag lines.
 Run each line exactly as written; do not download a script to run it from a file. If a permission check denies a command, do not work around it: ask the user to run that exact line with the `!` prefix, then continue.
 
-Tell the user exactly: type `/reload-plugins` in this session, then say "set up mstack". If Claude Code does not know `/reload-plugins`, tell them to restart it and say "set up mstack".
+Tell the user exactly: type `/reload-plugins` in this session, then ask "best funding now" (no account needed) or say "set up mstack" to trade. If Claude Code does not know `/reload-plugins`, tell them to restart it first.
 
 ## Codex
 
@@ -40,7 +40,7 @@ mob
 `mob --version` must print the version in `v0.4.7`. Check the doctor output against [Verify](#verify).
 Reproduce the complete `mob` output verbatim in a fenced code block as the welcome, without the `<mob-home>` and `</mob-home>` tag lines.
 
-Tell the user exactly: start a new Codex session, then say "set up mstack".
+Tell the user exactly: start a new Codex session, then ask "best funding now" (no account needed) or say "set up mstack" to trade.
 
 ## Other MCP clients
 
@@ -70,7 +70,7 @@ mob
 ```
 
 Reproduce the complete `mob` output verbatim in a fenced code block as the welcome, without the `<mob-home>` and `</mob-home>` tag lines.
-Tell the user exactly: say "set up mstack" in the MCP client.
+Tell the user exactly: ask "best funding now" in the MCP client (no account needed), or say "set up mstack" to trade.
 
 Keep signing and key import in the terminal. Use `mob onboard` and `mob keys import` there.
 
@@ -87,7 +87,7 @@ mob
 ```
 
 Reproduce the complete `mob` output verbatim in a fenced code block as the welcome, without the `<mob-home>` and `</mob-home>` tag lines.
-Tell the user exactly: run `mob onboard` to set me up.
+Tell the user exactly: run `mob scan --size 1000` to find trades (no account needed), and `mob onboard` when you want to trade through MoB.
 
 ## Verify
 
@@ -100,8 +100,8 @@ mob
 ```
 
 `mob --version` must print the release version without a `v` prefix.
-The `Binary` doctor line must start with `✓` and show that version.
-Immediately after install, `Config`, `Owner`, and `Signer` can name the required onboarding action.
+The `Binary` and `Research` doctor lines must start with `✓`, and `Binary` must show that version.
+Immediately after install, `mob doctor` exits 0: `Config`, `Owner`, `Signer`, `Legal`, and the venue lines show `–` with `(optional)`, because research needs no account.
 After onboarding, every critical line must start with `✓`; optional checks can end with `(optional)`.
 
 ## Integrate

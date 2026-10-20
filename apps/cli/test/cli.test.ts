@@ -557,7 +557,8 @@ test("status defaults to the saved owner, permits an override, and names the uns
 	try {
 		const absent = await invoke(["status"], { home: isolated });
 		expect(absent.code).toBe(1);
-		expect(absent.err).toContain("Run `mob setup` first");
+		expect(absent.err).toContain("needs no account: add `--owner 0x…`");
+		expect(absent.err).not.toContain("setup` first");
 		expect(
 			(await invoke(["config", "get", "owner"], { home: isolated })).out,
 		).toBe("");

@@ -99,6 +99,8 @@ case ":${PATH:-}:" in
 esac
 printf '%s\n' '' 'Next steps:' \
   '  mob                         # open the home screen' \
+  '  mob scan --size 1000        # find delta-neutral funding trades (no account needed)' \
+  '  mob onboard                 # trade through MoB: one-time setup, about two minutes' \
   '  In Claude Code:' \
   '    /plugin marketplace add da-bao-jian/mstack' \
   '    /plugin install mstack' \

@@ -34,6 +34,7 @@ export async function renderSkills(root = repo): Promise<Map<string, string>> {
 			"askOpen",
 			"askSign",
 			"askSubmit",
+			"askTrade",
 		])
 			if (typeof values[key] !== "string")
 				throw new Error(`Missing ${host} ${key}`);
@@ -45,6 +46,7 @@ export async function renderSkills(root = repo): Promise<Map<string, string>> {
 			ASK_OPEN: values.askOpen as string,
 			ASK_SIGN: values.askSign as string,
 			ASK_SUBMIT: values.askSubmit as string,
+			ASK_TRADE: values.askTrade as string,
 			PREAMBLE: "",
 		};
 		for (const file of files) {
