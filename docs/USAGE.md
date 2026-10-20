@@ -197,7 +197,8 @@ over https (`MSTACK_RELEASE_BASE_URL` may use http only for a loopback test serv
 before replacing the cached binary and local command link. Plugin caches use the
 manifest's version; update the plugin to select a newer release.
 Skill preambles only check for updates, at most once per hour per checkout.
-They print changed commit hashes without installing updates.
+They print both commit hashes when the checkout is behind `origin/main`, without
+installing anything; a local commit ahead of main, such as a branch under work, is not an upgrade.
 
 The shared preamble prints `MOB_BIN`, version, owner presence, policy, signer, and API health.
 Its advisory API probe has a fifteen-second budget and reports `ok`, `slow`, or `unreachable`
