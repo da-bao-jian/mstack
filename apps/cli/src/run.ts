@@ -34,6 +34,7 @@ Usage:
   mob [--big | --compact] [--stacked] [--plain | --ascii] [--offline] [--json]
   mob hello [--big | --compact] [--stacked] [--plain | --ascii] [--offline] [--json]
   mob doctor [--json]
+  mob menu [--json]            (what you can do now, by account state: words to say and commands; no network)
   mob scan [--size N=1000] [--market BASE] [--venues a,b] [--top N=10]
            [--all-pairs] [--executable] [--min-apy PCT] [--strict] [--json | --json-full]
            [--min-volume N=1000000] [--include-thin] [--include-cross-deployment]
@@ -112,6 +113,7 @@ export const definitions: Record<string, ParseArgsConfig["options"]> = {
 		json: flag("boolean"),
 	},
 	doctor: { help: flag("boolean"), json: flag("boolean") },
+	menu: { help: flag("boolean"), json: flag("boolean") },
 	approver: { help: flag("boolean"), "idle-minutes": flag("string") },
 	grant: {
 		help: flag("boolean"),
@@ -342,6 +344,13 @@ export async function run(
 				rt.err,
 				rt.home,
 			);
+		}
+		if (command === "menu") {
+			if (positionals.length)
+				throw new UsageError("menu takes no positional arguments");
+			const { menu } = await import("./home.ts");
+			await menu(json, rt);
+			return 0;
 		}
 		if (command === "hello" || command === "doctor") {
 			if (positionals.length)

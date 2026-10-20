@@ -260,8 +260,11 @@ test.each([...skills.keys()])(
 			"OWNER: unset",
 			"POLICY: manual",
 			"SIGNER: unset",
+			// The hourly welcome carries the You can rows on a fresh home.
+			'You can    say "best funding now"',
 		])
 			expect(result.out).toContain(key);
+		expect(result.out).not.toContain("YOU_CAN");
 		expect(result.out).not.toContain("UPGRADE_AVAILABLE");
 		const calls = (await readFile(join(home, "curl-calls"), "utf8"))
 			.trim()
@@ -475,6 +478,26 @@ test("open skills stop on missing readiness before asking about risk (E3)", () =
 		);
 	}
 });
+
+test("between welcomes the preamble prints YOU_CAN from local state, with no network read", async () => {
+	const { home, path } = await preambleHome();
+	const body = preamble(
+		outputs.get("skills/mob-scan/SKILL.md") as string,
+		home,
+	);
+	expect((await command(["/bin/bash", "-c", body], home, path)).code).toBe(0);
+	const second = await command(["/bin/bash", "-c", body], home, path);
+	expect(second.code).toBe(0);
+	expect(second.out).not.toContain("<mob-home>");
+	expect(second.out).toContain("YOU_CAN:\n");
+	expect(second.out).toContain('say "best funding now"');
+	expect(second.out).toContain('say "set up mstack" to trade  mob onboard');
+	// Only the advisory API probe touched the network, once per preamble.
+	const calls = (await readFile(join(home, "curl-calls"), "utf8"))
+		.trim()
+		.split("\n");
+	expect(calls).toHaveLength(2);
+}, 60_000); // Two preambles (about ten CLI spawns).
 
 test("every generated skill plus its fresh-home preamble stays below 8 KiB (D2)", async () => {
 	const costs = new Map<boolean, number>();

@@ -36,7 +36,7 @@ claude plugin marketplace add da-bao-jian/mstack && claude plugin install mstack
 curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.8/install.sh | sh
 Then follow https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.8/docs/AGENT-INSTALL.md from Verify: `mob --version`, `mob doctor`,
 run `mob` and reproduce its output verbatim in a fenced block as the welcome.
-Finish by telling me to type /reload-plugins, then ask "best funding now" (no account needed) or say "set up mstack" to trade.
+Finish by telling me to type /reload-plugins, then show how to use mstack: how to invoke it and the welcome's "You can" options (research needs no account; "set up mstack" only to trade).
 ```
 
 The ready-to-paste landing-page title, three sentences, prompt, and custody statement are in `docs/AGENT-PROMPT.md`.

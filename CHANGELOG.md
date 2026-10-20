@@ -7,6 +7,11 @@ not a claim that public release tags or artifacts were published.
 <!-- release-start -->
 ## [Unreleased]
 
+### Added
+
+- The welcome tells a new user what mstack can do and how to reach it: a `Use` line ("say a line below in chat, or run its command · /mstack:mob or $mob also start mstack") and a `You can` block of up to five rows, each the words to say and the matching command, chosen by account state: fresh (four research rows and "set up mstack" to trade), setting up, a Proposal awaiting signature ("sign p-N" first), or trading ("open <top pair>", "my positions", "close task", "raise my cap"). `mob hello --json` carries it as `menu`. The compact welcome the skills show once an hour keeps three rows and leaves out Trending and the `Use` line, so every skill stays inside its 8 KiB context budget.
+- `mob menu [--json]` prints the same rows from local state alone. The skill preamble prints them as `YOU_CAN` on every invocation, and each skill ends a completed reply with up to three of them, so every turn offers the right next steps. The install guide ends with a "How to use mstack" block, and the paste prompt asks for it.
+
 ## [0.4.8] - 2026-10-20
 
 ### Changed

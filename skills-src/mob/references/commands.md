@@ -1,7 +1,8 @@
 # Command scope
 
 Read commands include scan, rates, history, explain, status, onboarding status,
-key status, config get, proposals, proposal show, and preview.
+key status, config get, proposals, proposal show, preview, and menu (the `You can`
+rows by account state; the preamble prints them as `YOU_CAN`).
 
 `mob onboard` opens the API page and prints the checklist. `mob keys import
 --stdin` is the agent import boundary. It never prints the key. Open, cancel,

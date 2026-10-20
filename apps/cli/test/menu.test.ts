@@ -1,0 +1,80 @@
+import { expect, test } from "bun:test";
+import { buildMenu, menuLine, USE_LINE } from "../src/menu.ts";
+
+const owner = "0x0000000000000000000000000000000000000001";
+const says = (input: Parameters<typeof buildMenu>[0]) =>
+	buildMenu(input).rows.map((row) => row.say);
+
+test("a fresh install offers research first and setup only to trade", () => {
+	const menu = buildMenu({ owner: null, hasKey: false, awaiting: [] });
+	expect(menu.state).toBe("fresh");
+	expect(menu.rows.map((row) => [row.say, row.run])).toEqual([
+		["best funding now", "mob scan --size 1000"],
+		["how does funding work", "mob explain funding"],
+		["history BTC", "mob history BTC --days 7"],
+		["positions of 0x…", "mob status --owner 0x…"],
+		["set up mstack", "mob onboard"],
+	]);
+	expect(menu.rows[4].note).toBe("to trade");
+	// The top pair names the history example so the row matches the board.
+	expect(
+		says({
+			owner: null,
+			hasKey: false,
+			awaiting: [],
+			topPair: { base: "ETH" },
+		}),
+	).toContain("history ETH");
+});
+
+test("an owner without a key is finishing setup; research stays available", () => {
+	const menu = buildMenu({ owner, hasKey: false, awaiting: [] });
+	expect(menu.state).toBe("setting-up");
+	expect(menu.rows[0]).toEqual({
+		say: "set up mstack",
+		note: "finish setup",
+		run: "mob onboard",
+	});
+	expect(says({ owner, hasKey: false, awaiting: [] })).toEqual([
+		"set up mstack",
+		"best funding now",
+		"how does funding work",
+		"history BTC",
+	]);
+});
+
+test("a stored key offers trading rows, with close only while a task runs", () => {
+	const base = { owner, hasKey: true, awaiting: [], topPair: { base: "HYPE" } };
+	expect(buildMenu(base).state).toBe("trading");
+	expect(says(base)).toEqual([
+		"open HYPE",
+		"my positions",
+		"best funding now",
+		"raise my cap",
+	]);
+	expect(buildMenu(base).rows[0].run).toBe("mob scan --market HYPE");
+	expect(says({ ...base, runningTasks: 2 })).toContain("close task <id>");
+});
+
+test("a Proposal awaiting signature comes first, then at most three state rows", () => {
+	const menu = buildMenu({ owner, hasKey: true, awaiting: ["p-3", "p-4"] });
+	expect(menu.state).toBe("awaiting");
+	expect(menu.rows[0]).toEqual({
+		say: "sign p-3",
+		note: "first",
+		run: "mob sign p-3",
+	});
+	expect(menu.rows).toHaveLength(4);
+	expect(menu.rows[1].say).toBe("open BTC");
+});
+
+test("menu lines pad the phrase so commands align, and the use line names every host", () => {
+	expect(menuLine({ say: "my positions", run: "mob status" }, 24)).toBe(
+		'say "my positions"      mob status',
+	);
+	expect(
+		menuLine({ say: "sign p-1", note: "first", run: "mob sign p-1" }),
+	).toBe('say "sign p-1" first          mob sign p-1');
+	expect(USE_LINE).toContain("/mstack:mob");
+	expect(USE_LINE).toContain("$mob");
+});

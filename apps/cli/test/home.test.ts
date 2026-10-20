@@ -267,10 +267,24 @@ test("no config Next setup and auth terms read; no owner-specific routes", async
 	);
 	expect(r.out).not.toContain("Onboarding");
 	expect(r.out).toContain("new account");
+	// The opening screen says how to reach mstack and what to do, by state.
+	expect(r.out).toContain(
+		"Use        say a line below in chat, or run its command · /mstack:mob or $mob also start mstack",
+	);
+	expect(r.out).toContain(
+		'You can    say "best funding now"        mob scan --size 1000',
+	);
+	expect(r.out).toContain('say "set up mstack" to trade  mob onboard');
+	expect(r.out).toContain(
+		'say "history BTC"             mob history BTC --days 7',
+	);
 	expect(fake.calls.map((c) => new URL(c.url).pathname).sort()).toEqual([
 		"/api/client-ip",
 		"/legal/terms",
 	]);
+	const json = JSON.parse((await invoke(["hello", "--json"])).out);
+	expect(json.menu.state).toBe("fresh");
+	expect(json.menu.rows).toHaveLength(5);
 });
 test("configured but unbound Next bind; empty tasks and absent acceptance", async () => {
 	const { invoke, fake } = await context();
@@ -280,6 +294,27 @@ test("configured but unbound Next bind; empty tasks and absent acceptance", asyn
 	const { out } = await invoke(["hello"]);
 	expect(out).toContain("Onboarding legal ✗");
 	expect(out).toContain('Next       say "set up mstack"');
+	expect(out).toContain(
+		'You can    say "set up mstack" finish setup  mob onboard',
+	);
+});
+test("mob menu prints the You can rows from local state with no network read", async () => {
+	const { invoke, fake, home } = await context();
+	const text = await invoke(["menu"]);
+	expect(text.code).toBe(0);
+	expect(text.err).toBe("");
+	expect(text.out.split("\n")[0]).toMatch(
+		/^say "set up mstack" finish setup +mob onboard$/,
+	);
+	const p = await proposal(home);
+	const json = JSON.parse((await invoke(["menu", "--json"])).out);
+	expect(json.state).toBe("awaiting");
+	expect(json.rows[0]).toEqual({
+		say: `sign ${p.id}`,
+		note: "first",
+		run: `mob sign ${p.id}`,
+	});
+	expect(fake.calls).toHaveLength(0);
 });
 test("JSON includes local Proposals and gives pending Proposal Next priority", async () => {
 	const { invoke, home } = await context();

@@ -10,11 +10,14 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
   +++++++++++######-------------              ETH    $14.0M 24h . funding +11%/yr . OI $7.0M . price +1.2%
  ++++++++++++######-------------   Trading    not set up . optional . research needs no account
 -------------######+++++++++++     Policy     manual . you approve each Proposal by naming it
- ------------######+++++++++       Next       say "best funding now"   or   "set up mstack" to trade
- ------------######+++++++
- ------------#####
- ------------###
- ------------#                     live . 2 of 14 venues . 0.0 s
+ ------------######+++++++++       Use        say a line below in chat, or run its command . /mstack:mob or $mob also start mstack
+ ------------######+++++++         You can    say "best funding now"        mob scan --size 1000
+ ------------#####                            say "how does funding work"   mob explain funding
+ ------------###                              say "history BTC"             mob history BTC --days 7
+ ------------#                                say "positions of 0x..."      mob status --owner 0x...
+                                              say "set up mstack" to trade  mob onboard
+                                   Next       say "best funding now"   or   "set up mstack" to trade
+                                   live . 2 of 14 venues . 0.0 s
 </mob-home>"
 `;
 
@@ -29,10 +32,14 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
  ++++++++++++######-------------   Positions  2 running . $5.0K per leg . est. funding +2.46/day
 -------------######+++++++++++     Ready      hl +  lighter + . key mobius_01234567-89ab-cdef-0123-456789abcdef... x . cap $5.0K
  ------------######+++++++++       Policy     manual . you approve each Proposal by naming it
- ------------######+++++++         Next       say "open BTC"   or   mob scan
- ------------#####
- ------------###
- ------------#                     live . 2 of 14 venues . 0.0 s
+ ------------######+++++++         Use        say a line below in chat, or run its command . /mstack:mob or $mob also start mstack
+ ------------#####                 You can    say "open BTC"          mob scan --market BTC
+ ------------###                              say "my positions"      mob status
+ ------------#                                say "best funding now"  mob scan --size 1000
+                                              say "close task <id>"   mob close <task>
+                                              say "raise my cap"      mob keys create --name <n> --venues a,b --max-size <usd>
+                                   Next       say "open BTC"   or   mob scan
+                                   live . 2 of 14 venues . 0.0 s
 </mob-home>"
 `;
 
@@ -46,10 +53,13 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
   +++++++++++######-------------              ETH    $14.0M 24h . funding +11%/yr . OI $7.0M . price +1.2%
  ++++++++++++######-------------   Trading    not set up . optional . research needs no account
 -------------######+++++++++++     Policy     manual . you approve each Proposal by naming it
- ------------######+++++++++       Next       say "best funding now"   or   "set up mstack" to trade
- ------------######+++++++
- ------------#####
- ------------###
- ------------#                     cached 4 min ago
+ ------------######+++++++++       Use        say a line below in chat, or run its command . /mstack:mob or $mob also start mstack
+ ------------######+++++++         You can    say "best funding now"        mob scan --size 1000
+ ------------#####                            say "how does funding work"   mob explain funding
+ ------------###                              say "history BTC"             mob history BTC --days 7
+ ------------#                                say "positions of 0x..."      mob status --owner 0x...
+                                              say "set up mstack" to trade  mob onboard
+                                   Next       say "best funding now"   or   "set up mstack" to trade
+                                   cached 4 min ago
 </mob-home>"
 `;

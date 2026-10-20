@@ -20,7 +20,8 @@ function firstTextBlock(markdown: string, after = "") {
 }
 
 test("agent install doc stays short and exposes executable host commands", async () => {
-	expect(install.split("\n").length - 1).toBeLessThanOrEqual(150);
+	// The "How to use" block adds twelve lines; keep the guide one screen-ish.
+	expect(install.split("\n").length - 1).toBeLessThanOrEqual(170);
 	const headings = [
 		"Claude Code",
 		"Codex",
@@ -117,11 +118,15 @@ test("canonical paste prompt is short and identical at every copy surface", asyn
 	// A restart drops the install chat, so the next step reloads in place and
 	// names the product; a bare "set me up" means nothing to a new session.
 	expect(canonical).toContain("/reload-plugins");
-	// Research needs no account, so the first offer is a scan; setup is for trading.
+	// Research needs no account; the install ends by showing how to use mstack
+	// and the welcome's state-dependent You can rows, never with setup alone.
 	expect(install).toContain(
-		'type `/reload-plugins` in this session, then ask "best funding now" (no account needed) or say "set up mstack" to trade',
+		"type `/reload-plugins` in this session. Then show [How to use](#how-to-use)",
 	);
-	expect(canonical).toContain('ask "best funding now" (no account needed)');
+	expect(install).toContain("## How to use");
+	expect(install).toContain("How to use mstack");
+	expect(canonical).toContain('the welcome\'s "You can" options');
+	expect(canonical).toContain("research needs no account");
 	for (const block of [canonical, codex]) {
 		expect(block).toContain('"set up mstack"');
 		expect(block).not.toContain('"set me up"');

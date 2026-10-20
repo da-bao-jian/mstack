@@ -25,7 +25,7 @@ mob
 Reproduce the complete `mob` output verbatim in a fenced code block as the welcome, without the `<mob-home>` and `</mob-home>` tag lines.
 Run each line exactly as written; do not download a script to run it from a file. If a permission check denies a command, do not work around it: ask the user to run that exact line with the `!` prefix, then continue.
 
-Tell the user exactly: type `/reload-plugins` in this session, then ask "best funding now" (no account needed) or say "set up mstack" to trade. If Claude Code does not know `/reload-plugins`, tell them to restart it first.
+Tell the user exactly: type `/reload-plugins` in this session. Then show [How to use](#how-to-use). If Claude Code does not know `/reload-plugins`, tell them to restart it first.
 
 ## Codex
 
@@ -40,7 +40,7 @@ mob
 `mob --version` must print the version in `v0.4.8`. Check the doctor output against [Verify](#verify).
 Reproduce the complete `mob` output verbatim in a fenced code block as the welcome, without the `<mob-home>` and `</mob-home>` tag lines.
 
-Tell the user exactly: start a new Codex session, then ask "best funding now" (no account needed) or say "set up mstack" to trade.
+Tell the user exactly: start a new Codex session. Then show [How to use](#how-to-use) with `$mob` in place of `/mstack:mob`.
 
 ## Other MCP clients
 
@@ -70,7 +70,7 @@ mob
 ```
 
 Reproduce the complete `mob` output verbatim in a fenced code block as the welcome, without the `<mob-home>` and `</mob-home>` tag lines.
-Tell the user exactly: ask "best funding now" in the MCP client (no account needed), or say "set up mstack" to trade.
+Then show [How to use](#how-to-use); in an MCP client the user asks in plain words.
 
 Keep signing and key import in the terminal. Use `mob onboard` and `mob keys import` there.
 
@@ -87,7 +87,7 @@ mob
 ```
 
 Reproduce the complete `mob` output verbatim in a fenced code block as the welcome, without the `<mob-home>` and `</mob-home>` tag lines.
-Tell the user exactly: run `mob scan --size 1000` to find trades (no account needed), and `mob onboard` when you want to trade through MoB.
+Then show [How to use](#how-to-use) with the commands from the welcome's `You can` rows.
 
 ## Verify
 
@@ -103,6 +103,18 @@ mob
 The `Binary` and `Research` doctor lines must start with `✓`, and `Binary` must show that version.
 Immediately after install, `mob doctor` exits 0: `Config`, `Owner`, `Signer`, `Legal`, and the venue lines show `–` with `(optional)`, because research needs no account.
 After onboarding, every critical line must start with `✓`; optional checks can end with `(optional)`.
+
+## How to use
+
+After the welcome, show this block. Fill the `You can` lines from the welcome's own `You can` rows, which change with the account state.
+
+```text
+How to use mstack
+- Say a line in plain words; mstack picks the right skill. /mstack:mob opens the router.
+- You can (no account needed): say "best funding now" · say "how does funding work" · say "history BTC" · say "positions of 0x…"
+- To trade through MoB: say "set up mstack" once (about two minutes), then "open <pair>", "my positions", "close task <id>".
+- Health: mob doctor · mob upgrade in your own terminal.
+```
 
 ## Integrate
 

@@ -4,6 +4,8 @@ import { resolve } from "node:path";
 const repo = resolve(import.meta.dir, "..");
 const greetingRule =
 	"If the preamble output contains a block between the lines `<mob-home>` and `</mob-home>`, reproduce every line between those two tags verbatim in a fenced code block at the top of your reply, and leave the two tag lines out; never strip, trim or summarize the block.";
+const nextStepsRule = (invoke: string) =>
+	`When a reply completes the request (not when it asks a question), end with "You can": up to three rows from the preamble's \`YOU_CAN\` list or the welcome's \`You can\` rows that fit the moment, as words to say next; \`${invoke}\` also starts mstack.`;
 
 /** Pure rendering lets tests compare both hosts without rewriting the checkout. */
 export async function renderSkills(root = repo): Promise<Map<string, string>> {
@@ -57,7 +59,7 @@ export async function renderSkills(root = repo): Promise<Map<string, string>> {
 					? // biome-ignore lint/suspicious/noTemplateCurlyInString: Host and shell substitutions are literal skill content.
 						'bash "${CLAUDE_SKILL_DIR}/scripts/preamble.sh"'
 					: "bash ~/.agents/skills/mstack/bin/mob-preamble";
-			replacements.PREAMBLE = `\`\`\`bash\n${command}${name === "mob" ? " --router" : ""}\n\`\`\`\n\n${greetingRule}`;
+			replacements.PREAMBLE = `\`\`\`bash\n${command}${name === "mob" ? " --router" : ""}\n\`\`\`\n\n${greetingRule} ${nextStepsRule(host === "claude" ? "/mstack:mob" : "$mob")}`;
 			let body = source.replace(/\{\{([A-Z_]+)\}\}/g, (_, key: string) => {
 				if (!Object.hasOwn(replacements, key))
 					throw new Error(`Unknown template field ${key}`);

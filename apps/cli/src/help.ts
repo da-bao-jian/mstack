@@ -4,6 +4,7 @@ import { UsageError } from "./config.ts";
 const examples: Record<string, [string, string]> = {
 	hello: ["mob hello --offline", "mob hello --compact"],
 	doctor: ["mob doctor", "mob doctor --json"],
+	menu: ["mob menu", "mob menu --json"],
 	scan: [
 		"mob scan --size 5000 --top 5",
 		"mob scan --executable --include-cross-deployment --json",

@@ -159,6 +159,8 @@ The backend uses `@walletconnect/sign-client` 2.25.0 and `qrcode-terminal` 0.12.
 
 ## Home and doctor
 
-`mob` and `mob hello` show the MoB logo and status. Options: `--big`, `--compact`, `--plain`, `--ascii`, `--offline`, `--json`. Compact output keeps the logo, palette and next command. Reads share one five-second deadline; `--offline` omits them.
+`mob` and `mob hello` show the MoB logo and status. Options: `--big`, `--compact`, `--plain`, `--ascii`, `--offline`, `--json`. Compact output, which the skill preamble shows once an hour, keeps the logo, top pairs, account standing, three `You can` rows and the next command; it leaves out Trending and the `Use` line. Reads share one five-second deadline; `--offline` omits them.
+
+`mob menu [--json]` prints what the user can do now, by account state: each row is the words to say in chat and the equivalent command. It reads local state only and never touches the network, so the skill preamble runs it on every invocation.
 
 `mob doctor [--json]` checks public configuration and signer availability without signing. Exit 0 means every critical check passed; exit 1 includes failed or unchecked critical checks. Unbound venues and upgrade tooling are optional. Upgrade status is based on cached `origin/main`, without a GitHub request.

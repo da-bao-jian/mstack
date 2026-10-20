@@ -6,7 +6,7 @@ claude plugin marketplace add da-bao-jian/mstack && claude plugin install mstack
 curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.8/install.sh | sh
 Then follow https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.8/docs/AGENT-INSTALL.md from Verify: `mob --version`, `mob doctor`,
 run `mob` and reproduce its output verbatim in a fenced block as the welcome.
-Finish by telling me to type /reload-plugins, then ask "best funding now" (no account needed) or say "set up mstack" to trade.
+Finish by telling me to type /reload-plugins, then show how to use mstack: how to invoke it and the welcome's "You can" options (research needs no account; "set up mstack" only to trade).
 ```
 
 ## Codex
@@ -17,7 +17,7 @@ git clone --branch v0.4.8 https://github.com/da-bao-jian/mstack ~/.mstack && cd 
 export PATH="$HOME/.agents/skills/mstack/bin:$PATH"
 Then follow https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.8/docs/AGENT-INSTALL.md from Verify: `mob --version`, `mob doctor`,
 run `mob` and reproduce its output verbatim in a fenced block as the welcome.
-Finish by telling me to start a new session, then ask "best funding now" (no account needed) or say "set up mstack" to trade.
+Finish by telling me to start a new session, then show how to use mstack: how to invoke it and the welcome's "You can" options (research needs no account; "set up mstack" only to trade).
 ```
 
 ## Copy for `mob.exchange/agent`
@@ -55,7 +55,7 @@ claude plugin marketplace add da-bao-jian/mstack && claude plugin install mstack
 curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.8/install.sh | sh
 Then follow https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.8/docs/AGENT-INSTALL.md from Verify: `mob --version`, `mob doctor`,
 run `mob` and reproduce its output verbatim in a fenced block as the welcome.
-Finish by telling me to type /reload-plugins, then ask "best funding now" (no account needed) or say "set up mstack" to trade.
+Finish by telling me to type /reload-plugins, then show how to use mstack: how to invoke it and the welcome's "You can" options (research needs no account; "set up mstack" only to trade).
 ```
 
 Custody: Your wallet key stays in your own wallet or in mstack's encrypted local keystore; the agent never sees it. The scoped MoB API key cannot withdraw and stays subject to its venue and USD caps. Your funds stay in your own venue accounts. Revoke the API key on the MoB API page at any time.
