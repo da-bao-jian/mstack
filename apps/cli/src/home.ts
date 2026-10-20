@@ -49,10 +49,9 @@ function legalText(data: HomeData) {
 }
 function keyText(data: HomeData) {
 	if (!data.key.description)
-		// TODO(W20): Replace this with `mob onboard` when onboarding lands.
 		return data.key.state === "unreachable"
 			? `unreachable${data.key.error ? `: ${data.key.error}` : ""}`
-			: "none · run mob keys import";
+			: 'none · say "set up mstack" to trade';
 	const suffix =
 		data.key.state === "ok" && data.key.latencyMs !== undefined
 			? `ok · ${data.key.latencyMs} ms`
@@ -224,6 +223,11 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 				`${venues.join("  ")}${venues.length ? " · " : ""}key ${key?.prefix ?? "none"} ${keyCheck}${cap === undefined ? "" : ` · cap ${money(cap)}`}`,
 			),
 		);
+	} else if (!data.owner) {
+		// Research needs no account. Trading is the optional, MoB-backed part.
+		info.push(
+			row("Trading", "not set up · optional · research needs no account"),
+		);
 	} else {
 		const legal = accepted ? "✓" : "✗";
 		info.push(
@@ -244,7 +248,9 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 	const next = awaiting
 		? `mob sign ${awaiting}`
 		: !ready
-			? 'say "set up mstack"'
+			? data.owner
+				? 'say "set up mstack"'
+				: 'say "best funding now"   or   "set up mstack" to trade'
 			: market.topPairs[0]
 				? `say "open ${market.topPairs[0].base}"   or   mob scan`
 				: "mob scan";
@@ -324,7 +330,17 @@ export async function doctor(json: boolean, rt: Runtime): Promise<number> {
 			critical,
 		);
 	}
+	// Research never needs an account. Config, owner, signer, legal and venue
+	// checks become critical once trading setup has started (an owner is set).
+	const trading = Boolean(data.owner);
+	const untilTrading =
+		'not set · optional until you trade · say "set up mstack"';
 	add("Binary", true, `mob ${data.version}`);
+	add(
+		"Research",
+		true,
+		"scan, rates, history, explain and status --owner need no account",
+	);
 	add(
 		"Bun",
 		data.diagnostics.bun,
@@ -335,15 +351,19 @@ export async function doctor(json: boolean, rt: Runtime): Promise<number> {
 	);
 	add(
 		"Config",
-		data.config.present && data.config.valid,
+		data.config.present ? data.config.valid : trading ? false : null,
 		data.config.error ??
-			(data.config.present ? data.config.path : "not present → run mob setup"),
+			(data.config.present ? data.config.path : untilTrading),
+		trading || data.config.present,
 	);
-	add("Owner", Boolean(data.owner), data.owner ?? "not set → run mob setup");
+	add("Owner", trading ? true : null, data.owner ?? untilTrading, trading);
 	add(
 		"Signer",
-		data.diagnostics.signer.usable,
-		`${data.signer ? `${data.signer}: ` : ""}${data.diagnostics.signer.detail}${data.approver.running ? " · approver running" : ""}`,
+		trading ? data.diagnostics.signer.usable : null,
+		trading
+			? `${data.signer ? `${data.signer}: ` : ""}${data.diagnostics.signer.detail}${data.approver.running ? " · approver running" : ""}`
+			: untilTrading,
+		trading,
 	);
 	add(
 		"Policy",
@@ -372,7 +392,8 @@ export async function doctor(json: boolean, rt: Runtime): Promise<number> {
 		"Legal",
 		data.legal,
 		(v) => v.accepted,
-		() => legalText(data),
+		() => (trading ? legalText(data) : untilTrading),
+		trading,
 	);
 	for (const venue of homeVenues) {
 		const reading = data.venues[venue];
@@ -382,7 +403,7 @@ export async function doctor(json: boolean, rt: Runtime): Promise<number> {
 			reading,
 			(v) => v.ready,
 			(v) => (v.ready ? "ready" : (v.issue ?? "not bound")),
-			reading.value?.issue !== "not_bound",
+			trading && reading.value?.issue !== "not_bound",
 		);
 	}
 	network(

@@ -1,6 +1,6 @@
 ---
 name: mob
-description: Start here for mstack and MoB. Use for "what can you do", "what is mstack", "getting started", "set me up", "MoB", "funding arb", "best pair", "import my key", or "manage my positions". Routes each request to the right mob skill. (mstack)
+description: Start here for mstack and MoB. Use for "what can you do", "what is mstack", "getting started", "set me up", "MoB", "funding arb", "best pair", "delta neutral", "import my key", or "manage my positions". Routes each request to the right mob skill. (mstack)
 license: MIT
 metadata:
   version: "0.4.7"
@@ -17,12 +17,14 @@ If the preamble output contains a block between the lines `<mob-home>` and `</mo
 
 Run the preamble first. Use the printed `MOB_BIN` path for CLI commands. If `MOB_MISSING` appears, show the install line and stop.
 
+mstack is an open framework for finding delta-neutral funding trades. Research (scan, rates, history, explain, status by address) needs no account, wallet, or signature. Execution runs through MoB and needs a one-time setup. When `OWNER: unset`, answer research requests without mentioning setup; bring up MoB only when the user wants to open, manage, or close a position, or asks for setup. For "what can you do" or "what is mstack", say both parts in two sentences, research first.
+
 | User asks about | Use skill |
 |---|---|
 | Funding, rates, best pair, compare venues | `/mob-scan` |
 | How or why funding and MoB work | `/mob-explain` |
 | Position, PnL, task or worker status | `/mob-status` |
-| First setup, onboarding, create or import the first key | `/mob-setup` |
+| First setup, onboarding, create or import the first key (needed only to trade) | `/mob-setup` |
 | Show, import, list, revoke, or delete a key | `/mob-keys` |
 | Native onboarding or binding repair | `/mob-bind` |
 | Open a position | `/mob-open` |

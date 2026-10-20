@@ -21,17 +21,17 @@
  ░░░░░░░░░░░░░░░░░█
 ```
 
-Scan funding rates, onboard one scoped MoB API key, and trade within its venue and USD caps.
+An open framework for finding delta-neutral funding trades. Scan funding across 14 venues, read rate history, and get plain explanations with no account, wallet, or signature. When you want to execute, one wallet session sets up a scoped MoB API key with venue and USD caps that you choose and can revoke.
 
 ## Paste this into your agent
 
 ```text
-Install mstack, the MoB funding-arbitrage agent stack, and get me ready to trade. I authorize exactly:
+Install mstack, the open agent stack for delta-neutral funding trades, with MoB execution. I authorize exactly:
 claude plugin marketplace add da-bao-jian/mstack && claude plugin install mstack@mstack
 curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.7/install.sh | sh
 Then follow https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.7/docs/AGENT-INSTALL.md from Verify: `mob --version`, `mob doctor`,
 run `mob` and reproduce its output verbatim in a fenced block as the welcome.
-Finish by telling me to type /reload-plugins, then say "set up mstack".
+Finish by telling me to type /reload-plugins, then ask "best funding now" (no account needed) or say "set up mstack" to trade.
 ```
 
 ## Install
@@ -112,12 +112,15 @@ GUI clients may not inherit your shell's PATH. MCP reads public, onboarding, and
 
 ## What you can do
 
+Research needs no account. Trading runs through MoB and needs the one-time setup in step 4.
+
 1. **Install.** Use the plugin, binary installer, or clone setup above. Run `mob --version`.
-2. **Onboard.** Say "set up mstack". Setup first asks whether you bring your own wallet (a browser extension, a phone wallet over WalletConnect, or your key imported into mstack's encrypted keystore with `mob keystore import`) or create a new one with `mob keystore create`; keystore commands run in your own terminal, never in the chat. Or run `mob onboard --native --owner 0x… --venues hl,lighter --max-size 5000`, then `mob sign c-N --with browser`. One wallet session accepts the legal terms, binds the venues, creates a scoped key with that cap, and stores it locally; the key never prints. Require the `Ready · …` line. Without a wallet on this machine, `mob onboard` prints the MoB API page instead: paste the key once for `mob keys import --stdin`, or run `mob keys import` yourself for a hidden terminal paste.
-3. **Scan.** Run `mob scan --size 1000` to compare executable pairs and the best pairs anywhere.
+2. **Scan.** Ask "best funding now" or run `mob scan --size 1000` to compare executable pairs and the best pairs anywhere.
    Funding annualization is simple, not compounded: `ratePerInterval / intervalHours × 24 × 365 × 100`.
    Fees and mark entry costs are estimates. Failed venues remain visible.
-4. **Open.** Run a staged command such as `mob open ETH --long hl:ETH --short lighter:ETH --size 500`. With a matching key, it creates an `api-submit` Proposal and prints `mob submit p-N`.
+3. **Explain and check history.** `mob explain funding --simple` and `mob history BTC --days 7` answer how a pair earns and whether its rate held. `mob status --owner 0x…` reads any address's public MoB tasks.
+4. **Onboard, when you want to trade.** Say "set up mstack". Setup first asks whether you bring your own wallet (a browser extension, a phone wallet over WalletConnect, or your key imported into mstack's encrypted keystore with `mob keystore import`) or create a new one with `mob keystore create`; keystore commands run in your own terminal, never in the chat. Or run `mob onboard --native --owner 0x… --venues hl,lighter --max-size 5000`, then `mob sign c-N --with browser`. One wallet session accepts the legal terms, binds the venues, creates a scoped key with that cap, and stores it locally; the key never prints. Require the `Ready · …` line. Without a wallet on this machine, `mob onboard` prints the MoB API page instead: paste the key once for `mob keys import --stdin`, or run `mob keys import` yourself for a hidden terminal paste.
+5. **Open.** Run a staged command such as `mob open ETH --long hl:ETH --short lighter:ETH --size 500`. With a matching key, it creates an `api-submit` Proposal and prints `mob submit p-N`.
 5. **Submit.** Under the default `manual` policy, say the verb and the exact id in your latest message, e.g. `submit p-2`, before the agent runs `mob submit p-N`. Under opt-in `auto`, the agent may submit inside the key caps and must say it did so.
 6. **Status.** Run `mob status`. API acceptance is **submitted, not confirmed**; status reports the worker state.
 

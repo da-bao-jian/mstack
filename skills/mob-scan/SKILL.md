@@ -1,6 +1,6 @@
 ---
 name: mob-scan
-description: Compare perpetual funding rates after fees. Use for "where is the best funding right now", "where is the best funding", "funding rates", "best pair", or "compare funding across venues". (mstack)
+description: Compare perpetual funding rates after fees. Use for "best funding now", "where is the best funding right now", "funding rates", "best pair", "delta-neutral trades", or "compare funding across venues"; needs no account. (mstack)
 license: MIT
 metadata:
   version: "0.4.7"
@@ -26,5 +26,6 @@ Run the preamble first. Use the path printed as `MOB_BIN` in place of `mob`; she
 5. Read [ranking details](references/ranking.md) when explaining the result. Explain why each section's first row ranks first. Mention both leg volumes, flags, OI caps, and unknown measurements. Marks do not measure fill depth; fees are estimates.
 6. State failed venues with their errors, unmatched count, and thin-hidden count from the footer. JSON `failed`, `counts.unmatched`, and `counts.thinHidden` provide the same information. The default JSON contains bounded views and counts; keep the full result opt-in. If the view is empty, explain the filters and failures; never invent a winner. State "annualized = simple, not compounded".
 7. Offer `mob history <base> --days 7` to check stability. History is a separate read and its covered hours may differ by venue.
+8. End with one line on execution, no more: with `OWNER: set`, "To open the top pair, say `open <base>`"; with `OWNER: unset`, "To open the top pair through MoB, say `open <base>`; the first trade starts a one-time setup of about two minutes." Do not ask whether to set up here.
 
 If quoting `mobOpen`, label it as a staging command. Its presence never authorizes execution. For an execution request, load `/mob-open` and follow its questions and stop rule. Never stage or sign from scan output alone.

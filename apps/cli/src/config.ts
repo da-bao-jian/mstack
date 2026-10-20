@@ -275,8 +275,12 @@ export async function rememberSigner(
 	);
 }
 
+/** Trading needs MoB; research never does. Every execution gate says both. */
 export const SETUP_FIRST =
-	"Run `mob setup` first (about two minutes). It sets your wallet address, how you sign, and accepts the terms.";
+	'Trading runs through MoB and needs a one-time setup, about two minutes: say "set up mstack", or run `mob onboard` in your terminal. It sets your wallet address, how you sign, and the venues. Research needs no account: `mob scan`, `mob rates`, `mob history`, `mob explain`, and `mob status --owner 0x…` work as they are.';
+/** Status is a public read by address; it never needs an account. */
+export const OWNER_NEEDED =
+	'mob status reads public tasks by address and needs no account: add `--owner 0x…`. To save an address, run `mob config set owner 0x…`; to trade, say "set up mstack".';
 /** The owner is known but no signer is saved: name one for this signature. */
 export function chooseSigner(id: string): string {
 	return `No signer is saved. Name one for this signature: mob sign ${id} --with browser, --with walletconnect, or --with keystore in your own terminal. mob config set signer <name> saves it.`;

@@ -8,9 +8,9 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
       +++++++-#####-------------              ETH    long hl . short lighter  42% net  $6.0M
     +++++++++######-------------   Trending   BTC    $30.0M 24h . funding +13%/yr . OI $15.0M . price +1.2%
   +++++++++++######-------------              ETH    $14.0M 24h . funding +11%/yr . OI $7.0M . price +1.2%
- ++++++++++++######-------------   Onboarding legal x . hl - . lighter - . key none
+ ++++++++++++######-------------   Trading    not set up . optional . research needs no account
 -------------######+++++++++++     Policy     manual . you approve each Proposal by naming it
- ------------######+++++++++       Next       say "set up mstack"
+ ------------######+++++++++       Next       say "best funding now"   or   "set up mstack" to trade
  ------------######+++++++
  ------------#####
  ------------###
@@ -44,9 +44,9 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
       +++++++-#####-------------              ETH    long hl . short lighter  42% net  $6.0M
     +++++++++######-------------   Trending   BTC    $30.0M 24h . funding +13%/yr . OI $15.0M . price +1.2%
   +++++++++++######-------------              ETH    $14.0M 24h . funding +11%/yr . OI $7.0M . price +1.2%
- ++++++++++++######-------------   Onboarding legal x . hl - . lighter - . key none
+ ++++++++++++######-------------   Trading    not set up . optional . research needs no account
 -------------######+++++++++++     Policy     manual . you approve each Proposal by naming it
- ------------######+++++++++       Next       say "set up mstack"
+ ------------######+++++++++       Next       say "best funding now"   or   "set up mstack" to trade
  ------------######+++++++
  ------------#####
  ------------###

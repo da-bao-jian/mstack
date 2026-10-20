@@ -71,7 +71,7 @@ test("agent install doc stays short and exposes executable host commands", async
 	expect(mobReferences.length).toBeGreaterThan(0);
 	for (const command of mobReferences)
 		expect(command).toMatch(
-			/^mob (?:--version|doctor|mcp|onboard|keys (?:import|delete))$/,
+			/^mob (?:--version|doctor|mcp|onboard|scan --size 1000|keys (?:import|delete))$/,
 		);
 
 	const setup = await readFile(resolve(root, "scripts/setup.ts"), "utf8");
@@ -117,9 +117,11 @@ test("canonical paste prompt is short and identical at every copy surface", asyn
 	// A restart drops the install chat, so the next step reloads in place and
 	// names the product; a bare "set me up" means nothing to a new session.
 	expect(canonical).toContain("/reload-plugins");
+	// Research needs no account, so the first offer is a scan; setup is for trading.
 	expect(install).toContain(
-		'type `/reload-plugins` in this session, then say "set up mstack"',
+		'type `/reload-plugins` in this session, then ask "best funding now" (no account needed) or say "set up mstack" to trade',
 	);
+	expect(canonical).toContain('ask "best funding now" (no account needed)');
 	for (const block of [canonical, codex]) {
 		expect(block).toContain('"set up mstack"');
 		expect(block).not.toContain('"set me up"');

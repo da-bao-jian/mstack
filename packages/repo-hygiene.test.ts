@@ -11,7 +11,7 @@ test("every skill description starts with its task and quotes trigger phrases, i
 	const tasks: Record<string, string> = {
 		mob: "Start here for mstack and MoB.",
 		"mob-scan": "Compare perpetual funding rates",
-		"mob-setup": "Onboard to API-key trading",
+		"mob-setup": "Onboard to trading through MoB",
 		"mob-status": "Read MoB position status",
 		"mob-bind": "Repair venue binding or use native onboarding",
 		"mob-explain": "Explain funding and MoB mechanics",
