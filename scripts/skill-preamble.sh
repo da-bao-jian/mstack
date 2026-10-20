@@ -101,7 +101,16 @@ mob_update_check() {
   MOB_UPDATE_REASON='cannot resolve HEAD or origin/main'
   MOB_LOCAL="$(git -C "$MOB_REPO" rev-parse HEAD)" || return 1
   MOB_REMOTE="$(git -C "$MOB_REPO" rev-parse origin/main)" || return 1
-  if [ "$MOB_LOCAL" != "$MOB_REMOTE" ]; then printf 'UPGRADE_AVAILABLE %s %s\n' "$MOB_LOCAL" "$MOB_REMOTE"; fi
+  [ "$MOB_LOCAL" != "$MOB_REMOTE" ] || return 0
+  # Only a checkout behind origin/main has an upgrade; a local commit ahead of
+  # main (a branch under work) is not one. Same rule as mob hello and doctor.
+  MOB_UPDATE_REASON='cannot compare HEAD with origin/main'
+  git -C "$MOB_REPO" merge-base --is-ancestor "$MOB_LOCAL" "$MOB_REMOTE"
+  case $? in
+    0) printf 'UPGRADE_AVAILABLE %s %s\n' "$MOB_LOCAL" "$MOB_REMOTE" ;;
+    1) ;;
+    *) return 1 ;;
+  esac
   return 0
 }
 if mob_update_check 2>/dev/null; then printf 'UPGRADE_CHECK: ok\n'; else printf 'UPGRADE_CHECK: fail (%s)\n' "$MOB_UPDATE_REASON"; fi

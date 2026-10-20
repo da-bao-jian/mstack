@@ -428,6 +428,7 @@ test("upgrade checks fetch once per hour, print changed hashes, and never use a 
     fi ;;
   'rev-parse HEAD') printf 'local-hash\\n' ;;
   'rev-parse origin/main') printf 'remote-hash\\n' ;;
+  'merge-base --is-ancestor') [ "\${TEST_AHEAD:-0}" = 1 ] && exit 1 || exit 0 ;;
   *) exit 1 ;;
 esac`,
 	);
@@ -462,7 +463,16 @@ esac`,
 	expect(await readFile(join(home, "fetch-calls"), "utf8")).toBe(
 		"fetch\nfetch\n",
 	);
-}, 60_000); // Four preambles (21 CLI spawns, including one uncached hello).
+	// A checkout ahead of origin/main (a branch under work) has no upgrade.
+	await writeFile(join(home, ".mob", stamps[0]), "0 ok\n");
+	const ahead = await command(["/bin/bash", "-c", code], home, path, {
+		TEST_AHEAD: "1",
+	});
+	expect(ahead.code).toBe(0);
+	expect(
+		ahead.out.split("\n").filter((line) => line.startsWith("UPGRADE_")),
+	).toEqual(["UPGRADE_CHECK: ok"]);
+}, 60_000); // Five preambles (26 CLI spawns, including one uncached hello).
 
 test("open skills stop on missing readiness before asking about risk (E3)", () => {
 	for (const host of ["skills", "skills-codex"]) {
@@ -1017,7 +1027,7 @@ test("shared splash greets once per owner or home while the router always greets
 		...new Bun.Glob("hello-owner-*-stamp").scanSync(join(home, ".mob")),
 	]).toHaveLength(1);
 	const greeting =
-		"If the preamble output contains a block between the lines `<mob-home>` and `</mob-home>`, reproduce every line between those two tags verbatim in a fenced code block at the top of your reply, and leave the two tag lines out; never strip, trim or summarize the block.";
+		"If the preamble output contains a block between the lines `<mob-home>` and `</mob-home>`, reproduce every line between those two tags verbatim in a fenced code block at the top of your reply; stop before the `</mob-home>` line and print neither tag line; never strip, trim or summarize the block.";
 	for (const [file, body] of skills) {
 		expect(body).toContain(greeting);
 		expect(body.indexOf(greeting)).toBeGreaterThan(body.indexOf("```bash"));
