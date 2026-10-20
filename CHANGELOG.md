@@ -7,27 +7,24 @@ not a claim that public release tags or artifacts were published.
 <!-- release-start -->
 ## [Unreleased]
 
+## [0.4.7] - 2026-10-20
+
 ### Fixed
 
 - Legal acceptance through mstack failed with "Signature does not match wallet" for every wallet that had not accepted MoB's terms yet: the default `legal_chain_id` was 97 (BSC testnet, the pilot value) while MoB production verifies the legal signature on chain 56. The default is now 56. A saved `legal_chain_id` is kept, so set it to 56 if an older install saved 97.
 - A 5xx or network failure from MoB's prepare no longer ends the ceremony: `mob sign c-N` sends the same signed prepare again under the same idempotency key, and the ceremony remembers the explained error. Only a refusal (4xx) ends it.
-
 - A wallet Proposal that failed or was rejected (`mob keys list`, `revoke`, `create`, legal) ended with the raw error, such as "Browser wallet rejected the Proposal". It now says what happened and names the command that stages it again.
-
 - After onboarding with `mob sign c-N --with browser`, every later wallet Proposal (`mob keys list`, `revoke`, a key with a new cap) stopped with "Run `mob setup` first" because no signer was saved. The signer named with `--with` is now saved the first time it connects, and `mob` says so.
 - A venue MoB reports as `unavailable` (for Hyperliquid, a perps account with no USDC) was staged for a new binding, which cannot help. Onboarding and key creation now stop with the cause and the deposit step; `mob doctor` shows MoB's own verdict for a bound venue instead of a local "ready".
 - Onboarding with every venue already bound but only one venue selected explains that a trading key needs two venues.
-
 - Native onboarding staged a Hyperliquid binding for a wallet that never deposited. The binding worked, but Hyperliquid refuses such an agent and MoB reports the venue as unavailable, so key creation failed with "MoB is temporarily unavailable". Onboarding now checks the deposit first and stops with the deposit step and a `--venues` list without Hyperliquid. A refused key creation names the deposit as the cause.
 - Hyperliquid typed-data signatures (approveAgent, approveBuilderFee) failed with "Signature does not recover Proposal owner" in Rabby and MetaMask: those wallets hash a missing `EIP712Domain` type as an empty domain. The page now declares the domain type, so the wallet signs the digest the page shows.
 - Binding steps shared the 5-minute staging window, so a slow wallet ran out of time. They now use MoB's 10-minute binding session, and a session stops at a step's deadline with the exact restage command instead of waiting on the wallet.
 - The `/mob-keys` skill explains how to raise a key's cap: create a key with the new cap, then revoke the old one.
-
 - Ceremony failures showed MoB's raw error, or "Failed to fetch". Every failure now says what happened and what to do next, with the exact restage command. This covers each code MoB's binding API returns (`authorization_expired`, `owner_mismatch`, `nonce_conflict`, `rate_limited`, `venue_account_not_found`, `account_not_owned`, `venue_account_check_unavailable`, `rebind_required`, `venue_busy`, `binding_in_progress`, `binding_expired`, `signature_conflict`, `binding_not_found`, and the 503s), the integrator approval, legal and API key errors, and per-venue results (`aster_deposit_required`, `session_superseded`, `invalid_signing_chain`, still confirming). MoB's own text follows each message.
 - The signing page explains wallet errors: a request already open (-32002), a page the wallet has not allowed (4100), an unsupported request (4200), a disconnected wallet (4900/4901), an unknown chain (4902), a declined connection, and a wallet with no unlocked account. Declining a chain switch no longer ends the session; the user can approve the switch and sign again. When no wallet window appears after 15 seconds, the page points to the wallet's toolbar icon.
 - `mob onboard` reused a staged ceremony with only seconds left. It now stages a fresh one when less than 2 minutes remain.
 - With a Lighter integrator approval planned and legal terms already accepted, the browser signing page loaded with no steps and stopped. Approval steps are now created when the wallet session starts and appear first.
-
 - A Lighter key that lacked only its zero-fee integrator approval could be fixed only by replacing the key with `--rebind`. Onboarding and `mob bind --all` now keep the key and add an "Approve the zero-fee Lighter integrator" signing step to the same wallet session, sent to MoB's `/api/binding/lighter/integrator-approve`. Each approval step is created just before it is signed, because MoB accepts its timestamp for 300 seconds. When every selected venue needs only that approval, the ceremony has no prepare step. `--rebind` is asked only for a key that no longer works.
 - The trading key created at the end of onboarding covered only the venues bound in that session. It now also covers selected venues that MoB already reports ready and venues whose integrator approval the session signed.
 - `mob bind lighter` treated a Robinhood Lighter key without its integrator approval as bound.

@@ -3,7 +3,7 @@ name: mob-status
 description: Read MoB position status and estimated funding. Use for "what positions do I have", "my positions", "pnl", "task status", or "what happened to this task" with an address or task ID. (mstack)
 license: MIT
 metadata:
-  version: "0.4.6"
+  version: "0.4.7"
 ---
 
 ```bash

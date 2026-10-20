@@ -33,8 +33,8 @@ On the API page, add **Copy prompt for mstack** beside the existing **Copy promp
 ```text
 Install mstack, the MoB funding-arbitrage agent stack, and get me ready to trade. I authorize exactly:
 claude plugin marketplace add da-bao-jian/mstack && claude plugin install mstack@mstack
-curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.6/install.sh | sh
-Then follow https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.6/docs/AGENT-INSTALL.md from Verify: `mob --version`, `mob doctor`,
+curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.7/install.sh | sh
+Then follow https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.7/docs/AGENT-INSTALL.md from Verify: `mob --version`, `mob doctor`,
 run `mob` and reproduce its output verbatim in a fenced block as the welcome.
 Finish by telling me to type /reload-plugins, then say "set up mstack".
 ```
