@@ -209,7 +209,7 @@ export function getConfig(config: Config, key: string): string | number {
 	if (key === "auth_base")
 		return config.auth_base ?? "https://auth.mob.exchange";
 	if (key === "app_base") return config.app_base ?? "https://app.mob.exchange";
-	if (key === "legal_chain_id") return config.legal_chain_id ?? 97;
+	if (key === "legal_chain_id") return config.legal_chain_id ?? 56;
 	if (key === "hl_signature_chain_id")
 		return config.hl_signature_chain_id ?? "0xa4b1";
 	if (key === "policy") return config.policy ?? "manual";

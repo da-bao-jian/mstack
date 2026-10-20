@@ -5,6 +5,7 @@ import {
 	preparePayload,
 	readPayload,
 	StrategyApiClient,
+	StrategyApiError,
 	type VenueBindingBatch,
 } from "@mstack/mobius-api";
 import {
@@ -832,8 +833,17 @@ export async function signCeremony(
 					{ idempotencyKey: ceremony.prepareIdempotencyKey },
 				);
 			} catch (error) {
+				// MoB refused the request (4xx): the ceremony is over. A 5xx or a
+				// network failure keeps it, so `mob sign` can send the same signed
+				// prepare again under the same idempotency key.
+				const refused =
+					error instanceof StrategyApiError &&
+					error.status >= 400 &&
+					error.status < 500;
+				const explained = explainCeremonyFailure(error, failureContext);
 				await store.update(id, (record) => {
-					record.status = "failed";
+					if (refused) record.status = "failed";
+					record.error = explained.message;
 				});
 				throw error;
 			}

@@ -1,7 +1,7 @@
 # Public settings and legal acceptance
 
 The auth API base defaults to `https://auth.mob.exchange`. The legal signing
-chain defaults to 97. Existing optional settings remain the defaults on later
+chain defaults to 56 (BNB Smart Chain, which MoB production uses for legal terms). Existing optional settings remain the defaults on later
 setup runs. These settings are public, not secrets.
 
 The legal chain identifies the typed signature domain. Acceptance records consent

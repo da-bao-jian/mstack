@@ -159,7 +159,7 @@ mob setup --owner 0x… --signer browser --policy manual
 mob setup --owner 0x… --signer walletconnect --policy manual --walletconnect-project-id <id>
 ```
 
-Optional flags are `--auth-base URL`, `--legal-chain-id N`, and `--no-legal`. Existing optional settings remain the defaults; new installs use `https://auth.mob.exchange` and chain 97. WalletConnect needs a supplied or saved public project ID. `--no-legal` reports that acceptance was skipped. Setup does not create a keystore or sign a Proposal.
+Optional flags are `--auth-base URL`, `--legal-chain-id N`, and `--no-legal`. Existing optional settings remain the defaults; new installs use `https://auth.mob.exchange` and chain 56 (BNB Smart Chain, the chain MoB production signs legal terms on). WalletConnect needs a supplied or saved public project ID. `--no-legal` reports that acceptance was skipped. Setup does not create a keystore or sign a Proposal.
 
 All required flags avoid prompts, including on a terminal. Without a TTY, missing `--owner`, `--signer`, or `--policy` causes exit 1 and names the missing flags. Piped answers are no longer accepted. Interactive prompts show five numbered steps and defaults in brackets. Binding shows the current step, completed steps, and the next effect before the Proposal preview and stop line.
 

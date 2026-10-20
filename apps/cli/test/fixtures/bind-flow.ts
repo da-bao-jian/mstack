@@ -44,7 +44,7 @@ export async function bindFlow(log: (line: string) => void = () => {}) {
 		const [owner] = await listKeystores(home);
 		server = fakeOnboarding(owner, now);
 		await setConfig("api_base", server.base, home);
-		answers = [owner, "keystore", "manual", server.base, "97"];
+		answers = [owner, "keystore", "manual", server.base, "56"];
 		const store = new ProposalStore(home, () => now);
 		const stage = async (args: string[], step: string) => {
 			const count = (await store.list()).length,

@@ -127,7 +127,7 @@ export function explainCeremonyFailure(
 	const text = error instanceof Error ? error.message : String(error);
 	if (error instanceof StrategyApiError)
 		return new UsageError(
-			`${cap(strategy(error, ctx))}${error.error ? quote(error.error) : ""}`,
+			`${cap(strategy(error, ctx))}${error.error ? quote(error.error) : ""}${error.status >= 500 && error.requestId ? ` (MoB request ${error.requestId})` : ""}`,
 		);
 	if (error instanceof ApiError) {
 		const data = error.data;

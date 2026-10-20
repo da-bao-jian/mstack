@@ -165,7 +165,7 @@ test("setup is public configuration only; accepted, absent legal service and loc
 		expect(await h.invoke(["setup"])).toBe(0);
 		expect(await h.store.list()).toHaveLength(0);
 		expect(await listKeystores(h.home)).toEqual([]);
-		expect((await readConfig(h.home)).legal_chain_id).toBe(97);
+		expect((await readConfig(h.home)).legal_chain_id).toBe(56);
 		h.server.state.accepted = false;
 		h.server.state.legalConfigured = false;
 		expect(await h.invoke(["setup"])).toBe(0);
@@ -277,7 +277,7 @@ test("Lighter integrator refusal is recorded and is not signed again on re-entry
 }, 25_000);
 test("onboarding config defaults and invalid chains, owners, secret flags fail", async () => {
 	expect(getConfig({}, "auth_base")).toBe("https://auth.mob.exchange");
-	expect(getConfig({}, "legal_chain_id")).toBe(97);
+	expect(getConfig({}, "legal_chain_id")).toBe(56);
 	expect(getConfig({}, "hl_signature_chain_id")).toBe("0xa4b1");
 	for (const [key, value] of [
 		["legal_chain_id", "0"],
@@ -583,7 +583,7 @@ test("complete flags avoid prompts on a TTY and use defaults; saved WalletConnec
 				"--no-legal",
 			]),
 		).toBe(0);
-		expect((await readConfig(h.home)).legal_chain_id).toBe(97);
+		expect((await readConfig(h.home)).legal_chain_id).toBe(56);
 		expect((await readConfig(h.home)).walletconnect_project_id).toBe(
 			"a".repeat(32),
 		);
@@ -605,7 +605,7 @@ test("interactive setup numbers the five prompts and preserves defaults, includi
 			"Setup · 2 of 5 · Signer (keystore | browser | walletconnect) [browser]",
 			"Setup · 3 of 5 · Policy (manual | locked) [manual]",
 			`Setup · 4 of 5 · Auth API base [${h.server.base}]`,
-			"Setup · 5 of 5 · Legal signing chain id [97]",
+			"Setup · 5 of 5 · Legal signing chain id [56]",
 		]);
 		questions.length = 0;
 		h.rt.prompt = async (question, fallback) => {

@@ -28,7 +28,7 @@ export function fakeOnboarding(owner: Address, now = Date.now()) {
 		funded: true,
 		account: true,
 		integratorRefused: false,
-		legalChain: 97,
+		legalChain: 56,
 	};
 	const terms = {
 		termsVersion: "2026-10",
