@@ -230,3 +230,18 @@ test.each([
 ] as const)("venue result %o explains the fix", (result, fix) => {
 	expect(explainVenueResult(result, ctx)).toContain(fix);
 });
+
+test("a 5xx carries MoB's request id so the failure can be traced", () => {
+	const error = explainCeremonyFailure(
+		new StrategyApiError({
+			route: "/v1/venue-bindings/prepare",
+			status: 503,
+			code: "binding_unavailable",
+			serverError: "Binding request could not be completed.",
+			requestId: "req-123",
+			message: "HTTP 503",
+		}),
+		ctx,
+	);
+	expect(error.message).toContain("(MoB request req-123)");
+});

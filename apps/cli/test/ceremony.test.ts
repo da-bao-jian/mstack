@@ -744,3 +744,37 @@ test("a wallet Proposal rejected on the page ends with what to do next", async (
 		"You declined a signature in the wallet, so the session stopped and nothing more was signed or sent. To try again, run `mob keys list`.",
 	);
 });
+
+test("a 5xx from prepare keeps the ceremony, and mob sign sends the same signed prepare again", async () => {
+	const now = Date.now();
+	const api = fakeStrategyApi({ now: () => now });
+	servers.push(api);
+	api.flaky.prepare = 1;
+	const { home, password } = await nativeHome(api);
+	const lines: string[] = [];
+	const rt: Partial<Runtime> = {
+		home,
+		now: () => now,
+		fetch: nativeFetch(api, { legalAccepted: true, calls: [] }),
+		sleep: async () => {},
+		stdinIsTTY: false,
+		stdoutIsTTY: false,
+		out: (line) => lines.push(line),
+		err: (line) => lines.push(line),
+		readSecret: async () => password,
+	};
+	const args = ["onboard", "--native", "--owner", api.owner.address];
+	expect(await run([...args, "--venues", "hl,lighter"], rt)).toBe(0);
+	expect(await run(["sign", "c-1"], rt)).not.toBe(0);
+	expect(lines.join("\n")).toContain(
+		"MoB could not complete the request right now. Wait a minute, then run `mob sign c-1` again",
+	);
+	const store = new CeremonyStore(home, () => now);
+	expect((await store.get("c-1")).status).toBe("preparing");
+	expect((await store.get("c-1")).error).toContain("Wait a minute");
+	// The second run reuses the stored prepare signature: no new prepare step.
+	const signed = lines.length;
+	expect(await run(["sign", "c-1"], rt)).toBe(0);
+	expect(lines.slice(signed).join("\n")).not.toContain("c-1:prepare");
+	expect(lines.join("\n")).toContain("Ready · 2 venues bound");
+});

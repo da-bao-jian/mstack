@@ -9,6 +9,9 @@ not a claim that public release tags or artifacts were published.
 
 ### Fixed
 
+- Legal acceptance through mstack failed with "Signature does not match wallet" for every wallet that had not accepted MoB's terms yet: the default `legal_chain_id` was 97 (BSC testnet, the pilot value) while MoB production verifies the legal signature on chain 56. The default is now 56. A saved `legal_chain_id` is kept, so set it to 56 if an older install saved 97.
+- A 5xx or network failure from MoB's prepare no longer ends the ceremony: `mob sign c-N` sends the same signed prepare again under the same idempotency key, and the ceremony remembers the explained error. Only a refusal (4xx) ends it.
+
 - A wallet Proposal that failed or was rejected (`mob keys list`, `revoke`, `create`, legal) ended with the raw error, such as "Browser wallet rejected the Proposal". It now says what happened and names the command that stages it again.
 
 - After onboarding with `mob sign c-N --with browser`, every later wallet Proposal (`mob keys list`, `revoke`, a key with a new cap) stopped with "Run `mob setup` first" because no signer was saved. The signer named with `--with` is now saved the first time it connects, and `mob` says so.

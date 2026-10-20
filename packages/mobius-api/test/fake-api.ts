@@ -94,6 +94,8 @@ export function fakeStrategyApi(
 	const idempotency = new Map<string, Stored>();
 	const bound = new Set<Venue>();
 	const unusable = new Set<Venue>();
+	// Prepare answers 503 binding_unavailable this many times first.
+	const flaky = { prepare: 0 };
 	let rateLimitOnce = false;
 
 	function auth(req: Request): Grant | Response {
@@ -160,6 +162,16 @@ export function fakeStrategyApi(
 					url.pathname === "/v1/venue-bindings/prepare" &&
 					req.method === "POST"
 				) {
+					if (flaky.prepare > 0) {
+						flaky.prepare--;
+						return json(
+							{
+								error: "Binding request could not be completed.",
+								code: "binding_unavailable",
+							},
+							503,
+						);
+					}
 					const prepareBody = (await req.clone().json()) as Record<
 						string,
 						unknown
@@ -457,6 +469,7 @@ export function fakeStrategyApi(
 		batches,
 		bound,
 		unusable,
+		flaky,
 		rateLimitNext: () => {
 			rateLimitOnce = true;
 		},
