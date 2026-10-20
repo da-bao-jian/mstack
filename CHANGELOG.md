@@ -9,6 +9,8 @@ not a claim that public release tags or artifacts were published.
 
 ### Fixed
 
+- A wallet Proposal that failed or was rejected (`mob keys list`, `revoke`, `create`, legal) ended with the raw error, such as "Browser wallet rejected the Proposal". It now says what happened and names the command that stages it again.
+
 - After onboarding with `mob sign c-N --with browser`, every later wallet Proposal (`mob keys list`, `revoke`, a key with a new cap) stopped with "Run `mob setup` first" because no signer was saved. The signer named with `--with` is now saved the first time it connects, and `mob` says so.
 - A venue MoB reports as `unavailable` (for Hyperliquid, a perps account with no USDC) was staged for a new binding, which cannot help. Onboarding and key creation now stop with the cause and the deposit step; `mob doctor` shows MoB's own verdict for a bound venue instead of a local "ready".
 - Onboarding with every venue already bound but only one venue selected explains that a trading key needs two venues.

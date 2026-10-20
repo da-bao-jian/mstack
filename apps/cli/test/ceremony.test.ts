@@ -502,10 +502,32 @@ test("onboard stops before staging when MoB holds an unusable key, and --rebind 
 	]);
 });
 
-test.each([
-	["hl,lighter", ["lighter", "hl"]],
-	["lighter", ["lighter"]],
-] as const)(
+test("native onboarding needs two venues for the trading key", async () => {
+	const now = Date.now();
+	const api = fakeStrategyApi({ now: () => now });
+	servers.push(api);
+	const { home } = await nativeHome(api);
+	const lines: string[] = [];
+	const rt: Partial<Runtime> = {
+		home,
+		now: () => now,
+		fetch: nativeFetch(api, { legalAccepted: true, calls: [] }),
+		out: (line) => lines.push(line),
+		err: (line) => lines.push(line),
+	};
+	expect(
+		await run(
+			["onboard", "--native", "--owner", api.owner.address, "--venues", "hl"],
+			rt,
+		),
+	).not.toBe(0);
+	expect(lines.join("\n")).toContain(
+		"A trading key needs at least two venues, one for each leg.",
+	);
+	expect(await new CeremonyStore(home, () => now).list()).toHaveLength(0);
+});
+
+test.each([["hl,lighter", ["lighter", "hl"]]] as const)(
 	"a Lighter key missing only its integrator approval keeps the key: onboard %s signs the approval in the session",
 	async (venues, keyVenues) => {
 		const now = Date.now();
@@ -542,10 +564,8 @@ test.each([
 		expect(before?.integrators).toEqual([
 			{ venue: "lighter", integratorIndex: 994 },
 		]);
-		expect(before?.venues.map((target) => target.venue)).toEqual(
-			venues === "lighter" ? [] : ["hl"],
-		);
-		expect(Boolean(before?.prepare)).toBe(venues !== "lighter");
+		expect(before?.venues.map((target) => target.venue)).toEqual(["hl"]);
+		expect(Boolean(before?.prepare)).toBe(true);
 		expect(await run(["sign", "c-1"], rt)).toBe(0);
 		const text = lines.join("\n");
 		expect(approvals).toEqual(["lighter"]);
@@ -623,7 +643,7 @@ test("a prepare MoB refuses after signing ends with what to do, not the raw erro
 		readSecret: async () => password,
 	};
 	const args = ["onboard", "--native", "--owner", api.owner.address];
-	expect(await run([...args, "--venues", "hl"], rt)).toBe(0);
+	expect(await run([...args, "--venues", "hl,lighter"], rt)).toBe(0);
 	expect(await run(["sign", "c-1"], rt)).not.toBe(0);
 	const text = lines.join("\n");
 	expect(text).toContain(
@@ -656,14 +676,14 @@ test("a wallet that never connects ends the session at the first step's deadline
 		openUrl: async () => {},
 	};
 	const args = ["onboard", "--native", "--owner", api.owner.address];
-	expect(await run([...args, "--venues", "hl"], rt)).toBe(0);
+	expect(await run([...args, "--venues", "hl,lighter"], rt)).toBe(0);
 	// Start signing 200 ms before the prepare step's window closes.
 	clock = now + 299_800;
 	const started = Date.now();
 	expect(await run(["sign", "c-1", "--with", "browser"], rt)).not.toBe(0);
 	expect(Date.now() - started).toBeLessThan(5_000);
 	expect(lines.join("\n")).toContain(
-		"The wallet session ran out of time before every step was signed. Run `mob onboard --native --venues 'hl' --max-size '5000'`",
+		"The wallet session ran out of time before every step was signed. Run `mob onboard --native --venues 'hl,lighter' --max-size '5000'`",
 	);
 });
 
@@ -693,5 +713,34 @@ test("onboarding stops before staging when the wallet never deposited on Hyperli
 		"This wallet's Hyperliquid perps account holds no USDC, so MoB reports Hyperliquid as unavailable and cannot create a key for it. Deposit USDC into Hyperliquid perps (app.hyperliquid.xyz, from Arbitrum), then run this again, or leave it out with --venues lighter. Nothing was staged.",
 	);
 	expect(await new CeremonyStore(home, () => now).list()).toHaveLength(0);
-	expect(await run([...args, "--venues", "lighter"], rt)).toBe(0);
+});
+
+test("a wallet Proposal rejected on the page ends with what to do next", async () => {
+	const now = Date.now();
+	const api = fakeStrategyApi({ now: () => now });
+	servers.push(api);
+	const { home } = await nativeHome(api);
+	const lines: string[] = [];
+	const opened = Promise.withResolvers<string>();
+	const rt: Partial<Runtime> = {
+		home,
+		now: () => now,
+		fetch: nativeFetch(api, { legalAccepted: true, calls: [] }),
+		sleep: async () => {},
+		stdinIsTTY: false,
+		stdoutIsTTY: false,
+		out: (line) => lines.push(line),
+		err: (line) => lines.push(line),
+		openUrl: async (url) => opened.resolve(url),
+	};
+	await setConfig("owner", api.owner.address, home);
+	await setConfig("signer", "browser", home);
+	expect(await run(["keys", "list"], rt)).toBe(0);
+	const signing = run(["sign", "p-1", "--with", "browser"], rt);
+	const { api: bridge } = await openBridge(await opened.promise);
+	expect((await bridge("/api/reject", {})).status).toBe(200);
+	expect(await signing).not.toBe(0);
+	expect(lines.join("\n")).toContain(
+		"You declined a signature in the wallet, so the session stopped and nothing more was signed or sent. To try again, run `mob keys list`.",
+	);
 });
