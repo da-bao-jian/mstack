@@ -24,7 +24,18 @@ else
   printf 'OWNER: fail\n'
 fi
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/skill-splash.sh"
-mob_splash "$MOB_OWNER" "${1:-}"
+MOB_SPLASH_OUT="$(mob_splash "$MOB_OWNER" "${1:-}")"
+if [ -n "$MOB_SPLASH_OUT" ]; then
+  printf '%s\n' "$MOB_SPLASH_OUT"
+else
+  # The hourly welcome carries the You can rows; between welcomes, print them
+  # from local state so every skill can end with the right next steps.
+  if MOB_MENU="$("$MOB" menu 2>/dev/null)"; then
+    printf 'YOU_CAN:\n%s\n' "$MOB_MENU"
+  else
+    printf 'YOU_CAN: fail\n'
+  fi
+fi
 if API_BASE="$("$MOB" config get api_base)"; then printf 'API_BASE: %s\n' "$API_BASE"; else API_BASE=''; printf 'API_BASE: fail\n'; fi
 # Advisory only: this result never gates a venue read or changes scan filters.
 if [ -n "$API_BASE" ] && MOB_HTTP="$(curl -m 15 -s -o /dev/null -w '%{http_code} %{time_total}' -H "X-Mobius-Client: mstack/$MOB_VERSION" -A "mstack/$MOB_VERSION" "$API_BASE/api/client-ip")"; then

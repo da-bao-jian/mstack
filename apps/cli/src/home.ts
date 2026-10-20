@@ -12,6 +12,7 @@ import {
 	type Reading,
 } from "./home-data.ts";
 import { collectHomeMarket, type HomeMarket } from "./home-market.ts";
+import { buildMenu, menuLine, USE_LINE } from "./menu.ts";
 import { reachabilityLabel } from "./reachability.ts";
 import type { Runtime } from "./run.ts";
 
@@ -93,8 +94,15 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 		}),
 		collectHomeMarket(rt, options),
 	]);
+	const menu = buildMenu({
+		owner: data.owner,
+		hasKey: Boolean(data.key.description),
+		awaiting: data.proposals.value?.awaiting ?? [],
+		topPair: market.topPairs[0],
+		runningTasks: data.tasks.value?.running.count,
+	});
 	if (options.json) {
-		rt.out(JSON.stringify({ ...data, market }, null, 2));
+		rt.out(JSON.stringify({ ...data, market, menu }, null, 2));
 		return;
 	}
 	const { lines: logo, mode } = renderTerminalLogo({
@@ -174,7 +182,7 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 			),
 		);
 	}
-	market.trending.forEach((item, index) => {
+	(options.compact ? [] : market.trending).forEach((item, index) => {
 		const change =
 			item.priceChange24hPct === undefined
 				? ""
@@ -244,6 +252,19 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 				? "auto · the agent may submit inside the key's caps"
 				: "locked · reads only";
 	info.push(row("Policy", policy));
+	// What to do now: the words to say in chat and the command to run. The
+	// phrase is padded after ASCII conversion so "…" keeps the columns aligned.
+	if (!options.compact) info.push(row("Use", USE_LINE));
+	const phrases = menu.rows.map((item) =>
+		textMode(`say "${item.say}"${item.note ? ` ${item.note}` : ""}`, mode),
+	);
+	const sayWidth = Math.max(...phrases.map((phrase) => phrase.length));
+	(options.compact ? menu.rows.slice(0, 3) : menu.rows).forEach(
+		(item, index) => {
+			const value = `${phrases[index].padEnd(sayWidth)}  ${item.run}`;
+			info.push(index ? continuation(value) : row("You can", value));
+		},
+	);
 	const awaiting = data.proposals.value?.awaiting[0];
 	const next = awaiting
 		? `mob sign ${awaiting}`
@@ -274,6 +295,31 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 			});
 	const marked = !terminal.isTTY || mode === "ascii";
 	rt.out((marked ? ["<mob-home>", ...lines, "</mob-home>"] : lines).join("\n"));
+}
+
+/** `mob menu`: the You can rows from local state alone, for every preamble. */
+export async function menu(json: boolean, rt: Runtime): Promise<void> {
+	const [data, market] = await Promise.all([
+		collectHome(rt, { offline: true }),
+		collectHomeMarket(rt, { offline: true }),
+	]);
+	const result = buildMenu({
+		owner: data.owner,
+		hasKey: Boolean(data.key.description),
+		awaiting: data.proposals.value?.awaiting ?? [],
+		topPair: market.topPairs[0],
+	});
+	if (json) {
+		rt.out(JSON.stringify(result, null, 2));
+		return;
+	}
+	const width =
+		Math.max(
+			...result.rows.map(
+				(item) => item.say.length + (item.note ? item.note.length + 1 : 0) + 6,
+			),
+		) + 2;
+	rt.out(result.rows.map((item) => menuLine(item, width)).join("\n"));
 }
 
 function freshnessText(market: HomeMarket): string {
