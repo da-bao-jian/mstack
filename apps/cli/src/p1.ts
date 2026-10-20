@@ -9,6 +9,7 @@ import {
 import {
 	CeremonyStore,
 	type Json,
+	type Proposal,
 	ProposalStore,
 	publicText,
 	runPreflight,
@@ -26,6 +27,7 @@ import {
 } from "@mstack/signers";
 import { getAddress } from "viem";
 import pkg from "../package.json";
+import { explainCeremonyFailure } from "./binding-errors.ts";
 import {
 	chooseSigner,
 	readConfig,
@@ -50,6 +52,25 @@ import { refreshExpired } from "./refresh-proposal.ts";
 import { restageProposal } from "./restage.ts";
 import type { Runtime } from "./run.ts";
 import { walletWait } from "./wallet-wait.ts";
+
+/** The command that stages a Proposal with the same intent. */
+function restageFor(p: Proposal): string {
+	const body = p.submit.body ?? {};
+	switch (p.submit.route) {
+		case "/api/keys/list":
+			return "mob keys list";
+		case "/api/keys/revoke":
+			return `mob keys revoke ${String(body.id)}`;
+		case "/api/keys/create":
+			return `mob keys create --name '${String(body.name)}' --venues '${Array.isArray(body.venues) ? body.venues.join(",") : ""}' --max-size '${String(body.maxSizeUsd)}'`;
+		case "/legal/acceptance":
+			return "mob setup";
+		default:
+			return p.status === "expired"
+				? `mob restage ${p.id}`
+				: "the command that staged it";
+	}
+}
 
 export async function p1(
 	command: string,
@@ -457,7 +478,15 @@ export async function p1(
 			const { stageLegal } = await import("./setup-command.ts");
 			await stageLegal(rt, true);
 		}
-		throw error;
+		// Key and legal Proposals get the explained message; trading Proposals
+		// keep MoB's structured answer, which the agent reads verbatim.
+		throw /^\/(?:api\/keys|legal)\//.test(proposal.submit.route)
+			? explainCeremonyFailure(error, {
+					id,
+					owner: proposal.owner,
+					restage: restageFor(proposal),
+				})
+			: error;
 	} finally {
 		if (!rt.signal) {
 			process.off("SIGINT", cancel);

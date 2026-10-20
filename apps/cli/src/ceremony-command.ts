@@ -318,6 +318,10 @@ export async function nativeOnboard(
 		10,
 	);
 	await requireWritableKeyStore(rt, config.owner);
+	if (parseVenues(values.venues).length < 2)
+		throw new UsageError(
+			"A trading key needs at least two venues, one for each leg. Add a venue with --venues and run this again.",
+		);
 	const ceremony = await stageCeremony(values, rt, undefined, {
 		legal,
 		keyPlan: { name, maxSizeUsd },
@@ -328,11 +332,6 @@ export async function nativeOnboard(
 		await stageLegal(rt);
 		return;
 	}
-	const selected = parseVenues(values.venues);
-	if (selected.length < 2)
-		throw new UsageError(
-			"A trading key needs at least two venues, one for each leg. Add a venue with --venues and run this again; nothing else is needed for the bound venue.",
-		);
 	if (!(await (await cliKeyStore(rt)).get(getAddress(config.owner))))
 		await keysCommand(
 			["create"],
