@@ -7,6 +7,8 @@ not a claim that public release tags or artifacts were published.
 <!-- release-start -->
 ## [Unreleased]
 
+## [0.4.8] - 2026-10-20
+
 ### Changed
 
 - Research needs no account. mstack is an open framework for finding delta-neutral funding trades; execution runs through MoB and is the only part that needs onboarding. The welcome shows a `Trading  not set up · optional · research needs no account` row and offers a scan first; `mob doctor` exits 0 on a fresh install, marking `Config`, `Owner`, `Signer`, `Legal`, and venue checks optional until an owner is saved, and adds a `Research` line. Every command that needs the setup now says trading runs through MoB, how to set it up, and which commands work without it. `mob status` without an address asks for `--owner` instead of setup.
