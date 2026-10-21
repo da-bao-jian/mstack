@@ -1,5 +1,11 @@
 import { expect, test } from "bun:test";
-import { buildMenu, menuLine, USE_LINE } from "../src/menu.ts";
+import {
+	buildMenu,
+	CHAT_LINE,
+	menuHeader,
+	menuLine,
+	menuPhrase,
+} from "../src/menu.ts";
 
 const owner = "0x0000000000000000000000000000000000000001";
 const says = (input: Parameters<typeof buildMenu>[0]) =>
@@ -32,7 +38,7 @@ test("an owner without a key is finishing setup; research stays available", () =
 	expect(menu.state).toBe("setting-up");
 	expect(menu.rows[0]).toEqual({
 		say: "set up mstack",
-		note: "finish setup",
+		note: "to finish setup",
 		run: "mob onboard",
 	});
 	expect(says({ owner, hasKey: false, awaiting: [] })).toEqual([
@@ -52,7 +58,10 @@ test("a stored key offers trading rows, with close only while a task runs", () =
 		"best funding now",
 		"raise my cap",
 	]);
-	expect(buildMenu(base).rows[0].run).toBe("mob scan --market HYPE");
+	// The command column does what the phrase says, flags and all.
+	expect(buildMenu(base).rows[0].run).toBe(
+		"mob open HYPE --long <venue:market> --short <venue:market> --size <usd>",
+	);
 	expect(says({ ...base, runningTasks: 2 })).toContain("close task <id>");
 });
 
@@ -68,13 +77,18 @@ test("a Proposal awaiting signature comes first, then at most three state rows",
 	expect(menu.rows[1].say).toBe("open BTC");
 });
 
-test("menu lines pad the phrase so commands align, and the use line names every host", () => {
+test("menu lines pad the phrase so commands align; headers and the chat line name every host", () => {
+	expect(
+		menuPhrase({ say: "sign p-1", note: "first", run: "mob sign p-1" }),
+	).toBe('"sign p-1"  first');
 	expect(menuLine({ say: "my positions", run: "mob status" }, 24)).toBe(
-		'say "my positions"      mob status',
+		`"my positions"${" ".repeat(12)}mob status`,
 	);
 	expect(
 		menuLine({ say: "sign p-1", note: "first", run: "mob sign p-1" }),
-	).toBe('say "sign p-1" first          mob sign p-1');
-	expect(USE_LINE).toContain("/mstack:mob");
-	expect(USE_LINE).toContain("$mob");
+	).toBe(`"sign p-1"  first${" ".repeat(15)}mob sign p-1`);
+	expect(menuHeader("chat")).toEqual(["say in chat", "or run in a terminal"]);
+	expect(menuHeader("hosts")[0]).toBe("say in Claude Code or Codex");
+	expect(CHAT_LINE).toContain("/mstack:mob");
+	expect(CHAT_LINE).toContain("$mob");
 });

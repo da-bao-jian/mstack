@@ -9,14 +9,13 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
     +++++++++######-------------   Trending   BTC    $30.0M 24h . funding +13%/yr . OI $15.0M . price +1.2%
   +++++++++++######-------------              ETH    $14.0M 24h . funding +11%/yr . OI $7.0M . price +1.2%
  ++++++++++++######-------------   Trading    not set up . optional . research needs no account
--------------######+++++++++++     Policy     manual . you approve each Proposal by naming it
- ------------######+++++++++       Use        say a line below in chat, or run its command . /mstack:mob or $mob also start mstack
- ------------######+++++++         You can    say "best funding now"        mob scan --size 1000
- ------------#####                            say "how does funding work"   mob explain funding
- ------------###                              say "history BTC"             mob history BTC --days 7
- ------------#                                say "positions of 0x..."      mob status --owner 0x...
-                                              say "set up mstack" to trade  mob onboard
-                                   Next       say "best funding now"   or   "set up mstack" to trade
+-------------######+++++++++++     You can    say in Claude Code or Codex  or run in a terminal
+ ------------######+++++++++                  "best funding now"           mob scan --size 1000
+ ------------######+++++++                    "how does funding work"      mob explain funding
+ ------------#####                            "history BTC"                mob history BTC --days 7
+ ------------###                              "positions of 0x..."         mob status --owner 0x...
+ ------------#                                "set up mstack"  to trade    mob onboard
+                                   Chat       /mstack:mob in Claude Code or $mob in Codex opens this menu
                                    live . 2 of 14 venues . 0.0 s
 </mob-home>"
 `;
@@ -32,13 +31,13 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
  ++++++++++++######-------------   Positions  2 running . $5.0K per leg . est. funding +2.46/day
 -------------######+++++++++++     Ready      hl +  lighter + . key mobius_01234567-89ab-cdef-0123-456789abcdef... x . cap $5.0K
  ------------######+++++++++       Policy     manual . you approve each Proposal by naming it
- ------------######+++++++         Use        say a line below in chat, or run its command . /mstack:mob or $mob also start mstack
- ------------#####                 You can    say "open BTC"          mob scan --market BTC
- ------------###                              say "my positions"      mob status
- ------------#                                say "best funding now"  mob scan --size 1000
-                                              say "close task <id>"   mob close <task>
-                                              say "raise my cap"      mob keys create --name <n> --venues a,b --max-size <usd>
-                                   Next       say "open BTC"   or   mob scan
+ ------------######+++++++         You can    say in Claude Code or Codex  or run in a terminal
+ ------------#####                            "open BTC"                   mob open BTC --long <venue:market> --short <venue:market> --size <usd>
+ ------------###                              "my positions"               mob status
+ ------------#                                "best funding now"           mob scan --size 1000
+                                              "close task <id>"            mob close <task>
+                                              "raise my cap"               mob keys create --name <name> --venues <a,b> --max-size <usd>
+                                   Chat       /mstack:mob in Claude Code or $mob in Codex opens this menu
                                    live . 2 of 14 venues . 0.0 s
 </mob-home>"
 `;
@@ -52,14 +51,13 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
     +++++++++######-------------   Trending   BTC    $30.0M 24h . funding +13%/yr . OI $15.0M . price +1.2%
   +++++++++++######-------------              ETH    $14.0M 24h . funding +11%/yr . OI $7.0M . price +1.2%
  ++++++++++++######-------------   Trading    not set up . optional . research needs no account
--------------######+++++++++++     Policy     manual . you approve each Proposal by naming it
- ------------######+++++++++       Use        say a line below in chat, or run its command . /mstack:mob or $mob also start mstack
- ------------######+++++++         You can    say "best funding now"        mob scan --size 1000
- ------------#####                            say "how does funding work"   mob explain funding
- ------------###                              say "history BTC"             mob history BTC --days 7
- ------------#                                say "positions of 0x..."      mob status --owner 0x...
-                                              say "set up mstack" to trade  mob onboard
-                                   Next       say "best funding now"   or   "set up mstack" to trade
+-------------######+++++++++++     You can    say in Claude Code or Codex  or run in a terminal
+ ------------######+++++++++                  "best funding now"           mob scan --size 1000
+ ------------######+++++++                    "how does funding work"      mob explain funding
+ ------------#####                            "history BTC"                mob history BTC --days 7
+ ------------###                              "positions of 0x..."         mob status --owner 0x...
+ ------------#                                "set up mstack"  to trade    mob onboard
+                                   Chat       /mstack:mob in Claude Code or $mob in Codex opens this menu
                                    cached 4 min ago
 </mob-home>"
 `;
