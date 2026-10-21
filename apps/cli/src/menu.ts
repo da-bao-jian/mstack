@@ -1,5 +1,5 @@
-// What the user can do now, by account state, as the words to say in chat
-// and the command to run in a terminal. The welcome, `mob menu` and the skill
+// What the user can do now, by account state: the words to say in chat and
+// the command to run in a terminal. The welcome, `mob menu` and the skill
 // preamble all print it, so every invocation offers the right next steps.
 // It reads only local state: no network, so it is safe in every preamble.
 
@@ -39,7 +39,10 @@ export function buildMenu(input: MenuInput): Menu {
 	if (input.hasKey) {
 		state = "trading";
 		rows = [
-			{ say: `open ${base}`, run: `mob scan --market ${base}` },
+			{
+				say: `open ${base}`,
+				run: `mob open ${base} --long <venue:market> --short <venue:market> --size <usd>`,
+			},
 			{ say: "my positions", run: "mob status" },
 			research[0],
 			...(input.runningTasks
@@ -47,13 +50,13 @@ export function buildMenu(input: MenuInput): Menu {
 				: []),
 			{
 				say: "raise my cap",
-				run: "mob keys create --name <n> --venues a,b --max-size <usd>",
+				run: "mob keys create --name <name> --venues <a,b> --max-size <usd>",
 			},
 		];
 	} else if (input.owner) {
 		state = "setting-up";
 		rows = [
-			{ say: "set up mstack", note: "finish setup", run: "mob onboard" },
+			{ say: "set up mstack", note: "to finish setup", run: "mob onboard" },
 			...research.slice(0, 3),
 		];
 	} else {
@@ -75,11 +78,24 @@ export function buildMenu(input: MenuInput): Menu {
 	return { state, rows };
 }
 
-/** One row as text: the phrase (with its note) padded, then the command. */
-export function menuLine(row: MenuRow, width = 30): string {
-	return `${`say "${row.say}"${row.note ? ` ${row.note}` : ""}`.padEnd(width)}${row.run}`;
+/** The phrase column: the words to say in quotes, then the note. */
+export function menuPhrase(row: MenuRow): string {
+	return `"${row.say}"${row.note ? `  ${row.note}` : ""}`;
 }
 
-/** How to reach mstack from any host; the same words on every surface. */
-export const USE_LINE =
-	"say a line below in chat, or run its command · /mstack:mob or $mob also start mstack";
+/** One row as text: the phrase padded to the column, two spaces, the command. */
+export function menuLine(row: MenuRow, width = 30): string {
+	return `${menuPhrase(row).padEnd(width)}  ${row.run}`;
+}
+
+/** The headers above the two columns: "chat" inside a reply, "hosts" in a terminal. */
+export function menuHeader(where: "chat" | "hosts"): [string, string] {
+	return [
+		where === "chat" ? "say in chat" : "say in Claude Code or Codex",
+		"or run in a terminal",
+	];
+}
+
+/** How to reach mstack from an agent; the same words on every surface. */
+export const CHAT_LINE =
+	"/mstack:mob in Claude Code or $mob in Codex opens this menu";

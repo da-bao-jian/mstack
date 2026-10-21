@@ -12,7 +12,13 @@ import {
 	type Reading,
 } from "./home-data.ts";
 import { collectHomeMarket, type HomeMarket } from "./home-market.ts";
-import { buildMenu, menuLine, USE_LINE } from "./menu.ts";
+import {
+	buildMenu,
+	CHAT_LINE,
+	menuHeader,
+	menuLine,
+	menuPhrase,
+} from "./menu.ts";
 import { reachabilityLabel } from "./reachability.ts";
 import type { Runtime } from "./run.ts";
 
@@ -237,11 +243,18 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 			row("Trading", "not set up · optional · research needs no account"),
 		);
 	} else {
-		const legal = accepted ? "✓" : "✗";
+		// Words, not marks: this row greets an owner who has not finished setup.
+		const checked = homeVenues.filter((venue) => data.venues[venue].value);
+		const bound = checked.filter((venue) => data.venues[venue].value?.bound);
+		const venues = !checked.length
+			? "venues not checked"
+			: bound.length
+				? `bound ${bound.join(", ")}`
+				: "no venue bound";
 		info.push(
 			row(
 				"Onboarding",
-				`legal ${legal} · hl – · lighter – · key ${data.key.description?.prefix ?? "none"}`,
+				`legal ${accepted ? "accepted" : "not accepted"} · ${venues} · key ${data.key.description?.prefix ?? "none"}`,
 			),
 		);
 	}
@@ -251,31 +264,26 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 			: data.policy === "auto"
 				? "auto · the agent may submit inside the key's caps"
 				: "locked · reads only";
-	info.push(row("Policy", policy));
-	// What to do now: the words to say in chat and the command to run. The
-	// phrase is padded after ASCII conversion so "…" keeps the columns aligned.
-	if (!options.compact) info.push(row("Use", USE_LINE));
-	const phrases = menu.rows.map((item) =>
-		textMode(`say "${item.say}"${item.note ? ` ${item.note}` : ""}`, mode),
+	// Policy matters once an account exists; a fresh screen stays minimal.
+	if (data.owner) info.push(row("Policy", policy));
+	// What to do now, as a two-column table: the words to say in chat and the
+	// command to run. Phrases are padded after ASCII conversion so "…" keeps
+	// the columns aligned.
+	const [sayHeader, runHeader] = menuHeader(options.compact ? "chat" : "hosts");
+	const phrases = menu.rows.map((item) => textMode(menuPhrase(item), mode));
+	const sayWidth = Math.max(
+		sayHeader.length,
+		...phrases.map((phrase) => phrase.length),
 	);
-	const sayWidth = Math.max(...phrases.map((phrase) => phrase.length));
+	info.push(row("You can", `${sayHeader.padEnd(sayWidth)}  ${runHeader}`));
 	(options.compact ? menu.rows.slice(0, 3) : menu.rows).forEach(
 		(item, index) => {
-			const value = `${phrases[index].padEnd(sayWidth)}  ${item.run}`;
-			info.push(index ? continuation(value) : row("You can", value));
+			info.push(
+				continuation(`${phrases[index].padEnd(sayWidth)}  ${item.run}`),
+			);
 		},
 	);
-	const awaiting = data.proposals.value?.awaiting[0];
-	const next = awaiting
-		? `mob sign ${awaiting}`
-		: !ready
-			? data.owner
-				? 'say "set up mstack"'
-				: 'say "best funding now"   or   "set up mstack" to trade'
-			: market.topPairs[0]
-				? `say "open ${market.topPairs[0].base}"   or   mob scan`
-				: "mob scan";
-	info.push(row("Next", next));
+	if (!options.compact) info.push(row("Chat", CHAT_LINE));
 	const freshness = textMode(freshnessText(market), mode);
 	const palette =
 		mode === "truecolor" || mode === "ansi256"
@@ -313,13 +321,17 @@ export async function menu(json: boolean, rt: Runtime): Promise<void> {
 		rt.out(JSON.stringify(result, null, 2));
 		return;
 	}
-	const width =
-		Math.max(
-			...result.rows.map(
-				(item) => item.say.length + (item.note ? item.note.length + 1 : 0) + 6,
-			),
-		) + 2;
-	rt.out(result.rows.map((item) => menuLine(item, width)).join("\n"));
+	// A person at a terminal gets the column headers; a capturing preamble
+	// gets rows only, so YOU_CAN stays a plain list.
+	const tty = rt.stdoutIsTTY ?? rt.isTTY ?? Boolean(process.stdout.isTTY);
+	const [sayHeader, runHeader] = menuHeader("hosts");
+	const width = Math.max(
+		tty ? sayHeader.length : 0,
+		...result.rows.map((item) => menuPhrase(item).length),
+	);
+	const lines = result.rows.map((item) => menuLine(item, width));
+	if (tty) lines.unshift(`${sayHeader.padEnd(width)}  ${runHeader}`);
+	rt.out(lines.join("\n"));
 }
 
 function freshnessText(market: HomeMarket): string {

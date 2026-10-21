@@ -260,8 +260,9 @@ test.each([...skills.keys()])(
 			"OWNER: unset",
 			"POLICY: manual",
 			"SIGNER: unset",
-			// The hourly welcome carries the You can rows on a fresh home.
-			'You can    say "best funding now"',
+			// The hourly welcome carries the You can table on a fresh home.
+			"You can    say in chat",
+			'"best funding now"',
 		])
 			expect(result.out).toContain(key);
 		expect(result.out).not.toContain("YOU_CAN");
@@ -500,8 +501,11 @@ test("between welcomes the preamble prints YOU_CAN from local state, with no net
 	expect(second.code).toBe(0);
 	expect(second.out).not.toContain("<mob-home>");
 	expect(second.out).toContain("YOU_CAN:\n");
-	expect(second.out).toContain('say "best funding now"');
-	expect(second.out).toContain('say "set up mstack" to trade  mob onboard');
+	expect(second.out).toContain('"best funding now"');
+	expect(second.out).toContain("mob scan --size 1000");
+	// Rows only: the header belongs to a person at a terminal, not a preamble.
+	expect(second.out).not.toContain("say in Claude Code");
+	expect(second.out).toContain('"set up mstack"  to trade  mob onboard');
 	// Only the advisory API probe touched the network, once per preamble.
 	const calls = (await readFile(join(home, "curl-calls"), "utf8"))
 		.trim()

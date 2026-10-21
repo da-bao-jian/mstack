@@ -10,7 +10,7 @@ metadata:
 bash ~/.agents/skills/mstack/bin/mob-preamble
 ```
 
-If the preamble output contains a block between the lines `<mob-home>` and `</mob-home>`, reproduce every line between those two tags verbatim in a fenced code block at the top of your reply; stop before the `</mob-home>` line and print neither tag line; never strip, trim or summarize the block. When a reply completes the request (not when it asks a question), end with "You can": up to three rows from the preamble's `YOU_CAN` list or the welcome's `You can` rows that fit the moment, as words to say next; `$mob` also starts mstack.
+If the preamble output contains a block between the lines `<mob-home>` and `</mob-home>`, reproduce every line between those two tags verbatim in a fenced code block at the top of your reply; stop before the `</mob-home>` line and print neither tag line; never strip, trim or summarize the block. When a reply completes the request (not when it asks a question), end with "You can": up to three rows from the preamble's `YOU_CAN` list or the welcome's `You can` rows that fit the moment, as words to say next. Only when the welcome printed in this reply, add that `$mob` opens the menu.
 
 Read [references/glossary.md](references/glossary.md) for field meanings and venue deployments instead of reading the source tree.
 
@@ -25,6 +25,6 @@ Run the preamble first. Use the path printed as `MOB_BIN` in place of `mob`; she
 5. Read [ranking details](references/ranking.md) when explaining the result. Explain why each section's first row ranks first. Mention both leg volumes, flags, OI caps, and unknown measurements. Marks do not measure fill depth; fees are estimates.
 6. State failed venues with their errors, unmatched count, and thin-hidden count from the footer. JSON `failed`, `counts.unmatched`, and `counts.thinHidden` provide the same information. The default JSON contains bounded views and counts; keep the full result opt-in. If the view is empty, explain the filters and failures; never invent a winner. State "annualized = simple, not compounded".
 7. Offer `mob history <base> --days 7` to check stability. History is a separate read and its covered hours may differ by venue.
-8. End with one line on execution, no more: with `OWNER: set`, "To open the top pair, say `open <base>`"; with `OWNER: unset`, "To open the top pair through MoB, say `open <base>`; the first trade starts a one-time setup of about two minutes." Do not ask whether to set up here.
+8. The closing "You can" list starts with `say "open <base>"` for the top executable pair: with `OWNER: set`, note "through MoB"; with `OWNER: unset`, note "through MoB; the first trade starts a one-time setup of about two minutes". Say nothing else about execution, and do not ask whether to set up here.
 
 If quoting `mobOpen`, label it as a staging command. Its presence never authorizes execution. For an execution request, load `$mob-open` and follow its questions and stop rule. Never stage or sign from scan output alone.

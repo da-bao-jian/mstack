@@ -11,13 +11,13 @@ allowed-tools: Bash Read AskUserQuestion Bash(${CLAUDE_SKILL_DIR}/scripts/preamb
 bash "${CLAUDE_SKILL_DIR}/scripts/preamble.sh" --router
 ```
 
-If the preamble output contains a block between the lines `<mob-home>` and `</mob-home>`, reproduce every line between those two tags verbatim in a fenced code block at the top of your reply; stop before the `</mob-home>` line and print neither tag line; never strip, trim or summarize the block. When a reply completes the request (not when it asks a question), end with "You can": up to three rows from the preamble's `YOU_CAN` list or the welcome's `You can` rows that fit the moment, as words to say next; `/mstack:mob` also starts mstack.
+If the preamble output contains a block between the lines `<mob-home>` and `</mob-home>`, reproduce every line between those two tags verbatim in a fenced code block at the top of your reply; stop before the `</mob-home>` line and print neither tag line; never strip, trim or summarize the block. When a reply completes the request (not when it asks a question), end with "You can": up to three rows from the preamble's `YOU_CAN` list or the welcome's `You can` rows that fit the moment, as words to say next. Only when the welcome printed in this reply, add that `/mstack:mob` opens the menu.
 
 # MoB router
 
 Run the preamble first. Use the printed `MOB_BIN` path for CLI commands. If `MOB_MISSING` appears, show the install line and stop.
 
-mstack is an open framework for finding delta-neutral funding trades. Research (scan, rates, history, explain, status by address) needs no account, wallet, or signature. Execution runs through MoB and needs a one-time setup. When `OWNER: unset`, answer research requests without mentioning setup; bring up MoB only when the user wants to open, manage, or close a position, or asks for setup. For "what can you do", "what is mstack" or "getting started", say both parts in two sentences, research first, then list every `YOU_CAN` row from the preamble (or the welcome's `You can` rows) as "say … (or run …)", and say that a plain sentence in chat reaches mstack, as does the command named in the rule above.
+mstack is an open framework for finding delta-neutral funding trades. Research (scan, rates, history, explain, status by address) needs no account, wallet, or signature. Execution runs through MoB and needs a one-time setup. When `OWNER: unset`, answer research requests without mentioning setup; bring up MoB only when the user wants to open, manage, or close a position, or asks for setup. For "what can you do", "what is mstack" or "getting started", say both parts in two sentences, research first, then run `mob menu` and list every row under "You can" as "say … (or run …)"; the welcome shows only the first three, and this list is the reply's only one. End by saying that a plain sentence in chat reaches mstack, as does the command named in the rule above.
 
 | User asks about | Use skill |
 |---|---|

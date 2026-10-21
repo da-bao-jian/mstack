@@ -129,8 +129,12 @@ test("no args home: live market, account standing and next action share the logo
 	expect(r.out).toContain(`mstack ${pkg.version} · 0x0000…0001`);
 	expect(r.out).toContain("Top pairs  BTC");
 	expect(r.out).toContain("Trending   BTC");
-	expect(r.out).toContain("Onboarding legal ✓");
-	expect(r.out).toContain('Next       say "set up mstack"');
+	expect(r.out).toMatch(
+		/Onboarding legal accepted · (bound [\w, -]+|no venue bound) · key none/,
+	);
+	expect(r.out).toContain("You can    say in Claude Code or Codex");
+	expect(r.out).toContain('"set up mstack"  to finish setup');
+	expect(r.out).not.toContain("Next ");
 	expect(r.out).toContain("live · 2 of 14 venues");
 	expect(r.out.split("\n")[0].indexOf("mstack")).toBe(35);
 	expect(fake.calls).toHaveLength(8);
@@ -242,7 +246,9 @@ test("big has 25 art rows; compact uses the 13-row home and offline makes no HTT
 		"--offline",
 	]);
 	expect(compactOffline.out).toStartWith("<mob-home>\n");
-	expect(compactOffline.out).toContain('Next       say "set up mstack"');
+	expect(compactOffline.out).toContain("You can    say in chat");
+	expect(compactOffline.out).toContain('"set up mstack"  to finish setup');
+	expect(compactOffline.out).not.toContain("Chat ");
 	expect(compactOffline.out).not.toContain("sky  ");
 	const big = await invoke(["--big", "--plain", "--offline"]);
 	expect(big.out.split("\n").filter((line) => /[░▒█]/.test(line))).toHaveLength(
@@ -262,21 +268,21 @@ test("no config Next setup and auth terms read; no owner-specific routes", async
 	expect(r.out).toContain(
 		"Trading    not set up · optional · research needs no account",
 	);
-	expect(r.out).toContain(
-		'Next       say "best funding now"   or   "set up mstack" to trade',
-	);
 	expect(r.out).not.toContain("Onboarding");
+	// Policy and Next are noise before an account exists.
+	expect(r.out).not.toContain("Policy");
+	expect(r.out).not.toContain("Next ");
 	expect(r.out).toContain("new account");
-	// The opening screen says how to reach mstack and what to do, by state.
-	expect(r.out).toContain(
-		"Use        say a line below in chat, or run its command · /mstack:mob or $mob also start mstack",
+	// The opening screen is a two-column table of what to say and what to
+	// run, by state, and one line on how to reach mstack from an agent.
+	expect(r.out).toMatch(
+		/You can {4}say in Claude Code or Codex +or run in a terminal/,
 	);
+	expect(r.out).toMatch(/"best funding now" +mob scan --size 1000/);
+	expect(r.out).toMatch(/"set up mstack" {2}to trade +mob onboard/);
+	expect(r.out).toMatch(/"history BTC" +mob history BTC --days 7/);
 	expect(r.out).toContain(
-		'You can    say "best funding now"        mob scan --size 1000',
-	);
-	expect(r.out).toContain('say "set up mstack" to trade  mob onboard');
-	expect(r.out).toContain(
-		'say "history BTC"             mob history BTC --days 7',
+		"Chat       /mstack:mob in Claude Code or $mob in Codex opens this menu",
 	);
 	expect(fake.calls.map((c) => new URL(c.url).pathname).sort()).toEqual([
 		"/api/client-ip",
@@ -292,19 +298,32 @@ test("configured but unbound Next bind; empty tasks and absent acceptance", asyn
 	fake.state.tasks = false;
 	fake.state.accepted = false;
 	const { out } = await invoke(["hello"]);
-	expect(out).toContain("Onboarding legal ✗");
-	expect(out).toContain('Next       say "set up mstack"');
 	expect(out).toContain(
-		'You can    say "set up mstack" finish setup  mob onboard',
+		"Onboarding legal not accepted · no venue bound · key none",
 	);
+	expect(out).toContain("Policy     manual");
+	expect(out).toMatch(
+		/You can {4}say in Claude Code or Codex +or run in a terminal/,
+	);
+	expect(out).toMatch(/"set up mstack" {2}to finish setup +mob onboard/);
 });
 test("mob menu prints the You can rows from local state with no network read", async () => {
-	const { invoke, fake, home } = await context();
+	const { invoke, fake, home, rt } = await context();
 	const text = await invoke(["menu"]);
 	expect(text.code).toBe(0);
 	expect(text.err).toBe("");
-	expect(text.out.split("\n")[0]).toMatch(
-		/^say "set up mstack" finish setup +mob onboard$/,
+	// A person at a terminal gets the column headers above the rows.
+	const lines = text.out.split("\n");
+	expect(lines[0]).toMatch(
+		/^say in Claude Code or Codex +or run in a terminal$/,
+	);
+	expect(lines[1]).toMatch(/^"set up mstack" {2}to finish setup +mob onboard$/);
+	// A capturing preamble gets rows only, so YOU_CAN stays a plain list.
+	rt.isTTY = false;
+	rt.stdoutIsTTY = false;
+	const captured = await invoke(["menu"]);
+	expect(captured.out.split("\n")[0]).toMatch(
+		/^"set up mstack" {2}to finish setup +mob onboard$/,
 	);
 	const p = await proposal(home);
 	const json = JSON.parse((await invoke(["menu", "--json"])).out);
