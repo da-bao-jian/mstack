@@ -1,4 +1,6 @@
-# Shared hourly greeting. The router bypasses the age check.
+# Shared hourly greeting, compact. The router bypasses the age check and
+# shows the full welcome: it is the menu, so every You can row and the Chat
+# line must be there.
 mob_splash() (
   umask 077
   MOB_SPLASH_HOME="${MOB_HOME:-$HOME/.mob}"
@@ -22,7 +24,11 @@ mob_splash() (
   if [ "$MOB_SPLASH_KIND" != --router ]; then
     [ "$((MOB_SPLASH_NOW - MOB_SPLASH_LAST))" -ge 3600 ] || return 0
   fi
-  MOB_SPLASH="$("$MOB" hello --compact --ascii)" || return 0
+  if [ "$MOB_SPLASH_KIND" = --router ]; then
+    MOB_SPLASH="$("$MOB" hello --ascii)" || return 0
+  else
+    MOB_SPLASH="$("$MOB" hello --compact --ascii)" || return 0
+  fi
   printf '%s\n' "$MOB_SPLASH_NOW" > "$MOB_SPLASH_STAMP" || return 0
   printf '%s\n' "$MOB_SPLASH"
 )

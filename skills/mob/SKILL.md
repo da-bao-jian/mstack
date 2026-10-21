@@ -17,7 +17,9 @@ If the preamble output contains a block between the lines `<mob-home>` and `</mo
 
 Run the preamble first. Use the printed `MOB_BIN` path for CLI commands. If `MOB_MISSING` appears, show the install line and stop.
 
-mstack is an open framework for finding delta-neutral funding trades. Research (scan, rates, history, explain, status by address) needs no account, wallet, or signature. Execution runs through MoB and needs a one-time setup. When `OWNER: unset`, answer research requests without mentioning setup; bring up MoB only when the user wants to open, manage, or close a position, or asks for setup. For "what can you do", "what is mstack" or "getting started", say both parts in two sentences, research first, then run `mob menu` and list every row under "You can" as "say … (or run …)"; the welcome shows only the first three, and this list is the reply's only one. End by saying that a plain sentence in chat reaches mstack, as does the command named in the rule above.
+mstack is an open framework for finding delta-neutral funding trades. Research (scan, rates, history, explain, status by address) needs no account, wallet, or signature. Execution runs through MoB and needs a one-time setup. When `OWNER: unset`, answer research requests without mentioning setup; bring up MoB only when the user wants to open, manage, or close a position, or asks for setup.
+
+The welcome this skill prints is the menu: its `You can` table lists every row, and its `Chat` line names this command, so never add that the command opens the menu. When the command comes alone, with no request after it, or for "menu", "what can you do", "what is mstack" or "getting started": after the welcome, say in two sentences what mstack does, research first (no account) and then execution through MoB after a one-time setup, and say that each row is words to say here or a command to run in a terminal. That is the whole reply: no second list and no closing "You can".
 
 | User asks about | Use skill |
 |---|---|

@@ -207,7 +207,7 @@ with measured timing when reachable. Slow starts at three seconds and adds
 An update-check failure is one `UPGRADE_CHECK: fail` line with a reason, without Git diagnostics.
 Failed health, config, or update checks are explicit reports; `MOB_MISSING` stops the skill.
 Later commands use the printed binary path because the preamble runs in a child shell.
-The shared preamble shows the hourly ASCII splash. The router's `--router` option always shows it.
+The shared preamble shows the hourly ASCII splash in compact form. The router's `--router` option always shows the full welcome, with every `You can` row and the `Chat` line: it is the menu.
 
 Edit templates, references, and host overlays, then run `bun run gen:skills`.
 Commit both generated host trees. CI rejects generation drift.
