@@ -7,6 +7,10 @@ not a claim that public release tags or artifacts were published.
 <!-- release-start -->
 ## [Unreleased]
 
+### Fixed
+
+- `/mstack:mob` (and `$mob` in Codex) with nothing after it now opens the menu: the router's welcome is the full one, with every `You can` row and the `Chat` line, and the reply adds two sentences and no second list. Before, the router showed the compact welcome with three rows, then repeated those three rows and said that the command opens the menu, which the user had just typed.
+
 ## [0.4.9] - 2026-10-21
 
 ### Added

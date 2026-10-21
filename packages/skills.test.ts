@@ -260,11 +260,20 @@ test.each([...skills.keys()])(
 			"OWNER: unset",
 			"POLICY: manual",
 			"SIGNER: unset",
-			// The hourly welcome carries the You can table on a fresh home.
-			"You can    say in chat",
+			// The hourly welcome carries the You can table on a fresh home; the
+			// router shows the full one, every other skill the compact one.
+			file.endsWith("/mob/SKILL.md")
+				? "You can    say in Claude Code or Codex"
+				: "You can    say in chat",
 			'"best funding now"',
 		])
 			expect(result.out).toContain(key);
+		expect(result.out.includes('"set up mstack"  to trade')).toBe(
+			file.endsWith("/mob/SKILL.md"),
+		);
+		expect(result.out.includes("Chat       /mstack:mob")).toBe(
+			file.endsWith("/mob/SKILL.md"),
+		);
 		expect(result.out).not.toContain("YOU_CAN");
 		expect(result.out).not.toContain("UPGRADE_AVAILABLE");
 		const calls = (await readFile(join(home, "curl-calls"), "utf8"))
@@ -623,6 +632,10 @@ test("session skills keep keys off argv and require exact ids for manual mutatio
 			"mob-keys",
 		])
 			expect(router).toContain(`${invocation}${name}`);
+		// A bare command opens the menu: the welcome, two sentences, no second list.
+		expect(router).toContain("When the command comes alone");
+		expect(router).toContain('no second list and no closing "You can"');
+		expect(router).not.toContain("run `mob menu`");
 	}
 	// Only /mob-setup names keystore or config commands, and only for the human
 	// to run in a separate terminal; the hook denies them to the agent.
@@ -1008,10 +1021,15 @@ test("shared splash greets once per owner or home while the router always greets
 	expect(
 		(await command(["/bin/bash", "-c", codexSkill], home, path)).out,
 	).not.toContain("<mob-home>");
-	for (const router of [claudeRouter, codexRouter])
-		expect(
-			(await command(["/bin/bash", "-c", router], home, path)).out,
-		).toContain("<mob-home>");
+	// The router greets every time with the full welcome: it is the menu.
+	expect(block?.[1]).not.toContain("Chat       /mstack:mob");
+	for (const router of [claudeRouter, codexRouter]) {
+		const greeted = (await command(["/bin/bash", "-c", router], home, path))
+			.out;
+		expect(greeted).toContain("<mob-home>");
+		expect(greeted).toContain('"set up mstack"  to trade');
+		expect(greeted).toContain("Chat       /mstack:mob");
+	}
 	await writeFile(stamp, `${Math.floor(Date.now() / 1000) - 3601}\n`);
 	const concurrent = await Promise.all([
 		command(["/bin/bash", "-c", claudeSkill], home, path),
