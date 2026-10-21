@@ -7,6 +7,8 @@ not a claim that public release tags or artifacts were published.
 <!-- release-start -->
 ## [Unreleased]
 
+## [0.4.9] - 2026-10-21
+
 ### Added
 
 - The welcome tells a new user what mstack can do and how to reach it: a `You can` table with the headers "say in chat" (a terminal says "say in Claude Code or Codex") and "or run in a terminal", up to five rows chosen by account state: fresh (four research rows and "set up mstack" to trade), setting up ("set up mstack" to finish setup), a Proposal awaiting signature ("sign p-N" first), or trading ("open <top pair>", "my positions", "close task", "raise my cap"), and a `Chat` line ("/mstack:mob in Claude Code or $mob in Codex opens this menu"). The `Next` row is gone: it repeated the first row. `Policy` shows only once an owner is saved, and the `Onboarding` row says "legal accepted · hl bound · lighter not bound · key none" in words. `mob hello --json` carries the table as `menu`. The compact welcome the skills show once an hour keeps the header and three rows and leaves out Trending and the `Chat` line, so every skill stays inside its 8 KiB context budget.
