@@ -3,7 +3,7 @@ name: mob
 description: Start here for mstack and MoB. Use for "what can you do", "what is mstack", "getting started", "set me up", "MoB", "funding arb", "best pair", "delta neutral", "import my key", or "manage my positions". Routes each request to the right mob skill. (mstack)
 license: MIT
 metadata:
-  version: "0.4.9"
+  version: "0.4.10"
 ---
 
 ```bash

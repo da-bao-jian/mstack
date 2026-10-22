@@ -3,7 +3,7 @@ name: mob-scan
 description: Compare perpetual funding rates after fees. Use for "best funding now", "where is the best funding right now", "funding rates", "best pair", "delta-neutral trades", or "compare funding across venues"; needs no account. (mstack)
 license: MIT
 metadata:
-  version: "0.4.9"
+  version: "0.4.10"
 ---
 
 ```bash
