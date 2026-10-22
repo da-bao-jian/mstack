@@ -28,8 +28,8 @@ An open framework for finding delta-neutral funding trades. Scan funding across 
 ```text
 Install mstack, the open agent stack for delta-neutral funding trades, with MoB execution. I authorize exactly:
 claude plugin marketplace add da-bao-jian/mstack && claude plugin install mstack@mstack
-curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.10/install.sh | sh
-Then follow https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.10/docs/AGENT-INSTALL.md from Verify: `mob --version`, `mob doctor`,
+curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.11/install.sh | sh
+Then follow https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.11/docs/AGENT-INSTALL.md from Verify: `mob --version`, `mob doctor`,
 run `mob` and reproduce its output verbatim in a fenced block as the welcome.
 Finish by telling me to type /reload-plugins, then show how to use mstack: how to invoke it and the welcome's "You can" options (research needs no account; "set up mstack" only to trade).
 ```
