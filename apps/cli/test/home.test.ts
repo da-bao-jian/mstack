@@ -141,6 +141,20 @@ test("no args home: live market, account standing and next action share the logo
 	expect(fake.calls.every((c) => c.method === "GET")).toBe(true);
 	expect(fake.calls.some((c) => c.url.includes("rebind-check"))).toBe(false);
 });
+test("a tiny negative price change rounds to +0.0%, never −0.0%", async () => {
+	const { rt, invoke } = await context(false);
+	const snapshot = marketSnapshot();
+	for (const rate of snapshot.rates) rate.priceChange24hPct = -0.03;
+	rt.homeServices = {
+		...rt.homeServices,
+		marketSnapshot: async () => snapshot,
+	};
+	const r = await invoke([]);
+	expect(r.code).toBe(0);
+	expect(r.out).toContain("price +0.0%");
+	expect(r.out).not.toContain("−0.0%");
+	expect(r.out).not.toContain("-0.0%");
+});
 // Snapshots must survive a version bump: the home screen prints the version.
 const stable = (out: string) =>
 	out.replaceAll(`mstack ${pkg.version}`, "mstack <version>");

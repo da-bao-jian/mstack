@@ -16,9 +16,12 @@ export function paint(
 	});
 }
 export function number(value: number, digits = 2): string {
+	// "negative" signs only values that stay negative after rounding, so a
+	// tiny negative rate prints 0.0000, never -0.0000.
 	return value.toLocaleString("en-US", {
 		minimumFractionDigits: digits,
 		maximumFractionDigits: digits,
+		signDisplay: "negative",
 	});
 }
 export function usd(value: number | undefined): string {

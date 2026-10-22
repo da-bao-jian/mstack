@@ -155,8 +155,11 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 						: [1, ""];
 		return `$${(value / divisor).toFixed(divisor === 1 ? 0 : 1)}${suffix}`;
 	};
-	const signed = (value: number, digits = 0) =>
-		`${value >= 0 ? "+" : "−"}${Math.abs(value).toFixed(digits)}`;
+	// Sign the rounded figure: -0.03 at one digit prints +0.0, never −0.0.
+	const signed = (value: number, digits = 0) => {
+		const magnitude = Math.abs(value).toFixed(digits);
+		return `${value < 0 && Number(magnitude) !== 0 ? "−" : "+"}${magnitude}`;
+	};
 	const baseWidth = Math.max(
 		7,
 		...[...market.topPairs, ...market.trending].map(

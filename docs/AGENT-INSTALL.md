@@ -100,9 +100,10 @@ mob
 ```
 
 `mob --version` must print the release version without a `v` prefix.
-The `Binary` and `Research` doctor lines must start with `✓`, and `Binary` must show that version.
-Immediately after install, `mob doctor` exits 0: `Config`, `Owner`, `Signer`, `Legal`, and the venue lines show `–` with `(optional)`, because research needs no account.
-After onboarding, every critical line must start with `✓`; optional checks can end with `(optional)`.
+The `Binary` and `Research` doctor lines must start with the pass mark, and `Binary` must show that version.
+Immediately after install, `mob doctor` exits 0: `Config`, `Owner`, `Signer`, `Legal`, and the venue lines show the skip mark with `(optional)`, because research needs no account.
+After onboarding, every critical line must start with the pass mark; optional checks can end with `(optional)`.
+Marks: pass `✓`, skip `–`, fail `✗` in a terminal; `+`, `-`, `x` when the output is piped, as it is for an agent.
 
 ## How to use
 
