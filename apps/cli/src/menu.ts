@@ -2,6 +2,8 @@
 // the command to run in a terminal. The welcome, `mob menu` and the skill
 // preamble all print it, so every invocation offers the right next steps.
 // It reads only local state: no network, so it is safe in every preamble.
+// At most four rows per state: the router offers them as one question with
+// one option per row, and a Claude Code question holds four options.
 
 export interface MenuRow {
 	/** What to say in chat. */
@@ -32,7 +34,6 @@ export function buildMenu(input: MenuInput): Menu {
 		{ say: "best funding now", run: "mob scan --size 1000" },
 		{ say: "how does funding work", run: "mob explain funding" },
 		{ say: `history ${base}`, run: `mob history ${base} --days 7` },
-		{ say: "positions of 0x…", run: "mob status --owner 0x…" },
 	];
 	let state: MenuState;
 	let rows: MenuRow[];
@@ -45,19 +46,18 @@ export function buildMenu(input: MenuInput): Menu {
 			},
 			{ say: "my positions", run: "mob status" },
 			research[0],
-			...(input.runningTasks
-				? [{ say: "close task <id>", run: "mob close <task>" }]
-				: []),
-			{
-				say: "raise my cap",
-				run: "mob keys create --name <name> --venues <a,b> --max-size <usd>",
-			},
+			input.runningTasks
+				? { say: "close task <id>", run: "mob close <task>" }
+				: {
+						say: "raise my cap",
+						run: "mob keys create --name <name> --venues <a,b> --max-size <usd>",
+					},
 		];
 	} else if (input.owner) {
 		state = "setting-up";
 		rows = [
 			{ say: "set up mstack", note: "to finish setup", run: "mob onboard" },
-			...research.slice(0, 3),
+			...research,
 		];
 	} else {
 		state = "fresh";

@@ -7,6 +7,10 @@ not a claim that public release tags or artifacts were published.
 <!-- release-start -->
 ## [Unreleased]
 
+### Changed
+
+- `/mstack:mob` with nothing after it, "menu", and "what can you do" now end with a question to pick from: one option per `You can` row, chosen with the arrow keys in Claude Code (Codex lists the rows by number). The pick runs like typed words. The menu holds at most four rows so one question fits them all: the fresh menu drops "positions of 0x…" (still reachable by saying it), and a running task puts "close task <id>" in place of "raise my cap".
+
 ## [0.4.10] - 2026-10-22
 
 ### Fixed

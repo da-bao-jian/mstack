@@ -18,10 +18,9 @@ test("a fresh install offers research first and setup only to trade", () => {
 		["best funding now", "mob scan --size 1000"],
 		["how does funding work", "mob explain funding"],
 		["history BTC", "mob history BTC --days 7"],
-		["positions of 0x…", "mob status --owner 0x…"],
 		["set up mstack", "mob onboard"],
 	]);
-	expect(menu.rows[4].note).toBe("to trade");
+	expect(menu.rows[3].note).toBe("to trade");
 	// The top pair names the history example so the row matches the board.
 	expect(
 		says({
@@ -62,7 +61,13 @@ test("a stored key offers trading rows, with close only while a task runs", () =
 	expect(buildMenu(base).rows[0].run).toBe(
 		"mob open HYPE --long <venue:market> --short <venue:market> --size <usd>",
 	);
-	expect(says({ ...base, runningTasks: 2 })).toContain("close task <id>");
+	// Four rows at most: a running task puts close in place of the cap row.
+	expect(says({ ...base, runningTasks: 2 })).toEqual([
+		"open HYPE",
+		"my positions",
+		"best funding now",
+		"close task <id>",
+	]);
 });
 
 test("a Proposal awaiting signature comes first, then at most three state rows", () => {

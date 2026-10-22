@@ -290,7 +290,7 @@ test("no config Next setup and auth terms read; no owner-specific routes", async
 	]);
 	const json = JSON.parse((await invoke(["hello", "--json"])).out);
 	expect(json.menu.state).toBe("fresh");
-	expect(json.menu.rows).toHaveLength(5);
+	expect(json.menu.rows).toHaveLength(4);
 });
 test("configured but unbound Next bind; empty tasks and absent acceptance", async () => {
 	const { invoke, fake } = await context();

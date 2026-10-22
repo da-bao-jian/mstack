@@ -634,8 +634,12 @@ test("session skills keep keys off argv and require exact ids for manual mutatio
 			expect(router).toContain(`${invocation}${name}`);
 		// A bare command opens the menu: the welcome, two sentences, no second list.
 		expect(router).toContain("When the command comes alone");
-		expect(router).toContain('no second list and no closing "You can"');
-		expect(router).not.toContain("run `mob menu`");
+		expect(router).toContain(
+			host === "skills"
+				? "one option per row of `mob menu --json`"
+				: "one numbered line per row of `mob menu --json`",
+		);
+		expect(router).toContain('no closing "You can"');
 	}
 	// Only /mob-setup names keystore or config commands, and only for the human
 	// to run in a separate terminal; the hook denies them to the agent.
