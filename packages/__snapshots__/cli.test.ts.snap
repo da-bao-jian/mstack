@@ -13,9 +13,8 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
  ------------######+++++++++                  "best funding now"           mob scan --size 1000
  ------------######+++++++                    "how does funding work"      mob explain funding
  ------------#####                            "history BTC"                mob history BTC --days 7
- ------------###                              "positions of 0x..."         mob status --owner 0x...
- ------------#                                "set up mstack"  to trade    mob onboard
-                                   Chat       /mstack:mob in Claude Code or $mob in Codex opens this menu
+ ------------###                              "set up mstack"  to trade    mob onboard
+ ------------#                     Chat       /mstack:mob in Claude Code or $mob in Codex opens this menu
                                    live . 2 of 14 venues . 0.0 s
 </mob-home>"
 `;
@@ -36,7 +35,6 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
  ------------###                              "my positions"               mob status
  ------------#                                "best funding now"           mob scan --size 1000
                                               "close task <id>"            mob close <task>
-                                              "raise my cap"               mob keys create --name <name> --venues <a,b> --max-size <usd>
                                    Chat       /mstack:mob in Claude Code or $mob in Codex opens this menu
                                    live . 2 of 14 venues . 0.0 s
 </mob-home>"
@@ -55,9 +53,8 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
  ------------######+++++++++                  "best funding now"           mob scan --size 1000
  ------------######+++++++                    "how does funding work"      mob explain funding
  ------------#####                            "history BTC"                mob history BTC --days 7
- ------------###                              "positions of 0x..."         mob status --owner 0x...
- ------------#                                "set up mstack"  to trade    mob onboard
-                                   Chat       /mstack:mob in Claude Code or $mob in Codex opens this menu
+ ------------###                              "set up mstack"  to trade    mob onboard
+ ------------#                     Chat       /mstack:mob in Claude Code or $mob in Codex opens this menu
                                    cached 4 min ago
 </mob-home>"
 `;

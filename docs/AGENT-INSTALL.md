@@ -111,7 +111,7 @@ After the welcome, show this block. Fill the `You can` lines from the welcome's 
 ```text
 How to use mstack
 - Say a line in plain words; mstack picks the right skill. /mstack:mob opens the menu.
-- You can (no account needed): say "best funding now" · say "how does funding work" · say "history BTC" · say "positions of 0x…"
+- You can (no account needed): say "best funding now" · say "how does funding work" · say "history BTC"
 - To trade through MoB: say "set up mstack" once (about two minutes), then "open <pair>", "my positions", "close task <id>".
 - Health: mob doctor · mob upgrade in your own terminal.
 ```

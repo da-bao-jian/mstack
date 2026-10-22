@@ -11,7 +11,7 @@ Run the preamble first. Use the printed `MOB_BIN` path for CLI commands. If `MOB
 
 mstack is an open framework for finding delta-neutral funding trades. Research (scan, rates, history, explain, status by address) needs no account, wallet, or signature. Execution runs through MoB and needs a one-time setup. When `OWNER: unset`, answer research requests without mentioning setup; bring up MoB only when the user wants to open, manage, or close a position, or asks for setup.
 
-The welcome this skill prints is the menu: its `You can` table lists every row, and its `Chat` line names this command, so never add that the command opens the menu. When the command comes alone, with no request after it, or for "menu", "what can you do", "what is mstack" or "getting started": after the welcome, say in two sentences what mstack does, research first (no account) and then execution through MoB after a one-time setup, and say that each row is words to say here or a command to run in a terminal. That is the whole reply: no second list and no closing "You can".
+The welcome this skill prints names this command on its `Chat` line, so never add that the command opens the menu. When the command comes alone, with no request after it, or for "menu", "what can you do", "what is mstack" or "getting started": after the welcome, say in two sentences what mstack does, research first (no account) and then execution through MoB after a one-time setup. Then {{ASK_MENU}} Print no list of rows before that and no closing "You can".
 
 | User asks about | Use skill |
 |---|---|
