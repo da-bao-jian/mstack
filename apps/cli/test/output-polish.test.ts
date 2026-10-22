@@ -446,6 +446,10 @@ test("number, percentage, bps and relative-time formatting has stable precision"
 	expect(pct(12.8, 2)).toBe("12.80%");
 	expect(pct(0.012345)).toBe("0.0123%");
 	expect(number(12345.6)).toBe("12,345.60");
+	// A value that rounds to zero prints unsigned; a real negative keeps its sign.
+	expect(pct(-0.00001)).toBe("0.0000%");
+	expect(number(-0.03, 1)).toBe("0.0");
+	expect(number(-1.5)).toBe("-1.50");
 	expect(expiry(230000, 0)).toBe("expires in 3:50");
 	expect(reachabilityLabel(312)).toBe("ok · 312 ms");
 	expect(reachabilityLabel(6100)).toBe("slow · 6.1 s");

@@ -7,6 +7,11 @@ not a claim that public release tags or artifacts were published.
 <!-- release-start -->
 ## [Unreleased]
 
+### Fixed
+
+- A tiny negative figure no longer prints as a signed zero. The welcome showed `price -0.0%` for a change of -0.03%, and scan and status tables could show `-0.0000%` for a near-zero negative rate. Both now sign the rounded figure.
+- The install guide's Verify section names the doctor marks an agent actually sees: `+`, `-` and `x` when the output is piped, `✓`, `–` and `✗` in a terminal.
+
 ## [0.4.11] - 2026-10-22
 
 ### Changed
