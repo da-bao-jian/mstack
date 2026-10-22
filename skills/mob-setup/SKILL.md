@@ -3,7 +3,7 @@ name: mob-setup
 description: Onboard to trading through MoB; research never needs this. Use for "set up mstack", "set me up", "set up MoB", "connect wallet", "I want to trade", or "create a trading key"; one wallet session accepts the terms, binds venues, creates the scoped key, and stores it without echoing it. (mstack)
 license: MIT
 metadata:
-  version: "0.4.11"
+  version: "0.4.12"
 allowed-tools: Bash Read AskUserQuestion Bash(${CLAUDE_SKILL_DIR}/scripts/preamble.sh *)
 ---
 

@@ -7,6 +7,8 @@ not a claim that public release tags or artifacts were published.
 <!-- release-start -->
 ## [Unreleased]
 
+## [0.4.12] - 2026-10-22
+
 ### Fixed
 
 - A tiny negative figure no longer prints as a signed zero. The welcome showed `price -0.0%` for a change of -0.03%, and scan and status tables could show `-0.0000%` for a near-zero negative rate. Both now sign the rounded figure.

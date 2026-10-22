@@ -1,6 +1,6 @@
 {
 	"name": "mstack",
-	"version": "0.4.11",
+	"version": "0.4.12",
 	"description": "Compare funding rates, onboard a scoped MoB API key, and stage or submit positions under explicit policy.",
 	"author": {
 		"name": "mstack contributors",

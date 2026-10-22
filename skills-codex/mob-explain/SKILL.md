@@ -3,7 +3,7 @@ name: mob-explain
 description: Explain funding and MoB mechanics from bundled sources. Use for "how does funding work", "what is basis", "why did it close", "like I'm 13", or "I don't get it". (mstack)
 license: MIT
 metadata:
-  version: "0.4.11"
+  version: "0.4.12"
 ---
 
 ```bash
