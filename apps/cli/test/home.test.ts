@@ -357,6 +357,7 @@ test("mob menu prints the You can rows from local state with no network read", a
 		say: `sign ${p.id}`,
 		note: "first",
 		run: `mob sign ${p.id}`,
+		about: `${p.id} waits for your signature`,
 	});
 	expect(fake.calls).toHaveLength(0);
 });

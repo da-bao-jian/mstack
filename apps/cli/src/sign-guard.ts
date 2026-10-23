@@ -62,6 +62,103 @@ const INDIRECTION: [RegExp, string][] = [
 	],
 ];
 
+// Programs that run their stdin, or another command, as shell.
+const SHELL_RECEIVERS =
+	/^(?:(?:ba|z|da|k|fi|a|mk|tc|c|y)?sh|busybox|eval|source|\.|exec|env|sudo|doas|su|command|builtin|nohup|time|nice|timeout|xargs|ssh|script|parallel|watch)$/;
+
+/**
+ * The command with the body of each data heredoc blanked. A heredoc with a
+ * quoted delimiter is literal stdin: the shell expands nothing in it. Fed to
+ * a program that is not a shell, such as python3, jq or mob mcp, its body is
+ * data, so the checks of shell structure skip it; the sign and submit counts
+ * still read it. Any doubt keeps the whole command: a line outside the bodies
+ * that the guard cannot read simply, or a body line that ends in a backslash.
+ */
+function withoutDataHeredocs(command: string): string {
+	const lines = command.split("\n");
+	const kept: string[] = [];
+	let i = 0;
+	while (i < lines.length) {
+		const line = lines[i++];
+		kept.push(line);
+		const docs = heredocs(line);
+		if (!docs) return command;
+		for (const doc of docs)
+			while (i < lines.length) {
+				const body = lines[i++];
+				const done = (doc.dash ? body.replace(/^\t+/, "") : body) === doc.end;
+				if (!done && body.endsWith("\\")) return command;
+				kept.push(doc.data && !done ? "" : body);
+				if (done) break;
+			}
+	}
+	return kept.join("\n");
+}
+
+/**
+ * The heredocs a line opens, in order; null for a line with a construct that
+ * can hide quotes or commands: substitutions, `${…}`, `$'…'`, an alias, a
+ * string left open, or a backslash at the end.
+ */
+function heredocs(line: string) {
+	if (/\$[('{]|`|\\$|(?<![\w./-])alias(?![\w./-])/.test(line)) return null;
+	const found: { end: string; dash: boolean; data: boolean }[] = [];
+	let quote = "";
+	let start = 0;
+	for (let i = 0; i < line.length; i++) {
+		const c = line[i];
+		if (quote) {
+			if (c === quote) quote = "";
+			else if (c === "\\" && quote === '"') i++;
+			continue;
+		}
+		if (c === "\\") i++;
+		else if (c === "'" || c === '"') quote = c;
+		else if (c === "#" && (i === 0 || /[\s;&|()]/.test(line[i - 1]))) break;
+		else if (";&|(){}".includes(c)) start = i + 1;
+		else if (line.startsWith("<<<", i)) i += 2;
+		else if (line.startsWith("<<", i)) {
+			const match =
+				/^<<(-?)[ \t]*(?:'([\w.-]+)'|"([\w.-]+)"|\\([\w.-]+)|([\w.-]+)(?![^\s;&|<>()]))/.exec(
+					line.slice(i),
+				);
+			if (!match) return null;
+			const end = match[2] ?? match[3] ?? match[4];
+			// The program: the first word of this simple command, after assignments.
+			const program =
+				line
+					.slice(start, i)
+					.trim()
+					.split(/[ \t]+/)
+					.find((part) => !/^[A-Za-z_]\w*\+?=/.test(part)) ?? "";
+			found.push({
+				end: end ?? match[5],
+				dash: match[1] === "-",
+				data:
+					end !== undefined &&
+					/^(?:[\w.~-]*\/)*[A-Za-z_][\w.+-]*$/.test(program) &&
+					!SHELL_RECEIVERS.test(program.split("/").pop() ?? ""),
+			});
+			i += match[0].length - 1;
+		}
+	}
+	return quote ? null : found;
+}
+
+// Shell words with their quotes, and the operators that end a simple command.
+const SHELL_TOKEN =
+	/(?:'[^']*'|"(?:\\.|[^"\\])*"|\\.|[^\s'"\\;&|<>()])+|[;&|<>()\n]/g;
+
+/** True when a shell word, quotes removed, names mob or its dev entry. */
+function namesMob(token: string): boolean {
+	const value = token.replace(/\\(.)/g, "$1").replace(/["']/g, "");
+	return (
+		new RegExp(`(?:^|/)mob${VERSION}$`, "i").test(value) ||
+		/^\$\{?MOB(?:_BIN)?\}?$/.test(value) ||
+		/(?:^|\/)apps\/cli\/src\/main\.ts$/.test(value)
+	);
+}
+
 /** True when a command word runs mob without an expansion the guard cannot read. */
 function mobWord(word: string): boolean {
 	if (/^'[^']*'$/.test(word)) return LITERAL_PATH.test(word.slice(1, -1));
@@ -75,9 +172,13 @@ function mobWord(word: string): boolean {
 // only when mob is in play (named anywhere, through MOB/MOB_BIN, or the CLI's
 // dev entry) or when sign/submit is followed by a Proposal id; then anything
 // outside a plain `mob sign|submit <id>` is denied.
-function commandChecks(text: string, invocations: number): void {
+function commandChecks(text: string, shell: string, invocations: number): void {
 	// What the shell sees after quote removal: `mob 'si'gn` and `s\ign` read as sign.
-	const flat = text.replace(/\\(.)/gs, "$1").replace(/["']/g, "");
+	const unquote = (value: string) =>
+		value.replace(/\\(.)/gs, "$1").replace(/["']/g, "");
+	const flat = unquote(text);
+	// The same without data heredoc bodies, for the checks of shell structure.
+	const shellFlat = unquote(shell);
 	const config = flat.match(
 		new RegExp(
 			String.raw`(?<![\w./-])config[ \t]+set[ \t]+(${PROTECTED_KEYS})(?![\w-])`,
@@ -138,8 +239,8 @@ function commandChecks(text: string, invocations: number): void {
 			deny("set MOB or MOB_BIN only to a literal path that ends in /mob");
 	}
 	if (
-		DECODER.test(flat) &&
-		SHELL_RUNNERS.some(([pattern]) => pattern.test(flat))
+		DECODER.test(shellFlat) &&
+		SHELL_RUNNERS.some(([pattern]) => pattern.test(shellFlat))
 	)
 		deny("decoded text cannot run as shell commands");
 	const verbs = [...flat.matchAll(VERB)].length;
@@ -147,11 +248,42 @@ function commandChecks(text: string, invocations: number): void {
 	const inPlay = mentioned(flat);
 	if (!inPlay && !targeted) return;
 	for (const [pattern, name] of INDIRECTION)
-		if (pattern.test(flat))
+		if (pattern.test(shellFlat))
 			deny(
 				`${name} cannot be combined with mob, sign, or submit; run mob as its own plain command`,
 			);
-	for (const match of text.matchAll(COMMAND_WORD))
+	// The mob command itself must be a literal word: `mob ${v}mit` and
+	// `mob s?bmit` hide the verb the counts look for. Redirections such as
+	// `2>/dev/null` or `&>log` can come first, so they are skipped.
+	const tokens = shell.match(SHELL_TOKEN) ?? [];
+	const redirect = (at: number) =>
+		tokens[at] === ">" ||
+		tokens[at] === "<" ||
+		(tokens[at] === "&" && tokens[at + 1] === ">");
+	tokens.forEach((token, index) => {
+		if (!namesMob(token)) return;
+		let at = index + 1;
+		while (at < tokens.length) {
+			const next = tokens[at];
+			if (/^\d+$/.test(next) && redirect(at + 1)) {
+				at++;
+				continue;
+			}
+			if (redirect(at)) {
+				while (/^[<>&]$/.test(tokens[at] ?? "")) at++;
+				at++; // the target
+				continue;
+			}
+			if (/^[;&|<>()\n]$/.test(next)) break;
+			if (/[$`*?[\]{}]/.test(next.replace(/'[^']*'/g, "")))
+				deny(
+					`name the mob command with a literal word, not an expansion or pattern (${next})`,
+				);
+			if (!next.replace(/["'\\]/g, "").startsWith("-")) break;
+			at++;
+		}
+	});
+	for (const match of shell.matchAll(COMMAND_WORD))
 		if (/^["']?[$`]/.test(match[1]) && !mobWord(match[1]))
 			deny(
 				`a command name from a variable (${match[1]}) cannot be combined with mob, sign, or submit`,
@@ -167,6 +299,7 @@ async function check(raw: string, home: string): Promise<void> {
 	const command: unknown = input?.tool_input?.command;
 	if (typeof command !== "string") deny("missing Bash command in hook input");
 	const text = command.replace(/\\\r?\n/g, "");
+	const shell = withoutDataHeredocs(command).replace(/\\\r?\n/g, "");
 	const invocations = [...text.matchAll(INVOCATION)].filter((match) =>
 		mobWord(match[1]),
 	);
@@ -234,7 +367,7 @@ async function check(raw: string, home: string): Promise<void> {
 			deny("use one literal Proposal id in each sign command");
 		return { action, id: ids[0] };
 	});
-	commandChecks(text, requests.length);
+	commandChecks(text, shell, requests.length);
 	if (!requests.length) return;
 	await readFile(join(home, "config.json"), "utf8").catch(() =>
 		deny("missing or unreadable config; cannot verify policy"),

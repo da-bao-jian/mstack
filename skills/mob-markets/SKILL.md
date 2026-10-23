@@ -3,7 +3,7 @@ name: mob-markets
 description: Explore perpetual markets across venues; needs no account. Use for "all markets", "BTC on every venue", "venues by volume", "which exchanges", "RWA markets", "stocks and gold perps", "cost to trade BTC", "chart BTC on Hyperliquid vs Lighter", "WTI vs Brent", "my watchlist", "save this pair", or "alert me when the spread drops". (mstack)
 license: MIT
 metadata:
-  version: "0.5.0"
+  version: "0.5.1"
 allowed-tools: Bash Read AskUserQuestion Bash(${CLAUDE_SKILL_DIR}/scripts/preamble.sh *)
 ---
 
@@ -37,7 +37,7 @@ Pick the one command that answers the request:
 | Alert on a saved pair | `mob watch add <BASE> --long venue:market --short venue:market [--alert-spread-above N] [--alert-spread-below N] [--alert-gap-above N]` |
 | Check the alerts now | `mob watch --check` |
 
-1. Use the user's own ticker, words, category and venue type. Categories are exactly `stock`, `index`, `commodity`, `fx`, `pre-ipo` and `other`. Sort `mob markets` with `--sort volume|oi|apr|venues` only when the user asks for an order.
+1. Use the user's own ticker, words, category and venue type. If the request needs an asset and names none, ask which asset first (BTC, ETH, SOL, HYPE, or any ticker). For a chart on named venues, use each venue's native market from `mob market <BASE> --json` when the plain ticker is not listed there: Hyperliquid's stocks are `xyz:NVDA`. Categories are exactly `stock`, `index`, `commodity`, `fx`, `pre-ipo` and `other`. Sort `mob markets` with `--sort volume|oi|apr|venues` only when the user asks for an order.
 2. Show a short table from `view` in its returned order. For `mob markets`, include asset, name, class, venue count, 24h volume, open interest and best funding APR with its venue. For `mob market`, include each venue:market, price, 24h volume, open interest, funding per interval, APR and next funding, and the widest funding spread. For `mob venues`, include venue, type, MoB support, markets, volume, open interest and the taker fee estimate.
 3. Run `mob cost` and `mob spread` without `--json` and show their output in a fenced code block: the cost table and the chart are made for the terminal. `mob cost` walks each venue's public order book: cost is the average fill's distance from mid plus the taker fee estimate, in USD and basis points; `> book` means the size runs past the levels the venue publishes, so the cost is unknown, not zero. Variational and QFEX publish no book. `mob spread` charts the second market over the first, (B − A) / A, from candle closes; say where the latest value sits in the window.
 4. A `missing…` count above zero means the sum is a lower bound: print it with `≥`. A missing figure prints as a dash, never as zero. Taker fees are estimates.

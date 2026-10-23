@@ -21,15 +21,15 @@
  ░░░░░░░░░░░░░░░░░█
 ```
 
-An open framework for finding delta-neutral funding trades. Scan funding across 14 venues, read rate history, and get plain explanations with no account, wallet, or signature. When you want to execute, one wallet session sets up a scoped MoB API key with venue and USD caps that you choose and can revoke.
+An open framework for finding delta-neutral funding trades. Scan funding across 20 venues, read rate history, and get plain explanations with no account, wallet, or signature. When you want to execute, one wallet session sets up a scoped MoB API key with venue and USD caps that you choose and can revoke.
 
 ## Paste this into your agent
 
 ```text
 Install mstack, the open agent stack for delta-neutral funding trades, with MoB execution. I authorize exactly:
 claude plugin marketplace add da-bao-jian/mstack && claude plugin install mstack@mstack
-curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.5.0/install.sh | sh
-Then follow https://raw.githubusercontent.com/da-bao-jian/mstack/v0.5.0/docs/AGENT-INSTALL.md from Verify: `mob --version`, `mob doctor`,
+curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.5.1/install.sh | sh
+Then follow https://raw.githubusercontent.com/da-bao-jian/mstack/v0.5.1/docs/AGENT-INSTALL.md from Verify: `mob --version`, `mob doctor`,
 run `mob` and reproduce its output verbatim in a fenced block as the welcome.
 Finish by telling me to type /reload-plugins, then show how to use mstack: how to invoke it and the welcome's "You can" options (research needs no account; "set up mstack" only to trade).
 ```

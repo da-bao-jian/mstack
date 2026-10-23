@@ -99,6 +99,34 @@ function book(
 	};
 }
 
+/**
+ * The finer levels, then the coarse levels wholly past them. A coarse ask at
+ * price p holds the orders in (p − tick, p] and a coarse bid at p those in
+ * [p, p + tick), so the bucket that holds the finest book's worst price also
+ * holds orders already counted; it is skipped, along with anything nearer.
+ */
+function beyond(
+	rows: Level[],
+	coarse: Level[],
+	sigFigs: number,
+	side: "bids" | "asks",
+): Level[] {
+	if (!rows.length) return coarse;
+	const prices = rows.map(([price]) => price);
+	const worst = side === "asks" ? Math.max(...prices) : Math.min(...prices);
+	const tick = 10 ** (Math.floor(Math.log10(worst)) - sigFigs + 1);
+	const edge =
+		side === "asks"
+			? Math.ceil(worst / tick - 1e-9) * tick
+			: Math.floor(worst / tick + 1e-9) * tick;
+	return [
+		...rows,
+		...coarse.filter(([price]) =>
+			side === "asks" ? price > edge * (1 + 1e-12) : price < edge * (1 - 1e-12),
+		),
+	];
+}
+
 async function read(
 	ctx: FetchContext,
 	venue: string,
@@ -108,26 +136,45 @@ async function read(
 	const at = (n: number, max: number) => n >= max;
 	switch (venue) {
 		case "hl": {
-			// Hyperliquid serves at most 20 levels a side without aggregation.
-			const body = object(
-				await json(ctx, "https://api.hyperliquid.xyz/info", {
-					type: "l2Book",
-					coin: market,
-				}),
-				"Hyperliquid l2Book",
-			);
-			const [bids, asks] = array(body.levels, "levels");
-			const parse = keyed("px", "sz");
-			const b = levels(bids, "bids", parse);
-			const a = levels(asks, "asks", parse);
-			return book(
-				venue,
-				market,
-				b,
-				a,
-				now,
-				at(b.length, 20) || at(a.length, 20),
-			);
+			// Hyperliquid serves at most 20 levels a side. When the finest book
+			// is full, its 4- and 3-significant-figure books extend the depth.
+			// They round asks up and bids down, so their levels can only
+			// overstate the cost.
+			const read = async (nSigFigs?: number) => {
+				const body = object(
+					await json(ctx, "https://api.hyperliquid.xyz/info", {
+						type: "l2Book",
+						coin: market,
+						...(nSigFigs ? { nSigFigs } : {}),
+					}),
+					"Hyperliquid l2Book",
+				);
+				const [bids, asks] = array(body.levels, "levels");
+				const parse = keyed("px", "sz");
+				return {
+					bids: levels(bids, "bids", parse),
+					asks: levels(asks, "asks", parse),
+				};
+			};
+			const fine = await read();
+			let b = fine.bids;
+			let a = fine.asks;
+			let fullBids = at(b.length, 20);
+			let fullAsks = at(a.length, 20);
+			if (fullBids || fullAsks) {
+				const coarse = await Promise.all([read(4), read(3)]);
+				for (const [index, sigFigs] of [4, 3].entries()) {
+					if (fullAsks) {
+						a = beyond(a, coarse[index].asks, sigFigs, "asks");
+						fullAsks = at(coarse[index].asks.length, 20);
+					}
+					if (fullBids) {
+						b = beyond(b, coarse[index].bids, sigFigs, "bids");
+						fullBids = at(coarse[index].bids.length, 20);
+					}
+				}
+			}
+			return book(venue, market, b, a, now, fullBids || fullAsks);
 		}
 		case "lighter":
 		case "lighter-mainnet": {

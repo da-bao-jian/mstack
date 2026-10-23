@@ -20,7 +20,7 @@ export interface PriceGap {
 	gapAfterFeesPct: number;
 	/** Funding the pair earns (positive) or pays (negative) while it is open. */
 	fundingSpreadAnnualizedPct: number;
-	flags: ("thin" | "cross-deployment" | "coin-margined")[];
+	flags: ("thin" | "cross-deployment" | "coin-margined" | "price-mismatch")[];
 	executable: boolean;
 	priceBasis: "mark";
 }
@@ -33,8 +33,9 @@ export interface PriceGapOptions {
 
 /**
  * Every same-asset pair priced apart, widest gap first. Mark prices are an
- * estimate: the fill depends on each order book. Pairs whose prices are too
- * far apart to be one asset are left out, not ranked.
+ * estimate: the fill depends on each order book. A pair whose prices are too
+ * far apart to be one asset (BB the stock and BB the token) is flagged
+ * `price-mismatch` and never executable, so a view can hide and count it.
  */
 export function rankPriceGaps(
 	snapshot: Snapshot,
@@ -59,7 +60,7 @@ export function rankPriceGaps(
 		for (const long of group)
 			for (const short of group) {
 				if (long.venue === short.venue || short.price <= long.price) continue;
-				if (!pricesAgree(long.price, short.price)) continue;
+				const mismatch = !pricesAgree(long.price, short.price);
 				const gapPct = ((short.price - long.price) / long.price) * 100;
 				const roundTripFeePct =
 					(2 * ((fees[long.venue] ?? 0) + (fees[short.venue] ?? 0))) / 100;
@@ -74,6 +75,7 @@ export function rankPriceGaps(
 					flags.push("cross-deployment");
 				if (long.quoteClass === "coin" || short.quoteClass === "coin")
 					flags.push("coin-margined");
+				if (mismatch) flags.push("price-mismatch");
 				const { price: _long, ...longLeg } = long;
 				const { price: _short, ...shortLeg } = short;
 				gaps.push({
@@ -98,6 +100,7 @@ export function rankPriceGaps(
 					flags,
 					executable:
 						!thin &&
+						!mismatch &&
 						!flags.includes("cross-deployment") &&
 						MOB_VENUES.includes(long.venue) &&
 						MOB_VENUES.includes(short.venue),

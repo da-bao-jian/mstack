@@ -3,7 +3,7 @@ name: mob-setup
 description: Onboard to trading through MoB; research never needs this. Use for "set up mstack", "set me up", "set up MoB", "connect wallet", "I want to trade", or "create a trading key"; one wallet session accepts the terms, binds venues, creates the scoped key, and stores it without echoing it. (mstack)
 license: MIT
 metadata:
-  version: "0.5.0"
+  version: "0.5.1"
 allowed-tools: Bash Read AskUserQuestion Bash(${CLAUDE_SKILL_DIR}/scripts/preamble.sh *)
 ---
 
@@ -17,7 +17,7 @@ Run the preamble first. Use the printed `MOB_BIN` path in place of `mob`; shell-
 
 # Onboard in one wallet session
 
-Setup is needed only to trade through MoB; for funding data alone, point to `/mob-scan`. First say what it gives: a scoped MoB API key with venue and USD caps that cannot withdraw and can be revoked at any time.
+Setup is needed only to trade through MoB; for funding data alone, point to research in plain words, such as "best funding now". First say what it gives: a scoped MoB API key with venue and USD caps that cannot withdraw and can be revoked at any time.
 
 1. If owner is unset, use AskUserQuestion to ask "Do you want to bring your own wallet or create a new one?" with four choices: "Bring my browser wallet" (MetaMask, Rabby, or another extension on this computer), "Bring my phone wallet (WalletConnect)", "Bring my wallet into mstack's encrypted keystore", and "Create a new wallet with mstack". For a browser or phone wallet, ask for its public 0x address; WalletConnect also needs a Reown project id, which the human saves in their own terminal with `mob config set walletconnect_project_id <id>`. For the keystore choices, tell the human to run `mob keystore import` (their existing private key) or `mob keystore create` (a new key) in a separate terminal window, never in this chat, and to reply with the address it prints. A created wallet starts empty, and its encrypted file in `~/.mob/keystore/` plus the passphrase are the only copy: tell the human to back up both and to fund the wallet on each venue before trading. Never ask for or accept a private key, seed phrase, or passphrase in the chat. Use the address with `--owner`. Do not change config unless the user explicitly asks to save it.
 2. Ask which venues to bind and a modest USD cap per leg for the key (suggest 5,000 USD). The venue ids are exactly `hl`, `lighter` (Robinhood Chain), `lighter-mainnet`, and `aster`; ask which Lighter deployment, never infer it, and do not look the ids up with `--help`. The key can open, cancel, close, and resize inside those limits; it cannot withdraw, bind venues, approve fees, accept terms, or create keys.

@@ -101,10 +101,12 @@ export function renderScan(
 	},
 	executableOnly = false,
 	holdDays = 7,
+	sizeUsd?: number,
 	terminal: Terminal = {},
 ): string {
+	const size = sizeUsd === undefined ? "" : `$${number(sizeUsd, 0)} per leg, `;
 	return [
-		`Net APY estimate: ${holdDays}-day hold; annualized = simple, not compounded`,
+		`Net APY estimate: ${size}${holdDays}-day hold; annualized = simple, not compounded`,
 		paint("Executable on MoB", "sky", terminal),
 		scanTable(view.executable, true),
 		...(executableOnly

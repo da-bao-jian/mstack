@@ -161,12 +161,14 @@ test("price gaps rank the widest same-asset gap first, long the cheap leg, with 
 			rate("hl", "ETH", 100, {}, 0.0001),
 			rate("lighter", "ETH", 101, {}, 0.0003),
 			rate("binance", "ETHUSDT", 102, {}, 0.0001, 8),
-			// Too far away to be the same asset: never paired.
+			// Too far away to be the same asset: flagged, never executable.
 			rate("aster", "ETH", 300),
 			rate("bybit", "ETHUSDT", 101.5, { volume24hUsd: 10 }),
 		]),
 	);
-	const top = gaps[0];
+	// Mismatched pairs stay in the list, flagged; the widest real gap leads the rest.
+	const same = gaps.filter((gap) => !gap.flags.includes("price-mismatch"));
+	const top = same[0];
 	expect([top.long.venue, top.short.venue]).toEqual(["hl", "binance"]);
 	expect(top.gapPct).toBeCloseTo(2, 10);
 	// Taker fees round trip: 2 × (4.5 + 5) bps.
@@ -178,9 +180,14 @@ test("price gaps rank the widest same-asset gap first, long the cheap leg, with 
 		8,
 	);
 	expect(top.executable).toBe(false);
-	expect(
-		gaps.some((gap) => [gap.long.venue, gap.short.venue].includes("aster")),
-	).toBe(false);
+	const apart = gaps.filter((gap) =>
+		[gap.long.venue, gap.short.venue].includes("aster"),
+	);
+	expect(apart.length).toBeGreaterThan(0);
+	for (const gap of apart) {
+		expect(gap.flags).toContain("price-mismatch");
+		expect(gap.executable).toBe(false);
+	}
 	expect(gaps.find((gap) => gap.short.venue === "bybit")?.flags).toContain(
 		"thin",
 	);

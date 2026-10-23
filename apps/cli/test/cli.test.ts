@@ -47,10 +47,13 @@ test("scan JSON contains bounded views and counts without all ranked rows", asyn
 		"glossary",
 		"holdDays",
 		"observedAt",
+		"sizeUsd",
 		"source",
 		"unmatched",
 		"view",
 	]);
+	// The size the scan used, so a reply can name it.
+	expect(body.sizeUsd).toBe(5000);
 	expect(body.counts.opportunities).toBe(329);
 	expect(body.view.anywhere).toHaveLength(2);
 	expect(
@@ -334,7 +337,13 @@ test("every knowledge topic has Simple and Precise sections and is available off
 		expect(simple.code).toBe(0);
 		expect(simple.out).not.toContain("## Precise");
 		expect(simple.calls).toHaveLength(0);
+		// Topics speak to users: no build stages or contributor files.
+		for (const internal of ["W3", "PRD", "reference/", "Sources:", "upstream"])
+			expect(text).not.toContain(internal);
 	}
+	expect((await invoke(["explain", "mob-keys", "--simple"])).out).toContain(
+		"cannot withdraw",
+	);
 	expect((await invoke(["explain"])).out).toContain("distance-to-liquidation");
 	const unknown = await invoke(["explain", "missing"]);
 	expect(unknown.code).toBe(1);

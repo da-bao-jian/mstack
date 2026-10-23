@@ -42,11 +42,13 @@ export async function history(options: HistoryOptions, rt: Runtime) {
 	const unsupported = venues
 		.filter((v) => !HISTORY_VENUES.includes(v.venue))
 		.map((v) => ({ venue: v.venue, reason: "no keyless history" }));
+	// A venue whose read failed is reported under failed, not as unlisted.
 	const missing = venues
 		.filter(
 			(v) =>
 				HISTORY_VENUES.includes(v.venue) &&
-				!matches.some((r) => r.venue === v.venue),
+				!matches.some((r) => r.venue === v.venue) &&
+				!snapshot.failed.some((f) => f.venue === v.venue),
 		)
 		.map((v) => ({
 			venue: v.venue,
@@ -76,6 +78,12 @@ export async function history(options: HistoryOptions, rt: Runtime) {
 			});
 		}
 	}
+	// Highest average first; a venue with no samples goes last.
+	history.sort(
+		(a, b) =>
+			(b.averageRatePerHour ?? Number.NEGATIVE_INFINITY) -
+			(a.averageRatePerHour ?? Number.NEGATIVE_INFINITY),
+	);
 	let bestPair: {
 		long: string;
 		short: string;

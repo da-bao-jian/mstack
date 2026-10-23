@@ -7,5 +7,3 @@ Annualization shows what a rate would mean over a year if it stayed unchanged. T
 ## Precise
 
 `annualizedPct = ratePerInterval / intervalHours × 24 × 365 × 100`. A spread uses the difference between the two hourly rates in the same formula. All outputs identify `annualizationMethod: "simple"`; they do not calculate `(1 + rate)^periods - 1`. Historical averages use total funding divided by measured hours before annualization. The CLI's `--min-apy` flag names a filter on this simple annualized percentage; it does not switch to compounded APY. Quoted spread excludes fee and entry costs, which are reported separately.
-
-Sources: `docs/PRD.md` §4.2 and §7.4; `reference/upstream/packages/funding-rates/src/index.ts`.

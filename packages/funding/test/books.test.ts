@@ -149,3 +149,64 @@ test("bad books fail loudly with the venue and market named", async () => {
 		"Unknown venue kraken",
 	);
 });
+
+test("a full Hyperliquid book extends with its coarser books, never counting an order twice", async () => {
+	// Twenty fine asks from 100.00 to 100.19 and bids from 99.99 down to 99.80.
+	const fine = {
+		levels: [
+			Array.from({ length: 20 }, (_, i) => ({
+				px: (99.99 - i / 100).toFixed(2),
+				sz: "1",
+			})),
+			Array.from({ length: 20 }, (_, i) => ({
+				px: (100 + i / 100).toFixed(2),
+				sz: "1",
+			})),
+		],
+	};
+	// Four significant figures: 0.1 ticks. The 100.2 ask and 99.8 bid buckets
+	// hold fine orders, so only buckets past them count.
+	const four = {
+		levels: [
+			[
+				{ px: "99.9", sz: "10" },
+				{ px: "99.8", sz: "11" },
+				{ px: "99.7", sz: "5" },
+			],
+			[
+				{ px: "100.1", sz: "10" },
+				{ px: "100.2", sz: "11" },
+				{ px: "100.3", sz: "5" },
+			],
+		],
+	};
+	const three = {
+		levels: [[{ px: "99", sz: "50" }], [{ px: "101", sz: "50" }]],
+	};
+	const bodies: string[] = [];
+	const result = await fetchOrderBook("hl", "HYPE", {
+		fetch: async (_url, init) => {
+			const body = JSON.parse(String(init?.body));
+			bodies.push(JSON.stringify(body));
+			return Response.json(
+				body.nSigFigs === 4 ? four : body.nSigFigs === 3 ? three : fine,
+			);
+		},
+		now: () => 1,
+	});
+	expect(bodies).toEqual([
+		'{"type":"l2Book","coin":"HYPE"}',
+		'{"type":"l2Book","coin":"HYPE","nSigFigs":4}',
+		'{"type":"l2Book","coin":"HYPE","nSigFigs":3}',
+	]);
+	expect(result.asks.slice(19)).toEqual([
+		[100.19, 1],
+		[100.3, 5],
+	]);
+	expect(result.bids.slice(19)).toEqual([
+		[99.8, 1],
+		[99.7, 5],
+	]);
+	// The three-figure books hold fewer than 20 levels: nothing deeper exists.
+	expect(result.truncated).toBe(false);
+});

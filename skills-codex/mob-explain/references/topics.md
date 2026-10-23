@@ -10,8 +10,9 @@
 | What does protection do? | liquidation-protection |
 | Why close when funding falls? | auto-close |
 | What are the costs? | fees |
+| How do MoB keys work? What can the API key do? | mob-keys |
 | What can a venue key do? | venue-keys |
 | What does the server do after submission? | worker |
 
 Run `mob explain` for the installed topic list. Read the selected output before
-answering. Preserve formulas, source references, known gaps, and estimates.
+answering. Preserve formulas, known gaps, and estimates.
