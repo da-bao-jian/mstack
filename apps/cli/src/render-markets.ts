@@ -30,8 +30,12 @@ function assetName(asset: Pick<AssetView, "ticker" | "variant">): string {
 
 export function renderVenues(result: Result<typeof venues>): string {
 	const { totals } = result;
+	// Hyperliquid's trade.xyz and Entropy deployments get rows of their own,
+	// but they are one venue.
+	const count = new Set(result.view.map((row) => row.venue.split(":")[0])).size;
+	const deployments = result.view.length - count;
 	return [
-		`${result.view.length} venues · ${bound(totals.volume24hUsd, totals.missingVolume)} 24h volume · ${bound(totals.openInterestUsd, totals.missingOpenInterest)} open interest`,
+		`${count} venues${deployments ? ` (${result.view.length} rows with Hyperliquid's deployments)` : ""} · ${bound(totals.volume24hUsd, totals.missingVolume)} 24h volume · ${bound(totals.openInterestUsd, totals.missingOpenInterest)} open interest`,
 		table(
 			["venue", "name", "type", "MoB", "markets", "vol 24h", "OI", "taker fee"],
 			result.view.map((row) => [
@@ -344,12 +348,17 @@ export function renderSpread(
 		);
 		return lines.join("\n");
 	}
+	// Enough decimals that the axis labels tell the top from the bottom.
+	const range = stats.max - stats.min;
+	const digits =
+		range > 0 ? Math.min(4, Math.max(2, Math.ceil(-Math.log10(range)) + 1)) : 2;
+	const rank = Math.round(stats.lastPercentile);
 	lines.push(
 		...lineChart(
 			points.map((point) => point.spreadPct),
-			{ format: (value) => signed(value, 2) },
+			{ format: (value) => signed(value, digits) },
 		),
-		`now ${signed(stats.last, 3)} · mean ${signed(stats.mean, 3)} · range ${signed(stats.min, 3)} to ${signed(stats.max, 3)} · now is at or above ${number(stats.lastPercentile, 0)}% of the window · ${stats.points} points`,
+		`now ${signed(stats.last, 3)} · mean ${signed(stats.mean, 3)} · range ${signed(stats.min, 3)} to ${signed(stats.max, 3)} · now is higher than or equal to ${rank}% of the window · ${stats.points} points`,
 		`last prices per base unit: A ${price(points[points.length - 1].a)} · B ${price(points[points.length - 1].b)}`,
 	);
 	return lines.join("\n");

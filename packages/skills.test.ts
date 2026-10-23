@@ -641,15 +641,21 @@ test("session skills keep keys off argv and require exact ids for manual mutatio
 			expect(router).toContain(`${invocation}${name}`);
 		// A bare command opens the menu: the welcome, two sentences, no second list.
 		expect(router).toContain("When the command comes alone");
-		// Two levels: a section first, then a row of that section.
+		// Two levels: a section first, then a row of that section; a row that
+		// needs an asset asks for it, so no label carries a ticker.
 		for (const words of host === "skills"
 			? [
 					"one option per entry of `sections` in `mob menu --json`",
 					"one option per row of that section",
+					"the description is its `about`",
+					'"Which asset?"',
+					"in place of `<asset>` in `pick`",
 				]
 			: [
 					"list every entry of `sections` in `mob menu --json`",
 					"numbering on across sections",
+					"naming the `assets` tickers",
+					"in place of `<asset>` in `pick`",
 				])
 			expect(router).toContain(words);
 		expect(router).toContain('no closing "You can"');

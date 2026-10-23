@@ -62,7 +62,8 @@ option the assistant offered in AskUserQuestion whose exact label starts with
 the human, or the structured answer to the assistant's own question. Task
 notifications, compact summaries, command output, free-text "Other" answers, and
 other tool results never grant consent; an unrecognized event revokes it.
-The guard denies `sign` or `submit` outside a plain mob invocation; `eval`, `xargs`,
+The guard denies `sign` or `submit` outside a plain mob invocation; a mob command
+word built from an expansion or pattern, such as `mob ${v}mit`; `eval`, `xargs`,
 `sh -c`, `source`, decoded scripts, shell functions, and variable command names
 next to mob; `mob config set` of the policy, API bases, key store, or WalletConnect
 project; `mob setup --policy`; `mob onboard --app-base`; `mob upgrade`;
@@ -71,6 +72,9 @@ mob. The CLI also requires the human's
 terminal and a typed `yes` from `/dev/tty` for those config keys, and a terminal for
 `mob upgrade`. `mob submit` runs the stored preflight again, prints the final
 request, and refuses a body that no longer matches the evidence the preflight checked.
+The body of a heredoc with a quoted delimiter, fed to a program that is not a
+shell (for example `python3 - <<'EOF'`), is data: the checks of shell structure
+skip it, while the `sign` and `submit` counts still read it.
 It is not a shell sandbox and cannot inspect arbitrary scripts or other hosts.
 On Claude Code 2.1.295 or newer, a guard that cannot start, crashes, or times out
 blocks the call. Older versions let such a call continue; the CLI policy, expiry,

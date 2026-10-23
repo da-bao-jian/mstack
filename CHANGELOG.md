@@ -7,6 +7,21 @@ not a claim that public release tags or artifacts were published.
 <!-- release-start -->
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-23
+
+### Changed
+
+- "best funding now" and "RWA funding farms" scan at the default size (1,000 USD unless changed) instead of asking first; the reply names the size and offers a re-rank at 5,000 or 25,000 USD. The scan JSON reports `sizeUsd`, and the table header names it.
+- Menu labels name what a row does and never change with market data. A row that needs an asset (one asset on every venue, cost to trade, price spread chart, funding history) asks for it next: BTC, ETH, SOL, HYPE, or any ticker. Before, the top funding pair's ticker (such as CASHCAT) filled those labels and the welcome's history example.
+- Each menu option's description says what it gives, not the command. Trading rows read "open a position" and "close a position".
+- "how do MoB keys work" opens the new `mob explain mob-keys` topic: the scoped MoB API key, approval policy and venue keys. The other topics no longer cite contributor files or build stages.
+- `mob cost` reads deeper Hyperliquid books: past the 20 finest levels, it adds the coarser books' levels, which round against the taker, so a large order's cost is no longer cut off at "> book".
+- `mob history` lists the highest average rate first, and a venue whose read failed is reported as failed, not as having no listing.
+- `mob scan --by price` flags pairs priced too far apart to be one asset, hides them, and counts them as "different assets hidden", as the funding scan does.
+- `mob venues` counts venues, not rows: Hyperliquid's trade.xyz and Entropy deployments are rows of one venue.
+- `mob spread` scales its axis to the whole window and draws each column's most extreme point, so spikes stay visible.
+- The Bash guard reads a quoted heredoc fed to a non-shell program, such as `python3 - <<'EOF'`, as data, so a script that prints a markdown table is no longer blocked. It now denies a mob command word built from an expansion or pattern, such as `mob ${v}mit p-2`.
+
 ## [0.5.0] - 2026-10-23
 
 ### Added

@@ -16,6 +16,7 @@ import funding from "../../../docs/knowledge/funding.md" with { type: "text" };
 import protection from "../../../docs/knowledge/liquidation-protection.md" with {
 	type: "text",
 };
+import mobKeys from "../../../docs/knowledge/mob-keys.md" with { type: "text" };
 import keys from "../../../docs/knowledge/venue-keys.md" with { type: "text" };
 import worker from "../../../docs/knowledge/worker.md" with { type: "text" };
 import { UsageError } from "./config.ts";
@@ -29,6 +30,7 @@ export const knowledge: Readonly<Record<string, string>> = {
 	"liquidation-protection": protection,
 	"auto-close": autoClose,
 	fees,
+	"mob-keys": mobKeys,
 	"venue-keys": keys,
 	worker,
 };

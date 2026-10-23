@@ -1,6 +1,5 @@
-// A small terminal line chart: one column per bucket of points, the last
-// value of each bucket, with the scale on the left and a zero line when the
-// range crosses zero.
+// A small terminal line chart: one column per bucket of points, with the
+// scale on the left and a zero line when the range crosses zero.
 
 export function lineChart(
 	values: readonly number[],
@@ -13,12 +12,23 @@ export function lineChart(
 	if (!values.length) return [];
 	const width = Math.max(10, options.width ?? 60);
 	const height = Math.max(4, options.height ?? 10);
+	// Each column draws its bucket's value farthest from the mean, so a spike
+	// survives the folding.
+	const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
 	const buckets: number[] = [];
 	const step = Math.max(1, values.length / width);
-	for (let i = 0; i < values.length; i += step)
-		buckets.push(values[Math.min(values.length - 1, Math.floor(i + step) - 1)]);
-	let low = Math.min(...buckets);
-	let high = Math.max(...buckets);
+	for (let i = 0; i < values.length; i += step) {
+		const bucket = values.slice(Math.floor(i), Math.floor(i + step));
+		buckets.push(
+			bucket.reduce((far, value) =>
+				Math.abs(value - mean) > Math.abs(far - mean) ? value : far,
+			),
+		);
+	}
+	// The scale spans every value, so the labels match the window's range
+	// even when a bucket's drawn point is not its extreme.
+	let low = Math.min(...values);
+	let high = Math.max(...values);
 	if (high === low) {
 		high += 1;
 		low -= 1;

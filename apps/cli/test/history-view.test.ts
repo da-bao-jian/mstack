@@ -161,3 +161,24 @@ test("history failures stay visible and strict exits 3", async () => {
 	expect(body.history).toEqual([]);
 	expect(body.bestPair).toBeNull();
 });
+
+test("a venue whose snapshot read fails is reported as failed, not as unlisted", async () => {
+	const { ctx } = await fixtureContext();
+	const out: string[] = [];
+	await run(["history", "BTC", "--venues", "hl,binance", "--json"], {
+		fetch: async (url, init) => {
+			if (url.includes("binance")) return new Response("busy", { status: 503 });
+			if (init?.body && JSON.parse(String(init.body)).type === "fundingHistory")
+				return Response.json([]);
+			return ctx.fetch(url, init);
+		},
+		home: "/tmp/mob-no-such-config-for-history-tests",
+		out: (s) => out.push(s),
+		err: () => {},
+	});
+	const body = JSON.parse(out[0]);
+	expect(body.failed.map((row: { venue: string }) => row.venue)).toContain(
+		"binance",
+	);
+	expect(body.missing).toEqual([]);
+});

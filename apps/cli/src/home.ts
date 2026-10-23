@@ -104,7 +104,6 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 		owner: data.owner,
 		hasKey: Boolean(data.key.description),
 		awaiting: data.proposals.value?.awaiting ?? [],
-		topPair: market.topPairs[0],
 		runningTasks: data.tasks.value?.running.count,
 	});
 	if (options.json) {
@@ -310,15 +309,12 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 
 /** `mob menu`: the You can rows from local state alone, for every preamble. */
 export async function menu(json: boolean, rt: Runtime): Promise<void> {
-	const [data, market] = await Promise.all([
-		collectHome(rt, { offline: true }),
-		collectHomeMarket(rt, { offline: true }),
-	]);
+	// The menu needs no market data: its labels never change with prices.
+	const data = await collectHome(rt, { offline: true });
 	const result = buildMenu({
 		owner: data.owner,
 		hasKey: Boolean(data.key.description),
 		awaiting: data.proposals.value?.awaiting ?? [],
-		topPair: market.topPairs[0],
 	});
 	if (json) {
 		rt.out(JSON.stringify(result, null, 2));

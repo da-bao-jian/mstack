@@ -22,21 +22,12 @@ test("a fresh install offers research first and setup only to trade", () => {
 		["set up mstack", "mob onboard"],
 	]);
 	expect(menu.rows[3].note).toBe("to trade");
-	// The top pair names the history example so the row matches the board.
-	expect(
-		says({
-			owner: null,
-			hasKey: false,
-			awaiting: [],
-			topPair: { base: "ETH" },
-		}),
-	).toContain("history ETH");
 });
 
 test("an owner without a key is finishing setup; research stays available", () => {
 	const menu = buildMenu({ owner, hasKey: false, awaiting: [] });
 	expect(menu.state).toBe("setting-up");
-	expect(menu.rows[0]).toEqual({
+	expect(menu.rows[0]).toMatchObject({
 		say: "set up mstack",
 		note: "to finish setup",
 		run: "mob onboard",
@@ -67,42 +58,67 @@ test("the full menu is four sections of at most four rows, research before the a
 			expect(section.rows.length).toBeGreaterThanOrEqual(2);
 			expect(section.rows.length).toBeLessThanOrEqual(4);
 			expect(section.note.length).toBeGreaterThan(0);
+			// The picker describes what each row gives, never the command.
+			for (const row of section.rows) {
+				expect(row.about?.length).toBeGreaterThan(0);
+				expect(row.about).not.toContain("mob ");
+			}
 		}
-		// Every short-list row is also in the full menu.
+		// Every short-list row is in the full menu, or is a pick row with BTC.
 		const all = sections.flatMap((section) => section.rows);
-		for (const row of rows) expect(all).toContainEqual(row);
+		const examples = all.flatMap((row) =>
+			row.pick
+				? [
+						{
+							say: row.pick.replace("<asset>", "BTC"),
+							run: row.run.replaceAll("<asset>", "BTC"),
+						},
+					]
+				: [],
+		);
+		for (const row of rows) expect([...all, ...examples]).toContainEqual(row);
 	}
-	const fresh = buildMenu({
-		owner: null,
-		hasKey: false,
-		awaiting: [],
-		topPair: { base: "ETH" },
-	}).sections;
-	expect(fresh[0].rows.map((row) => row.run)).toEqual([
+	const fresh = buildMenu({ owner: null, hasKey: false, awaiting: [] });
+	expect(fresh.assets.map((asset) => asset.ticker)).toEqual([
+		"BTC",
+		"ETH",
+		"SOL",
+		"HYPE",
+	]);
+	expect(fresh.sections[0].rows.map((row) => row.run)).toEqual([
 		"mob scan --size 1000",
 		"mob scan --by price",
 		"mob scan --rwa",
 		"mob watch",
 	]);
-	expect(fresh[1].rows.map((row) => row.say)).toEqual([
+	expect(fresh.sections[1].rows.map((row) => row.say)).toEqual([
 		"all markets",
-		"ETH on every venue",
+		"one asset on every venue",
 		"venues by volume",
 		"RWA markets",
 	]);
-	expect(fresh[1].rows[1].run).toBe("mob market ETH");
-	expect(fresh[2].rows.map((row) => row.run)).toEqual([
-		"mob cost ETH",
-		"mob spread hl:BTC lighter-mainnet:BTC",
-		"mob history ETH --days 7",
+	expect(fresh.sections[1].rows[1]).toMatchObject({
+		run: "mob market <asset>",
+		pick: "<asset> on every venue",
+	});
+	expect(fresh.sections[2].rows.map((row) => [row.say, row.pick])).toEqual([
+		["cost to trade", "cost to trade <asset>"],
+		["price spread chart", "chart <asset> on Hyperliquid vs Lighter"],
+		["funding history", "history <asset>"],
+		["WTI vs Brent", undefined],
+	]);
+	expect(fresh.sections[2].rows.map((row) => row.run)).toEqual([
+		"mob cost <asset>",
+		"mob spread hl:<asset> lighter-mainnet:<asset>",
+		"mob history <asset> --days 7",
 		"mob oil",
 	]);
-	expect(fresh[3].rows.map((row) => row.say)).toEqual([
+	expect(fresh.sections[3].rows.map((row) => row.say)).toEqual([
 		"set up mstack",
 		"how does funding work",
 		"how do MoB keys work",
 	]);
-	expect(fresh[3].rows[0]).toEqual({
+	expect(fresh.sections[3].rows[0]).toMatchObject({
 		say: "set up mstack",
 		note: "to trade",
 		run: "mob onboard",
@@ -114,37 +130,59 @@ test("the full menu is four sections of at most four rows, research before the a
 });
 
 test("a stored key offers trading rows, with close only while a task runs", () => {
-	const base = { owner, hasKey: true, awaiting: [], topPair: { base: "HYPE" } };
+	const base = { owner, hasKey: true, awaiting: [] };
 	expect(buildMenu(base).state).toBe("trading");
 	expect(says(base)).toEqual([
-		"open HYPE",
+		"open a position",
 		"my positions",
 		"best funding now",
 		"raise my cap",
 	]);
 	// The command column does what the phrase says, flags and all.
 	expect(buildMenu(base).rows[0].run).toBe(
-		"mob open HYPE --long <venue:market> --short <venue:market> --size <usd>",
+		"mob open <asset> --long <venue:market> --short <venue:market> --size <usd>",
 	);
 	// Four rows at most: a running task puts close in place of the cap row.
 	expect(says({ ...base, runningTasks: 2 })).toEqual([
-		"open HYPE",
+		"open a position",
 		"my positions",
 		"best funding now",
-		"close task <id>",
+		"close a position",
 	]);
+});
+
+test("labels never carry market data: the same state gives the same menu", () => {
+	// A label is what the row does; the asset comes from the user after `pick`.
+	const labels = (menu: ReturnType<typeof buildMenu>) =>
+		menu.sections.flatMap((section) => section.rows.map((row) => row.say));
+	for (const input of [
+		{ owner: null, hasKey: false, awaiting: [] },
+		{ owner, hasKey: true, awaiting: [] },
+	]) {
+		const menu = buildMenu(input);
+		for (const say of labels(menu)) {
+			expect(say).not.toContain("<");
+			for (const { ticker } of menu.assets)
+				expect(say.split(" ")).not.toContain(ticker);
+		}
+		for (const row of menu.sections.flatMap((section) => section.rows))
+			if (row.pick) {
+				expect(row.pick).toContain("<asset>");
+				expect(row.about).toContain("you pick the asset");
+			}
+	}
 });
 
 test("a Proposal awaiting signature comes first, then at most three state rows", () => {
 	const menu = buildMenu({ owner, hasKey: true, awaiting: ["p-3", "p-4"] });
 	expect(menu.state).toBe("awaiting");
-	expect(menu.rows[0]).toEqual({
+	expect(menu.rows[0]).toMatchObject({
 		say: "sign p-3",
 		note: "first",
 		run: "mob sign p-3",
 	});
 	expect(menu.rows).toHaveLength(4);
-	expect(menu.rows[1].say).toBe("open BTC");
+	expect(menu.rows[1].say).toBe("open a position");
 });
 
 test("menu lines pad the phrase so commands align; headers and the chat line name every host", () => {

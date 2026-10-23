@@ -31,10 +31,10 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
 -------------######+++++++++++     Ready      hl +  lighter + . key mobius_01234567-89ab-cdef-0123-456789abcdef... x . cap $5.0K
  ------------######+++++++++       Policy     manual . you approve each Proposal by naming it
  ------------######+++++++         You can    say in Claude Code or Codex  or run in a terminal
- ------------#####                            "open BTC"                   mob open BTC --long <venue:market> --short <venue:market> --size <usd>
+ ------------#####                            "open a position"            mob open <asset> --long <venue:market> --short <venue:market> --size <usd>
  ------------###                              "my positions"               mob status
  ------------#                                "best funding now"           mob scan --size 1000
-                                              "close task <id>"            mob close <task>
+                                              "close a position"           mob close <task>
                                    Chat       /mstack:mob in Claude Code or $mob in Codex opens this menu
                                    live . 2 of 20 venues . 0.0 s
 </mob-home>"

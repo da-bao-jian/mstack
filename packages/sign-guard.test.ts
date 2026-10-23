@@ -711,6 +711,32 @@ test.each([
 	"mob submit p-2 # then sign",
 	"/tmp/m submit p-2",
 	"./copy sign c-1 --with browser",
+	// The mob command must be a literal word, wherever mob sits.
+	// biome-ignore lint/suspicious/noTemplateCurlyInString: Literal shell variable.
+	"v=sub; mob ${v}mit p-2",
+	"mob $'\\x73ubmit' p-2",
+	"mob $(printf %s sub)mit p-2",
+	// biome-ignore lint/suspicious/noTemplateCurlyInString: Literal shell variable.
+	"timeout 60 mob ${v}mit p-2",
+	"mob s?bmit p-2",
+	// biome-ignore lint/suspicious/noTemplateCurlyInString: Literal shell variable.
+	"mob 2>/dev/null ${v}mit p-2",
+	// biome-ignore lint/suspicious/noTemplateCurlyInString: Literal shell variable.
+	"mob 2>&1 ${v}mit p-2",
+	// biome-ignore lint/suspicious/noTemplateCurlyInString: Literal shell variable.
+	"mob &>/dev/null ${v}mit p-2",
+	// biome-ignore lint/suspicious/noTemplateCurlyInString: Literal shell variable.
+	"mob >log <<<x ${v}mit p-2",
+	"! python3 <<'X' | sh\nmob\nX",
+	// biome-ignore lint/suspicious/noTemplateCurlyInString: Literal shell variable.
+	"bun apps/cli/src/main.ts ${v}mit p-2",
+	// A heredoc body is data only for a program that is not a shell, and
+	// only when the line that opens it hides nothing.
+	"bash <<'EOF'\n`echo x` mob\nEOF",
+	"python3 <<'X' | sh\nmob\nX",
+	`python3 "$(echo "<<'X'")"\neval "$Y" mob\nX`,
+	"python3 <<'X'\nx\\\nX\neval \"$Y\" mob\nX",
+	"python3 - <<'EOF'\nimport subprocess\nsubprocess.run(['mob', 'submit', 'p-2'])\nEOF",
 ])(
 	"hook denies an indirect or obfuscated mutation even with consent: %s",
 	async (command) => {
@@ -801,6 +827,14 @@ test.each([
 	"MSTACK_VERBOSE=1 mob doctor",
 	"source .venv/bin/activate && openssl rand -hex 16",
 	"cat key.b64 | base64 -d > key.bin && ls | xargs wc -l",
+	// A script on stdin is data: its backticks and braces are not shell.
+	"cd /tmp && /usr/bin/python3 -I - venues.json <<'EOF'\nimport json,sys\nfor v in json.load(open(sys.argv[1]))['view']:\n    print(f\"| `{v['venue']}` | {v['mob']} |\")\nEOF",
+	'jq -r \'.view[] | .venue\' <<"JSON"\n{"view": [{"venue": "hl", "mob": true}]}\nJSON',
+	// Expansions after the mob command are arguments.
+	'"$MOB_BIN" scan --json --size "$SIZE"',
+	'mob history "$ASSET" --days 7',
+	"mob scan --json 2>/dev/null | head -c 100",
+	'"$MOB_BIN" market BTC --json 2>&1 | head',
 ])("hook leaves ordinary commands alone: %s", async (command) => {
 	expect(await hook(command)).toEqual({ code: 0, out: "", err: "" });
 });

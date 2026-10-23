@@ -86,8 +86,11 @@ export function priceView(
 	view: { executable: PriceGap[]; anywhere: PriceGap[] };
 	thinHidden: number;
 	crossDeploymentHidden: number;
+	mismatchHidden: number;
 } {
-	const liquid = gaps.filter(
+	// Prices too far apart to be one asset: never a gap to trade.
+	const same = gaps.filter((r) => !r.flags.includes("price-mismatch"));
+	const liquid = same.filter(
 		(r) => options.includeThin || !r.flags.includes("thin"),
 	);
 	const rows = liquid.filter(
@@ -113,7 +116,8 @@ export function priceView(
 			),
 			anywhere: options.executable ? [] : select(rows, options.top),
 		},
-		thinHidden: gaps.length - liquid.length,
+		thinHidden: same.length - liquid.length,
 		crossDeploymentHidden: liquid.length - rows.length,
+		mismatchHidden: gaps.length - same.length,
 	};
 }

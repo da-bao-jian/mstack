@@ -189,14 +189,17 @@ export async function priceScan(options: ScanOptions, rt: Runtime) {
 			(!market || row.base === market) &&
 			(!options.executable || row.executable),
 	);
-	const { view, thinHidden, crossDeploymentHidden } = priceView(gaps, {
-		top,
-		topExec,
-		allPairs: options.allPairs === true,
-		executable: options.executable === true,
-		includeThin: options.includeThin === true,
-		includeCrossDeployment: options.includeCrossDeployment === true,
-	});
+	const { view, thinHidden, crossDeploymentHidden, mismatchHidden } = priceView(
+		gaps,
+		{
+			top,
+			topExec,
+			allPairs: options.allPairs === true,
+			executable: options.executable === true,
+			includeThin: options.includeThin === true,
+			includeCrossDeployment: options.includeCrossDeployment === true,
+		},
+	);
 	return withRateCount(
 		{
 			by: "price" as const,
@@ -210,6 +213,7 @@ export async function priceScan(options: ScanOptions, rt: Runtime) {
 				executable: gaps.filter((row) => row.executable).length,
 				thinHidden,
 				crossDeploymentHidden,
+				mismatchHidden,
 			},
 			failed: input.failed,
 			view: await withRealized(view, options.realized, rt),
@@ -267,6 +271,7 @@ export async function scan(options: ScanOptions, rt: Runtime) {
 	);
 	return withRateCount(
 		{
+			sizeUsd,
 			holdDays: result.holdDays,
 			observedAt: result.observedAt,
 			source: result.source,

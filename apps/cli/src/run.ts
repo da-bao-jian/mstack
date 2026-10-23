@@ -863,7 +863,7 @@ export async function run(
 				rt,
 				result,
 				renderPriceScan(result.view, values.executable === true, rt),
-				`${footer(result, 0, rt.now())}\nthin hidden: ${result.counts.thinHidden} (--include-thin) · cross-deployment hidden: ${result.counts.crossDeploymentHidden} (--include-cross-deployment)`,
+				`${footer(result, 0, rt.now())}\nthin hidden: ${result.counts.thinHidden} (--include-thin) · cross-deployment hidden: ${result.counts.crossDeploymentHidden} (--include-cross-deployment)${result.counts.mismatchHidden ? ` · different assets hidden: ${result.counts.mismatchHidden}` : ""}`,
 				json,
 			);
 			return exitFor(result, strict);
@@ -897,6 +897,7 @@ export async function run(
 					result.view,
 					values.executable === true,
 					result.holdDays,
+					result.sizeUsd,
 					rt,
 				),
 				`${footer(result, result.unmatched.length, rt.now())}\nthin hidden: ${result.counts.thinHidden} (--include-thin) · cross-deployment hidden: ${result.counts.crossDeploymentHidden} (--include-cross-deployment)${result.counts.mismatchHidden ? ` · different assets hidden: ${result.counts.mismatchHidden}` : ""}`,
