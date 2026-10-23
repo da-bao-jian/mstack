@@ -151,7 +151,7 @@ Type `/mstack:mob` in Claude Code or `$mob` in Codex for a menu, or ask in your 
 | "how does funding work" | `mob explain funding` | Plain and precise explanations of 11 topics, offline |
 | "how do MoB keys work" | `mob explain mob-keys` | What the MoB API key and venue keys can and cannot do |
 
-Annualized rates are simple, not compounded. Fees, marks and costs are estimates. A venue that fails to answer stays in the output with its error. To check a scan on a schedule in Claude Code, type `/loop 15m check my mstack watchlist`. The [CLI reference](apps/cli/README.md) lists every flag.
+Annualized rates are simple, not compounded. Fees, marks and costs are estimates. A venue that fails to answer stays in the output with its error. To check your watchlist alerts on a schedule in Claude Code, type `/loop 15m check my mstack watchlist`. The [CLI reference](apps/cli/README.md) lists every flag.
 
 ## Trade through MoB
 
@@ -161,7 +161,7 @@ Research never needs this section. When you want to trade:
 2. **Open.** Say, for example, "open ETH long hl short lighter-mainnet 500". The agent checks the markets, stages Proposal `p-N` and shows you a preview.
 3. **Approve.** Reply `submit p-N`. Under the default policy, the agent cannot submit without that exact id in your latest message.
 4. **Track.** Say "my positions". A submitted order is not a confirmed fill; status shows what the MoB worker did.
-5. **Manage and close.** Say "close task <id>" or ask to resize. Protection, neutralize and auto-close changes ask your wallet to sign.
+5. **Manage and close.** Say `close task <id>` with the task id, or ask to resize. Protection, neutralize and auto-close changes ask your wallet to sign.
 
 | Policy | Behavior |
 |---|---|
@@ -187,15 +187,15 @@ mstack reads every venue through its public API, with no key. Variational and QF
 ## How it works
 
 ```mermaid
-flowchart LR
+flowchart TB
     you([You]) -- "plain words" --> agent["AI agent<br/>Claude Code · Codex · MCP client"]
     agent -- "skills run" --> cli["mob CLI<br/>one local binary"]
-    cli -- "keyless public reads" --> venues[("20 venues<br/>funding · prices · books · candles")]
-    cli -- "stages" --> proposal["Proposal p-N<br/>local · single-use · expires"]
+    cli -- "research: keyless public reads" --> venues[("20 venues<br/>funding · prices · books · candles")]
+    cli -- "trading: stages" --> proposal["Proposal p-N<br/>local · single-use · expires"]
     you -- "submit p-N" --> proposal
     proposal -- "scoped MoB API key" --> mob["MoB API and worker"]
-    mob -- "venue keys" --> accounts[("Your venue accounts")]
     wallet([Your wallet]) -. "setup · binding · key changes" .-> mob
+    mob -- "venue keys" --> accounts[("Your venue accounts")]
 ```
 
 - The agent never holds your wallet key. Skills call the `mob` CLI, and in Claude Code a Bash guard checks each command before it runs.
