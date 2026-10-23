@@ -1,0 +1,49 @@
+{
+	"code": 200,
+	"total_asks": 5,
+	"asks": [
+		{
+			"price": "81971.1",
+			"remaining_base_amount": "0.02246"
+		},
+		{
+			"price": "81971.4",
+			"remaining_base_amount": "0.00013"
+		},
+		{
+			"price": "81973.0",
+			"remaining_base_amount": "0.00013"
+		},
+		{
+			"price": "81978.7",
+			"remaining_base_amount": "0.00030"
+		},
+		{
+			"price": "81979.9",
+			"remaining_base_amount": "0.69178"
+		}
+	],
+	"total_bids": 5,
+	"bids": [
+		{
+			"price": "81971.0",
+			"remaining_base_amount": "0.05997"
+		},
+		{
+			"price": "81971.0",
+			"remaining_base_amount": "0.43744"
+		},
+		{
+			"price": "81971.0",
+			"remaining_base_amount": "0.00016"
+		},
+		{
+			"price": "81971.0",
+			"remaining_base_amount": "0.04879"
+		},
+		{
+			"price": "81971.0",
+			"remaining_base_amount": "0.06490"
+		}
+	]
+}

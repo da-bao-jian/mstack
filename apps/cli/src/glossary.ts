@@ -67,7 +67,124 @@ const fields: Record<string, string> = {
 	executable:
 		"Requires both venues in hl/lighter/lighter-mainnet/aster and no HL open-interest cap; does not verify binding, funds, depth, policy or preflight (also names the executable view/count).",
 	flags:
-		"thin: low/unknown volume; cross-deployment: Lighter versus Lighter mainnet; hl-oi-capped: new HL opens blocked; coin-margined: coin quote.",
+		"thin: low/unknown volume; cross-deployment: Lighter versus Lighter mainnet; hl-oi-capped: new HL opens blocked; coin-margined: coin quote; price-mismatch: prices too far apart to be one asset, never executable.",
+	venueCategory:
+		"The venue's own label for the underlying: crypto, stock, commodity, fx, index, pre-ipo, or rwa without a category.",
+	totals: "Sums over every listing in scope; see the missing counts.",
+	missingVolume:
+		"Listings without a 24-hour volume figure; above zero, the volume sum is a lower bound.",
+	missingOpenInterest:
+		"Listings without an open-interest figure; above zero, the open-interest sum is a lower bound.",
+	name: "Display name of the venue, or of the asset from the curated list; absent when unknown.",
+	kind: "dex or cex.",
+	mob: "True when MoB can open and close a pair on this venue.",
+	markets: "Number of listings (venue:market rows).",
+	takerFeeBps:
+		"Taker fee per fill in basis points: the documented estimate, or the user's taker_fee_bps setting.",
+	scope: "all, rwa or crypto: the assets that counts and totals cover.",
+	matching:
+		"Assets that pass the search and minimum volume, before the top limit.",
+	crypto: "Number of crypto assets in the snapshot.",
+	rwa: "Number of real-world assets in the snapshot.",
+	assets:
+		"Assets, or their number inside counts; one ticker can hold two assets, split by price.",
+	categories:
+		"RWA totals by category: assets, 24-hour volume and open interest.",
+	category: "RWA category: stock, index, commodity, fx, pre-ipo, or other.",
+	farm: "The best liquid real-world funding pair after fees; a pointer into mob scan, not advice.",
+	ticker: "Canonical ticker; venue aliases such as GOLD for XAU fold into one.",
+	variant:
+		"1 for the main asset on a ticker; 2 and up for a different asset priced more than 25% away.",
+	class:
+		"crypto or rwa (real-world asset): venue labels first, the curated list second.",
+	venues:
+		"Distinct venues listing the asset; Hyperliquid builder deployments count separately.",
+	price:
+		"Mark price per base unit, in quote units; for an asset, volume-weighted across listings.",
+	bestFunding:
+		"The listing with the largest absolute annualized funding; negative pays longs.",
+	widest:
+		"Lowest- and highest-funding listings of the asset and their annualized difference, before fees, price gaps and depth.",
+	priceRangePct:
+		"Highest minus lowest listing price, over the lowest, in percent.",
+	volumeSharePct:
+		"This listing's share of the asset's known 24-hour volume, in percent.",
+	nextFundingSource:
+		"venue when the feed reports the time; hourly schedule for Hyperliquid, which settles on the hour.",
+	by: "funding or price: what the scan ranks.",
+	priceBasis: "mark: gaps come from mark prices, not order-book fills.",
+	pairs: "Same-asset pairs priced apart, before view limits.",
+	gapPct:
+		"(rich price − cheap price) / cheap price, in percent, from mark prices per base unit.",
+	gapAfterFeesPct: "gapPct minus round-trip taker fees on both legs.",
+	fundingSpreadAnnualizedPct:
+		"Short minus long funding, simple annualized percent; negative means the pair pays funding while open.",
+	mismatchHidden:
+		"Pairs hidden because their prices are too far apart to be one asset.",
+	addedAt: "When the pair was saved, in Unix milliseconds.",
+	alert:
+		"Thresholds checked by mob watch --check: spreadAbove and spreadBelow in annualized percent, gapAbove in percent.",
+	spreadAbove:
+		"Alert when the funding spread rises above this annualized percent.",
+	spreadBelow:
+		"Alert when the funding spread falls below this annualized percent.",
+	gapAbove: "Alert when the price gap rises above this percent.",
+	triggered: "Alert thresholds this pair crosses now, in words.",
+	alerts: "Number of saved pairs whose alerts fire now.",
+	updated: "True when saving a saved pair changed its alert.",
+	side: "long buys from the asks; short sells into the bids.",
+	realized:
+		"Settled funding of the short leg minus the long leg, simple annualized percent, over the last 1, 7 and 30 days; null when a leg has no settlement in the window.",
+	d1: "Realized spread over the last day, simple annualized percent.",
+	d7: "Realized spread over the last 7 days, simple annualized percent.",
+	d30: "Realized spread over the last 30 days, simple annualized percent.",
+	a: "The first market: the base of the spread, or its price per base unit.",
+	b: "The second market, or its price per base unit.",
+	interval: "Candle length: 15m, 1h, 4h, or 1d.",
+	wti: "The venue's busiest WTI crude listing.",
+	brent: "The venue's busiest Brent crude listing.",
+	brentPremiumPct: "(Brent − WTI) / WTI on this venue, in percent, from marks.",
+	carryLongWtiPct:
+		"Funding per year for long WTI and short Brent on this venue: Brent's funding minus WTI's; negative pays.",
+	premium: "Lowest and highest Brent premium across venues that list both.",
+	best: "The pair with the best funding carry across venues for either direction, both legs above $1M daily volume.",
+	direction: "Which benchmark is long and which is short.",
+	carryPct: "Short leg funding minus long leg funding, per year, in percent.",
+	candles: "Candles read from each market.",
+	stats: "Summary of the spread over the window; null when no candles line up.",
+	points: "Spread points at shared candle open times, oldest first.",
+	spreadPct: "(b − a) / a × 100, from candle closes per base unit.",
+	last: "The latest spread, in percent.",
+	mean: "Average spread over the window, in percent.",
+	min: "Lowest spread in the window, in percent.",
+	max: "Highest spread in the window, in percent.",
+	lastPercentile: "Share of points at or below the latest spread, in percent.",
+	sizes: "USD sizes the cost is measured at.",
+	costs: "One fill per size: walk the published book from the best price.",
+	mid: "Midpoint of the best bid and best ask.",
+	spreadBps: "Best ask minus best bid, over mid, in basis points.",
+	truncated:
+		"True when the venue returned its maximum number of levels, so deeper orders may exist.",
+	filledUsd: "USD notional the published levels can fill, at most sizeUsd.",
+	complete: "True when the published book fills the whole size.",
+	averagePrice: "Average fill price across the levels used.",
+	slippageBps: "Average fill against mid, in basis points; positive is a cost.",
+	costBps:
+		"slippageBps plus takerFeeBps; absent when the book cannot fill the size.",
+	costUsd: "costBps applied to the size, in USD.",
+	bookless: "Listings on venues that publish no public order book.",
+	notListed: "Selected venues with no listing of this asset.",
+	rows: "Listings of the asset, one per venue market, largest volume first.",
+	priceChange24hPct: "Venue-reported 24-hour price change, in percent.",
+	found: "False when either market is missing from this snapshot.",
+	priceGapPct:
+		"(short price − long price) / long price, in percent, from mark prices.",
+	priceMismatch:
+		"True when the two markets are priced too far apart to be one asset.",
+	longVolume24hUsd: "Long leg trailing 24-hour volume in USD.",
+	shortVolume24hUsd: "Short leg trailing 24-hour volume in USD.",
+	longOpenInterestUsd: "Long leg open interest in USD.",
+	shortOpenInterestUsd: "Short leg open interest in USD.",
 	mobOpen:
 		"Exact staging command; creates a Proposal and stops before signing.",
 	startTime: "Requested history window start in Unix milliseconds.",
@@ -156,6 +273,12 @@ const venues = {
 	grvt: "GRVT",
 	variational: "Variational Omni",
 	qfex: "QFEX",
+	pacifica: "Pacifica",
+	extended: "Extended (Starknet)",
+	paradex: "Paradex",
+	dydx: "dYdX v4",
+	backpack: "Backpack USDC perpetuals",
+	kucoin: "KuCoin USDT and USDC perpetuals",
 };
 const costModel =
 	"Estimates, not quotes: default taker fees (bps per fill) hl 4.5, lighter 0, lighter-mainnet 0, aster 3.5, binance 5, bybit 5.5, okx 5, mexc 2, bingx 5, bitget 6, gate 7.5, grvt 4.5, variational 0, qfex 10; two fills per leg. HL builder fee defaults to 1.5 bps per fill, doubled against either Lighter deployment, on open and close. Config overrides apply. Entry uses marks, not book depth or slippage. Net APY amortizes nonnegative entry cost over holdDays; break-even uses signed entry cost. Annualization is simple, never compounded.";

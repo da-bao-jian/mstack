@@ -1,0 +1,38 @@
+[
+	{
+		"firstPrice": "81990",
+		"high": "81990.3",
+		"lastPrice": "81688.4",
+		"low": "80848.5",
+		"priceChange": "-301.6",
+		"priceChangePercent": "-0.003678",
+		"quoteVolume": "189482206.258235",
+		"symbol": "BTC_USDC_PERP",
+		"trades": "41237",
+		"volume": "2324.69671"
+	},
+	{
+		"firstPrice": "2412.06",
+		"high": "2415.16",
+		"lastPrice": "2398.26",
+		"low": "2357.77",
+		"priceChange": "-13.8",
+		"priceChangePercent": "-0.005721",
+		"quoteVolume": "24019667.24813",
+		"symbol": "ETH_USDC_PERP",
+		"trades": "12598",
+		"volume": "10029.2368"
+	},
+	{
+		"firstPrice": "893.37",
+		"high": "908.04",
+		"lastPrice": "867.84",
+		"low": "840.9",
+		"priceChange": "-25.53",
+		"priceChangePercent": "-0.028577",
+		"quoteVolume": "1080469.93315",
+		"symbol": "MU.US_USDC_PERP",
+		"trades": "3212",
+		"volume": "1233.851"
+	}
+]

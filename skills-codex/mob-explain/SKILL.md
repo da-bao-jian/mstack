@@ -3,14 +3,14 @@ name: mob-explain
 description: Explain funding and MoB mechanics from bundled sources. Use for "how does funding work", "what is basis", "why did it close", "like I'm 13", or "I don't get it". (mstack)
 license: MIT
 metadata:
-  version: "0.4.12"
+  version: "0.5.0"
 ---
 
 ```bash
 bash ~/.agents/skills/mstack/bin/mob-preamble
 ```
 
-If the preamble output contains a block between the lines `<mob-home>` and `</mob-home>`, reproduce every line between those two tags verbatim in a fenced code block at the top of your reply; stop before the `</mob-home>` line and print neither tag line; never strip, trim or summarize the block. When a reply completes the request (not when it asks a question), end with "You can": up to three rows from the preamble's `YOU_CAN` list or the welcome's `You can` rows that fit the moment, as words to say next. Only when the welcome printed in this reply, add that `$mob` opens the menu.
+If the preamble output contains a `<mob-home>` line, the welcome is the lines after `<mob-home>` and before `</mob-home>`. Put exactly those lines, verbatim, in a fenced code block at the top of your reply. The two tag lines are markers, not part of the welcome: never print `<mob-home>` or `</mob-home>`. Never strip, trim or summarize the welcome. When a reply completes the request (not when it asks a question), end with "You can": up to three rows from the preamble's `YOU_CAN` list or the welcome's `You can` rows that fit the moment, as words to say next. Only when the welcome printed in this reply, add that `$mob` opens the menu.
 
 # Explain a topic
 

@@ -1,0 +1,42 @@
+{
+	"code": 200,
+	"resolution": "1h",
+	"fundings": [
+		{
+			"timestamp": 1792735200,
+			"value": "0.98218320",
+			"rate": "0.0012",
+			"direction": "long"
+		},
+		{
+			"timestamp": 1792738800,
+			"value": "0.98270040",
+			"rate": "0.0012",
+			"direction": "long"
+		},
+		{
+			"timestamp": 1792742400,
+			"value": "0.97896720",
+			"rate": "0.0012",
+			"direction": "long"
+		},
+		{
+			"timestamp": 1792746000,
+			"value": "0.98112960",
+			"rate": "0.0012",
+			"direction": "long"
+		},
+		{
+			"timestamp": 1792749600,
+			"value": "0.98011320",
+			"rate": "0.0012",
+			"direction": "long"
+		},
+		{
+			"timestamp": 1792753200,
+			"value": "0.98030280",
+			"rate": "0.0012",
+			"direction": "long"
+		}
+	]
+}

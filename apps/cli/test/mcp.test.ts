@@ -61,6 +61,14 @@ test("MCP tools/list pins names, staging annotations, and input schemas", async 
 	expect<unknown>(result.tools).toEqual(toolsList);
 	expect(result.tools.map((t) => t.name)).toEqual([
 		"funding_scan",
+		"price_gap_scan",
+		"markets",
+		"market",
+		"execution_cost",
+		"price_spread",
+		"oil",
+		"venues",
+		"watchlist",
 		"funding_rates",
 		"funding_history",
 		"explain",
@@ -133,7 +141,7 @@ test.each([
 			expect(body).not.toHaveProperty("opportunities");
 			expect(Buffer.byteLength(text(result))).toBeLessThan(100_000);
 			expect(Buffer.byteLength(out[0])).toBeLessThan(100_000);
-			expect(body.counts.opportunities).toBe(155);
+			expect(body.counts.opportunities).toBe(329);
 			expect(body.view.anywhere).toHaveLength(2);
 			expect(body.view.executable).toHaveLength(1);
 			expect(body.holdDays).toBe(30);
@@ -161,7 +169,7 @@ test("funding_scan defaults stay under 100 KB and includeFull explicitly adds th
 	const full = await call("funding_scan", { includeFull: true });
 	expect(full.isError).not.toBe(true);
 	const { opportunities, ...summary } = JSON.parse(text(full));
-	expect(opportunities).toHaveLength(155);
+	expect(opportunities).toHaveLength(329);
 	expect(summary).toEqual(bounded);
 	const fullOut: string[] = [];
 	expect(
@@ -270,19 +278,19 @@ test("funding_history uses recorded history and reports unsupported venues", asy
 	const result = await call("funding_history", {
 		base: "BTC",
 		days: 3,
-		venues: ["hl", "lighter"],
+		venues: ["hl", "gate"],
 	});
 	expect(result.isError).not.toBe(true);
 	const body = JSON.parse(text(result));
 	expect(body.history[0].sampleCount).toBe(5);
 	expect(body.unsupported).toEqual([
-		{ venue: "lighter", reason: "no keyless history" },
+		{ venue: "gate", reason: "no keyless history" },
 	]);
 	expect(body.failed).toEqual([]);
 	const out: string[] = [];
 	expect(
 		await run(
-			["history", "BTC", "--days", "3", "--venues", "hl,lighter", "--json"],
+			["history", "BTC", "--days", "3", "--venues", "hl,gate", "--json"],
 			{
 				...rt,
 				out: (s) => out.push(s),

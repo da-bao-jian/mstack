@@ -13,7 +13,7 @@
     },
     "apps/cli": {
       "name": "@mstack/cli",
-      "version": "0.4.12",
+      "version": "0.5.0",
       "dependencies": {
         "@modelcontextprotocol/sdk": "1.32.1",
         "@mstack/brand": "workspace:*",
@@ -30,47 +30,47 @@
     },
     "packages/brand": {
       "name": "@mstack/brand",
-      "version": "0.4.12",
+      "version": "0.5.0",
     },
     "packages/funding": {
       "name": "@mstack/funding",
-      "version": "0.4.12",
+      "version": "0.5.0",
     },
     "packages/keys": {
       "name": "@mstack/keys",
-      "version": "0.4.12",
+      "version": "0.5.0",
       "dependencies": {
         "@mstack/mobius-api": "workspace:*",
       },
     },
     "packages/liquidation": {
       "name": "@mstack/liquidation",
-      "version": "0.4.12",
+      "version": "0.5.0",
     },
     "packages/mobius-api": {
       "name": "@mstack/mobius-api",
-      "version": "0.4.12",
+      "version": "0.5.0",
       "dependencies": {
         "viem": "2.57.4",
       },
     },
     "packages/mobius-client": {
       "name": "@mstack/mobius-client",
-      "version": "0.4.12",
+      "version": "0.5.0",
       "dependencies": {
         "viem": "2.57.4",
       },
     },
     "packages/opportunities": {
       "name": "@mstack/opportunities",
-      "version": "0.4.12",
+      "version": "0.5.0",
       "dependencies": {
         "@mstack/funding": "workspace:*",
       },
     },
     "packages/proposals": {
       "name": "@mstack/proposals",
-      "version": "0.4.12",
+      "version": "0.5.0",
       "dependencies": {
         "@mstack/keys": "workspace:*",
         "@mstack/mobius-client": "workspace:*",
@@ -80,7 +80,7 @@
     },
     "packages/signers": {
       "name": "@mstack/signers",
-      "version": "0.4.12",
+      "version": "0.5.0",
       "dependencies": {
         "qrcode-terminal": "0.12.0",
         "viem": "2.57.4",

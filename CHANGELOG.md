@@ -7,6 +7,36 @@ not a claim that public release tags or artifacts were published.
 <!-- release-start -->
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-23
+
+### Added
+
+- `/mstack:mob` opens a two-level menu: pick a section (Find trades, Explore markets, Charts & costs, Trade & account), then one of up to four actions in it. Codex lists every section with numbered rows. `mob menu` in a terminal prints the full menu; `mob menu --json` adds `sections`.
+- `mob venues`: every venue by 24-hour volume, with open interest, market count, DEX or CEX, MoB support and the taker fee estimate. Hyperliquid's trade.xyz and io deployments have their own rows.
+- `mob markets`: every asset across venues with class, RWA category, venue count, volume, open interest and best funding. `--rwa` adds category totals and the best liquid real-world funding pair; `--search`, `--sort`, `--category`, `--min-volume` and `--top` shape the list.
+- `mob market <BASE>`: one asset on every venue, with price, volume share, open interest, funding, next funding time and the widest funding spread.
+- `mob scan --by price`: same-asset pairs ranked by mark-price gap, with the gap after taker fees and the funding the pair earns or pays while open.
+- Scan filters for both modes: `--kind dex|cex`, `--anchor <venue>`, `--min-oi`, `--rwa`, `--crypto` and `--category`.
+- `mob watch`: save pairs (`add`), read them live, and remove them (`remove <n>`), in `~/.mob/watchlist.json`.
+- MCP read tools `price_gap_scan`, `markets`, `market`, `venues` and `watchlist`; `funding_scan` takes the new filters.
+- The `/mob-markets` skill for "all markets", "BTC on every venue", "venues by volume", "RWA markets" and "my watchlist".
+- OKX and Bitget rows carry the venue's own asset label (`venueCategory`).
+- `mob cost <BASE>`: market-order cost on every venue's public order book at one to four sizes, long or short: distance from mid plus the taker fee, in USD and basis points. Eighteen venues publish books; Variational and QFEX do not.
+- `mob spread <A> <B>`: a terminal chart of one market's price over another's from candles (15m, 1h, 4h, 1d) on nineteen venues, with now, mean, range and percentile.
+- `mob oil`: WTI against Brent on every venue, with the Brent premium, the funding carry of the spread trade and the best carry across venues.
+- `mob scan --realized`: what each shown pair earned over the last 1, 7 and 30 days from settled funding.
+- `mob history` and `--realized` read both Lighter deployments (hourly, with the paying side as the sign), Pacifica, Extended, dYdX, Backpack and KuCoin. Paradex funding is continuous, so it has no settled history to read.
+- The `/mstack:mob` menu's third section is Charts & costs: cost to trade, a spread chart, funding history and WTI vs Brent.
+- MCP read tools `execution_cost`, `price_spread` and `oil`; `funding_scan` and `price_gap_scan` take `realized`.
+- Six venues for research: Pacifica, Extended, Paradex, dYdX, Backpack and KuCoin. mstack now reads 20 venues; MoB still executes on Hyperliquid, both Lighter deployments and Aster.
+- Watchlist alerts: `mob watch add … --alert-spread-above N | --alert-spread-below N | --alert-gap-above N`, and `mob watch --check` prints only the alerts that fire. In Claude Code, `/loop 15m check my mstack watchlist` runs the check on a schedule.
+
+### Fixed
+
+- The welcome-block rule now says outright that neither `<mob-home>` tag appears in a reply; an agent sometimes copied the closing tag.
+- One newly listed OKX swap with no trade yet (empty last and open prices) no longer fails the whole OKX read; its price change is unknown.
+- A scan no longer pairs two different assets that share a ticker, such as BB (BlackBerry on trade.xyz, BounceBit on Binance). Pairs priced more than 25% apart are flagged `price-mismatch`, are never executable and are hidden; the footer counts them.
+
 ## [0.4.12] - 2026-10-22
 
 ### Fixed

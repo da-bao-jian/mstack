@@ -82,7 +82,7 @@ test("net APY sorts both sections independently, selects per base, and puts null
 	).toEqual([]);
 });
 
-test("history resolves a normalized base to native market and reports Lighter explicitly", async () => {
+test("history resolves a normalized base to native market and names venues without history", async () => {
 	const { ctx } = await fixtureContext();
 	const raw = await Bun.file(
 		new URL(
@@ -115,15 +115,7 @@ test("history resolves a normalized base to native market and reports Lighter ex
 	const out: string[] = [],
 		err: string[] = [];
 	const code = await run(
-		[
-			"history",
-			"PEPE",
-			"--venues",
-			"hl,lighter,lighter-mainnet",
-			"--days",
-			"3",
-			"--json",
-		],
+		["history", "PEPE", "--venues", "hl,gate,mexc", "--days", "3", "--json"],
 		{
 			fetch,
 			now: () => 1791637459597,
@@ -137,8 +129,8 @@ test("history resolves a normalized base to native market and reports Lighter ex
 	expect(body.history[0].market).toBe("kPEPE");
 	expect(body.history[0].sampleCount).toBe(5);
 	expect(body.unsupported).toEqual([
-		{ venue: "lighter", reason: "no keyless history" },
-		{ venue: "lighter-mainnet", reason: "no keyless history" },
+		{ venue: "gate", reason: "no keyless history" },
+		{ venue: "mexc", reason: "no keyless history" },
 	]);
 	expect(queries).toHaveLength(2);
 	expect(err[0]).toContain("annualized = simple");

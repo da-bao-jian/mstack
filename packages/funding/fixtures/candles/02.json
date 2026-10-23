@@ -1,0 +1,9 @@
+{
+	"code": 200,
+	"order_book_details": [
+		{
+			"symbol": "BTC",
+			"market_id": 1
+		}
+	]
+}

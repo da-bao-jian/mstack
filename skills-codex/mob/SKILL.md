@@ -1,28 +1,29 @@
 ---
 name: mob
-description: Start here for mstack and MoB. Use for "what can you do", "what is mstack", "getting started", "set me up", "MoB", "funding arb", "best pair", "delta neutral", "import my key", or "manage my positions". Routes each request to the right mob skill. (mstack)
+description: Start here for mstack and MoB. Use for "what can you do", "what is mstack", "getting started", "menu", "set me up", "MoB", "funding arb", "best pair", "delta neutral", "import my key", or "manage my positions". Routes each request to the right mob skill. (mstack)
 license: MIT
 metadata:
-  version: "0.4.12"
+  version: "0.5.0"
 ---
 
 ```bash
 bash ~/.agents/skills/mstack/bin/mob-preamble --router
 ```
 
-If the preamble output contains a block between the lines `<mob-home>` and `</mob-home>`, reproduce every line between those two tags verbatim in a fenced code block at the top of your reply; stop before the `</mob-home>` line and print neither tag line; never strip, trim or summarize the block. When a reply completes the request (not when it asks a question), end with "You can": up to three rows from the preamble's `YOU_CAN` list or the welcome's `You can` rows that fit the moment, as words to say next. Only when the welcome printed in this reply, add that `$mob` opens the menu.
+If the preamble output contains a `<mob-home>` line, the welcome is the lines after `<mob-home>` and before `</mob-home>`. Put exactly those lines, verbatim, in a fenced code block at the top of your reply. The two tag lines are markers, not part of the welcome: never print `<mob-home>` or `</mob-home>`. Never strip, trim or summarize the welcome. When a reply completes the request (not when it asks a question), end with "You can": up to three rows from the preamble's `YOU_CAN` list or the welcome's `You can` rows that fit the moment, as words to say next. Only when the welcome printed in this reply, add that `$mob` opens the menu.
 
 # MoB router
 
 Run the preamble first. Use the printed `MOB_BIN` path for CLI commands. If `MOB_MISSING` appears, show the install line and stop.
 
-mstack is an open framework for finding delta-neutral funding trades. Research (scan, rates, history, explain, status by address) needs no account, wallet, or signature. Execution runs through MoB and needs a one-time setup. When `OWNER: unset`, answer research requests without mentioning setup; bring up MoB only when the user wants to open, manage, or close a position, or asks for setup.
+mstack is an open framework for finding delta-neutral funding trades. Research (funding and price-gap scans, markets, venues, history, watchlist, explain, status by address) needs no account, wallet, or signature. Execution runs through MoB and needs a one-time setup. When `OWNER: unset`, answer research requests without mentioning setup; bring up MoB only when the user wants to open, manage, or close a position, or asks for setup.
 
-The welcome this skill prints names this command on its `Chat` line, so never add that the command opens the menu. When the command comes alone, with no request after it, or for "menu", "what can you do", "what is mstack" or "getting started": after the welcome, say in two sentences what mstack does, research first (no account) and then execution through MoB after a one-time setup. Then list one numbered line per row of `mob menu --json`, in order: the `say` words, then the `note` when there is one, else the `run` command. Ask which number or words to run, then stop. Treat the reply, a number or words, as the user's own request: load the skill for it and follow it. Print no list of rows before that and no closing "You can".
+The welcome this skill prints names this command on its `Chat` line, so never add that the command opens the menu. When the command comes alone, with no request after it, or for "menu", "what can you do", "what is mstack" or "getting started": after the welcome, say in two sentences what mstack does, research first (no account) and then execution through MoB after a one-time setup. Then list every entry of `sections` in `mob menu --json`, in order: its `name` and `note` as a heading, then its rows as numbered lines, numbering on across sections: the `say` words, then the `note` when there is one, else the `run` command. Ask which number or words to run, then stop. Treat the reply, a number or words, as the user's own request: load the skill for it and follow it. Print no list of sections or rows before that and no closing "You can".
 
 | User asks about | Use skill |
 |---|---|
-| Funding, rates, best pair, compare venues | `$mob-scan` |
+| Funding, rates, best pair, price gaps, RWA funding farms | `$mob-scan` |
+| All markets, one asset on every venue, venues, RWA markets, cost to trade, spread charts, WTI vs Brent, watchlist | `$mob-markets` |
 | How or why funding and MoB work | `$mob-explain` |
 | Position, PnL, task or worker status | `$mob-status` |
 | First setup, onboarding, create or import the first key (needed only to trade) | `$mob-setup` |

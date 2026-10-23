@@ -95,6 +95,43 @@ export function classifyMarket(
 			base = match[1];
 			break;
 		}
+		case "pacifica":
+			if (!/^[\p{L}\p{N}]+$/u.test(market)) return null;
+			base = market.toUpperCase();
+			break;
+		case "extended": {
+			// IREN_24_5-USD is IREN's 24/5 market beside the 24/7 IREN-USD.
+			const match = /^([\p{L}\p{N}]+?)(?:_24_5)?-USD$/u.exec(market);
+			if (!match) return null;
+			base = match[1];
+			break;
+		}
+		case "paradex": {
+			const match = /^([\p{L}\p{N}]+)-USD-PERP$/u.exec(market);
+			if (!match) return null;
+			base = match[1];
+			break;
+		}
+		case "dydx": {
+			const match = /^([\p{L}\p{N}]+)-USD$/u.exec(market);
+			if (!match) return null;
+			base = match[1];
+			break;
+		}
+		case "backpack": {
+			// MU.US_USDC_PERP is the US stock MU.
+			const match = /^([\p{L}\p{N}]+?)(?:\.US)?_USDC_PERP$/u.exec(market);
+			if (!match) return null;
+			base = match[1];
+			break;
+		}
+		case "kucoin": {
+			const match = /^([\p{L}\p{N}]+)(?:USDT|USDC)M$/u.exec(market);
+			if (!match) return null;
+			// KuCoin spells bitcoin XBT.
+			base = match[1] === "XBT" ? "BTC" : match[1];
+			break;
+		}
 		default:
 			return null;
 	}

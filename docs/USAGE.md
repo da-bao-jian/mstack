@@ -6,7 +6,7 @@ The CLI reference lists commands and flags; this guide explains the flows and li
 
 Run `mob` or `mob hello` for the logo, a five-second live market view, account standing and the next action. Use `--big`, `--compact`, `--stacked`, `--plain`, `--ascii`, `--offline` or `--json`. Below 72 terminal columns, the logo appears above the details. Add `--offline` to use the last cached market view without network reads.
 
-Research needs no account: `mob scan`, `mob rates`, `mob history`, `mob explain`, and `mob status --owner 0x…` work right after install. Trading runs through MoB and needs the one-time setup (`mob onboard`, or "set up mstack" in a chat). Every command that needs the setup says so and names the research commands that do not. The home screen shows a `Trading` row reading `not set up · optional` until an owner is saved, a `You can` table (say in chat / or run in a terminal) chosen by account state, and a `Chat` line on how to reach mstack from Claude Code or Codex (fresh, setting up, a Proposal awaiting signature, or trading). `mob menu [--json]` prints the same rows from local state alone, and every skill preamble prints them as `YOU_CAN`, so each skill can end with the right next steps.
+Research needs no account: `mob scan`, `mob venues`, `mob markets`, `mob market`, `mob cost`, `mob spread`, `mob oil`, `mob watch`, `mob rates`, `mob history`, `mob explain`, and `mob status --owner 0x…` work right after install. Trading runs through MoB and needs the one-time setup (`mob onboard`, or "set up mstack" in a chat). Every command that needs the setup says so and names the research commands that do not. The home screen shows a `Trading` row reading `not set up · optional` until an owner is saved, a `You can` table (say in chat / or run in a terminal) chosen by account state, and a `Chat` line on how to reach mstack from Claude Code or Codex (fresh, setting up, a Proposal awaiting signature, or trading). `mob menu [--json]` prints the full menu from local state alone: four sections (Find trades, Explore markets, Charts & costs, Trade & account) of up to four rows each. Every skill preamble prints the short rows as `YOU_CAN`, so each skill can end with the right next steps, and a bare `/mstack:mob` asks for a section first, then a row.
 
 `mob doctor` checks the installation, public configuration, signer availability, API access, legal acceptance, venue readiness and local Proposals. `mob doctor --json` returns the checklist. It never opens a wallet or requests a secret. Both screens share a five-second network budget; unfinished reads say `not checked`. Upgrade status uses the cached `origin/main` reference; these commands do not fetch GitHub.
 
@@ -28,11 +28,22 @@ See [funding](../packages/funding/README.md) and [opportunities](../packages/opp
 
 ## Public reads
 
-The compiled `mob` binary supports `scan`, `rates`, `history`, `explain`, `status`, and `config`. It runs without Bun or `node_modules` installed. [CLI documentation](../apps/cli/README.md) describes flags, output, exit codes, and config. The ten [knowledge topics](knowledge/) are embedded at build time.
+The compiled `mob` binary supports `scan`, `venues`, `markets`, `market`, `watch`, `rates`, `history`, `explain`, `status`, and `config`. It runs without Bun or `node_modules` installed. [CLI documentation](../apps/cli/README.md) describes flags, output, exit codes, and config. The ten [knowledge topics](knowledge/) are embedded at build time.
 
 | Command | Purpose |
 |---|---|
 | `mob scan --size 5000` | Rank funding pairs with estimated fees, mark entry cost, and a per-leg volume gate |
+| `mob scan --by price` | Rank same-asset pairs by mark-price gap: long the cheap leg, short the rich one |
+| `mob scan --rwa --kind dex --min-oi 1000000` | Filter either scan: `--rwa`/`--crypto`, `--category`, `--kind dex\|cex`, `--anchor <venue>`, `--min-oi`, `--min-volume` |
+| `mob venues` | Venues by 24h volume, with open interest, market count, DEX or CEX, MoB support, and taker fee estimates |
+| `mob markets --rwa` | Every asset across venues; `--rwa` adds category totals and the best real-world funding pair |
+| `mob market BTC` | One asset on every venue: price, volume share, open interest, funding, next funding |
+| `mob watch add BTC --long lighter:BTC --short hl:BTC` | Save a pair; `mob watch` shows saved pairs live, `mob watch remove <n>` drops one |
+| `mob watch add BTC --long lighter:BTC --short hl:BTC --alert-spread-below 5` | Set an alert on a saved pair; `mob watch --check` prints only the alerts that fire, for a scheduled check such as `/loop 15m` |
+| `mob cost BTC --size 10000,100000,1000000` | Market-order cost on each venue's public order book: distance from mid plus the taker fee, long or short |
+| `mob spread hl:BTC lighter-mainnet:BTC --interval 1h --days 7` | Chart the second market's price over the first from candles |
+| `mob oil` | WTI vs Brent on every venue: prices, Brent premium, funding carry of the spread trade |
+| `mob scan --realized` | Add what each shown pair earned over the last 1, 7 and 30 days from settled funding |
 | `mob rates --venue hl --market BTC` | Read raw current rates |
 | `mob history BTC --days 7` | Compare settled funding history and coverage |
 | `mob explain funding --simple` | Read bundled explanations |
@@ -40,6 +51,10 @@ The compiled `mob` binary supports `scan`, `rates`, `history`, `explain`, `statu
 | `mob config get api_base` | Read or set local settings, including the public owner address |
 
 Scans show Executable on MoB (top five) and Best anywhere (top ten), each sorted by net APY for a seven-day hold. Use `--hold-days`, `--top-exec`, and `--top` to change these defaults. Each view limit is capped at 200. Negative mark entry estimates do not count as gains in net APY. Funding output reports snapshot age, source, simple annualization, failures, and unmatched symbols. Scans also report thin pairs hidden by the default $1 million per-leg volume filter. Status reports API base, fetch age, and task/log counts. JSON stays on stdout; its human footer goes to stderr. `mob scan --json` returns bounded views and counts; `--json-full` opts into every opportunity and can exceed 3 MB. Fee defaults are estimates. Entry costs use marks and do not measure executable depth.
+
+One ticker can name two assets: BB is BlackBerry on trade.xyz and BounceBit on Binance. Listings are one asset only when their prices are within 25% of each other. Scans never pair two different assets: they hide such pairs, count them as different assets, and never mark them executable. `mob markets` and `mob market` show the second asset as its own block, marked `#2`. Crypto and real-world classes come from the venues' own labels (OKX `instCategory`, Bitget `isRwa`, Hyperliquid's xyz and io deployments), shared across every listing of the asset, with a curated ticker list as the fallback. Venue spellings fold together: GOLD is XAU, SILVER is XAG. Sums over listings that do not all report a figure print with `≥`; Binance, OKX, BingX, and Aster publish no bulk open interest. The watchlist lives in `~/.mob/watchlist.json` and holds public market names only.
+
+`mob cost` reads each listing's public order book once and walks it for every size. Hyperliquid publishes 20 levels a side, Pacifica 10, Lighter 250 orders, the others a hundred to thousands of levels; a size past them prints `> book`, never a guessed cost. Variational and QFEX publish no book. OKX, Gate, MEXC and KuCoin quote contracts; the cost uses the contract size each publishes. `mob spread` reads trade candles (15m, 1h, 4h or 1d) from both markets and charts (B − A) / A at shared open times. Settled funding history covers Hyperliquid, both Lighter deployments, Binance, Aster, Bybit, OKX, Pacifica, Extended, dYdX, Backpack and KuCoin; `mob history` and `mob scan --realized` show a dash or a "no keyless history" line for the others.
 
 ## Use from any MCP client
 
@@ -64,7 +79,7 @@ For Cursor, Claude Desktop, or Windsurf, add this to the client's MCP server set
 }
 ```
 
-The nine read tools are `funding_scan`, `funding_rates`, `funding_history`, `explain`, `task_list`, `task_get`, `config_get`, `onboarding_status`, and `key_status`. `onboarding_status` returns the legal, venue, and key checklist. `key_status` returns only prefix, backend, and verification state. Task tools use the public `owner` config key when an owner is omitted. There is no configuration write tool. Tool calls have a 60-second deadline, and snapshots use the CLI's 30-second timeout. Venue failures remain visible in `failed`; command errors become MCP tool errors.
+The seventeen read tools are `funding_scan`, `price_gap_scan`, `markets`, `market`, `execution_cost`, `price_spread`, `oil`, `venues`, `watchlist`, `funding_rates`, `funding_history`, `explain`, `task_list`, `task_get`, `config_get`, `onboarding_status`, and `key_status`. Saving or removing a watched pair stays in the CLI. `onboarding_status` returns the legal, venue, and key checklist. `key_status` returns only prefix, backend, and verification state. Task tools use the public `owner` config key when an owner is omitted. There is no configuration write tool. Tool calls have a 60-second deadline, and snapshots use the CLI's 30-second timeout. Venue failures remain visible in `failed`; command errors become MCP tool errors.
 
 The nine Proposal tools share the CLI staging and preflight code:
 

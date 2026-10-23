@@ -221,7 +221,7 @@ test("HTTP failure and unsupported venues are explicit", async () => {
 		}),
 	).rejects.toThrow("HTTP 503");
 	await expect(
-		fetchFundingHistory("lighter", "BTC", { startTime: 1, endTime: 2 }),
+		fetchFundingHistory("gate", "BTC_USDT", { startTime: 1, endTime: 2 }),
 	).rejects.toThrow("no keyless history");
 });
 

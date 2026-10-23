@@ -18,7 +18,7 @@
 					"items": {
 						"type": "string"
 					},
-					"description": "Venue IDs: hl, lighter, lighter-mainnet, aster, binance, bybit, okx, mexc, bingx, bitget, gate, grvt, variational, qfex. Omit for all."
+					"description": "Venue IDs: hl, lighter, lighter-mainnet, aster, binance, bybit, okx, mexc, bingx, bitget, gate, grvt, variational, qfex, pacifica, extended, paradex, dydx, backpack, kucoin. Omit for all."
 				},
 				"topExec": {
 					"type": "number",
@@ -59,8 +59,300 @@
 				"includeFull": {
 					"type": "boolean",
 					"description": "Include the full opportunities array; can exceed 3 MB. Default false keeps only counts and bounded views."
+				},
+				"kind": {
+					"type": "string",
+					"description": "dex or cex: both legs on that venue type."
+				},
+				"anchor": {
+					"type": "string",
+					"description": "Venue ID one leg must use, such as hl or hl:xyz."
+				},
+				"minOpenInterestUsd": {
+					"type": "number",
+					"description": "Nonnegative minimum USD open interest per leg; a leg without a published figure fails it."
+				},
+				"rwa": {
+					"type": "boolean",
+					"description": "Only real-world assets: stocks, indices, commodities, FX, pre-IPO."
+				},
+				"crypto": {
+					"type": "boolean",
+					"description": "Only crypto assets."
+				},
+				"category": {
+					"type": "string",
+					"description": "RWA category: stock, index, commodity, fx, pre-ipo, or other."
 				}
 			},
+			"required": [],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": true,
+			"destructiveHint": false,
+			"idempotentHint": true,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "price_gap_scan",
+		"description": "Rank same-asset pairs by mark-price gap, widest first: long the cheap leg, short the rich one. Returns gap, gap after taker fees, the funding spread while open, volumes and flags in bounded executable/anywhere views. Marks are estimates; fills depend on order books. Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {
+				"market": {
+					"type": "string",
+					"description": "Normalized base ticker; omit to scan all markets."
+				},
+				"venues": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"description": "Venue IDs: hl, lighter, lighter-mainnet, aster, binance, bybit, okx, mexc, bingx, bitget, gate, grvt, variational, qfex, pacifica, extended, paradex, dydx, backpack, kucoin. Omit for all."
+				},
+				"topExec": {
+					"type": "number",
+					"description": "Positive integer limit for executable view; default 5, cap 200."
+				},
+				"top": {
+					"type": "number",
+					"description": "Positive integer limit for anywhere view; default 10, cap 200."
+				},
+				"allPairs": {
+					"type": "boolean",
+					"description": "Include every pair instead of the best per base."
+				},
+				"executable": {
+					"type": "boolean",
+					"description": "Only the executable view, limited by top."
+				},
+				"minVolume24hUsd": {
+					"type": "number",
+					"description": "Nonnegative minimum known USD volume per leg; default 1000000."
+				},
+				"includeThin": {
+					"type": "boolean",
+					"description": "Include below-threshold or unknown-volume pairs."
+				},
+				"includeCrossDeployment": {
+					"type": "boolean",
+					"description": "Include Lighter cross-deployment pairs."
+				},
+				"kind": {
+					"type": "string",
+					"description": "dex or cex: both legs on that venue type."
+				},
+				"anchor": {
+					"type": "string",
+					"description": "Venue ID one leg must use, such as hl or hl:xyz."
+				},
+				"minOpenInterestUsd": {
+					"type": "number",
+					"description": "Nonnegative minimum USD open interest per leg; a leg without a published figure fails it."
+				},
+				"rwa": {
+					"type": "boolean",
+					"description": "Only real-world assets: stocks, indices, commodities, FX, pre-IPO."
+				},
+				"crypto": {
+					"type": "boolean",
+					"description": "Only crypto assets."
+				},
+				"category": {
+					"type": "string",
+					"description": "RWA category: stock, index, commodity, fx, pre-ipo, or other."
+				}
+			},
+			"required": [],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": true,
+			"destructiveHint": false,
+			"idempotentHint": true,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "markets",
+		"description": "List assets across venues with class (crypto or rwa), RWA category, venue count, summed 24h volume and open interest, and best funding. One ticker can name two assets; variant 2 marks the second, split by price. With rwa, adds category totals and the best liquid RWA funding pair. Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {
+				"rwa": {
+					"type": "boolean",
+					"description": "Only real-world assets."
+				},
+				"crypto": {
+					"type": "boolean",
+					"description": "Only crypto assets."
+				},
+				"category": {
+					"type": "string",
+					"description": "RWA category: stock, index, commodity, fx, pre-ipo, or other."
+				},
+				"search": {
+					"type": "string",
+					"description": "Ticker prefix or name words."
+				},
+				"sort": {
+					"type": "string",
+					"description": "volume (default), oi, apr, or venues."
+				},
+				"top": {
+					"type": "number",
+					"description": "Positive integer limit; default 25, cap 500."
+				},
+				"minVolume24hUsd": {
+					"type": "number",
+					"description": "Nonnegative minimum summed 24h volume."
+				}
+			},
+			"required": [],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": true,
+			"destructiveHint": false,
+			"idempotentHint": true,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "market",
+		"description": "Read one asset on every venue: price, 24h volume and share, open interest, funding per interval, APR, next funding, MoB support, and the widest funding spread. Separate blocks when one ticker names two assets. Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {
+				"base": {
+					"type": "string",
+					"description": "Required base ticker, for example BTC, XAU, or NVDA."
+				}
+			},
+			"required": ["base"],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": true,
+			"destructiveHint": false,
+			"idempotentHint": true,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "execution_cost",
+		"description": "Read each venue's public order book for one asset and price a market order at one to four USD sizes: average fill against mid plus the taker fee estimate, in USD and basis points. A size past the published levels reports what the book can fill and no cost. Variational and QFEX publish no public book. Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {
+				"base": {
+					"type": "string",
+					"description": "Required base ticker, for example BTC or NVDA."
+				},
+				"sizes": {
+					"type": "string",
+					"description": "Comma-separated USD sizes, one to four; default 10000,100000,1000000."
+				},
+				"side": {
+					"type": "string",
+					"description": "long (buy, default) or short (sell)."
+				},
+				"venues": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"description": "Venue IDs: hl, lighter, lighter-mainnet, aster, binance, bybit, okx, mexc, bingx, bitget, gate, grvt, variational, qfex, pacifica, extended, paradex, dydx, backpack, kucoin. Omit for all."
+				}
+			},
+			"required": ["base"],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": true,
+			"destructiveHint": false,
+			"idempotentHint": true,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "price_spread",
+		"description": "Read candles for two markets and return the spread of the second over the first, (B − A) / A in percent, at shared open times, with last, mean, min, max and where the last value sits. The legs can be one asset on two venues or two assets such as WTI and Brent. Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {
+				"a": {
+					"type": "string",
+					"description": "Required first market as venue:market, for example hl:BTC."
+				},
+				"b": {
+					"type": "string",
+					"description": "Required second market as venue:market, for example lighter-mainnet:BTC."
+				},
+				"interval": {
+					"type": "string",
+					"description": "15m, 1h (default), 4h, or 1d."
+				},
+				"days": {
+					"type": "number",
+					"description": "Positive lookback in days; default 7; capped by interval."
+				}
+			},
+			"required": ["a", "b"],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": true,
+			"destructiveHint": false,
+			"idempotentHint": true,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "oil",
+		"description": "Read WTI and Brent crude on every venue: busiest listing, mark, funding, the Brent premium per venue, the funding carry of long WTI and short Brent, and the best carry across venues. Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {},
+			"required": [],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": true,
+			"destructiveHint": false,
+			"idempotentHint": true,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "venues",
+		"description": "List venues by summed 24h volume with open interest, market count, DEX or CEX, MoB support, and the taker fee estimate. Missing counts mark sums that are lower bounds. Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {
+				"kind": {
+					"type": "string",
+					"description": "dex or cex; omit for all."
+				}
+			},
+			"required": [],
+			"additionalProperties": false
+		},
+		"annotations": {
+			"readOnlyHint": true,
+			"destructiveHint": false,
+			"idempotentHint": true,
+			"openWorldHint": true
+		}
+	},
+	{
+		"name": "watchlist",
+		"description": "Read the saved pairs with their current funding spread, price gap, volumes and open interest. Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
+		"inputSchema": {
+			"type": "object",
+			"properties": {},
 			"required": [],
 			"additionalProperties": false
 		},
@@ -115,7 +407,7 @@
 					"items": {
 						"type": "string"
 					},
-					"description": "Venue IDs: hl, lighter, lighter-mainnet, aster, binance, bybit, okx, mexc, bingx, bitget, gate, grvt, variational, qfex. Omit for all."
+					"description": "Venue IDs: hl, lighter, lighter-mainnet, aster, binance, bybit, okx, mexc, bingx, bitget, gate, grvt, variational, qfex, pacifica, extended, paradex, dydx, backpack, kucoin. Omit for all."
 				}
 			},
 			"required": ["base"],
@@ -240,7 +532,9 @@
 				},
 				"venues": {
 					"type": "array",
-					"items": { "type": "string" },
+					"items": {
+						"type": "string"
+					},
 					"description": "Trade venue IDs: hl, lighter, lighter-mainnet, aster. Omit for all."
 				}
 			},

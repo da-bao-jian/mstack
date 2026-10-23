@@ -10,9 +10,23 @@ export interface ObservedFundingRate extends Omit<FundingRate, "venue"> {
 	volume24hUsd?: number;
 	priceChange24hPct?: number;
 	oiCapped?: boolean;
+	/** The venue's own label for the underlying, when its feed publishes one. */
+	venueCategory?: VenueCategory;
 	source: "direct" | "hosted";
 	annualizationMethod: "simple";
 }
+
+/** "rwa" is a real-world asset the venue labels without a category. */
+export const VENUE_CATEGORIES = [
+	"crypto",
+	"stock",
+	"commodity",
+	"fx",
+	"index",
+	"pre-ipo",
+	"rwa",
+] as const;
+export type VenueCategory = (typeof VENUE_CATEGORIES)[number];
 
 export interface VenueFailure {
 	venue: string;

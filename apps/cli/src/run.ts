@@ -10,7 +10,7 @@ import {
 	commandError,
 	exitFor,
 } from "./commands/runtime.ts";
-import { scan } from "./commands/scan.ts";
+import { priceScan, scan } from "./commands/scan.ts";
 import { readinessStatus, status, statusApi } from "./commands/status.ts";
 import {
 	configHome,
@@ -35,10 +35,24 @@ Usage:
   mob hello [--big | --compact] [--stacked] [--plain | --ascii] [--offline] [--json]
   mob doctor [--json]
   mob menu [--json]            (what you can do now, by account state: words to say and commands; no network)
-  mob scan [--size N=1000] [--market BASE] [--venues a,b] [--top N=10]
+  mob scan [--by funding|price] [--size N=1000] [--market BASE] [--venues a,b] [--top N=10]
            [--all-pairs] [--executable] [--min-apy PCT] [--strict] [--json | --json-full]
-           [--min-volume N=1000000] [--include-thin] [--include-cross-deployment]
-           [--hold-days N=7] [--top-exec N=5]
+           [--min-volume N=1000000] [--min-oi N] [--kind dex|cex] [--anchor VENUE]
+           [--rwa | --crypto] [--category stock|index|commodity|fx|pre-ipo|other] [--realized]
+           [--include-thin] [--include-cross-deployment] [--hold-days N=7] [--top-exec N=5]
+  mob venues [--kind dex|cex] [--strict] [--json]      (volume, open interest and fees by venue)
+  mob markets [--rwa | --crypto] [--category C] [--search Q] [--sort volume|oi|apr|venues]
+              [--min-volume N] [--top N=25] [--strict] [--json]   (every asset across venues)
+  mob market <BASE> [--strict] [--json]   (one asset on every venue: price, volume, OI, funding)
+  mob oil [--strict] [--json]   (WTI vs Brent on every venue: prices, Brent premium, funding carry)
+  mob spread <venue:market> <venue:market> [--interval 15m|1h|4h|1d] [--days N=7] [--json]
+                                (price spread of the second market over the first, charted from candles)
+  mob cost <BASE> [--size N[,N…]=10000,100000,1000000] [--side long|short] [--venues a,b] [--strict] [--json]
+                                (market-order cost on each venue's public order book, taker fee included)
+  mob watch [--check] [--json] | mob watch remove <n>   (saved pairs, kept in the mob home)
+  mob watch add <BASE> --long venue:market --short venue:market
+                [--alert-spread-above N] [--alert-spread-below N] [--alert-gap-above N]
+                                (--check prints only the alerts that fire now; run it on a schedule)
   mob rates [--venue V] [--market BASE] [--strict] [--json]
   mob history <BASE> [--days N=7] [--venues a,b] [--strict] [--json]
   mob explain [topic] [--simple]
@@ -82,7 +96,7 @@ Usage:
   mob --version
   mob --help
 
-Venues: hl,lighter,lighter-mainnet,aster,binance,bybit,okx,mexc,bingx,bitget,gate,grvt,variational,qfex
+Venues: hl,lighter,lighter-mainnet,aster,binance,bybit,okx,mexc,bingx,bitget,gate,grvt,variational,qfex,pacifica,extended,paradex,dydx,backpack,kucoin
 Config keys: api_base, strategy_api_base, auth_base, app_base, legal_chain_id, hl_signature_chain_id, owner, signer, policy, key_store, walletconnect_project_id, default_size_usd, taker_fee_bps.<venue>, builder_fee_tenths_bps
 Keystore secrets are read only from /dev/tty. Mutation commands stage, preview, and stop before signing.
 MCP tools stage Proposals; no sign, reject, or config-set tool is exposed.
@@ -91,7 +105,8 @@ Browser and WalletConnect signing can start from an agent's shell; the human app
 WalletConnect requires walletconnect_project_id from cloud.reown.com; there is no default.
 Fee defaults are estimates. Annualized rates are simple, not compounded.
 Scan --json returns counts and bounded views. --json-full includes every opportunity and can exceed 3 MB.
-Scan --top and --top-exec are capped at 200 each.
+Scan --top and --top-exec are capped at 200 each. Scan --by price ranks mark-price gaps, not order-book fills.
+Pairs whose prices are too far apart to be one asset (BB the stock, BB the token) are never paired.
 Exit: 0 success, 1 usage/request error, 2 no venue rates, 3 partial failure with --strict.`;
 
 const flag = (type: "string" | "boolean") => ({ type });
@@ -211,6 +226,49 @@ export const definitions: Record<string, ParseArgsConfig["options"]> = {
 		"min-volume": flag("string"),
 		"include-thin": flag("boolean"),
 		"include-cross-deployment": flag("boolean"),
+		by: flag("string"),
+		kind: flag("string"),
+		anchor: flag("string"),
+		"min-oi": flag("string"),
+		realized: flag("boolean"),
+		rwa: flag("boolean"),
+		crypto: flag("boolean"),
+		category: flag("string"),
+	},
+	venues: { ...common, kind: flag("string") },
+	markets: {
+		...common,
+		rwa: flag("boolean"),
+		crypto: flag("boolean"),
+		category: flag("string"),
+		search: flag("string"),
+		sort: flag("string"),
+		top: flag("string"),
+		"min-volume": flag("string"),
+	},
+	market: { ...common },
+	oil: { ...common },
+	spread: {
+		json: flag("boolean"),
+		help: flag("boolean"),
+		interval: flag("string"),
+		days: flag("string"),
+	},
+	cost: {
+		...common,
+		size: flag("string"),
+		side: flag("string"),
+		venues: flag("string"),
+	},
+	watch: {
+		json: flag("boolean"),
+		help: flag("boolean"),
+		long: flag("string"),
+		short: flag("string"),
+		"alert-spread-above": flag("string"),
+		"alert-spread-below": flag("string"),
+		"alert-gap-above": flag("string"),
+		check: flag("boolean"),
 	},
 	rates: { ...common, venue: flag("string"), market: flag("string") },
 	history: { ...common, days: flag("string"), venues: flag("string") },
@@ -335,6 +393,15 @@ export async function run(
 				: numberFlag(text(name) as string, name, minimum, integer);
 		const json = values.json === true || values["json-full"] === true;
 		const strict = values.strict === true;
+		const scanFilters = () => ({
+			kind: text("kind"),
+			anchor: text("anchor"),
+			minOpenInterestUsd: number("min-oi", 0),
+			realized: values.realized === true,
+			rwa: values.rwa === true,
+			crypto: values.crypto === true,
+			category: text("category"),
+		});
 		if (command === "hook") {
 			if (positionals.length !== 1 || positionals[0] !== "sign-guard")
 				throw new UsageError("Usage: mob hook sign-guard");
@@ -531,12 +598,201 @@ export async function run(
 				rt.out(result === "" ? "(unset)" : String(result));
 			return 0;
 		}
+		if (command === "watch") {
+			const [action, ...rest] = positionals;
+			const { watchAdd, watchList, watchRemove } = await import(
+				"./commands/watch.ts"
+			);
+			if (action === "add") {
+				if (rest.length !== 1)
+					throw new UsageError(
+						"Usage: mob watch add <BASE> --long venue:market --short venue:market",
+					);
+				const result = await watchAdd(
+					{
+						base: rest[0],
+						long: text("long"),
+						short: text("short"),
+						spreadAbove: number("alert-spread-above", -Number.MAX_VALUE),
+						spreadBelow: number("alert-spread-below", -Number.MAX_VALUE),
+						gapAbove: number("alert-gap-above", -Number.MAX_VALUE),
+					},
+					rt,
+				);
+				rt.out(
+					json
+						? JSON.stringify(result, null, 2)
+						: result.added
+							? `Saved pair ${result.pairs.length}: ${rest[0].toUpperCase()} long ${text("long")}, short ${text("short")}`
+							: result.updated
+								? "Updated the alert on that saved pair."
+								: "That pair is already saved.",
+				);
+				return 0;
+			}
+			if (action === "remove") {
+				if (rest.length !== 1)
+					throw new UsageError("Usage: mob watch remove <n>");
+				const { removed } = await watchRemove(rest[0], rt);
+				rt.out(
+					json
+						? JSON.stringify({ removed }, null, 2)
+						: `Removed ${removed.base}: long ${removed.long}, short ${removed.short}`,
+				);
+				return 0;
+			}
+			if (
+				action !== undefined ||
+				text("long") ||
+				text("short") ||
+				text("alert-spread-above") ||
+				text("alert-spread-below") ||
+				text("alert-gap-above")
+			)
+				throw new UsageError(
+					"Usage: mob watch [--check] | mob watch add <BASE> --long venue:market --short venue:market [--alert-spread-above N] [--alert-spread-below N] [--alert-gap-above N] | mob watch remove <n>",
+				);
+			const result = await watchList(rt);
+			const { renderAlerts, renderWatch } = await import("./render-markets.ts");
+			const human =
+				values.check === true ? renderAlerts(result) : renderWatch(result);
+			if (!result.view.length && !json) {
+				rt.out(human);
+				return 0;
+			}
+			display(rt, result, human, footer(result, 0, rt.now()), json);
+			return exitFor(result, strict);
+		}
+		if (command === "spread") {
+			if (positionals.length !== 2)
+				throw new UsageError(
+					"Usage: mob spread <venue:market> <venue:market> [--interval 1h] [--days 7]",
+				);
+			const { spread } = await import("./commands/spread.ts");
+			const { renderSpread } = await import("./render-markets.ts");
+			const result = await spread(
+				{
+					a: positionals[0],
+					b: positionals[1],
+					interval: text("interval"),
+					days: number("days", Number.MIN_VALUE),
+				},
+				rt,
+			);
+			display(
+				rt,
+				result,
+				renderSpread(result, rt),
+				`candles: ${result.a} ${result.candles.a} · ${result.b} ${result.candles.b} · trade prices, closes at the same open time · read ${new Date(result.observedAt).toISOString()}`,
+				json,
+			);
+			return 0;
+		}
+		if (command === "cost") {
+			if (positionals.length !== 1)
+				throw new UsageError(
+					"Usage: mob cost <BASE> [--size N[,N…]] [--side long|short]",
+				);
+			const { cost } = await import("./commands/cost.ts");
+			const { renderCost } = await import("./render-markets.ts");
+			const result = await cost(
+				{
+					base: positionals[0],
+					sizes: text("size"),
+					side: text("side"),
+					venues: text("venues")?.split(","),
+				},
+				rt,
+			);
+			const notes = [
+				result.bookless.length
+					? `no public order book: ${result.bookless.join(", ")}`
+					: "",
+				result.notListed.length
+					? `not listed on: ${result.notListed.join(", ")}`
+					: "",
+				"> book: the size runs past the levels the venue publishes. Taker fees are estimates.",
+			].filter(Boolean);
+			display(
+				rt,
+				result,
+				renderCost(result, rt),
+				`${footer(result, 0, rt.now())}\n${notes.join("\n")}`,
+				json,
+			);
+			return exitFor(result, strict);
+		}
+		if (command === "market") {
+			if (positionals.length !== 1)
+				throw new UsageError("Usage: mob market <BASE>");
+			const { market } = await import("./commands/markets.ts");
+			const { renderMarket } = await import("./render-markets.ts");
+			const result = await market({ base: positionals[0] }, rt);
+			display(
+				rt,
+				result,
+				renderMarket(result, rt.now(), rt),
+				footer(result, 0, rt.now()),
+				json,
+			);
+			return exitFor(result, strict);
+		}
 		if (positionals.length !== (command === "history" ? 1 : 0))
 			throw new UsageError(
 				command === "history"
 					? "Usage: mob history <BASE> [--days N]"
 					: `${command} does not accept positional arguments`,
 			);
+		if (command === "oil") {
+			const { oil } = await import("./commands/oil.ts");
+			const { renderOil } = await import("./render-markets.ts");
+			const result = await oil(rt);
+			display(
+				rt,
+				result,
+				renderOil(result, rt),
+				`${footer(result, 0, rt.now())}\nChart the spread: mob spread hl:xyz:CL hl:xyz:BRENTOIL --interval 4h --days 30`,
+				json,
+			);
+			return exitFor(result, strict);
+		}
+		if (command === "venues") {
+			const { venues } = await import("./commands/markets.ts");
+			const { renderVenues } = await import("./render-markets.ts");
+			const result = await venues({ kind: text("kind") }, rt);
+			display(
+				rt,
+				result,
+				renderVenues(result),
+				`${footer(result, 0, rt.now())}\n≥ marks a sum where some markets publish no figure; — means no market does. Taker fees are estimates.`,
+				json,
+			);
+			return exitFor(result, strict);
+		}
+		if (command === "markets") {
+			const { markets } = await import("./commands/markets.ts");
+			const { renderMarkets } = await import("./render-markets.ts");
+			const result = await markets(
+				{
+					rwa: values.rwa === true,
+					crypto: values.crypto === true,
+					category: text("category"),
+					search: text("search"),
+					sort: text("sort"),
+					top: number("top", 1, true),
+					minVolume24hUsd: number("min-volume", 0),
+				},
+				rt,
+			);
+			display(
+				rt,
+				result,
+				renderMarkets(result, rt),
+				`${footer(result, result.unmatched.length, rt.now())}\nOne ticker can name two assets; #2 marks the second, split by price.`,
+				json,
+			);
+			return exitFor(result, strict);
+		}
 		if (command === "status") {
 			if (values.readiness) {
 				if (values.task || values.trims || values.resizes)
@@ -586,7 +842,35 @@ export async function run(
 			);
 			return 0;
 		}
+		if (command === "scan" && text("by") === "price") {
+			const result = await priceScan(
+				{
+					market: text("market"),
+					venues: text("venues")?.split(","),
+					top: number("top", 1),
+					topExec: number("top-exec", 1),
+					minVolume24hUsd: number("min-volume", 0),
+					allPairs: values["all-pairs"] === true,
+					executable: values.executable === true,
+					includeThin: values["include-thin"] === true,
+					includeCrossDeployment: values["include-cross-deployment"] === true,
+					...scanFilters(),
+				},
+				rt,
+			);
+			const { renderPriceScan } = await import("./render-markets.ts");
+			display(
+				rt,
+				result,
+				renderPriceScan(result.view, values.executable === true, rt),
+				`${footer(result, 0, rt.now())}\nthin hidden: ${result.counts.thinHidden} (--include-thin) · cross-deployment hidden: ${result.counts.crossDeploymentHidden} (--include-cross-deployment)`,
+				json,
+			);
+			return exitFor(result, strict);
+		}
 		if (command === "scan") {
+			if (text("by") !== undefined && text("by") !== "funding")
+				throw new UsageError("--by must be funding or price");
 			const result = await scan(
 				{
 					sizeUsd: number("size", Number.MIN_VALUE),
@@ -602,6 +886,7 @@ export async function run(
 					includeThin: values["include-thin"] === true,
 					includeCrossDeployment: values["include-cross-deployment"] === true,
 					includeFull: values["json-full"] === true,
+					...scanFilters(),
 				},
 				rt,
 			);
@@ -614,7 +899,7 @@ export async function run(
 					result.holdDays,
 					rt,
 				),
-				`${footer(result, result.unmatched.length, rt.now())}\nthin hidden: ${result.counts.thinHidden} (--include-thin) · cross-deployment hidden: ${result.counts.crossDeploymentHidden} (--include-cross-deployment)`,
+				`${footer(result, result.unmatched.length, rt.now())}\nthin hidden: ${result.counts.thinHidden} (--include-thin) · cross-deployment hidden: ${result.counts.crossDeploymentHidden} (--include-cross-deployment)${result.counts.mismatchHidden ? ` · different assets hidden: ${result.counts.mismatchHidden}` : ""}`,
 				json,
 			);
 			return exitFor(result, strict);

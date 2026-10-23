@@ -1,0 +1,407 @@
+{
+	"success": true,
+	"data": [
+		{
+			"oracle_price": "81745.689256",
+			"bid_impact_price": "81767",
+			"ask_impact_price": "81768",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792760403680
+		},
+		{
+			"oracle_price": "81726.847283",
+			"bid_impact_price": "81783.894864",
+			"ask_impact_price": "81786",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792756803680
+		},
+		{
+			"oracle_price": "81690.981229",
+			"bid_impact_price": "81721",
+			"ask_impact_price": "81722",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792753203680
+		},
+		{
+			"oracle_price": "81674.754181",
+			"bid_impact_price": "81703.220642",
+			"ask_impact_price": "81705.766456",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792749603680
+		},
+		{
+			"oracle_price": "81765.447575",
+			"bid_impact_price": "81809.672724",
+			"ask_impact_price": "81811",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792746003680
+		},
+		{
+			"oracle_price": "81580.581438",
+			"bid_impact_price": "81616.990504",
+			"ask_impact_price": "81620.328275",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792742403680
+		},
+		{
+			"oracle_price": "81891.255184",
+			"bid_impact_price": "81931",
+			"ask_impact_price": "81932",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792738803680
+		},
+		{
+			"oracle_price": "81848.132107",
+			"bid_impact_price": "81888.67803",
+			"ask_impact_price": "81891.674238",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792735203679
+		},
+		{
+			"oracle_price": "81587.488002",
+			"bid_impact_price": "81619",
+			"ask_impact_price": "81624.995103",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792731603680
+		},
+		{
+			"oracle_price": "81893.384323",
+			"bid_impact_price": "81923",
+			"ask_impact_price": "81930.694758",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792728003680
+		},
+		{
+			"oracle_price": "81972.536622",
+			"bid_impact_price": "81999.932306",
+			"ask_impact_price": "82002",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792724403680
+		},
+		{
+			"oracle_price": "81355.798244",
+			"bid_impact_price": "81380.252037",
+			"ask_impact_price": "81382",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792720803679
+		},
+		{
+			"oracle_price": "81456.953763",
+			"bid_impact_price": "81499",
+			"ask_impact_price": "81500.626893",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792717203679
+		},
+		{
+			"oracle_price": "81414.93495",
+			"bid_impact_price": "81439.95977",
+			"ask_impact_price": "81441.696836",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792713603679
+		},
+		{
+			"oracle_price": "81350.61944",
+			"bid_impact_price": "81383",
+			"ask_impact_price": "81384",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792710003680
+		},
+		{
+			"oracle_price": "81484.012751",
+			"bid_impact_price": "81507",
+			"ask_impact_price": "81508",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792706403680
+		},
+		{
+			"oracle_price": "81276.318771",
+			"bid_impact_price": "81302.621196",
+			"ask_impact_price": "81304",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792702803680
+		},
+		{
+			"oracle_price": "81498.944273",
+			"bid_impact_price": "81524.525143",
+			"ask_impact_price": "81526",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792699203680
+		},
+		{
+			"oracle_price": "81382.155769",
+			"bid_impact_price": "81407",
+			"ask_impact_price": "81408",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792695603679
+		},
+		{
+			"oracle_price": "81209.872324",
+			"bid_impact_price": "81242",
+			"ask_impact_price": "81243",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792692003680
+		},
+		{
+			"oracle_price": "81280.097617",
+			"bid_impact_price": "81242.541949",
+			"ask_impact_price": "81244.468908",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792688403680
+		},
+		{
+			"oracle_price": "81680.322324",
+			"bid_impact_price": "81712",
+			"ask_impact_price": "81713",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792684803680
+		},
+		{
+			"oracle_price": "81881.664047",
+			"bid_impact_price": "81876.000901",
+			"ask_impact_price": "81899",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792681203680
+		},
+		{
+			"oracle_price": "81706.054682",
+			"bid_impact_price": "81736.26115",
+			"ask_impact_price": "81738",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792677603679
+		},
+		{
+			"oracle_price": "81688.640761",
+			"bid_impact_price": "81696",
+			"ask_impact_price": "81697",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792674003679
+		},
+		{
+			"oracle_price": "81750.295192",
+			"bid_impact_price": "81773",
+			"ask_impact_price": "81774",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792670403679
+		},
+		{
+			"oracle_price": "82041.683612",
+			"bid_impact_price": "82041",
+			"ask_impact_price": "82042",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792666803680
+		},
+		{
+			"oracle_price": "81951.889005",
+			"bid_impact_price": "81944.011802",
+			"ask_impact_price": "81957",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792663203679
+		},
+		{
+			"oracle_price": "81861.177383",
+			"bid_impact_price": "81854.82417",
+			"ask_impact_price": "81858.574993",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792659603679
+		},
+		{
+			"oracle_price": "82242.929348",
+			"bid_impact_price": "82227.950185",
+			"ask_impact_price": "82231",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792656003679
+		},
+		{
+			"oracle_price": "82495.844189",
+			"bid_impact_price": "82481.198399",
+			"ask_impact_price": "82498",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792652403680
+		},
+		{
+			"oracle_price": "82819.256773",
+			"bid_impact_price": "82819.822734",
+			"ask_impact_price": "82821.326665",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792648803679
+		},
+		{
+			"oracle_price": "82914.863294",
+			"bid_impact_price": "82915",
+			"ask_impact_price": "82916",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792645203679
+		},
+		{
+			"oracle_price": "82925.941012",
+			"bid_impact_price": "82925.198529",
+			"ask_impact_price": "82930",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792641603679
+		},
+		{
+			"oracle_price": "82922.562458",
+			"bid_impact_price": "82928.294361",
+			"ask_impact_price": "82933",
+			"funding_rate": "-0.00000757",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792638003680
+		},
+		{
+			"oracle_price": "83411.360117",
+			"bid_impact_price": "83351.602993",
+			"ask_impact_price": "83354.129784",
+			"funding_rate": "-0.0000135",
+			"next_funding_rate": "-0.00000757",
+			"created_at": 1792634403680
+		},
+		{
+			"oracle_price": "84204.279557",
+			"bid_impact_price": "84123",
+			"ask_impact_price": "84126.500051",
+			"funding_rate": "-0.0000108",
+			"next_funding_rate": "-0.0000135",
+			"created_at": 1792630803679
+		},
+		{
+			"oracle_price": "84093.888671",
+			"bid_impact_price": "84060",
+			"ask_impact_price": "84061",
+			"funding_rate": "-0.00001264",
+			"next_funding_rate": "-0.0000108",
+			"created_at": 1792627203679
+		},
+		{
+			"oracle_price": "84446.802174",
+			"bid_impact_price": "84407",
+			"ask_impact_price": "84408.511842",
+			"funding_rate": "-0.00001042",
+			"next_funding_rate": "-0.00001264",
+			"created_at": 1792623603679
+		},
+		{
+			"oracle_price": "84845.27337",
+			"bid_impact_price": "84786",
+			"ask_impact_price": "84787",
+			"funding_rate": "-0.00001343",
+			"next_funding_rate": "-0.00001042",
+			"created_at": 1792620003680
+		},
+		{
+			"oracle_price": "84686.678261",
+			"bid_impact_price": "84627",
+			"ask_impact_price": "84628",
+			"funding_rate": "-0.00001677",
+			"next_funding_rate": "-0.00001343",
+			"created_at": 1792616403679
+		},
+		{
+			"oracle_price": "84496.103428",
+			"bid_impact_price": "84459.852201",
+			"ask_impact_price": "84464.309631",
+			"funding_rate": "-0.00001837",
+			"next_funding_rate": "-0.00001677",
+			"created_at": 1792612803680
+		},
+		{
+			"oracle_price": "84415.475251",
+			"bid_impact_price": "84349",
+			"ask_impact_price": "84353.688657",
+			"funding_rate": "-0.00001744",
+			"next_funding_rate": "-0.00001837",
+			"created_at": 1792609203680
+		},
+		{
+			"oracle_price": "84682.438629",
+			"bid_impact_price": "84623",
+			"ask_impact_price": "84624",
+			"funding_rate": "-0.00003368",
+			"next_funding_rate": "-0.00001744",
+			"created_at": 1792605603680
+		},
+		{
+			"oracle_price": "84550.402383",
+			"bid_impact_price": "84487",
+			"ask_impact_price": "84488",
+			"funding_rate": "-0.00000249",
+			"next_funding_rate": "-0.00003368",
+			"created_at": 1792602003679
+		},
+		{
+			"oracle_price": "84541.806856",
+			"bid_impact_price": "84481",
+			"ask_impact_price": "84495.003001",
+			"funding_rate": "0.00000557",
+			"next_funding_rate": "-0.00000249",
+			"created_at": 1792598403679
+		},
+		{
+			"oracle_price": "84576.928846",
+			"bid_impact_price": "84593",
+			"ask_impact_price": "84594",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.00000557",
+			"created_at": 1792594803679
+		},
+		{
+			"oracle_price": "83825.462667",
+			"bid_impact_price": "83800",
+			"ask_impact_price": "83801",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792591203679
+		},
+		{
+			"oracle_price": "83505.358361",
+			"bid_impact_price": "83478.587644",
+			"ask_impact_price": "83480",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792587603679
+		},
+		{
+			"oracle_price": "83502.535075",
+			"bid_impact_price": "83497",
+			"ask_impact_price": "83498",
+			"funding_rate": "0.0000125",
+			"next_funding_rate": "0.0000125",
+			"created_at": 1792584003680
+		}
+	],
+	"next_cursor": "1111YPpBq",
+	"has_more": false
+}

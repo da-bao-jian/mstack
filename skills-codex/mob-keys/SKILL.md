@@ -3,14 +3,14 @@ name: mob-keys
 description: Manage the scoped MoB API key safely. Use for "import my key", "show key status", "list my keys", "raise my cap", "revoke this key", or "delete the local key"; never reveals or echoes the secret. (mstack)
 license: MIT
 metadata:
-  version: "0.4.12"
+  version: "0.5.0"
 ---
 
 ```bash
 bash ~/.agents/skills/mstack/bin/mob-preamble
 ```
 
-If the preamble output contains a block between the lines `<mob-home>` and `</mob-home>`, reproduce every line between those two tags verbatim in a fenced code block at the top of your reply; stop before the `</mob-home>` line and print neither tag line; never strip, trim or summarize the block. When a reply completes the request (not when it asks a question), end with "You can": up to three rows from the preamble's `YOU_CAN` list or the welcome's `You can` rows that fit the moment, as words to say next. Only when the welcome printed in this reply, add that `$mob` opens the menu.
+If the preamble output contains a `<mob-home>` line, the welcome is the lines after `<mob-home>` and before `</mob-home>`. Put exactly those lines, verbatim, in a fenced code block at the top of your reply. The two tag lines are markers, not part of the welcome: never print `<mob-home>` or `</mob-home>`. Never strip, trim or summarize the welcome. When a reply completes the request (not when it asks a question), end with "You can": up to three rows from the preamble's `YOU_CAN` list or the welcome's `You can` rows that fit the moment, as words to say next. Only when the welcome printed in this reply, add that `$mob` opens the menu.
 
 Run the preamble first. Use the printed `MOB_BIN` path in place of `mob`; shell-quote public values. If `MOB_MISSING` appears, show the install line and stop. Read [key safety and actions](references/keys.md).
 
@@ -21,7 +21,7 @@ Run the preamble first. Use the printed `MOB_BIN` path in place of `mob`; shell-
 - Revoke: run `mob keys revoke <uuid>`. This stages a wallet Proposal and deletes a matching local key only after acknowledgement.
 - Local delete: run `mob keys delete`. It does not revoke the server key. Confirm that distinction before deleting.
 - Import: ask for a name, exact venues, and modest USD cap. Ask the user to paste the key in chat. Never repeat it.
-- Raise or lower the cap, or change venues: a MoB key cannot be edited. Run `mob keys create --name '<name>' --venues '<a,b>' --max-size '<usd>'` with the new values; it stages a wallet Proposal and stores the new key locally once signed. Then offer `mob keys revoke <uuid>` for the old key from `mob keys list`. MoB allows $10 to $1,000,000,000 and at most 10 active keys per wallet.
+- Raise or lower the cap, or change venues: a MoB key cannot be edited. Run `mob keys create --name '<name>' --venues '<a,b>' --max-size '<usd>'` with the new values; it stages a wallet Proposal and stores the new key locally once signed. Then offer `mob keys revoke <uuid>` for the old key from `mob keys list`. MoB allows caps from 10 USD to 1,000,000,000 USD and at most 10 active keys per wallet.
 
 For import, run exactly one command. Put the already-pasted key in the single-quoted stdin value below, replacing `mobius_…`:
 

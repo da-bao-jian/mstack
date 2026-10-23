@@ -1,4 +1,8 @@
-import { type FundingHistory, fetchFundingHistory } from "@mstack/funding";
+import {
+	type FundingHistory,
+	fetchFundingHistory,
+	HISTORY_VENUES,
+} from "@mstack/funding";
 import { classifyMarket } from "@mstack/opportunities";
 import { numberFlag, readConfig, UsageError } from "../config.ts";
 import {
@@ -36,12 +40,12 @@ export async function history(options: HistoryOptions, rt: Runtime) {
 		);
 	});
 	const unsupported = venues
-		.filter((v) => v.venue.startsWith("lighter"))
+		.filter((v) => !HISTORY_VENUES.includes(v.venue))
 		.map((v) => ({ venue: v.venue, reason: "no keyless history" }));
 	const missing = venues
 		.filter(
 			(v) =>
-				!v.venue.startsWith("lighter") &&
+				HISTORY_VENUES.includes(v.venue) &&
 				!matches.some((r) => r.venue === v.venue),
 		)
 		.map((v) => ({
@@ -54,7 +58,7 @@ export async function history(options: HistoryOptions, rt: Runtime) {
 	const history: FundingHistory[] = [];
 	// Sequential per market keeps public history reads within venue rate limits.
 	for (const row of matches) {
-		if (row.venue.startsWith("lighter")) continue;
+		if (!HISTORY_VENUES.includes(row.venue)) continue;
 		try {
 			history.push(
 				await fetchFundingHistory(row.venue, row.market, {

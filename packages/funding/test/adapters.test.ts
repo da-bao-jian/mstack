@@ -1,17 +1,23 @@
 import { describe, expect, test } from "bun:test";
 import {
 	aster,
+	backpack,
 	binance,
 	bingx,
 	bitget,
 	bybit,
+	dydx,
+	extended,
 	gate,
 	grvt,
 	hyperliquid,
+	kucoin,
 	lighter,
 	lighterMainnet,
 	mexc,
 	okx,
+	pacifica,
+	paradex,
 	qfex,
 	variational,
 } from "../src/main.ts";
@@ -83,6 +89,36 @@ const cases = [
 		adapter: qfex,
 		file: "qfex/contracts.json",
 		path: ["data", 0, "next_funding_rate"],
+	},
+	{
+		adapter: pacifica,
+		file: "pacifica/prices.json",
+		path: ["data", 0, "next_funding"],
+	},
+	{
+		adapter: extended,
+		file: "extended/markets.json",
+		path: ["data", 0, "marketStats", "fundingRate"],
+	},
+	{
+		adapter: paradex,
+		file: "paradex/summary.json",
+		path: ["results", 0, "funding_rate"],
+	},
+	{
+		adapter: dydx,
+		file: "dydx/markets.json",
+		path: ["markets", "BTC-USD", "nextFundingRate"],
+	},
+	{
+		adapter: backpack,
+		file: "backpack/markPrices.json",
+		path: [0, "fundingRate"],
+	},
+	{
+		adapter: kucoin,
+		file: "kucoin/contracts.json",
+		path: ["data", 0, "fundingFeeRate"],
 	},
 ];
 
@@ -288,6 +324,94 @@ test.each([
 	},
 );
 
+describe("venues added on 2026-10-23", () => {
+	test("Pacifica skips spot pairs and fails on a price row without an instrument", async () => {
+		const { ctx } = await fixtureContext();
+		const rows = await pacifica.fetchRates(ctx);
+		expect(rows.map((row) => row.market)).not.toContain("SOL-USDC");
+		const info = (await changed("pacifica/info.json", ["data"], [])) as object;
+		const { ctx: missing } = await fixtureContext({
+			"pacifica/info.json": info,
+		});
+		await expect(pacifica.fetchRates(missing)).rejects.toThrow(
+			"missing instrument",
+		);
+	});
+
+	test("Extended keeps active perpetuals only and labels real-world markets", async () => {
+		const { ctx } = await fixtureContext();
+		const rows = await extended.fetchRates(ctx);
+		expect(rows.map((row) => row.market)).toEqual([
+			"BTC-USD",
+			"ETH-USD",
+			"IREN_24_5-USD",
+		]);
+		expect(rows.map((row) => row.venueCategory)).toEqual([
+			"crypto",
+			"crypto",
+			"rwa",
+		]);
+		expect(rows.every((row) => row.intervalHours === 1)).toBe(true);
+	});
+
+	test("Paradex keeps perpetuals and reads each market's funding interval", async () => {
+		const { ctx } = await fixtureContext();
+		const rows = await paradex.fetchRates(ctx);
+		expect(rows.every((row) => row.market.endsWith("-PERP"))).toBe(true);
+		expect(rows[0].intervalHours).toBe(8);
+	});
+
+	test("dYdX skips markets in final settlement and refuses a mismatched key", async () => {
+		const { ctx } = await fixtureContext();
+		expect((await dydx.fetchRates(ctx)).map((row) => row.market)).toEqual([
+			"BTC-USD",
+			"ETH-USD",
+		]);
+		const wrong = await changed(
+			"dydx/markets.json",
+			["markets", "BTC-USD", "ticker"],
+			"ETH-USD",
+		);
+		const { ctx: bad } = await fixtureContext({ "dydx/markets.json": wrong });
+		await expect(dydx.fetchRates(bad)).rejects.toThrow("market key");
+	});
+
+	test("Backpack keeps open perpetuals, labels US stocks, and needs a mark for each", async () => {
+		const { ctx } = await fixtureContext();
+		const rows = await backpack.fetchRates(ctx);
+		expect(rows.map((row) => row.market)).toEqual([
+			"BTC_USDC_PERP",
+			"ETH_USDC_PERP",
+			"MU.US_USDC_PERP",
+		]);
+		expect(rows[2].venueCategory).toBe("stock");
+		expect(rows[0].venueCategory).toBeUndefined();
+		const { ctx: missing } = await fixtureContext({
+			"backpack/markPrices.json": [],
+		});
+		await expect(backpack.fetchRates(missing)).rejects.toThrow(
+			"missing mark price row",
+		);
+	});
+
+	test("KuCoin skips inverse contracts and sizes open interest by the multiplier", async () => {
+		const { ctx } = await fixtureContext();
+		const rows = await kucoin.fetchRates(ctx);
+		expect(rows.map((row) => row.market)).toEqual(["XBTUSDTM", "ETHUSDTM"]);
+		const raw = (await Bun.file(
+			new URL("../fixtures/kucoin/contracts.json", import.meta.url),
+		).json()) as { data: Record<string, number | string>[] };
+		const btc = raw.data[0];
+		expect(rows[0].openInterestUsd).toBeCloseTo(
+			Number(btc.openInterest) * Number(btc.multiplier) * Number(btc.markPrice),
+			6,
+		);
+		expect(rows[0].intervalHours).toBe(
+			Number(btc.fundingRateGranularity) / 3_600_000,
+		);
+	});
+});
+
 describe("OKX", () => {
 	test("uses four bulk requests and excludes funding outside the live SWAP list", async () => {
 		const { ctx, calls } = await fixtureContext();
@@ -332,6 +456,24 @@ describe("OKX", () => {
 			await expect(okx.fetchRates(ctx)).rejects.toThrow();
 		},
 	);
+
+	test("a live swap with no trade yet keeps its row with the price change unknown", async () => {
+		// OKX lists new swaps before their first trade, with empty last and open.
+		let body = await changed("okx/volume.json", ["data", 3, "last"], "");
+		const target = body as { data: Record<string, unknown>[] };
+		target.data[3].open24h = "";
+		body = target;
+		const { ctx } = await fixtureContext({ "okx/volume.json": body });
+		const rows = await okx.fetchRates(ctx);
+		const chip = rows.find((row) => row.market === "CHIP-USDT-SWAP");
+		expect(chip).toBeDefined();
+		expect(chip?.priceChange24hPct).toBeUndefined();
+		expect(rows).toHaveLength(expected.okx.length);
+		// Only both fields empty means untraded; one empty price is still malformed.
+		const half = await changed("okx/volume.json", ["data", 3, "last"], "");
+		const { ctx: broken } = await fixtureContext({ "okx/volume.json": half });
+		await expect(okx.fetchRates(broken)).rejects.toThrow("last");
+	});
 
 	test("fails when a live instrument has no funding row", async () => {
 		const { ctx } = await fixtureContext({

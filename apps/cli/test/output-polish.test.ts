@@ -236,6 +236,8 @@ test("glossary covers every emitted field and explains actual ranking gates and 
 
 test("cross-deployment flag reveals informational rows and preserves hidden counts", async () => {
 	const h = await harness();
+	// Fourteen venues keep every view under the 200-row cap, so the views
+	// differ by exactly the hidden rows.
 	const args = [
 		"scan",
 		"--json-full",
@@ -245,6 +247,8 @@ test("cross-deployment flag reveals informational rows and preserves hidden coun
 		"--top-exec",
 		"200",
 		"--include-thin",
+		"--venues",
+		"hl,lighter,lighter-mainnet,aster,binance,bybit,okx,mexc,bingx,bitget,gate,grvt,variational,qfex",
 	];
 	const hidden = JSON.parse((await h.invoke(args)).out);
 	const shown = JSON.parse(

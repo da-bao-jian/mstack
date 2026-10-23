@@ -1,0 +1,32 @@
+[
+	{
+		"symbol": "BTC_USDC_PERP",
+		"marketType": "PERP",
+		"orderBookState": "Open",
+		"fundingInterval": 3600000
+	},
+	{
+		"symbol": "ETH_USDC_PERP",
+		"marketType": "PERP",
+		"orderBookState": "Open",
+		"fundingInterval": 3600000
+	},
+	{
+		"symbol": "MU.US_USDC_PERP",
+		"marketType": "PERP",
+		"orderBookState": "Open",
+		"fundingInterval": 3600000
+	},
+	{
+		"symbol": "IP_USDC_PERP",
+		"marketType": "PERP",
+		"orderBookState": "Closed",
+		"fundingInterval": 3600000
+	},
+	{
+		"symbol": "SOL_USDC",
+		"marketType": "SPOT",
+		"orderBookState": "Open",
+		"fundingInterval": null
+	}
+]

@@ -1,0 +1,8 @@
+{
+	"success": true,
+	"code": 0,
+	"data": {
+		"symbol": "BTC_USDT",
+		"contractSize": 0.0001
+	}
+}

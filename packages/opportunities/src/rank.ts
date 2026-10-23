@@ -3,6 +3,7 @@ import {
 	type ObservedFundingRate,
 	type Snapshot,
 } from "@mstack/funding";
+import { pricesAgree, unitPrice } from "./assets.ts";
 import { classifyMarket } from "./classify.ts";
 import type {
 	Opportunity,
@@ -15,6 +16,7 @@ import {
 	fundingEntryPriceSpreadCost,
 	normalizeFundingRatePerHour,
 } from "./upstream.ts";
+import { MOB_VENUES } from "./venues.ts";
 
 export const DEFAULT_TAKER_FEE_BPS: Readonly<Record<string, number>> =
 	Object.freeze({
@@ -33,6 +35,13 @@ export const DEFAULT_TAKER_FEE_BPS: Readonly<Record<string, number>> =
 		grvt: 4.5,
 		variational: 0,
 		qfex: 10,
+		// Base-tier taker rates published by each venue on 2026-10-23.
+		pacifica: 4,
+		extended: 2.5,
+		paradex: 2,
+		dydx: 5,
+		backpack: 5,
+		kucoin: 6,
 	});
 
 function finite(value: number, label: string): number {
@@ -115,9 +124,7 @@ export function rankOpportunities(
 		options.breakEvenHours ?? 24,
 		"breakEvenHours",
 	);
-	const executableVenues = new Set(
-		options.executableVenues ?? ["hl", "lighter", "lighter-mainnet", "aster"],
-	);
+	const executableVenues = new Set(options.executableVenues ?? MOB_VENUES);
 	const quoteClasses = new Set(options.quoteClasses ?? ["usd-stable"]);
 	const minVolume = nonnegative(
 		options.minVolume24hUsd ?? 1_000_000,
@@ -222,10 +229,18 @@ export function rankOpportunities(
 				)
 					flags.push("cross-deployment");
 				if (hlLeg?.oiCapped) flags.push("hl-oi-capped");
+				// One ticker can name two assets (BB is BlackBerry and BounceBit):
+				// prices this far apart are not one market, so never pair them.
+				const mismatch = !pricesAgree(
+					unitPrice(long, long),
+					unitPrice(short, short),
+				);
+				if (mismatch) flags.push("price-mismatch");
 				if (long.quoteClass === "coin" || short.quoteClass === "coin")
 					flags.push("coin-margined");
 				const executable =
 					!thin &&
+					!mismatch &&
 					!flags.includes("cross-deployment") &&
 					executableVenues.has(long.venue) &&
 					executableVenues.has(short.venue) &&
@@ -244,7 +259,10 @@ export function rankOpportunities(
 					entryCostBasis: entryCostPct === null ? "unmeasured" : "mark",
 					breakEvenHours,
 					qualifies:
-						!thin && breakEvenHours !== null && breakEvenHours <= maximumHours,
+						!thin &&
+						!mismatch &&
+						breakEvenHours !== null &&
+						breakEvenHours <= maximumHours,
 					executable,
 					flags,
 					...(executable

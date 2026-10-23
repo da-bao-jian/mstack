@@ -47,6 +47,13 @@ export const bitget: VenueAdapter = {
 					string(entry.symbolType, `${market} symbolType`) === "perpetual" &&
 					string(entry.symbolStatus, `${market} symbolStatus`) === "normal",
 				intervalHours: positive(entry.fundInterval, `${market} fundInterval`),
+				// isRwa labels real-world assets without naming their category.
+				rwa:
+					entry.isRwa === "YES"
+						? true
+						: entry.isRwa === "NO"
+							? false
+							: undefined,
 			};
 		});
 		unique(
@@ -56,7 +63,7 @@ export const bitget: VenueAdapter = {
 		// The next settlement time is only served per symbol, so it stays unknown.
 		return contracts
 			.filter((entry) => entry.live)
-			.map(({ market, intervalHours }) => {
+			.map(({ market, intervalHours, rwa }) => {
 				const ticker = tickers.get(market);
 				if (!ticker) throw new Error(`${market}: missing Bitget ticker row`);
 				const markPrice = positive(ticker.markPrice, `${market} markPrice`);
@@ -77,6 +84,11 @@ export const bitget: VenueAdapter = {
 						),
 						priceChange24hPct:
 							numeric(ticker.change24h, `${market} change24h`) * 100,
+						...(rwa === undefined
+							? {}
+							: {
+									venueCategory: rwa ? ("rwa" as const) : ("crypto" as const),
+								}),
 					},
 				);
 			});

@@ -92,3 +92,26 @@ test.each([
 ])("reports unrecognized %s:%s", (venue, market) => {
 	expect(classifyMarket(venue, market)).toBeNull();
 });
+
+test("venues added on 2026-10-23 classify their native markets", () => {
+	const base = (venue: string, market: string) =>
+		classifyMarket(venue, market)?.base;
+	expect(base("pacifica", "BTC")).toBe("BTC");
+	expect(base("pacifica", "SOL-USDC")).toBeUndefined();
+	expect(base("extended", "BTC-USD")).toBe("BTC");
+	// The 24/5 market of a stock is the same stock.
+	expect(base("extended", "IREN_24_5-USD")).toBe("IREN");
+	expect(base("paradex", "ETH-USD-PERP")).toBe("ETH");
+	expect(base("paradex", "ETH-USD-27NOV26-2150-P")).toBeUndefined();
+	expect(base("dydx", "BTC-USD")).toBe("BTC");
+	expect(base("dydx", "MAD,RAYDIUM,MADHPJRN-USD")).toBeUndefined();
+	expect(base("backpack", "BTC_USDC_PERP")).toBe("BTC");
+	expect(base("backpack", "MU.US_USDC_PERP")).toBe("MU");
+	// KuCoin spells bitcoin XBT; USDC contracts end in USDCM.
+	expect(base("kucoin", "XBTUSDTM")).toBe("BTC");
+	expect(base("kucoin", "ETHUSDCM")).toBe("ETH");
+	expect(classifyMarket("kucoin", "1000PEPEUSDTM")).toMatchObject({
+		base: "PEPE",
+		contractMultiplier: 1000,
+	});
+});

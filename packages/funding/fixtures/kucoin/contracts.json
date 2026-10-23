@@ -1,0 +1,44 @@
+{
+	"code": "200000",
+	"data": [
+		{
+			"symbol": "XBTUSDTM",
+			"type": "FFWCSX",
+			"status": "Open",
+			"isInverse": false,
+			"multiplier": 0.001,
+			"markPrice": 81729.8,
+			"fundingFeeRate": 0.0001,
+			"fundingRateGranularity": 28800000,
+			"nextFundingRateDateTime": 1792771200000,
+			"openInterest": "9065300",
+			"turnoverOf24h": 250048602.9068
+		},
+		{
+			"symbol": "ETHUSDTM",
+			"type": "FFWCSX",
+			"status": "Open",
+			"isInverse": false,
+			"multiplier": 0.01,
+			"markPrice": 2402.93,
+			"fundingFeeRate": 0.000056,
+			"fundingRateGranularity": 28800000,
+			"nextFundingRateDateTime": 1792771200000,
+			"openInterest": "18316666",
+			"turnoverOf24h": 163997064.0716
+		},
+		{
+			"symbol": "XBTUSDM",
+			"type": "FFWCSX",
+			"status": "Open",
+			"isInverse": true,
+			"multiplier": -1,
+			"markPrice": 81649.3,
+			"fundingFeeRate": 0.0001,
+			"fundingRateGranularity": 28800000,
+			"nextFundingRateDateTime": 1792771200000,
+			"openInterest": "78502656",
+			"turnoverOf24h": 94.62520496
+		}
+	]
+}
