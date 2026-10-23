@@ -184,7 +184,7 @@ The browser page has one Connect wallet button; with several wallet extensions i
 
 ## Installation maintenance
 
-`./setup --host codex` links ten skill folders and the shared binary directory into `~/.agents/skills`.
+`./setup --host codex` links eleven skill folders and the shared binary directory into `~/.agents/skills`.
 When `~/.codex/skills` already exists, setup adds the same links there for older Codex versions.
 New installations do not create that legacy directory.
 After updating a legacy-only installation, rerun `./setup --host codex` to create
