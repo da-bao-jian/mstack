@@ -324,17 +324,32 @@ export async function menu(json: boolean, rt: Runtime): Promise<void> {
 		rt.out(JSON.stringify(result, null, 2));
 		return;
 	}
-	// A person at a terminal gets the column headers; a capturing preamble
-	// gets rows only, so YOU_CAN stays a plain list.
+	// A person at a terminal gets the full menu by section, with column
+	// headers; a capturing preamble gets the short rows only, so YOU_CAN stays
+	// a plain list inside its size budget.
 	const tty = rt.stdoutIsTTY ?? rt.isTTY ?? Boolean(process.stdout.isTTY);
 	const [sayHeader, runHeader] = menuHeader("hosts");
+	const shown = tty
+		? result.sections.flatMap((section) => section.rows)
+		: result.rows;
 	const width = Math.max(
 		tty ? sayHeader.length : 0,
-		...result.rows.map((item) => menuPhrase(item).length),
+		...shown.map((item) => menuPhrase(item).length),
 	);
-	const lines = result.rows.map((item) => menuLine(item, width));
-	if (tty) lines.unshift(`${sayHeader.padEnd(width)}  ${runHeader}`);
-	rt.out(lines.join("\n"));
+	if (!tty) {
+		rt.out(result.rows.map((item) => menuLine(item, width)).join("\n"));
+		return;
+	}
+	rt.out(
+		[
+			`${sayHeader.padEnd(width)}  ${runHeader}`,
+			...result.sections.flatMap((section) => [
+				"",
+				`${section.name} · ${section.note}`,
+				...section.rows.map((item) => menuLine(item, width)),
+			]),
+		].join("\n"),
+	);
 }
 
 function freshnessText(market: HomeMarket): string {

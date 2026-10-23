@@ -3,7 +3,7 @@ name: mob-bind
 description: Repair venue binding or use native onboarding. Use for "repair binding", "bind all venues", "onboard without a browser", "bind hyperliquid", or "connect lighter"; every ceremony needs explicit id approval. (mstack)
 license: MIT
 metadata:
-  version: "0.4.12"
+  version: "0.5.0"
 allowed-tools: Bash Read AskUserQuestion Bash(${CLAUDE_SKILL_DIR}/scripts/preamble.sh *)
 ---
 
@@ -11,7 +11,7 @@ allowed-tools: Bash Read AskUserQuestion Bash(${CLAUDE_SKILL_DIR}/scripts/preamb
 bash "${CLAUDE_SKILL_DIR}/scripts/preamble.sh"
 ```
 
-If the preamble output contains a block between the lines `<mob-home>` and `</mob-home>`, reproduce every line between those two tags verbatim in a fenced code block at the top of your reply; stop before the `</mob-home>` line and print neither tag line; never strip, trim or summarize the block. When a reply completes the request (not when it asks a question), end with "You can": up to three rows from the preamble's `YOU_CAN` list or the welcome's `You can` rows that fit the moment, as words to say next. Only when the welcome printed in this reply, add that `/mstack:mob` opens the menu.
+If the preamble output contains a `<mob-home>` line, the welcome is the lines after `<mob-home>` and before `</mob-home>`. Put exactly those lines, verbatim, in a fenced code block at the top of your reply. The two tag lines are markers, not part of the welcome: never print `<mob-home>` or `</mob-home>`. Never strip, trim or summarize the welcome. When a reply completes the request (not when it asks a question), end with "You can": up to three rows from the preamble's `YOU_CAN` list or the welcome's `You can` rows that fit the moment, as words to say next. Only when the welcome printed in this reply, add that `/mstack:mob` opens the menu.
 
 Run the preamble first. Use the printed `MOB_BIN` path in place of `mob`; shell-quote every public user value. If `MOB_MISSING` appears, show the install line and stop. Never run keystore commands or request a key, seed, or passphrase.
 

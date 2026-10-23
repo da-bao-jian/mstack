@@ -43,7 +43,23 @@ export function footer(
 
 export { scanView } from "./scan-view.ts";
 
-function scanTable(view: Opportunity[], executable: boolean): string {
+type Realized = { d1: number | null; d7: number | null; d30: number | null };
+
+/** The three realized-spread cells, or none when the scan did not read history. */
+export function realizedCells(row: { realized?: Realized }): string[] {
+	if (!row.realized) return [];
+	return [row.realized.d1, row.realized.d7, row.realized.d30].map((value) =>
+		value === null ? "—" : pct(value, 2),
+	);
+}
+
+export const REALIZED_HEADERS = ["1d real/yr", "7d real/yr", "30d real/yr"];
+
+function scanTable(
+	view: (Opportunity & { realized?: Realized })[],
+	executable: boolean,
+): string {
+	const realized = view.some((row) => row.realized);
 	return table(
 		[
 			"base",
@@ -56,6 +72,7 @@ function scanTable(view: Opportunity[], executable: boolean): string {
 			"vol24h (long/short)",
 			"OI (long/short)",
 			"break-even h",
+			...(realized ? REALIZED_HEADERS : []),
 			...(executable ? [] : ["EXEC"]),
 			"flags",
 		],
@@ -70,6 +87,7 @@ function scanTable(view: Opportunity[], executable: boolean): string {
 			`${usd(r.long.volume24hUsd)}/${usd(r.short.volume24hUsd)}`,
 			`${usd(r.long.openInterestUsd)}/${usd(r.short.openInterestUsd)}`,
 			r.breakEvenHours?.toFixed(2),
+			...(realized ? realizedCells(r) : []),
 			...(executable ? [] : [r.executable ? "EXEC" : "—"]),
 			r.flags.join(",") || "—",
 		]),
@@ -77,7 +95,10 @@ function scanTable(view: Opportunity[], executable: boolean): string {
 }
 
 export function renderScan(
-	view: { executable: Opportunity[]; anywhere: Opportunity[] },
+	view: {
+		executable: (Opportunity & { realized?: Realized })[];
+		anywhere: (Opportunity & { realized?: Realized })[];
+	},
 	executableOnly = false,
 	holdDays = 7,
 	terminal: Terminal = {},

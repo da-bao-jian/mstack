@@ -14,11 +14,11 @@ test("ranks the complete recorded funding fixture snapshot without network acces
 		annualizationMethod: "simple",
 	};
 	const ranked = rankOpportunities(snapshot, { sizeUsd: 1000 });
-	// Sixteen BTC listings yield 120 pairs, less the three same-venue pairs
-	// (Aster USD1, MEXC USD1, BingX USDC): 117. Nine ETH listings yield 36
-	// pairs, less two whose rates tie: 34. ERA has three listings (3 pairs)
-	// and XTZ two (1 pair); the DEXE pair ties.
-	expect(ranked.opportunities).toHaveLength(155);
+	// Twenty-two BTC listings yield 231 pairs, less three same-venue pairs
+	// (Aster USD1, MEXC USD1, BingX USDC) and six whose hourly rates tie: 222.
+	// Fifteen ETH listings yield 105 pairs, less three ties: 102. ERA has three
+	// listings (3 pairs), XTZ and XAU two each (1 pair each); the DEXE pair ties.
+	expect(ranked.opportunities).toHaveLength(329);
 	expect(ranked.unmatched).toEqual([]);
 	expect(ranked.failed).toEqual([]);
 	for (let index = 1; index < ranked.opportunities.length; index++) {

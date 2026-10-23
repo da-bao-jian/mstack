@@ -14,14 +14,14 @@ Follow the path for the detected host. Do not ask the user which path to use.
 ```sh
 claude plugin marketplace add da-bao-jian/mstack
 claude plugin install mstack@mstack
-curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.12/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.5.0/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
 mob --version
 mob doctor
 mob
 ```
 
-`mob --version` must print the version in `v0.4.12`. Check the doctor output against [Verify](#verify).
+`mob --version` must print the version in `v0.5.0`. Check the doctor output against [Verify](#verify).
 Reproduce the complete `mob` output verbatim in a fenced code block as the welcome, without the `<mob-home>` and `</mob-home>` tag lines.
 Run each line exactly as written; do not download a script to run it from a file. If a permission check denies a command, do not work around it: ask the user to run that exact line with the `!` prefix, then continue.
 
@@ -30,14 +30,14 @@ Tell the user exactly: type `/reload-plugins` in this session. Then show [How to
 ## Codex
 
 ```sh
-git clone --branch v0.4.12 https://github.com/da-bao-jian/mstack ~/.mstack && cd ~/.mstack && ./setup --host codex
+git clone --branch v0.5.0 https://github.com/da-bao-jian/mstack ~/.mstack && cd ~/.mstack && ./setup --host codex
 export PATH="$HOME/.agents/skills/mstack/bin:$PATH"
 mob --version
 mob doctor
 mob
 ```
 
-`mob --version` must print the version in `v0.4.12`. Check the doctor output against [Verify](#verify).
+`mob --version` must print the version in `v0.5.0`. Check the doctor output against [Verify](#verify).
 Reproduce the complete `mob` output verbatim in a fenced code block as the welcome, without the `<mob-home>` and `</mob-home>` tag lines.
 
 Tell the user exactly: start a new Codex session. Then show [How to use](#how-to-use) with `$mob` in place of `/mstack:mob`.
@@ -47,7 +47,7 @@ Tell the user exactly: start a new Codex session. Then show [How to use](#how-to
 Install the binary and keep the printed PATH export in the current shell.
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.12/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.5.0/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
 mob --version
 mob doctor
@@ -79,7 +79,7 @@ Keep signing and key import in the terminal. Use `mob onboard` and `mob keys imp
 Run each command exactly.
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.12/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.5.0/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
 mob --version
 mob doctor
@@ -112,7 +112,8 @@ After the welcome, show this block. Fill the `You can` lines from the welcome's 
 ```text
 How to use mstack
 - Say a line in plain words; mstack picks the right skill. /mstack:mob opens the menu.
-- You can (no account needed): say "best funding now" · say "how does funding work" · say "history BTC"
+- You can (no account needed): say "best funding now" · say "all markets" · say "history BTC"
+- Research covers funding and price-gap scans, all markets and venues, cost to trade, spread charts, WTI vs Brent, and watchlist alerts.
 - To trade through MoB: say "set up mstack" once (about two minutes), then "open <pair>", "my positions", "close task <id>".
 - Health: mob doctor · mob upgrade in your own terminal.
 ```

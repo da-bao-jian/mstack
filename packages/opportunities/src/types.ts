@@ -35,7 +35,13 @@ export interface Opportunity {
 	breakEvenHours: number | null;
 	qualifies: boolean;
 	executable: boolean;
-	flags: ("hl-oi-capped" | "coin-margined" | "cross-deployment" | "thin")[];
+	flags: (
+		| "hl-oi-capped"
+		| "coin-margined"
+		| "cross-deployment"
+		| "thin"
+		| "price-mismatch"
+	)[];
 	mobOpen?: string;
 	observedAt: number;
 	source: Snapshot["source"];

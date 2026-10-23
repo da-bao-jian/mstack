@@ -1,0 +1,30 @@
+{
+	"results": [
+		{
+			"symbol": "BTC-USD-PERP",
+			"mark_price": "81710.84862413",
+			"volume_24h": "2428736.8159100004",
+			"open_interest": "79.89008",
+			"funding_rate": "0.000099930189",
+			"price_change_rate_24h": "-0.0023",
+			"funding_interval_minutes": 480
+		},
+		{
+			"symbol": "ETH-USD-PERP",
+			"mark_price": "2401.55153505",
+			"volume_24h": "2517754.6402050005",
+			"open_interest": "1323.3686",
+			"funding_rate": "0.000076632341",
+			"price_change_rate_24h": "-0.0025",
+			"funding_interval_minutes": 480
+		},
+		{
+			"symbol": "CL-USD-14JAN27-100-P",
+			"mark_price": "8.1103616",
+			"volume_24h": "0",
+			"open_interest": "0",
+			"funding_rate": "",
+			"price_change_rate_24h": "-0.0506"
+		}
+	]
+}

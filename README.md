@@ -28,8 +28,8 @@ An open framework for finding delta-neutral funding trades. Scan funding across 
 ```text
 Install mstack, the open agent stack for delta-neutral funding trades, with MoB execution. I authorize exactly:
 claude plugin marketplace add da-bao-jian/mstack && claude plugin install mstack@mstack
-curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.12/install.sh | sh
-Then follow https://raw.githubusercontent.com/da-bao-jian/mstack/v0.4.12/docs/AGENT-INSTALL.md from Verify: `mob --version`, `mob doctor`,
+curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.5.0/install.sh | sh
+Then follow https://raw.githubusercontent.com/da-bao-jian/mstack/v0.5.0/docs/AGENT-INSTALL.md from Verify: `mob --version`, `mob doctor`,
 run `mob` and reproduce its output verbatim in a fenced block as the welcome.
 Finish by telling me to type /reload-plugins, then show how to use mstack: how to invoke it and the welcome's "You can" options (research needs no account; "set up mstack" only to trade).
 ```
@@ -116,8 +116,12 @@ Research needs no account. Trading runs through MoB and needs the one-time setup
 
 1. **Install.** Use the plugin, binary installer, or clone setup above. Run `mob --version`.
 2. **Scan.** Ask "best funding now" or run `mob scan --size 1000` to compare executable pairs and the best pairs anywhere.
+   Ask "best price gaps now" (`mob scan --by price`) for same-asset pairs priced apart, or "RWA funding farms" (`mob scan --rwa`).
    Funding annualization is simple, not compounded: `ratePerInterval / intervalHours × 24 × 365 × 100`.
    Fees and mark entry costs are estimates. Failed venues remain visible.
+   **Explore.** "all markets" (`mob markets`), "BTC on every venue" (`mob market BTC`), "venues by volume" (`mob venues`) and "RWA markets" (`mob markets --rwa`) cover every venue mstack reads. Save a pair with `mob watch add` and check it with "my watchlist".
+   **Alerts.** "alert me when the BTC spread drops below 5%" saves a threshold; `mob watch --check` prints the alerts that fire, and `/loop 15m check my mstack watchlist` in Claude Code checks on a schedule.
+   **Costs and charts.** "cost to trade BTC" (`mob cost BTC`) walks every public order book; "chart BTC on Hyperliquid vs Lighter" (`mob spread hl:BTC lighter-mainnet:BTC`) charts a price spread; "WTI vs Brent" (`mob oil`); `mob scan --realized` adds what each pair earned over 1, 7 and 30 days.
 3. **Explain and check history.** `mob explain funding --simple` and `mob history BTC --days 7` answer how a pair earns and whether its rate held. `mob status --owner 0x…` reads any address's public MoB tasks.
 4. **Onboard, when you want to trade.** Say "set up mstack". Setup first asks whether you bring your own wallet (a browser extension, a phone wallet over WalletConnect, or your key imported into mstack's encrypted keystore with `mob keystore import`) or create a new one with `mob keystore create`; keystore commands run in your own terminal, never in the chat. Or run `mob onboard --native --owner 0x… --venues hl,lighter --max-size 5000`, then `mob sign c-N --with browser`. One wallet session accepts the legal terms, binds the venues, creates a scoped key with that cap, and stores it locally; the key never prints. Require the `Ready · …` line. Without a wallet on this machine, `mob onboard` prints the MoB API page instead: paste the key once for `mob keys import --stdin`, or run `mob keys import` yourself for a hidden terminal paste.
 5. **Open.** Run a staged command such as `mob open ETH --long hl:ETH --short lighter:ETH --size 500`. With a matching key, it creates an `api-submit` Proposal and prints `mob submit p-N`.

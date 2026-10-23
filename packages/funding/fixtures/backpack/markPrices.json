@@ -1,0 +1,23 @@
+[
+	{
+		"fundingRate": "0.0000125",
+		"indexPrice": "81659.77496317",
+		"markPrice": "81681.5",
+		"nextFundingTimestamp": 1792764000000,
+		"symbol": "BTC_USDC_PERP"
+	},
+	{
+		"fundingRate": "0.0000125",
+		"indexPrice": "2400.93976912",
+		"markPrice": "2400.46",
+		"nextFundingTimestamp": 1792764000000,
+		"symbol": "ETH_USDC_PERP"
+	},
+	{
+		"fundingRate": "0.0000976842822483994359746367",
+		"indexPrice": "866.55974",
+		"markPrice": "867.72",
+		"nextFundingTimestamp": 1792764000000,
+		"symbol": "MU.US_USDC_PERP"
+	}
+]

@@ -1,0 +1,55 @@
+{
+	"success": true,
+	"data": [
+		{
+			"funding": "0.0000125",
+			"mark": "81762.042517",
+			"mid": "81792.5",
+			"next_funding": "0.0000125",
+			"open_interest": "649.89435",
+			"oracle": "81762.042517",
+			"symbol": "BTC",
+			"timestamp": 1792762441105,
+			"volume_24h": "460721327.71198",
+			"yesterday_price": "82066"
+		},
+		{
+			"funding": "0.0000125",
+			"mark": "2403",
+			"mid": "2402.95",
+			"next_funding": "0.0000125",
+			"open_interest": "13926.327",
+			"oracle": "2403.814937",
+			"symbol": "ETH",
+			"timestamp": 1792762441105,
+			"volume_24h": "294239376.45998",
+			"yesterday_price": "2414.4"
+		},
+		{
+			"funding": "0.00005302",
+			"mark": "4030.4",
+			"mid": "4030.45",
+			"next_funding": "0.00004429",
+			"open_interest": "343.5574",
+			"oracle": "4024.13733",
+			"symbol": "XAU",
+			"timestamp": 1792762441105,
+			"volume_24h": "1660524.73858",
+			"yesterday_price": "4072.7"
+		},
+		{
+			"funding": "0",
+			"mark": "104.484493",
+			"mid": "104.08",
+			"next_funding": "0",
+			"open_interest": "0",
+			"oracle": "104.484493",
+			"symbol": "SOL-USDC",
+			"timestamp": 1792762441105,
+			"volume_24h": "102511.04394",
+			"yesterday_price": "104.96"
+		}
+	],
+	"error": null,
+	"code": null
+}

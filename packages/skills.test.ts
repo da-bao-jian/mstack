@@ -144,9 +144,16 @@ function preamble(body: string, home: string, skillDirectory?: string): string {
 	);
 }
 
+test("no skill body holds a dollar sign before a digit, which Claude Code reads as an argument", () => {
+	// Claude Code replaces $1, $2 … in a loaded skill with the invocation's
+	// words: "$1,000" became "funding,000". Amounts are written "1,000 USD".
+	for (const [file, body] of outputs)
+		if (file.endsWith("SKILL.md")) expect(body).not.toMatch(/\$\d/);
+});
+
 test("generator is deterministic and committed output matches both host overlays", async () => {
 	expect(await renderSkills()).toEqual(outputs);
-	expect(skills.size).toBe(20);
+	expect(skills.size).toBe(22);
 	for (const [file, body] of outputs) {
 		expect(await readFile(join(root, file), "utf8")).toBe(body);
 		if (!file.endsWith("SKILL.md")) continue;
@@ -634,11 +641,17 @@ test("session skills keep keys off argv and require exact ids for manual mutatio
 			expect(router).toContain(`${invocation}${name}`);
 		// A bare command opens the menu: the welcome, two sentences, no second list.
 		expect(router).toContain("When the command comes alone");
-		expect(router).toContain(
-			host === "skills"
-				? "one option per row of `mob menu --json`"
-				: "one numbered line per row of `mob menu --json`",
-		);
+		// Two levels: a section first, then a row of that section.
+		for (const words of host === "skills"
+			? [
+					"one option per entry of `sections` in `mob menu --json`",
+					"one option per row of that section",
+				]
+			: [
+					"list every entry of `sections` in `mob menu --json`",
+					"numbering on across sections",
+				])
+			expect(router).toContain(words);
 		expect(router).toContain('no closing "You can"');
 	}
 	// Only /mob-setup names keystore or config commands, and only for the human
@@ -715,6 +728,7 @@ test("setup installs host outputs once and uninstalls only links it made", async
 		"mob-manage",
 		"mob-close",
 		"mob-keys",
+		"mob-markets",
 	])
 		expect(await readlink(join(home, ".agents/skills", name))).toBe(
 			join(root, "skills-codex", name),
@@ -725,7 +739,7 @@ test("setup installs host outputs once and uninstalls only links it made", async
 	const ledger = JSON.parse(
 		await readFile(join(home, ".mob/mstack-install-codex.json"), "utf8"),
 	);
-	expect(ledger.links).toHaveLength(11);
+	expect(ledger.links).toHaveLength(12);
 	await expect(lstat(join(home, ".codex"))).rejects.toThrow();
 	const changed = join(home, ".agents/skills/mob-status");
 	await unlink(changed);
@@ -774,7 +788,7 @@ test("Codex installs both roots when legacy skills exist and preserves replaceme
 	const ledger = JSON.parse(
 		await readFile(join(home, ".mob/mstack-install-codex.json"), "utf8"),
 	);
-	expect(ledger.links).toHaveLength(22);
+	expect(ledger.links).toHaveLength(24);
 	const replacement = join(home, ".codex/skills/mob-status");
 	await unlink(replacement);
 	await writeFile(replacement, "user-owned");
@@ -1053,7 +1067,7 @@ test("shared splash greets once per owner or home while the router always greets
 		...new Bun.Glob("hello-owner-*-stamp").scanSync(join(home, ".mob")),
 	]).toHaveLength(1);
 	const greeting =
-		"If the preamble output contains a block between the lines `<mob-home>` and `</mob-home>`, reproduce every line between those two tags verbatim in a fenced code block at the top of your reply; stop before the `</mob-home>` line and print neither tag line; never strip, trim or summarize the block.";
+		"If the preamble output contains a `<mob-home>` line, the welcome is the lines after `<mob-home>` and before `</mob-home>`. Put exactly those lines, verbatim, in a fenced code block at the top of your reply. The two tag lines are markers, not part of the welcome: never print `<mob-home>` or `</mob-home>`. Never strip, trim or summarize the welcome.";
 	for (const [file, body] of skills) {
 		expect(body).toContain(greeting);
 		expect(body.indexOf(greeting)).toBeGreaterThan(body.indexOf("```bash"));

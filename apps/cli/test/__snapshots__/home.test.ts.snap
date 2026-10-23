@@ -3,7 +3,7 @@
 exports[`80-column ASCII home snapshots cover fresh, running and cached states: fresh live 1`] = `
 "<mob-home>
                   #-------------   mstack <version> . new account
-                ###-------------   ---------------------------
+                ###-------------   --------------------------
               #####-------------   Top pairs  BTC    long hl . short lighter  92% net  $10.0M
       +++++++-#####-------------              ETH    long hl . short lighter  42% net  $6.0M
     +++++++++######-------------   Trending   BTC    $30.0M 24h . funding +13%/yr . OI $15.0M . price +1.2%
@@ -11,18 +11,18 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
  ++++++++++++######-------------   Trading    not set up . optional . research needs no account
 -------------######+++++++++++     You can    say in Claude Code or Codex  or run in a terminal
  ------------######+++++++++                  "best funding now"           mob scan --size 1000
- ------------######+++++++                    "how does funding work"      mob explain funding
+ ------------######+++++++                    "all markets"                mob markets
  ------------#####                            "history BTC"                mob history BTC --days 7
  ------------###                              "set up mstack"  to trade    mob onboard
  ------------#                     Chat       /mstack:mob in Claude Code or $mob in Codex opens this menu
-                                   live . 2 of 14 venues . 0.0 s
+                                   live . 2 of 20 venues . 0.0 s
 </mob-home>"
 `;
 
 exports[`80-column ASCII home snapshots cover fresh, running and cached states: onboarded running 1`] = `
 "<mob-home>
                   #-------------   mstack <version> . 0x0000...0001
-                ###-------------   ---------------------------
+                ###-------------   --------------------------
               #####-------------   Top pairs  BTC    long hl . short lighter  92% net  $10.0M
       +++++++-#####-------------              ETH    long hl . short lighter  42% net  $6.0M
     +++++++++######-------------   Trending   BTC    $30.0M 24h . funding +13%/yr . OI $15.0M . price +1.2%
@@ -36,14 +36,14 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
  ------------#                                "best funding now"           mob scan --size 1000
                                               "close task <id>"            mob close <task>
                                    Chat       /mstack:mob in Claude Code or $mob in Codex opens this menu
-                                   live . 2 of 14 venues . 0.0 s
+                                   live . 2 of 20 venues . 0.0 s
 </mob-home>"
 `;
 
 exports[`80-column ASCII home snapshots cover fresh, running and cached states: unreachable cached 1`] = `
 "<mob-home>
                   #-------------   mstack <version> . new account
-                ###-------------   ---------------------------
+                ###-------------   --------------------------
               #####-------------   Top pairs  BTC    long hl . short lighter  92% net  $10.0M
       +++++++-#####-------------              ETH    long hl . short lighter  42% net  $6.0M
     +++++++++######-------------   Trending   BTC    $30.0M 24h . funding +13%/yr . OI $15.0M . price +1.2%
@@ -51,7 +51,7 @@ exports[`80-column ASCII home snapshots cover fresh, running and cached states: 
  ++++++++++++######-------------   Trading    not set up . optional . research needs no account
 -------------######+++++++++++     You can    say in Claude Code or Codex  or run in a terminal
  ------------######+++++++++                  "best funding now"           mob scan --size 1000
- ------------######+++++++                    "how does funding work"      mob explain funding
+ ------------######+++++++                    "all markets"                mob markets
  ------------#####                            "history BTC"                mob history BTC --days 7
  ------------###                              "set up mstack"  to trade    mob onboard
  ------------#                     Chat       /mstack:mob in Claude Code or $mob in Codex opens this menu

@@ -330,5 +330,55 @@
 		"observedAt": 1792302279896,
 		"status": 200,
 		"rawSha256": "da95b0494442278c54626fba80398c60adb414d3050f4ad4322daa57d151e6da"
+	},
+	{
+		"file": "pacifica/prices.json",
+		"url": "https://api.pacifica.fi/api/v1/info/prices",
+		"method": "GET"
+	},
+	{
+		"file": "extended/markets.json",
+		"url": "https://api.starknet.extended.exchange/api/v1/info/markets",
+		"method": "GET"
+	},
+	{
+		"file": "paradex/summary.json",
+		"url": "https://api.prod.paradex.trade/v1/markets/summary?market=ALL",
+		"method": "GET"
+	},
+	{
+		"file": "dydx/markets.json",
+		"url": "https://indexer.dydx.trade/v4/perpetualMarkets",
+		"method": "GET"
+	},
+	{
+		"file": "backpack/markets.json",
+		"url": "https://api.backpack.exchange/api/v1/markets",
+		"method": "GET"
+	},
+	{
+		"file": "backpack/markPrices.json",
+		"url": "https://api.backpack.exchange/api/v1/markPrices",
+		"method": "GET"
+	},
+	{
+		"file": "backpack/tickers.json",
+		"url": "https://api.backpack.exchange/api/v1/tickers",
+		"method": "GET"
+	},
+	{
+		"file": "backpack/openInterest.json",
+		"url": "https://api.backpack.exchange/api/v1/openInterest",
+		"method": "GET"
+	},
+	{
+		"file": "kucoin/contracts.json",
+		"url": "https://api-futures.kucoin.com/api/v1/contracts/active",
+		"method": "GET"
+	},
+	{
+		"file": "pacifica/info.json",
+		"url": "https://api.pacifica.fi/api/v1/info",
+		"method": "GET"
 	}
 ]

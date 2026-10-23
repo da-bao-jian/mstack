@@ -6,6 +6,16 @@ Build with `bun run build` at the root, then run `apps/cli/dist/mob`. The compil
 mob scan --size 5000 --top 5
 mob scan --market PEPE --venues hl,lighter-mainnet,aster --all-pairs --json
 mob scan --executable --min-apy 10 --strict
+mob scan --by price --kind dex --min-oi 1000000
+mob scan --rwa --category commodity
+mob venues
+mob markets --rwa --top 20
+mob market XAU
+mob watch add BTC --long lighter:BTC --short hl:BTC
+mob cost BTC --size 10000,250000 --side short
+mob spread hl:xyz:CL hl:xyz:BRENTOIL --interval 4h --days 30
+mob oil
+mob scan --realized --top 5
 mob rates --venue hl --market BTC
 mob history BTC --days 3
 mob explain funding --simple
@@ -27,6 +37,28 @@ Net APY subtracts `(taker + builder + max(mark entry cost, 0)) × 365 / holdDays
 Columns show native long/short listings, annualized spread, round-trip taker plus builder fees, signed mark entry cost, break-even hours, execution eligibility, and flags. An unmeasured entry cost is `—`. Execution eligibility does not promise order depth or a profitable fill. Fee defaults are estimates; override them for actual account terms.
 
 `--min-volume N` defaults to $1,000,000 per leg. Unknown or lower volume adds `thin` and prevents qualification. Thin rows are hidden unless `--include-thin` is set. The footer and JSON `counts.thinHidden` count hidden pairs after market/execution/spread filters, before per-base selection and the top limit. The table labels entry cost `entry (mark est.)` and shows long/short 24-hour volume and available open interest in compact USD units.
+
+Filters apply to both scan modes. `--kind dex|cex` keeps pairs with both legs on that venue type. `--anchor <venue>` keeps pairs with one leg on that venue; `hl:xyz` names trade.xyz only. `--min-oi N` needs a published open interest of at least N on each leg, so venues without bulk open interest fail it. `--rwa`, `--crypto` and `--category stock|index|commodity|fx|pre-ipo|other` filter by asset class. A pair whose legs are priced more than 25% apart is two different assets: it is flagged `price-mismatch`, never executable, and hidden, and the footer counts it.
+
+`scan --by price` ranks same-asset pairs by mark-price gap, widest first: long the cheaper leg, short the richer one. It shows the gap, the gap after round-trip taker fees, and the funding the pair earns or pays per year while open. Marks are estimates; a fill depends on each order book. Thin and cross-deployment rules, `--top`, `--top-exec`, `--all-pairs` and `--executable` work as in the funding scan; `--size`, `--hold-days` and `--min-apy` do not apply.
+
+## Venues, markets, and the watchlist
+
+`venues` lists every venue by summed 24-hour volume, with Hyperliquid's builder deployments (`hl:xyz` is trade.xyz) as separate rows. Each row shows DEX or CEX, MoB support, market count, open interest and the taker fee estimate. A sum over markets that do not all publish a figure prints with `≥`; a venue that publishes none prints `—`.
+
+`markets` groups every listing into assets: one canonical ticker (GOLD folds into XAU), split by price when the ticker names two assets (`#2`). Each asset shows its class, RWA category, venue count, summed volume and open interest, and the listing with the largest absolute funding. Classes come from venue labels first (OKX `instCategory`, Bitget `isRwa`, Hyperliquid's xyz and io deployments) and a curated ticker list second. `--rwa` adds category totals and the best liquid real-world funding pair. `--search`, `--sort volume|oi|apr|venues`, `--min-volume` and `--top` (default 25, cap 500) shape the list.
+
+`market <BASE>` shows one asset on every venue: price, 24-hour volume and its share, open interest, funding per interval, APR, the next funding time (Hyperliquid's comes from its hourly schedule), MoB support, and the widest funding spread before fees.
+
+`watch add <BASE> --long venue:market --short venue:market [--alert-spread-above N] [--alert-spread-below N] [--alert-gap-above N]` saves a pair, or updates the alert of a saved one; write a negative threshold as `--alert-spread-below=-5`. `watch --check` prints one `ALERT` line per crossed threshold, or "No alerts", for a scheduled check. `watch add` saves a pair in `~/.mob/watchlist.json` (mode 0600, at most 50 pairs, public market names only). `watch` reads the saved pairs live: funding spread, price gap, volumes and open interest. `watch remove <n>` drops the pair with that number.
+
+`cost <BASE>` reads the public order book of every listing of the asset and prices a market order at each `--size` (one to four, default $10K, $100K and $1M): the average fill's distance from mid plus the taker fee estimate, in USD and basis points, for `--side long` (asks) or `short` (bids). Rows sort by the middle size. A size past the published levels prints `> book (… shown)` when the venue caps its levels, or `book has …` when the book is that thin; neither is a cost. Variational and QFEX publish no book; the footer lists them and the venues without a listing.
+
+`spread <A> <B>` reads trade candles for both markets and charts (B − A) / A per base unit at shared open times, with now, mean, range and where now sits in the window. `--interval 15m|1h|4h|1d` (default 1h) and `--days` (default 7) set the window; the cap is 7, 60, 180 and 365 days by interval. The legs can be one asset on two venues or two assets.
+
+`oil` shows each venue's busiest WTI and Brent listing (CL, WTI, WTIOIL, USOIL fold into CL; BZ, UKOIL into BRENTOIL), the Brent premium on that venue, the funding carry of long WTI and short Brent, and the best carry across venues with both legs priced and above $1M daily volume.
+
+`scan --realized` reads 30 days of settled funding for each leg shown and adds the pair's realized spread over the last 1, 7 and 30 days, simple annualized. History covers Hyperliquid, both Lighter deployments, Binance, Aster, Bybit, OKX, Pacifica, Extended, dYdX, Backpack and KuCoin; other legs show `—`. A spread high now and negative in the realized columns flipped recently.
 
 `rates` returns raw snapshot observations with per-hour and annualized rates. `--venue` selects its adapter; `--market` filters on the classified base. Neither command changes venue-native names.
 

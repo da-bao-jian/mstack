@@ -1,0 +1,17 @@
+[
+	{
+		"openInterest": "593.99874",
+		"symbol": "BTC_USDC_PERP",
+		"timestamp": 1792762444114
+	},
+	{
+		"openInterest": "4978.0364",
+		"symbol": "ETH_USDC_PERP",
+		"timestamp": 1792762444114
+	},
+	{
+		"openInterest": "392.734",
+		"symbol": "MU.US_USDC_PERP",
+		"timestamp": 1792762444114
+	}
+]

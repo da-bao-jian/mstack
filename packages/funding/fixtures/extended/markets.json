@@ -1,0 +1,70 @@
+{
+	"status": "OK",
+	"data": [
+		{
+			"name": "BTC-USD",
+			"type": "PERPETUAL",
+			"category": "Crypto",
+			"status": "ACTIVE",
+			"marketStats": {
+				"dailyVolume": "111102276.624020",
+				"markPrice": "81619.170974250009",
+				"fundingRate": "0.000013",
+				"nextFundingRate": 1792764000000,
+				"openInterest": "51394743.990503"
+			}
+		},
+		{
+			"name": "ETH-USD",
+			"type": "PERPETUAL",
+			"category": "Crypto",
+			"status": "ACTIVE",
+			"marketStats": {
+				"dailyVolume": "27771146.795200",
+				"markPrice": "2399.4408628",
+				"fundingRate": "0.000013",
+				"nextFundingRate": 1792764000000,
+				"openInterest": "29081953.915768"
+			}
+		},
+		{
+			"name": "IREN_24_5-USD",
+			"type": "PERPETUAL",
+			"category": "RWA",
+			"status": "ACTIVE",
+			"marketStats": {
+				"dailyVolume": "1139.270880",
+				"markPrice": "25.295",
+				"fundingRate": "0.000005",
+				"nextFundingRate": 1792764000000,
+				"openInterest": "29841.255296"
+			}
+		},
+		{
+			"name": "BTCSPOT-USD",
+			"type": "SPOT",
+			"category": "Crypto",
+			"status": "ACTIVE",
+			"marketStats": {
+				"dailyVolume": "0.000000",
+				"markPrice": "0",
+				"fundingRate": "0",
+				"nextFundingRate": 0,
+				"openInterest": "0"
+			}
+		},
+		{
+			"name": "NOW_24_5-USD",
+			"type": "PERPETUAL",
+			"category": "RWA",
+			"status": "DELISTED",
+			"marketStats": {
+				"dailyVolume": "0",
+				"markPrice": "111.686999999999",
+				"fundingRate": "0.000005",
+				"nextFundingRate": 1792764000000,
+				"openInterest": "0"
+			}
+		}
+	]
+}

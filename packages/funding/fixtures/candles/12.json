@@ -1,0 +1,53 @@
+{
+	"result": [
+		{
+			"open_time": "1792756800000000000",
+			"close_time": "1792760400000000000",
+			"open": "81663.4",
+			"close": "81744.3",
+			"high": "81814.9",
+			"low": "81424.4",
+			"volume_b": "119.867",
+			"volume_q": "9786647.0795",
+			"trades": 117,
+			"instrument": "BTC_USDT_Perp"
+		},
+		{
+			"open_time": "1792753200000000000",
+			"close_time": "1792756800000000000",
+			"open": "81654.9",
+			"close": "81663.4",
+			"high": "81733.4",
+			"low": "81544.7",
+			"volume_b": "84.942",
+			"volume_q": "6932219.5408",
+			"trades": 79,
+			"instrument": "BTC_USDT_Perp"
+		},
+		{
+			"open_time": "1792749600000000000",
+			"close_time": "1792753200000000000",
+			"open": "81617.9",
+			"close": "81654.9",
+			"high": "81793.0",
+			"low": "81582.5",
+			"volume_b": "46.315",
+			"volume_q": "3784188.0191",
+			"trades": 29,
+			"instrument": "BTC_USDT_Perp"
+		},
+		{
+			"open_time": "1792746000000000000",
+			"close_time": "1792749600000000000",
+			"open": "81750.5",
+			"close": "81617.9",
+			"high": "81764.0",
+			"low": "81529.1",
+			"volume_b": "77.717",
+			"volume_q": "6344630.9465",
+			"trades": 68,
+			"instrument": "BTC_USDT_Perp"
+		}
+	],
+	"next": ""
+}

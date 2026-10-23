@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 
 const repo = resolve(import.meta.dir, "..");
 const greetingRule =
-	"If the preamble output contains a block between the lines `<mob-home>` and `</mob-home>`, reproduce every line between those two tags verbatim in a fenced code block at the top of your reply; stop before the `</mob-home>` line and print neither tag line; never strip, trim or summarize the block.";
+	"If the preamble output contains a `<mob-home>` line, the welcome is the lines after `<mob-home>` and before `</mob-home>`. Put exactly those lines, verbatim, in a fenced code block at the top of your reply. The two tag lines are markers, not part of the welcome: never print `<mob-home>` or `</mob-home>`. Never strip, trim or summarize the welcome.";
 const nextStepsRule = (invoke: string) =>
 	`When a reply completes the request (not when it asks a question), end with "You can": up to three rows from the preamble's \`YOU_CAN\` list or the welcome's \`You can\` rows that fit the moment, as words to say next. Only when the welcome printed in this reply, add that \`${invoke}\` opens the menu.`;
 

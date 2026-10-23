@@ -19,12 +19,14 @@ test("every skill description starts with its task and quotes trigger phrases, i
 		"mob-manage": "Manage a position with the API key when supported",
 		"mob-close": "Close a position with a scoped API key",
 		"mob-keys": "Manage the scoped MoB API key safely",
+		"mob-markets": "Explore perpetual markets across venues",
 	};
 	const everyday: Record<string, string> = {
 		mob: "what can you do",
 		"mob-scan": "where is the best funding right now",
 		"mob-setup": "set up mstack",
 		"mob-status": "what positions do I have",
+		"mob-markets": "all markets",
 	};
 	for (const [file, content] of generated) {
 		if (!file.endsWith("SKILL.md")) continue;

@@ -1,0 +1,354 @@
+{
+	"historicalFunding": [
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.000001875",
+			"price": "81658.1258",
+			"effectiveAtHeight": "110718086",
+			"effectiveAt": "2026-10-23T13:00:00.262Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.0000005",
+			"price": "81602.33325",
+			"effectiveAtHeight": "110712098",
+			"effectiveAt": "2026-10-23T12:00:00.137Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.000005625",
+			"price": "81598.82",
+			"effectiveAtHeight": "110706237",
+			"effectiveAt": "2026-10-23T11:00:00.231Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.00000575",
+			"price": "81590.79105",
+			"effectiveAtHeight": "110700014",
+			"effectiveAt": "2026-10-23T10:00:00.415Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.0000075",
+			"price": "81679.66339",
+			"effectiveAtHeight": "110693677",
+			"effectiveAt": "2026-10-23T09:00:00.397Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.000011875",
+			"price": "81462.12691",
+			"effectiveAtHeight": "110687327",
+			"effectiveAt": "2026-10-23T08:00:00.023Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.000008875",
+			"price": "81784.88089",
+			"effectiveAtHeight": "110680985",
+			"effectiveAt": "2026-10-23T07:00:00.305Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.000008875",
+			"price": "81761.22801",
+			"effectiveAtHeight": "110674674",
+			"effectiveAt": "2026-10-23T06:00:00.433Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.0000115",
+			"price": "81467.82903",
+			"effectiveAtHeight": "110668421",
+			"effectiveAt": "2026-10-23T05:00:00.649Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.000008625",
+			"price": "81776.87192",
+			"effectiveAtHeight": "110662113",
+			"effectiveAt": "2026-10-23T04:00:00.036Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.000005625",
+			"price": "81853",
+			"effectiveAtHeight": "110655837",
+			"effectiveAt": "2026-10-23T03:00:00.346Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.0000125",
+			"price": "81234.68633",
+			"effectiveAtHeight": "110649553",
+			"effectiveAt": "2026-10-23T02:00:00.247Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.000021375",
+			"price": "81363.03754",
+			"effectiveAtHeight": "110643238",
+			"effectiveAt": "2026-10-23T01:00:00.575Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.000025",
+			"price": "81328.92817",
+			"effectiveAtHeight": "110636980",
+			"effectiveAt": "2026-10-23T00:00:00.099Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.0000255",
+			"price": "81242.79999",
+			"effectiveAtHeight": "110630715",
+			"effectiveAt": "2026-10-22T23:00:00.477Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.000029625",
+			"price": "81347.70361",
+			"effectiveAtHeight": "110624436",
+			"effectiveAt": "2026-10-22T22:00:00.049Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.00003925",
+			"price": "81181.18888",
+			"effectiveAtHeight": "110618192",
+			"effectiveAt": "2026-10-22T21:00:00.394Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.000022125",
+			"price": "81395.9",
+			"effectiveAtHeight": "110611942",
+			"effectiveAt": "2026-10-22T20:00:00.088Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.000013375",
+			"price": "81284.61742",
+			"effectiveAtHeight": "110605680",
+			"effectiveAt": "2026-10-22T19:00:00.224Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.000003625",
+			"price": "81102.08245",
+			"effectiveAtHeight": "110599196",
+			"effectiveAt": "2026-10-22T18:00:00.068Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.000006375",
+			"price": "81205.7096",
+			"effectiveAtHeight": "110592699",
+			"effectiveAt": "2026-10-22T17:00:00.632Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.000005",
+			"price": "81555.1",
+			"effectiveAtHeight": "110586364",
+			"effectiveAt": "2026-10-22T16:00:00.323Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.00000225",
+			"price": "81816.2",
+			"effectiveAtHeight": "110580061",
+			"effectiveAt": "2026-10-22T15:00:00.223Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0",
+			"price": "81648.60572",
+			"effectiveAtHeight": "110574044",
+			"effectiveAt": "2026-10-22T14:00:00.614Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.0000005",
+			"price": "81600.1534",
+			"effectiveAtHeight": "110568182",
+			"effectiveAt": "2026-10-22T13:00:00.137Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.00000525",
+			"price": "81694.83026",
+			"effectiveAtHeight": "110562313",
+			"effectiveAt": "2026-10-22T12:00:00.311Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.00000675",
+			"price": "81953.30762",
+			"effectiveAtHeight": "110556508",
+			"effectiveAt": "2026-10-22T11:00:00.555Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.000000625",
+			"price": "81860.32805",
+			"effectiveAtHeight": "110550719",
+			"effectiveAt": "2026-10-22T10:00:00.361Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.0000005",
+			"price": "81778.55701",
+			"effectiveAtHeight": "110545028",
+			"effectiveAt": "2026-10-22T09:00:00.490Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.00000125",
+			"price": "82136.02",
+			"effectiveAtHeight": "110539257",
+			"effectiveAt": "2026-10-22T08:00:00.492Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.000001625",
+			"price": "82422.52141",
+			"effectiveAtHeight": "110533293",
+			"effectiveAt": "2026-10-22T07:00:00.359Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.000001",
+			"price": "82760.66903",
+			"effectiveAtHeight": "110527174",
+			"effectiveAt": "2026-10-22T06:00:00.056Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0",
+			"price": "82834.03",
+			"effectiveAtHeight": "110521055",
+			"effectiveAt": "2026-10-22T05:00:00.486Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0",
+			"price": "82821.91424",
+			"effectiveAtHeight": "110514864",
+			"effectiveAt": "2026-10-22T04:00:00.122Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0",
+			"price": "82845.44364",
+			"effectiveAtHeight": "110508707",
+			"effectiveAt": "2026-10-22T03:00:00.337Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "-0.000000125",
+			"price": "83393.62579",
+			"effectiveAtHeight": "110502530",
+			"effectiveAt": "2026-10-22T02:00:00.363Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "-0.000000375",
+			"price": "84175.13519",
+			"effectiveAtHeight": "110496255",
+			"effectiveAt": "2026-10-22T01:00:00.028Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "-0.0000015",
+			"price": "84005.32469",
+			"effectiveAtHeight": "110489928",
+			"effectiveAt": "2026-10-22T00:00:00.049Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "-0.00000125",
+			"price": "84379.1329",
+			"effectiveAtHeight": "110483694",
+			"effectiveAt": "2026-10-21T23:00:00.203Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "-0.000002625",
+			"price": "84760.4",
+			"effectiveAtHeight": "110477365",
+			"effectiveAt": "2026-10-21T22:00:00.186Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "-0.000001625",
+			"price": "84621.70564",
+			"effectiveAtHeight": "110471048",
+			"effectiveAt": "2026-10-21T21:00:00.519Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0",
+			"price": "84430.66612",
+			"effectiveAtHeight": "110464694",
+			"effectiveAt": "2026-10-21T20:00:00.510Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "-0.0000015",
+			"price": "84362.07206",
+			"effectiveAtHeight": "110458364",
+			"effectiveAt": "2026-10-21T19:00:00.282Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "-0.000000625",
+			"price": "84636.11999",
+			"effectiveAtHeight": "110452021",
+			"effectiveAt": "2026-10-21T18:00:00.265Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0",
+			"price": "84506.79592",
+			"effectiveAtHeight": "110445691",
+			"effectiveAt": "2026-10-21T17:00:00.269Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0",
+			"price": "84494.39",
+			"effectiveAtHeight": "110439426",
+			"effectiveAt": "2026-10-21T16:00:00.602Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0",
+			"price": "84514.10188",
+			"effectiveAtHeight": "110433259",
+			"effectiveAt": "2026-10-21T15:00:00.202Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.000003",
+			"price": "83765.78358",
+			"effectiveAtHeight": "110427147",
+			"effectiveAt": "2026-10-21T14:00:00.219Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.000008625",
+			"price": "83389.60369",
+			"effectiveAtHeight": "110421081",
+			"effectiveAt": "2026-10-21T13:00:00.487Z"
+		},
+		{
+			"ticker": "BTC-USD",
+			"rate": "0.000001125",
+			"price": "83423.67006",
+			"effectiveAtHeight": "110415357",
+			"effectiveAt": "2026-10-21T12:00:00.491Z"
+		}
+	]
+}

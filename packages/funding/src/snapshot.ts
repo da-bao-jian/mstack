@@ -1,10 +1,11 @@
 import { annualizePeriodicFundingPct } from "./index.ts";
-import type {
-	Fetch,
-	ObservedFundingRate,
-	Snapshot,
-	VenueAdapter,
-	VenueFailure,
+import {
+	type Fetch,
+	type ObservedFundingRate,
+	type Snapshot,
+	VENUE_CATEGORIES,
+	type VenueAdapter,
+	type VenueFailure,
 } from "./types.ts";
 import { errorMessage, nonnegative, string, timestamp } from "./validation.ts";
 
@@ -39,6 +40,11 @@ function validateRows(rows: ObservedFundingRate[]): void {
 			!Number.isFinite(row.priceChange24hPct)
 		)
 			throw new Error("priceChange24hPct: expected finite number");
+		if (
+			row.venueCategory !== undefined &&
+			!(VENUE_CATEGORIES as readonly string[]).includes(row.venueCategory)
+		)
+			throw new Error(`${row.venue}:${row.market}: invalid venueCategory`);
 		if (
 			row.annualizationMethod !== "simple" ||
 			!["direct", "hosted"].includes(row.source)

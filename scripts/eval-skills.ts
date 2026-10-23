@@ -22,6 +22,10 @@ const cases: { prompt: string; expect: string }[] = [
 	{ prompt: "where is the best funding right now?", expect: "mob-scan" },
 	{ prompt: "explain how funding arbitrage works", expect: "mob-explain" },
 	{ prompt: "import my MoB key", expect: "mob-keys" },
+	{
+		prompt: "show me gold and stock perps across venues",
+		expect: "mob-markets",
+	},
 	{ prompt: "open $5k HYPE long on hl, short on lighter", expect: "mob-open" },
 	{ prompt: "close my ETH position", expect: "mob-close" },
 ];

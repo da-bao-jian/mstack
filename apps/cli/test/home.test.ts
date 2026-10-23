@@ -135,7 +135,7 @@ test("no args home: live market, account standing and next action share the logo
 	expect(r.out).toContain("You can    say in Claude Code or Codex");
 	expect(r.out).toContain('"set up mstack"  to finish setup');
 	expect(r.out).not.toContain("Next ");
-	expect(r.out).toContain("live · 2 of 14 venues");
+	expect(r.out).toContain("live · 2 of 20 venues");
 	expect(r.out.split("\n")[0].indexOf("mstack")).toBe(35);
 	expect(fake.calls).toHaveLength(8);
 	expect(fake.calls.every((c) => c.method === "GET")).toBe(true);
@@ -326,12 +326,21 @@ test("mob menu prints the You can rows from local state with no network read", a
 	const text = await invoke(["menu"]);
 	expect(text.code).toBe(0);
 	expect(text.err).toBe("");
-	// A person at a terminal gets the column headers above the rows.
+	// A person at a terminal gets the column headers, then the full menu
+	// by section.
 	const lines = text.out.split("\n");
 	expect(lines[0]).toMatch(
 		/^say in Claude Code or Codex +or run in a terminal$/,
 	);
-	expect(lines[1]).toMatch(/^"set up mstack" {2}to finish setup +mob onboard$/);
+	expect(lines.filter((line) => / · /.test(line))).toEqual([
+		"Find trades · funding arb, price gaps, RWA farms, watchlist",
+		"Explore markets · all markets, one asset, venues, RWA",
+		"Charts & costs · cost to trade, spread chart, funding history, WTI vs Brent",
+		"Trade & account · finish the one-time setup to trade through MoB",
+	]);
+	expect(lines).toContainEqual(
+		expect.stringMatching(/^"set up mstack" {2}to finish setup +mob onboard$/),
+	);
 	// A capturing preamble gets rows only, so YOU_CAN stays a plain list.
 	rt.isTTY = false;
 	rt.stdoutIsTTY = false;
@@ -342,6 +351,8 @@ test("mob menu prints the You can rows from local state with no network read", a
 	const p = await proposal(home);
 	const json = JSON.parse((await invoke(["menu", "--json"])).out);
 	expect(json.state).toBe("awaiting");
+	expect(json.sections).toHaveLength(4);
+	expect(json.sections[3].rows[0].run).toBe(`mob sign ${p.id}`);
 	expect(json.rows[0]).toEqual({
 		say: `sign ${p.id}`,
 		note: "first",

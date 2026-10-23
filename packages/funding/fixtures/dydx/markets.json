@@ -1,0 +1,31 @@
+{
+	"markets": {
+		"BTC-USD": {
+			"ticker": "BTC-USD",
+			"status": "ACTIVE",
+			"oraclePrice": "81668.2649",
+			"priceChange24H": "-139.72739",
+			"volume24H": "4943493.8186",
+			"nextFundingRate": "0.00000076470588235294",
+			"openInterest": "208.7042"
+		},
+		"ETH-USD": {
+			"ticker": "ETH-USD",
+			"status": "ACTIVE",
+			"oraclePrice": "2400.013984",
+			"priceChange24H": "-5.762669",
+			"volume24H": "50643714.9533",
+			"nextFundingRate": "-0.00000033823529411765",
+			"openInterest": "8261.885"
+		},
+		"MATIC-USD": {
+			"ticker": "MATIC-USD",
+			"status": "FINAL_SETTLEMENT",
+			"oraclePrice": "0.3932407381",
+			"priceChange24H": "0",
+			"volume24H": "0",
+			"nextFundingRate": "0",
+			"openInterest": "0"
+		}
+	}
+}

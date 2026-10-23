@@ -1,0 +1,11 @@
+{
+	"code": "0",
+	"data": [
+		{
+			"instId": "BTC-USDT-SWAP",
+			"ctType": "linear",
+			"ctVal": "0.01"
+		}
+	],
+	"msg": ""
+}

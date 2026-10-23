@@ -1,0 +1,23 @@
+{
+	"success": true,
+	"data": [
+		{
+			"symbol": "ETH",
+			"instrument_type": "perpetual"
+		},
+		{
+			"symbol": "BTC",
+			"instrument_type": "perpetual"
+		},
+		{
+			"symbol": "XAU",
+			"instrument_type": "perpetual"
+		},
+		{
+			"symbol": "SOL-USDC",
+			"instrument_type": "spot"
+		}
+	],
+	"error": null,
+	"code": null
+}

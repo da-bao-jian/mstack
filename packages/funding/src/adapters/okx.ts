@@ -1,5 +1,9 @@
 import { json } from "../http.ts";
-import type { ObservedFundingRate, VenueAdapter } from "../types.ts";
+import type {
+	ObservedFundingRate,
+	VenueAdapter,
+	VenueCategory,
+} from "../types.ts";
 import {
 	array,
 	nonnegative,
@@ -11,6 +15,13 @@ import {
 	timestamp,
 	unique,
 } from "../validation.ts";
+
+// OKX instCategory: 1 crypto, 3 stocks, 4 commodities. Other codes stay unlabeled.
+const CATEGORIES: Readonly<Record<string, VenueCategory>> = {
+	"1": "crypto",
+	"3": "stock",
+	"4": "commodity",
+};
 
 function data(value: unknown): unknown[] {
 	const body = object(value, "OKX response");
@@ -50,13 +61,22 @@ export function createOkxAdapter(): VenueAdapter {
 					throw new Error(`${market}: expected SWAP ticker`);
 				if (tickers.has(market))
 					throw new Error(`Duplicate OKX ticker ${market}`);
-				const last = positive(entry.last, `${market} last`);
-				const open = positive(entry.open24h, `${market} open24h`);
+				// A newly listed swap with no trade yet sends empty last and open
+				// prices: its price change is unknown, not malformed.
+				const untraded = entry.last === "" && entry.open24h === "";
 				tickers.set(market, {
 					...(entry.volCcy24h === undefined
 						? {}
 						: { volume: nonnegative(entry.volCcy24h, `${market} volCcy24h`) }),
-					priceChange24hPct: ((last - open) / open) * 100,
+					...(untraded
+						? {}
+						: {
+								priceChange24hPct:
+									((positive(entry.last, `${market} last`) -
+										positive(entry.open24h, `${market} open24h`)) /
+										positive(entry.open24h, `${market} open24h`)) *
+									100,
+							}),
 				});
 			}
 			const marks = new Map<string, number>();
@@ -73,7 +93,14 @@ export function createOkxAdapter(): VenueAdapter {
 				const market = string(entry.instId, "instId");
 				if (entry.instType !== "SWAP")
 					throw new Error(`${market}: expected SWAP`);
-				return { market, state: string(entry.state, `${market} state`) };
+				return {
+					market,
+					state: string(entry.state, `${market} state`),
+					category:
+						typeof entry.instCategory === "string"
+							? CATEGORIES[entry.instCategory]
+							: undefined,
+				};
 			});
 			unique(
 				instruments.map((entry) => entry.market),
@@ -83,6 +110,9 @@ export function createOkxAdapter(): VenueAdapter {
 				instruments
 					.filter((entry) => entry.state === "live")
 					.map((entry) => entry.market),
+			);
+			const categories = new Map(
+				instruments.map((entry) => [entry.market, entry.category]),
 			);
 			const rates = new Map<string, ObservedFundingRate>();
 			const seen = new Set<string>();
@@ -121,6 +151,9 @@ export function createOkxAdapter(): VenueAdapter {
 						{
 							nextFundingAt: fundingTime,
 							markPrice,
+							...(categories.get(market) === undefined
+								? {}
+								: { venueCategory: categories.get(market) }),
 							...(tickers.get(market)?.volume === undefined
 								? {}
 								: {

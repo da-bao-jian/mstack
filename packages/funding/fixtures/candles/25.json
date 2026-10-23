@@ -1,0 +1,25 @@
+{
+	"code": "200000",
+	"data": [
+		{
+			"symbol": "XBTUSDTM",
+			"fundingRate": 0.0001,
+			"timepoint": 1792742400000
+		},
+		{
+			"symbol": "XBTUSDTM",
+			"fundingRate": 0.0001,
+			"timepoint": 1792713600000
+		},
+		{
+			"symbol": "XBTUSDTM",
+			"fundingRate": 0.0001,
+			"timepoint": 1792684800000
+		},
+		{
+			"symbol": "XBTUSDTM",
+			"fundingRate": 0.0001,
+			"timepoint": 1792656000000
+		}
+	]
+}

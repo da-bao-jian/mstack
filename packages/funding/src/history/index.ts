@@ -43,6 +43,203 @@ export interface HistoryOptions {
 
 type Point = { time: number; rate: number };
 
+/** Venues with keyless funding history. Hyperliquid and Lighter settle hourly. */
+export const HISTORY_VENUES: readonly string[] = [
+	"hl",
+	"lighter",
+	"lighter-mainnet",
+	"binance",
+	"aster",
+	"bybit",
+	"okx",
+	"pacifica",
+	"extended",
+	"dydx",
+	"backpack",
+	"kucoin",
+];
+const HOURLY = new Set([
+	"hl",
+	"lighter",
+	"lighter-mainnet",
+	"pacifica",
+	"extended",
+	"dydx",
+	"backpack",
+]);
+
+/**
+ * Venues that serve their newest 1,000 settlements in one page: about 41 days
+ * of hourly funding. KuCoin serves a time range of 8-hour settlements and
+ * reads one day early, so its first sample has a predecessor.
+ */
+async function pagedHistory(
+	ctx: FetchContext,
+	venue: string,
+	market: string,
+	start: number,
+	end: number,
+): Promise<Point[]> {
+	const q = encodeURIComponent(market);
+	const rows = (raw: unknown, label: string) =>
+		array(raw, label).map((value) => object(value, `${label} row`));
+	const same = (value: unknown, label: string) => {
+		if (string(value, label) !== market)
+			throw new Error(`History market mismatch: ${String(value)} != ${market}`);
+	};
+	switch (venue) {
+		case "pacifica": {
+			const body = object(
+				await json(
+					ctx,
+					`https://api.pacifica.fi/api/v1/funding_rate/history?symbol=${q}&limit=1000`,
+				),
+				"Pacifica funding history",
+			);
+			if (body.success !== true)
+				throw new Error("Pacifica funding history: not successful");
+			return rows(body.data, "funding history").map((row) => ({
+				time: timestamp(row.created_at, "funding time"),
+				rate: numeric(row.funding_rate, "historical funding rate"),
+			}));
+		}
+		case "extended": {
+			const body = object(
+				await json(
+					ctx,
+					`https://api.starknet.extended.exchange/api/v1/info/${q}/funding?startTime=${start}&endTime=${end}&limit=1000`,
+				),
+				"Extended funding history",
+			);
+			if (body.status !== "OK")
+				throw new Error(`Extended status ${String(body.status)}`);
+			return rows(body.data, "funding history").map((row) => {
+				same(row.m, "history market");
+				return {
+					time: timestamp(row.T, "funding time"),
+					rate: numeric(row.f, "historical funding rate"),
+				};
+			});
+		}
+		case "dydx": {
+			const body = object(
+				await json(
+					ctx,
+					`https://indexer.dydx.trade/v4/historicalFunding/${q}?limit=1000`,
+				),
+				"dYdX funding history",
+			);
+			return rows(body.historicalFunding, "funding history").map((row) => {
+				same(row.ticker, "history market");
+				return {
+					time: timestamp(
+						Date.parse(string(row.effectiveAt, "effectiveAt")),
+						"funding time",
+					),
+					rate: numeric(row.rate, "historical funding rate"),
+				};
+			});
+		}
+		case "backpack": {
+			return rows(
+				await json(
+					ctx,
+					`https://api.backpack.exchange/api/v1/fundingRates?symbol=${q}&limit=1000`,
+				),
+				"funding history",
+			).map((row) => {
+				same(row.symbol, "history market");
+				const ended = string(row.intervalEndTimestamp, "intervalEndTimestamp");
+				if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(ended))
+					throw new Error("intervalEndTimestamp: expected UTC date and time");
+				return {
+					time: timestamp(Date.parse(`${ended}Z`), "funding time"),
+					rate: numeric(row.fundingRate, "historical funding rate"),
+				};
+			});
+		}
+		default: {
+			const body = object(
+				await json(
+					ctx,
+					`https://api-futures.kucoin.com/api/v1/contract/funding-rates?symbol=${q}&from=${Math.max(1, start - 86_400_000)}&to=${end}`,
+				),
+				"KuCoin funding history",
+			);
+			if (body.code !== "200000")
+				throw new Error(`KuCoin error code ${String(body.code)}`);
+			return rows(body.data, "funding history").map((row) => {
+				same(row.symbol, "history market");
+				return {
+					time: timestamp(row.timepoint, "funding time"),
+					rate: numeric(row.fundingRate, "historical funding rate"),
+				};
+			});
+		}
+	}
+}
+const LIGHTER: Readonly<Record<string, string>> = {
+	lighter: "https://api.rh.lighter.xyz",
+	"lighter-mainnet": "https://mainnet.zklighter.elliot.ai",
+};
+
+/**
+ * Lighter reports each hourly settlement as a percent rate and the side that
+ * pays: "long" means longs pay shorts, which is a positive funding rate.
+ */
+async function lighterHistory(
+	ctx: FetchContext,
+	venue: string,
+	market: string,
+	start: number,
+	end: number,
+): Promise<Point[]> {
+	const base = LIGHTER[venue];
+	const details = object(
+		await json(ctx, `${base}/api/v1/orderBookDetails`),
+		"Lighter orderBookDetails",
+	);
+	const entry = array(details.order_book_details, "order_book_details")
+		.map((value) => object(value, "Lighter market details"))
+		.find((value) => value.symbol === market);
+	if (!entry) throw new Error(`${venue}:${market}: unknown market`);
+	const id = timestamp(entry.market_id, `${market} market_id`);
+	const rows: Point[] = [];
+	// Disjoint windows of 500 hours keep each page well inside the count limit.
+	const step = 500 * 3600;
+	for (
+		let from = Math.floor(start / 1000);
+		from <= Math.floor(end / 1000);
+		from += step + 1
+	) {
+		const to = Math.min(from + step, Math.floor(end / 1000));
+		const body = object(
+			await json(
+				ctx,
+				`${base}/api/v1/fundings?market_id=${id}&resolution=1h&start_timestamp=${from}&end_timestamp=${to}&count_back=${Math.ceil((to - from) / 3600) + 1}`,
+			),
+			"Lighter fundings",
+		);
+		if (body.code !== 200) throw new Error(`Lighter error code ${body.code}`);
+		for (const value of array(body.fundings, "fundings")) {
+			const row = object(value, "Lighter funding");
+			const time = timestamp(row.timestamp, "funding timestamp") * 1000;
+			if (time < from * 1000 || time > to * 1000) continue;
+			const direction = row.direction;
+			if (direction !== "long" && direction !== "short")
+				throw new Error("Lighter funding direction: expected long or short");
+			const percent = numeric(row.rate, "historical funding rate");
+			if (percent < 0)
+				throw new Error("Lighter funding rate: expected magnitude");
+			rows.push({
+				time,
+				rate: ((direction === "long" ? 1 : -1) * percent) / 100,
+			});
+		}
+	}
+	return rows;
+}
+
 function points(raw: unknown, venue: string, symbol: string): Point[] {
 	let rows: unknown[];
 	if (venue === "bybit") {
@@ -126,7 +323,21 @@ async function readHistory(
 			result.push(row);
 		}
 	};
-	if (venue === "hl") {
+	if (venue === "lighter" || venue === "lighter-mainnet") {
+		add(await lighterHistory(ctx, venue, market, start, end));
+	} else if (
+		["pacifica", "extended", "dydx", "backpack", "kucoin"].includes(venue)
+	) {
+		add(
+			(await pagedHistory(ctx, venue, market, start, end)).filter(
+				(row) =>
+					row.time <= end &&
+					(venue === "kucoin"
+						? row.time >= start - 86_400_000
+						: row.time >= start),
+			),
+		);
+	} else if (venue === "hl") {
 		let cursor = start;
 		while (cursor <= end) {
 			const rows = points(
@@ -235,7 +446,7 @@ export async function fetchFundingHistory(
 	market: string,
 	options: HistoryOptions,
 ): Promise<FundingHistory> {
-	if (!["hl", "binance", "aster", "bybit", "okx"].includes(venue))
+	if (!HISTORY_VENUES.includes(venue))
 		throw new Error(`${venue}: no keyless history`);
 	string(market, "history market");
 	const startTime = timestamp(options.startTime, "startTime");
@@ -257,20 +468,19 @@ export async function fetchFundingHistory(
 	for (let i = 0; i < rows.length; i++) {
 		const row = rows[i];
 		if (row.time < startTime || row.time > endTime) continue;
-		if (venue !== "hl" && i === 0)
+		if (!HOURLY.has(venue) && i === 0)
 			throw new Error(
 				`${venue}:${market}: no preceding settlement to measure the first interval`,
 			);
 		samples.push({
 			time: row.time,
 			ratePerInterval: row.rate,
-			intervalHours:
-				venue === "hl"
-					? 1
-					: positive(
-							(row.time - rows[i - 1].time) / 3_600_000,
-							"history interval",
-						),
+			intervalHours: HOURLY.has(venue)
+				? 1
+				: positive(
+						(row.time - rows[i - 1].time) / 3_600_000,
+						"history interval",
+					),
 		});
 	}
 	const hoursCovered = numeric(

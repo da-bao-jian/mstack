@@ -3,12 +3,22 @@ import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv
 import type { JsonSchemaType } from "@modelcontextprotocol/sdk/validation/types.js";
 import { ProposalStore } from "@mstack/proposals";
 import { config } from "./commands/config.ts";
+import { type CostOptions, cost } from "./commands/cost.ts";
 import { explain } from "./commands/explain.ts";
 import { type HistoryOptions, history } from "./commands/history.ts";
+import {
+	type MarketsOptions,
+	market,
+	markets,
+	venues as venueDirectory,
+} from "./commands/markets.ts";
+import { oil } from "./commands/oil.ts";
 import { type RatesOptions, rates } from "./commands/rates.ts";
 import type { Runtime } from "./commands/runtime.ts";
-import { type ScanOptions, scan } from "./commands/scan.ts";
+import { priceScan, type ScanOptions, scan } from "./commands/scan.ts";
+import { type SpreadOptions, spread } from "./commands/spread.ts";
 import { type StatusOptions, status } from "./commands/status.ts";
+import { watchList } from "./commands/watch.ts";
 import { UsageError } from "./config.ts";
 import { keyStatus } from "./keys-command.ts";
 import { onboardingStatus } from "./onboard.ts";
@@ -34,7 +44,7 @@ const venues: JsonSchemaType = {
 	type: "array",
 	items: { type: "string" },
 	description:
-		"Venue IDs: hl, lighter, lighter-mainnet, aster, binance, bybit, okx, mexc, bingx, bitget, gate, grvt, variational, qfex. Omit for all.",
+		"Venue IDs: hl, lighter, lighter-mainnet, aster, binance, bybit, okx, mexc, bingx, bitget, gate, grvt, variational, qfex, pacifica, extended, paradex, dydx, backpack, kucoin. Omit for all.",
 };
 const onboardingVenues: JsonSchemaType = {
 	type: "array",
@@ -45,6 +55,20 @@ const onboardingVenues: JsonSchemaType = {
 const owner = text(
 	"Public 20-byte 0x owner address. Defaults to the owner config key.",
 );
+const legFilters: Record<string, JsonSchemaType> = {
+	kind: text("dex or cex: both legs on that venue type."),
+	anchor: text("Venue ID one leg must use, such as hl or hl:xyz."),
+	minOpenInterestUsd: number(
+		"Nonnegative minimum USD open interest per leg; a leg without a published figure fails it.",
+	),
+	rwa: boolean(
+		"Only real-world assets: stocks, indices, commodities, FX, pre-IPO.",
+	),
+	crypto: boolean("Only crypto assets."),
+	category: text(
+		"RWA category: stock, index, commodity, fx, pre-ipo, or other.",
+	),
+};
 
 function tool<T>(
 	name: string,
@@ -129,9 +153,109 @@ export const mcpTools = [
 			includeFull: boolean(
 				"Include the full opportunities array; can exceed 3 MB. Default false keeps only counts and bounded views.",
 			),
+			...legFilters,
 		},
 		[],
 		scan,
+	),
+	tool<ScanOptions>(
+		"price_gap_scan",
+		"Rank same-asset pairs by mark-price gap, widest first: long the cheap leg, short the rich one. Returns gap, gap after taker fees, the funding spread while open, volumes and flags in bounded executable/anywhere views. Marks are estimates; fills depend on order books.",
+		{
+			market: text("Normalized base ticker; omit to scan all markets."),
+			venues,
+			topExec: number(
+				"Positive integer limit for executable view; default 5, cap 200.",
+			),
+			top: number(
+				"Positive integer limit for anywhere view; default 10, cap 200.",
+			),
+			allPairs: boolean("Include every pair instead of the best per base."),
+			executable: boolean("Only the executable view, limited by top."),
+			minVolume24hUsd: number(
+				"Nonnegative minimum known USD volume per leg; default 1000000.",
+			),
+			includeThin: boolean("Include below-threshold or unknown-volume pairs."),
+			includeCrossDeployment: boolean(
+				"Include Lighter cross-deployment pairs.",
+			),
+			...legFilters,
+		},
+		[],
+		priceScan,
+	),
+	tool<MarketsOptions>(
+		"markets",
+		"List assets across venues with class (crypto or rwa), RWA category, venue count, summed 24h volume and open interest, and best funding. One ticker can name two assets; variant 2 marks the second, split by price. With rwa, adds category totals and the best liquid RWA funding pair.",
+		{
+			rwa: boolean("Only real-world assets."),
+			crypto: boolean("Only crypto assets."),
+			category: text(
+				"RWA category: stock, index, commodity, fx, pre-ipo, or other.",
+			),
+			search: text("Ticker prefix or name words."),
+			sort: text("volume (default), oi, apr, or venues."),
+			top: number("Positive integer limit; default 25, cap 500."),
+			minVolume24hUsd: number("Nonnegative minimum summed 24h volume."),
+		},
+		[],
+		markets,
+	),
+	tool<{ base?: string }>(
+		"market",
+		"Read one asset on every venue: price, 24h volume and share, open interest, funding per interval, APR, next funding, MoB support, and the widest funding spread. Separate blocks when one ticker names two assets.",
+		{ base: text("Required base ticker, for example BTC, XAU, or NVDA.") },
+		["base"],
+		market,
+	),
+	tool<CostOptions>(
+		"execution_cost",
+		"Read each venue's public order book for one asset and price a market order at one to four USD sizes: average fill against mid plus the taker fee estimate, in USD and basis points. A size past the published levels reports what the book can fill and no cost. Variational and QFEX publish no public book.",
+		{
+			base: text("Required base ticker, for example BTC or NVDA."),
+			sizes: text(
+				"Comma-separated USD sizes, one to four; default 10000,100000,1000000.",
+			),
+			side: text("long (buy, default) or short (sell)."),
+			venues,
+		},
+		["base"],
+		cost,
+	),
+	tool<SpreadOptions>(
+		"price_spread",
+		"Read candles for two markets and return the spread of the second over the first, (B − A) / A in percent, at shared open times, with last, mean, min, max and where the last value sits. The legs can be one asset on two venues or two assets such as WTI and Brent.",
+		{
+			a: text("Required first market as venue:market, for example hl:BTC."),
+			b: text(
+				"Required second market as venue:market, for example lighter-mainnet:BTC.",
+			),
+			interval: text("15m, 1h (default), 4h, or 1d."),
+			days: number("Positive lookback in days; default 7; capped by interval."),
+		},
+		["a", "b"],
+		spread,
+	),
+	tool<Record<string, never>>(
+		"oil",
+		"Read WTI and Brent crude on every venue: busiest listing, mark, funding, the Brent premium per venue, the funding carry of long WTI and short Brent, and the best carry across venues.",
+		{},
+		[],
+		(_, rt) => oil(rt),
+	),
+	tool<{ kind?: string }>(
+		"venues",
+		"List venues by summed 24h volume with open interest, market count, DEX or CEX, MoB support, and the taker fee estimate. Missing counts mark sums that are lower bounds.",
+		{ kind: text("dex or cex; omit for all.") },
+		[],
+		venueDirectory,
+	),
+	tool<Record<string, never>>(
+		"watchlist",
+		"Read the saved pairs with their current funding spread, price gap, volumes and open interest.",
+		{},
+		[],
+		(_, rt) => watchList(rt),
 	),
 	tool<RatesOptions>(
 		"funding_rates",

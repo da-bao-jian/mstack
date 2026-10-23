@@ -81,6 +81,7 @@ export function rate(
 			| "volume24hUsd"
 			| "priceChange24hPct"
 			| "oiCapped"
+			| "venueCategory"
 			| "source"
 		>
 	> = {},

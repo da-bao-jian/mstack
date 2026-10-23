@@ -1,0 +1,114 @@
+[
+	{
+		"file": "books/hl-btc.json",
+		"url": "https://api.hyperliquid.xyz/info",
+		"method": "POST",
+		"body": "{\"type\":\"l2Book\",\"coin\":\"BTC\"}"
+	},
+	{
+		"file": "books/lighter-mainnet-details.json",
+		"url": "https://mainnet.zklighter.elliot.ai/api/v1/orderBookDetails",
+		"method": "GET"
+	},
+	{
+		"file": "books/lighter-mainnet-btc.json",
+		"url": "https://mainnet.zklighter.elliot.ai/api/v1/orderBookOrders?market_id=1&limit=250",
+		"method": "GET"
+	},
+	{
+		"file": "books/binance-btc.json",
+		"url": "https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000",
+		"method": "GET"
+	},
+	{
+		"file": "books/aster-btc.json",
+		"url": "https://fapi.asterdex.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000",
+		"method": "GET"
+	},
+	{
+		"file": "books/bybit-btc.json",
+		"url": "https://api.bybit.com/v5/market/orderbook?category=linear&symbol=BTCUSDT&limit=500",
+		"method": "GET"
+	},
+	{
+		"file": "books/okx-btc.json",
+		"url": "https://www.okx.com/api/v5/market/books?instId=BTC-USDT-SWAP&sz=400",
+		"method": "GET"
+	},
+	{
+		"file": "books/okx-btc-instrument.json",
+		"url": "https://www.okx.com/api/v5/public/instruments?instType=SWAP&instId=BTC-USDT-SWAP",
+		"method": "GET"
+	},
+	{
+		"file": "books/bitget-btc.json",
+		"url": "https://api.bitget.com/api/v2/mix/market/merge-depth?symbol=BTCUSDT&productType=USDT-FUTURES&limit=max",
+		"method": "GET"
+	},
+	{
+		"file": "books/bingx-btc.json",
+		"url": "https://open-api.bingx.com/openApi/swap/v2/quote/depth?symbol=BTC-USDT&limit=1000",
+		"method": "GET"
+	},
+	{
+		"file": "books/gate-btc.json",
+		"url": "https://api.gateio.ws/api/v4/futures/usdt/order_book?contract=BTC_USDT&limit=300",
+		"method": "GET"
+	},
+	{
+		"file": "books/gate-btc-contract.json",
+		"url": "https://api.gateio.ws/api/v4/futures/usdt/contracts/BTC_USDT",
+		"method": "GET"
+	},
+	{
+		"file": "books/mexc-btc.json",
+		"url": "https://contract.mexc.com/api/v1/contract/depth/BTC_USDT?limit=1000",
+		"method": "GET"
+	},
+	{
+		"file": "books/mexc-btc-detail.json",
+		"url": "https://contract.mexc.com/api/v1/contract/detail?symbol=BTC_USDT",
+		"method": "GET"
+	},
+	{
+		"file": "books/grvt-btc.json",
+		"url": "https://market-data.grvt.io/full/v1/book",
+		"method": "POST",
+		"body": "{\"instrument\":\"BTC_USDT_Perp\",\"depth\":500}"
+	},
+	{
+		"file": "books/pacifica-btc.json",
+		"url": "https://api.pacifica.fi/api/v1/book?symbol=BTC",
+		"method": "GET"
+	},
+	{
+		"file": "books/extended-btc.json",
+		"url": "https://api.starknet.extended.exchange/api/v1/info/markets/BTC-USD/orderbook",
+		"method": "GET"
+	},
+	{
+		"file": "books/paradex-btc.json",
+		"url": "https://api.prod.paradex.trade/v1/orderbook/BTC-USD-PERP?depth=100",
+		"method": "GET"
+	},
+	{
+		"file": "books/dydx-btc.json",
+		"url": "https://indexer.dydx.trade/v4/orderbooks/perpetualMarket/BTC-USD",
+		"method": "GET"
+	},
+	{
+		"file": "books/backpack-btc.json",
+		"url": "https://api.backpack.exchange/api/v1/depth?symbol=BTC_USDC_PERP",
+		"method": "GET"
+	},
+	{
+		"file": "books/kucoin-btc.json",
+		"url": "https://api-futures.kucoin.com/api/v1/level2/depth100?symbol=XBTUSDTM",
+		"method": "GET"
+	},
+	{
+		"file": "books/kucoin-btc-contract.json",
+		"url": "https://api-futures.kucoin.com/api/v1/contracts/XBTUSDTM",
+		"method": "GET"
+	}
+]
