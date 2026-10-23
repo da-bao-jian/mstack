@@ -1,29 +1,45 @@
-# mstack
+<p align="center">
+  <img src="assets/mob-logo.jpg" alt="mstack logo" width="112" height="112">
+</p>
 
-```text
-                         ░░░░░░░░░░░░░░░░░░
-                       ░░█░░░░░░░░░░░░░░░░░
-                     ░░███░░░░░░░░░░░░░░░░░
-                    ░█████░░░░░░░░░░░░░░░░░
-          ▒▒▒▒▒▒▒▒████████░░░░░░░░░░░░░░░░░
-       ▒▒▒▒▒▒▒▒▒▒▒████████░░░░░░░░░░░░░░░░░
-     ▒▒▒▒▒▒▒▒▒▒▒▒▒████████░░░░░░░░░░░░░░░░░
-   ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████████░░░░░░░░░░░░░░░░░
- ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████████░░░░░░░░░░░░░░░░░
- ░░░░░░░░░░░░░░░░░████████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
- ░░░░░░░░░░░░░░░░░████████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
- ░░░░░░░░░░░░░░░░░████████▒▒▒▒▒▒▒▒▒▒▒▒▒
- ░░░░░░░░░░░░░░░░░████████▒▒▒▒▒▒▒▒▒▒▒
- ░░░░░░░░░░░░░░░░░████████▒▒▒▒▒▒▒▒▒
- ░░░░░░░░░░░░░░░░░██████░
- ░░░░░░░░░░░░░░░░░█████
- ░░░░░░░░░░░░░░░░░███
- ░░░░░░░░░░░░░░░░░█
-```
+<h1 align="center">mstack</h1>
 
-An open framework for finding delta-neutral funding trades. Scan funding across 20 venues, read rate history, and get plain explanations with no account, wallet, or signature. When you want to execute, one wallet session sets up a scoped MoB API key with venue and USD caps that you choose and can revoke.
+<p align="center">
+  <b>Delta-neutral funding research and execution, inside your AI agent.</b><br>
+  Scan funding, prices and order books across 20 perpetual venues with no account.<br>
+  Trade through MoB with a scoped key that you cap and can revoke.
+</p>
 
-## Paste this into your agent
+<p align="center">
+  <a href="https://github.com/da-bao-jian/mstack/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/da-bao-jian/mstack/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/da-bao-jian/mstack/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/da-bao-jian/mstack?sort=semver"></a>
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-blue"></a>
+  <img alt="Bun 1.3 or newer" src="https://img.shields.io/badge/bun-%E2%89%A5%201.3-black">
+</p>
+
+<p align="center">
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#what-you-can-do">What you can do</a> ·
+  <a href="#trade-through-mob">Trade through MoB</a> ·
+  <a href="#supported-venues">Venues</a> ·
+  <a href="#security-model">Security</a> ·
+  <a href="#development">Development</a>
+</p>
+
+mstack is an open agent stack for funding-rate arbitrage on perpetual futures. You ask your agent in plain words, for example "best funding now", and it answers from live venue data. It works in Claude Code, Codex and any MCP client.
+
+- **Research needs no account.** Funding scans, price gaps, markets, order-book costs, spread charts, funding history and watchlist alerts read each venue's public API directly. You need no wallet, key or sign-up.
+- **Trading is opt-in.** When you want to trade, one wallet session creates a MoB API key that works only on the venues and up to the USD cap you choose. The key cannot withdraw.
+- **Nothing trades without you.** Every order is a staged Proposal. Under the default policy it runs only after your latest message names its exact id, for example `submit p-2`.
+- **One binary.** The `mob` CLI powers the skills, the MCP server and your terminal. Each release ships checksummed builds for macOS, Linux and Windows.
+
+## Quick start
+
+1. Open Claude Code in any folder: run `claude`.
+2. Paste the prompt below. The agent installs the plugin and the `mob` binary, checks them and shows the welcome.
+3. Type `/reload-plugins`, then `/mstack:mob` to open the menu.
+
+### Paste this into your agent
 
 ```text
 Install mstack, the open agent stack for delta-neutral funding trades, with MoB execution. I authorize exactly:
@@ -34,170 +50,274 @@ run `mob` and reproduce its output verbatim in a fenced block as the welcome.
 Finish by telling me to type /reload-plugins, then show how to use mstack: how to invoke it and the welcome's "You can" options (research needs no account; "set up mstack" only to trade).
 ```
 
-## Install
+The prompt lists every command it runs, so you can review them before you paste. It is pinned to release v0.5.1 and follows the [agent install guide](docs/AGENT-INSTALL.md). On Codex, paste the [Codex prompt](docs/AGENT-PROMPT.md#codex) instead.
 
-### Claude Code marketplace
+<details>
+<summary><b>Other ways to install</b></summary>
 
-GitHub access is required while the repository is private. Install Bun 1.3 or newer for a source build;
-the shim can also use a cached or downloaded release binary without Bun.
+#### Claude Code, by hand
 
 ```sh
 claude plugin marketplace add da-bao-jian/mstack
 claude plugin install mstack@mstack
+curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.5.1/install.sh | sh
 ```
 
-First message: `/mstack:mob` or just ask: find me the best funding arb.
+Then type `/reload-plugins` (or restart Claude Code) and `/mstack:mob`. The plugin ships 11 skills, puts `mob` on the agent's Bash PATH and adds a Bash guard. It registers no MCP server: the skills call the CLI.
 
-The plugin includes ten skills, `mob` on the agent's Bash PATH, and a Bash mutation guard. It registers no MCP server; the skills call the CLI.
+#### Codex
 
-The plugin root stays at the repository root so the marketplace copy includes the source needed by `bin/mob`.
-The root `bun.lock` triggers Claude Code's automatic dependency-install check and a directory reviewer hold.
-Its current loader skips workspace dependencies. When no binary exists and Bun is available,
-the shim runs a frozen install and builds once; otherwise it downloads and verifies the pinned release.
-This root plugin supports Claude Code. Its top-level `bin/` prevents claude.ai and Cowork installation.
-A separate skills-only plugin over hosted MCP is planned for P2. See [architecture](docs/ARCHITECTURE.md#plugin-root-and-packaging-trade-off).
-
-### Clone and setup
-
-Install Bun 1.3 or newer, then run:
+Setup needs [Bun](https://bun.sh) 1.3 or newer.
 
 ```sh
-git clone https://github.com/da-bao-jian/mstack.git ~/dev/mstack
-cd ~/dev/mstack
-./setup --host codex
+git clone --branch v0.5.1 https://github.com/da-bao-jian/mstack ~/.mstack && cd ~/.mstack && ./setup --host codex
 export PATH="$HOME/.agents/skills/mstack/bin:$PATH"
-mob scan --size 1000 --top 5
 ```
 
-For Claude Code, use `./setup --host claude` and add `$HOME/.claude/skills/mstack/bin` to PATH.
-Codex uses `~/.agents/skills`; setup also creates compatibility links when `~/.codex/skills` already exists.
-Use `./setup --host auto` to install into detected hosts. [Maintenance and uninstall details](docs/USAGE.md#installation-maintenance).
+Start a new Codex session and type `$mob`.
 
-<!-- release-start -->
-### Install (binary)
+#### Cursor, Windsurf, Claude Desktop and other MCP clients
 
-**Available after the first public release.** No Bun installation is needed for the binary.
+Install the binary, then add `mob mcp` to the client with the absolute path that `command -v mob` prints.
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.5.1/install.sh | sh
+command -v mob
 ```
-
-The installer verifies SHA-256, saves `~/.mob/bin/mob-<version>`, and links `~/.local/bin/mob`. Add that directory to PATH when prompted. Run `mob` for the home screen, or `mob upgrade` to download and verify the latest release. Checkout installations still use Git and Bun for upgrades. Plugin installations use the version in their manifest; update the plugin to select a newer version.
-
-Release assets cover macOS and Linux on x64/arm64, plus Windows x64 (`mob-windows-x64.exe`). The shell installer needs POSIX sh, curl, and either `shasum` or `sha256sum`. On Windows, use a compatible shell or download the `.exe` and `SHA256SUMS` from GitHub Releases.
-
-The Claude Code Bash authorization hook runs `mob hook sign-guard` in the compiled binary. Binary-only plugin installs need no Bun.
-
-For local release fixtures, set `MSTACK_RELEASE_BASE_URL=http://127.0.0.1:<port>/releases/download`; any other base must use https. The matching `/releases/latest/download/VERSION` route supplies the latest version. Versioned binaries and `SHA256SUMS` use `/releases/download/v<version>/`. The shim also accepts `MSTACK_MOB_BIN=/path/to/mob`. Normal binary resolution is quiet; set `MSTACK_VERBOSE=1` to log the selected binary to stderr. Builds, downloads, and failures always log to stderr.
-
-Maintainers can run `bun scripts/release.ts <version> --prepare` in a clean checkout to update all versions, regenerate the skills, and date the Unreleased notes. Add an Unreleased section when new work starts. This runs all gates and leaves changes for review. After committing, `bun scripts/release.ts <version>` runs the gates and tags that commit locally. Without `--prepare`, a new version also gets a release commit. The helper never pushes; the release coordinator pushes the tag, which starts the release workflow.
-<!-- release-end -->
-
-### MCP
-
-The Claude Code plugin does not register an MCP server. Its skills run `mob` through Bash, so the agent loads one tool surface and the sign guard mediates every mutation. To add the server to Claude Code anyway, with `mob` on PATH, run `claude mcp add --scope user mstack -- mob mcp`. For Cursor, Windsurf, Claude Desktop, or another MCP client, use an absolute path:
 
 ```json
 {
   "mcpServers": {
-    "mstack": {
-      "command": "/absolute/path/to/mstack/bin/mob",
-      "args": ["mcp"]
-    }
+    "mstack": { "command": "/absolute/path/to/mob", "args": ["mcp"] }
   }
 }
 ```
 
-GUI clients may not inherit your shell's PATH. MCP reads public, onboarding, and safe key status data. It stages local Proposals but cannot import keys, submit, sign, reject, or reveal a key.
+| Client | Config file |
+|---|---|
+| Cursor | `~/.cursor/mcp.json` |
+| Windsurf | `~/.codeium/windsurf/mcp_config.json` |
+| Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+
+The MCP server reads data and stages Proposals. Signing and key import stay in your terminal.
+
+#### Terminal only
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.5.1/install.sh | sh
+mob
+```
+
+The installer verifies the SHA-256 checksum, keeps `~/.mob/bin/mob-<version>` and links `~/.local/bin/mob`. Builds cover macOS and Linux (x64 and arm64) and Windows x64.
+
+</details>
 
 ## What you can do
 
-Research needs no account. Trading runs through MoB and needs the one-time setup in step 4.
+Type `/mstack:mob` in Claude Code or `$mob` in Codex for a menu, or ask in your own words. Each request also works as a terminal command.
 
-1. **Install.** Use the plugin, binary installer, or clone setup above. Run `mob --version`.
-2. **Scan.** Ask "best funding now" or run `mob scan --size 1000` to compare executable pairs and the best pairs anywhere.
-   Ask "best price gaps now" (`mob scan --by price`) for same-asset pairs priced apart, or "RWA funding farms" (`mob scan --rwa`).
-   Funding annualization is simple, not compounded: `ratePerInterval / intervalHours × 24 × 365 × 100`.
-   Fees and mark entry costs are estimates. Failed venues remain visible.
-   **Explore.** "all markets" (`mob markets`), "BTC on every venue" (`mob market BTC`), "venues by volume" (`mob venues`) and "RWA markets" (`mob markets --rwa`) cover every venue mstack reads. Save a pair with `mob watch add` and check it with "my watchlist".
-   **Alerts.** "alert me when the BTC spread drops below 5%" saves a threshold; `mob watch --check` prints the alerts that fire, and `/loop 15m check my mstack watchlist` in Claude Code checks on a schedule.
-   **Costs and charts.** "cost to trade BTC" (`mob cost BTC`) walks every public order book; "chart BTC on Hyperliquid vs Lighter" (`mob spread hl:BTC lighter-mainnet:BTC`) charts a price spread; "WTI vs Brent" (`mob oil`); `mob scan --realized` adds what each pair earned over 1, 7 and 30 days.
-3. **Explain and check history.** `mob explain funding --simple` and `mob history BTC --days 7` answer how a pair earns and whether its rate held. `mob status --owner 0x…` reads any address's public MoB tasks.
-4. **Onboard, when you want to trade.** Say "set up mstack". Setup first asks whether you bring your own wallet (a browser extension, a phone wallet over WalletConnect, or your key imported into mstack's encrypted keystore with `mob keystore import`) or create a new one with `mob keystore create`; keystore commands run in your own terminal, never in the chat. Or run `mob onboard --native --owner 0x… --venues hl,lighter --max-size 5000`, then `mob sign c-N --with browser`. One wallet session accepts the legal terms, binds the venues, creates a scoped key with that cap, and stores it locally; the key never prints. Require the `Ready · …` line. Without a wallet on this machine, `mob onboard` prints the MoB API page instead: paste the key once for `mob keys import --stdin`, or run `mob keys import` yourself for a hidden terminal paste.
-5. **Open.** Run a staged command such as `mob open ETH --long hl:ETH --short lighter:ETH --size 500`. With a matching key, it creates an `api-submit` Proposal and prints `mob submit p-N`.
-5. **Submit.** Under the default `manual` policy, say the verb and the exact id in your latest message, e.g. `submit p-2`, before the agent runs `mob submit p-N`. Under opt-in `auto`, the agent may submit inside the key caps and must say it did so.
-6. **Status.** Run `mob status`. API acceptance is **submitted, not confirmed**; status reports the worker state.
+### Find trades
 
-Use `mob bind --all` to repair a partial binding. Protection, neutralization, auto-close, size-mismatch edits, legal acceptance, venue binding, and key administration still use wallet approval.
+| Ask | Run | You get |
+|---|---|---|
+| "best funding now" | `mob scan` | Delta-neutral pairs ranked by net APY after fees: pairs MoB can trade, and the best anywhere |
+| "did those spreads hold?" | `mob scan --realized` | What each pair earned over the last 1, 7 and 30 days, from settled funding |
+| "best price gaps now" | `mob scan --by price` | The same asset priced apart across venues, after taker fees |
+| "RWA funding farms" | `mob scan --rwa` | Funding pairs on stocks, indices, gold, oil, FX and pre-IPO perps |
+| "save BTC long lighter-mainnet:BTC short hl:BTC and alert me below 5%" | `mob watch add` | A watchlist with spread and gap alerts. `mob watch --check` prints the alerts that fire |
 
-Wallet Proposals still require the verb and the exact id, for example, “Sign p-7 in the browser wallet.” The wallet asks you to approve. Keystore signing belongs in your own terminal.
+### Explore markets
 
-Run `mob` for the home screen, `mob doctor` for diagnostics, and `mob explain funding --simple` for a plain explanation.
-The home screen shows a live market view, account standing and the next action. `mob hello --offline` uses the cached market view;
-`--big`, `--compact`, `--stacked`, `--plain`, `--ascii`, and `--json` select its presentation.
-Home and doctor share a five-second network budget; unfinished checks say `not checked`.
-Doctor checks installation, public config, signer availability, API access, legal acceptance, readiness,
-and local Proposals without opening a wallet. Failed or unchecked critical items exit 1; use `mob doctor --json` for the checklist.
+| Ask | Run | You get |
+|---|---|---|
+| "all markets" | `mob markets` | Every asset on every venue: volume, open interest and best funding |
+| "ETH on every venue" | `mob market ETH` | Price, funding, next funding, volume share and open interest on each venue |
+| "venues by volume" | `mob venues` | Each venue's volume, open interest, taker fee and MoB support |
+| "RWA markets" | `mob markets --rwa` | Real-world assets by category: stock, index, commodity, FX, pre-IPO |
 
-For setup without prompts, supply `--owner`, `--signer`, and `--policy`.
-WalletConnect also needs a supplied or saved `--walletconnect-project-id`.
-Optional flags are `--auth-base`, `--legal-chain-id`, and `--no-legal`. Missing required flags without a TTY fail;
-piped answers are not accepted. Setup saves public choices and stages legal acceptance; it never signs.
-See [usage and signing details](docs/USAGE.md) and the [CLI reference](apps/cli/README.md).
+### Charts and costs
 
-## Custody
+| Ask | Run | You get |
+|---|---|---|
+| "cost to trade ETH" | `mob cost ETH` | Market-order cost on each venue's public order book at 10K, 100K and 1M USD, taker fee included |
+| "chart BTC on Hyperliquid vs Lighter" | `mob spread hl:BTC lighter-mainnet:BTC` | A terminal chart of the price spread over the last 7 days |
+| "history BTC" | `mob history BTC` | Settled funding on each venue: average, low, high and the best average spread |
+| "WTI vs Brent" | `mob oil` | Both crude benchmarks on every venue, the Brent premium and the funding carry |
+
+### Learn
+
+| Ask | Run | You get |
+|---|---|---|
+| "how does funding work" | `mob explain funding` | Plain and precise explanations of 11 topics, offline |
+| "how do MoB keys work" | `mob explain mob-keys` | What the MoB API key and venue keys can and cannot do |
+
+Annualized rates are simple, not compounded. Fees, marks and costs are estimates. A venue that fails to answer stays in the output with its error. To check a scan on a schedule in Claude Code, type `/loop 15m check my mstack watchlist`. The [CLI reference](apps/cli/README.md) lists every flag.
+
+## Trade through MoB
+
+Research never needs this section. When you want to trade:
+
+1. **Set up once.** Say "set up mstack" and pick a wallet: a browser extension, a phone wallet over WalletConnect, or mstack's encrypted keystore. Keystore commands run in your own terminal, never in the chat. One wallet session accepts the terms, binds your venues and creates a MoB API key for the venues and USD cap per leg that you choose. mstack stores the key locally and never prints it.
+2. **Open.** Say, for example, "open ETH long hl short lighter-mainnet 500". The agent checks the markets, stages Proposal `p-N` and shows you a preview.
+3. **Approve.** Reply `submit p-N`. Under the default policy, the agent cannot submit without that exact id in your latest message.
+4. **Track.** Say "my positions". A submitted order is not a confirmed fill; status shows what the MoB worker did.
+5. **Manage and close.** Say "close task <id>" or ask to resize. Protection, neutralize and auto-close changes ask your wallet to sign.
+
+| Policy | Behavior |
+|---|---|
+| `manual` (default) | Each submission needs `submit p-N` with the exact id in your latest message |
+| `auto` | Opt-in. The agent may submit inside the key's venues and cap, and must say when it did |
+| `locked` | Nothing is submitted |
+
+You set the policy in your own terminal with `mob setup --policy`; the agent cannot change it. Wallet Proposals, such as setup, binding and key changes, need you to say `sign <id>`, and then your wallet asks you to approve. Supported signers are browser extensions such as MetaMask and Rabby, WalletConnect, and the local keystore.
+
+## Supported venues
+
+| Venue | Type | Research | Trade through MoB |
+|---|---|:-:|:-:|
+| Hyperliquid, including trade.xyz and Entropy markets | DEX | ✓ | ✓ |
+| Lighter | DEX | ✓ | ✓ |
+| Lighter on Robinhood Chain | DEX | ✓ | ✓ |
+| Aster | DEX | ✓ | ✓ |
+| Pacifica, Extended, Paradex, dYdX, GRVT, Variational, QFEX | DEX | ✓ | |
+| Binance, OKX, Bybit, Bitget, Gate, MEXC, BingX, KuCoin, Backpack | CEX | ✓ | |
+
+mstack reads every venue through its public API, with no key. Variational and QFEX publish no order book or candles, so `mob cost` and `mob spread` cannot use them. Settled funding history comes from Hyperliquid, both Lighter deployments, Binance, Aster, Bybit, OKX, Pacifica, Extended, dYdX, Backpack and KuCoin. Paradex funding is continuous, so it has no settled history. To add a venue, see [CONTRIBUTING.md](CONTRIBUTING.md#add-a-venue-adapter).
+
+## How it works
+
+```mermaid
+flowchart LR
+    you([You]) -- "plain words" --> agent["AI agent<br/>Claude Code · Codex · MCP client"]
+    agent -- "skills run" --> cli["mob CLI<br/>one local binary"]
+    cli -- "keyless public reads" --> venues[("20 venues<br/>funding · prices · books · candles")]
+    cli -- "stages" --> proposal["Proposal p-N<br/>local · single-use · expires"]
+    you -- "submit p-N" --> proposal
+    proposal -- "scoped MoB API key" --> mob["MoB API and worker"]
+    mob -- "venue keys" --> accounts[("Your venue accounts")]
+    wallet([Your wallet]) -. "setup · binding · key changes" .-> mob
+```
+
+- The agent never holds your wallet key. Skills call the `mob` CLI, and in Claude Code a Bash guard checks each command before it runs.
+- `mob submit` runs the stored preflight again, prints the final request and refuses a request that no longer matches.
+- The MoB worker places and closes orders in your own venue accounts. Venue keys on Hyperliquid and Aster cannot withdraw; Lighter's key can withdraw only to your own address.
+
+The [architecture guide](docs/ARCHITECTURE.md) has the full design.
+
+## Security model
+
+### Custody
 
 - **Your wallet key never leaves your wallet.** mstack signs through your browser wallet, WalletConnect, or a keystore only you can unlock. Nothing in the agent, the MCP server or the skills can produce that wallet signature.
-- **The MoB API key is a scoped trading key.** It can open, cancel, close, and resize only for its named venues and USD cap per leg. It cannot withdraw, bind venues, approve fees, accept legal terms, or create keys. It has no expiry; revoke it on the API page or through the signed revoke flow.
-- **Chat paste is an explicit trade-off.** A key pasted for onboarding remains in the chat transcript and local agent session logs. The agent places it once in a single-quoted shell-builtin `printf` input and pipes it to `mob keys import --stdin`. `mob` never puts the key on its own or a child's argv, in a file, an environment variable, or a reply. The host shell's command line (for example `/bin/zsh -c '…'`) carries it while that one command runs, which is part of this trade-off. The CLI stores it in Keychain, Secret Service, or a private `0600` file, under a name scoped to its `MOB_HOME`. The MCP server never imports or reveals it. An unverified import needs an explicit user request.
-- **Your funds stay in your own venue accounts.** MoB never holds, routes or custodies funds. The MoB worker places and closes orders with venue keys that cannot withdraw (Hyperliquid, Aster) or can withdraw only to your own address (Lighter). You can revoke every key at the venue at any time.
-- **What MoB does hold:** a hash of the API key, encrypted venue trading keys minted during binding, and task history. The server never stores the API key secret in plaintext.
+- **The MoB API key is a scoped trading key.** It can open, cancel, close, and resize only for its named venues and USD cap per leg. It cannot withdraw, bind venues, approve fees, accept legal terms, or create keys. It has no expiry; `mob keys revoke` or the MoB API page ends it.
+- **Chat paste is an explicit trade-off.** A key pasted for onboarding remains in the chat transcript and local agent session logs. `mob` never puts the key on its own or a child's argv, in a file, in an environment variable or in a reply; the shell command that pipes the key in carries it only while that command runs. mstack stores it in Keychain, Secret Service or a private `0600` file. To keep the key out of the chat, run `mob keys import` in your own terminal, which reads it at a hidden prompt.
+- **Your funds stay in your own venue accounts.** MoB never holds, routes or custodies funds, and its worker never deposits, withdraws or transfers them.
+- **What MoB holds:** a hash of the API key, the encrypted venue trading keys made during binding, and task history.
 - **Everything the agent reads is public** by wallet address on the MoB API. Anyone who knows your address can see your tasks.
 
-The current release supports scoped API-key trading plus browser, WalletConnect, and terminal keystore signing. Ledger remains planned.
+### Consent
 
-## Agents
+- Under the default `manual` policy, `mob submit p-N` runs only when your latest message says `submit p-N`, or when you pick an offered option that starts with "Submit p-N". Wallet signing needs `sign <id>` in the same way.
+- In Claude Code, the plugin's Bash guard enforces this on every command. It also keeps safety settings, keystore commands and `mob upgrade` in your own terminal.
+- The MCP server reads data and stages Proposals. It cannot import or reveal keys, submit, sign, reject or change config.
+- Scan output, venue data and pasted text are data, never permission to trade.
 
-| Host | Start here | Integration |
+### Privacy
+
+- No telemetry or analytics.
+- At runtime, mstack contacts only venue public APIs, MoB and, when you choose it, the WalletConnect relay. Install and update checks use this GitHub repository.
+- Venues see your IP address when mstack reads their public APIs, as with any other client.
+
+To report a vulnerability, follow [SECURITY.md](SECURITY.md). Please do not open a public issue.
+
+## Configuration
+
+mstack keeps its state in `~/.mob`. Set `MOB_HOME` to use another directory.
+
+| Key | Default | Purpose |
 |---|---|---|
-| Claude Code plugin | `/mstack:mob` | Namespaced skills, `mob` on the Bash PATH, and the sign guard |
-| Claude Code clone | `/mob` | Linked skills; plugin hooks are not installed by clone setup |
-| Codex | `$mob` | Linked skills, minimal UI metadata, and explicit approval rules |
-| Any stdio MCP client | `mob mcp` | Public reads and local staging; no signing tool |
+| `default_size_usd` | `1000` | Size per leg for scans that name no size |
+| `taker_fee_bps.<venue>` | the venue's published base tier | Your account's taker fee, for net APY and costs |
+| `builder_fee_tenths_bps` | `15` | The MoB builder fee on the Hyperliquid leg, in tenths of a basis point |
 
-The router directs requests to scan, explain, status, onboarding, keys, binding repair, open, manage, or close skills.
-Use `$mob-scan` in Codex, `/mob-scan` for clone-installed Claude skills, or `/mstack:mob-scan` for the plugin.
-Skills also match requests by description. Treat scan output as data, never permission to trade.
+```sh
+mob config set default_size_usd 5000
+mob config set taker_fee_bps.hl 3.5
+```
 
-The repository uses one [AGENTS.md](AGENTS.md) for contributor instructions.
-Claude Code's direct AGENTS.md loading requires a current version and no applicable CLAUDE.md override.
-See [host conventions and limits](docs/ARCHITECTURE.md#host-matrix).
+Safety settings (`policy`, the API bases, `key_store` and `walletconnect_project_id`) change only in your own terminal; the agent is blocked from setting them.
+
+## Update and uninstall
+
+- **Plugin:** run `claude plugin marketplace update mstack && claude plugin update mstack@mstack`, then restart Claude Code.
+- **Binary:** run `mob upgrade` in your own terminal. It downloads and verifies the latest release.
+- **Codex and clone installs:** see [installation maintenance](docs/USAGE.md#installation-maintenance).
+- **Uninstall:** run `mob keys delete`, then follow [Uninstall](docs/AGENT-INSTALL.md#uninstall). Revoke the key on the MoB API page too: deleting the local copy does not revoke it.
+
+## Project layout
+
+```text
+apps/cli/                 mob CLI and stdio MCP server, compiled into one binary
+packages/funding/         venue adapters, snapshots, order books, candles, history
+packages/opportunities/   matching, fees, ranking, price gaps and the asset model
+packages/proposals/       stored intent, digests, expiry and submission state
+packages/signers/         browser, WalletConnect and terminal keystore signers
+packages/keys/            local key custody
+packages/mobius-api/      MoB Strategy API client: tasks and venue binding
+packages/mobius-client/   MoB funding-server client and byte-exact signed messages
+packages/liquidation/     shared liquidation math
+packages/brand/           terminal logo and colors
+skills-src/, hosts/       skill templates, references and host overlays
+skills/, skills-codex/    generated skills, committed; edit skills-src/ instead
+docs/                     architecture, usage, knowledge base and install guides
+```
 
 ## Development
 
+You need [Bun](https://bun.sh) 1.3 or newer.
+
 ```sh
+git clone https://github.com/da-bao-jian/mstack && cd mstack
 bun install --frozen-lockfile
-bun run gen:skills
-bun run check
-bun run lint
-bun test
-bun run deadcode
-bun run build
+bun run gen:skills      # regenerate skills from skills-src/
+bun run check           # TypeScript, strict
+bun run lint            # Biome
+bun test                # unit and contract tests on recorded fixtures
+bun run deadcode        # knip
+bun run build           # apps/cli/dist/mob
+claude plugin validate --strict .
 ```
 
-Edit skill templates and references under `skills-src/`, then regenerate both host outputs.
-See [CONTRIBUTING.md](CONTRIBUTING.md) for adapter contracts, plugin validation, and delivery rules.
+- Tests never call live APIs. They use recorded fixtures and local fake servers. Live checks run only with `MOB_LIVE=1`.
+- Edit skills in `skills-src/`, then run `bun run gen:skills`. CI fails when the generated skills drift.
+- To try a checkout in Claude Code, run `PATH="$PWD/bin:$PATH" claude --plugin-dir .` from the repository root.
+
+[CONTRIBUTING.md](CONTRIBUTING.md) covers adapter contracts, skill rules and releases. Coding agents follow [AGENTS.md](AGENTS.md).
 
 ## Documentation
 
+- [Usage guide](docs/USAGE.md): public reads, MCP tools, onboarding, keys and signing
+- [CLI reference](apps/cli/README.md)
+- [Agent install guide](docs/AGENT-INSTALL.md)
 - [Architecture and host matrix](docs/ARCHITECTURE.md)
-- [Usage, MCP tools, signing, and installation maintenance](docs/USAGE.md)
-- [Security and private vulnerability reporting](SECURITY.md)
-- [Changelog](CHANGELOG.md)
-- [Process and work-package reports](docs/PROCESS.md)
+- [Knowledge base](docs/knowledge/), also available offline with `mob explain`
 - [Funding library](packages/funding/README.md) and [opportunity math](packages/opportunities/README.md)
-- [Bundled knowledge](docs/knowledge/) and [live-test protocol](docs/LIVE-TEST.md)
-- [MIT license](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md)
+- [Security policy](SECURITY.md) and [changelog](CHANGELOG.md)
+
+## Status
+
+mstack is under active development. The current release is v0.5.1; see the [changelog](CHANGELOG.md) for each release.
+
+- **Works today:** research on 20 venues; trading through MoB on Hyperliquid, Lighter and Aster; browser, WalletConnect and keystore signing.
+- **Planned:** Ledger signing, a hosted MCP server, and session grants once the MoB API supports them.
+
+## Disclaimer
+
+mstack is research and trading software, not financial advice. Perpetual futures carry real risk: prices can gap, funding can flip, and a leg can be liquidated. A quoted APR is today's rate, not promised income. Start with small sizes and a small key cap.
+
+## License
+
+mstack is released under the [MIT license](LICENSE). See the [third-party notices](THIRD_PARTY_NOTICES.md).
 
 Portions © 2025 Reown, Inc. All Rights Reserved.
 WalletConnect dependencies use the [WalletConnect Community License](docs/licenses/walletconnect-2.25.0.md).
