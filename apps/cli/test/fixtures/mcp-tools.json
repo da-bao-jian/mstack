@@ -390,7 +390,7 @@
 	},
 	{
 		"name": "funding_history",
-		"description": "Read settled keyless funding history, interval-weighted averages, coverage, and the best average spread. Lighter has no keyless history. Annualization is simple, not compounded. Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
+		"description": "Read settled keyless funding history, interval-weighted averages, coverage, and the best average spread. Venues that publish no settled history are listed as unsupported. Annualization is simple, not compounded. Read-only. This tool never signs, trades, imports, submits, or reveals a key.",
 		"inputSchema": {
 			"type": "object",
 			"properties": {

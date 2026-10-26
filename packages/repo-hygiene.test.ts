@@ -9,24 +9,26 @@ const version = (await Bun.file(join(root, "package.json")).json()).version;
 
 test("every skill description starts with its task and quotes trigger phrases, including first contact", () => {
 	const tasks: Record<string, string> = {
-		mob: "Start here for mstack and MoB.",
-		"mob-scan": "Compare perpetual funding rates",
-		"mob-setup": "Onboard to trading through MoB",
-		"mob-status": "Read MoB position status",
-		"mob-bind": "Repair venue binding or use native onboarding",
-		"mob-explain": "Explain funding and MoB mechanics",
-		"mob-open": "Open a position with a scoped API key",
-		"mob-manage": "Manage a position with the API key when supported",
-		"mob-close": "Close a position with a scoped API key",
-		"mob-keys": "Manage the scoped MoB API key safely",
-		"mob-markets": "Explore perpetual markets across venues",
+		mob: "Menu and overview of mstack and MoB.",
+		"mob-scan": "Perp funding and price-gap scans across venues",
+		"mob-setup": "One-time MoB setup to trade",
+		"mob-status": "MoB position status and estimated funding",
+		"mob-bind": "Bind or repair MoB venue access",
+		"mob-explain": "Explains perp funding and MoB mechanics",
+		"mob-open": "Open a delta-neutral funding position through MoB",
+		"mob-manage": "Manage an open MoB position",
+		"mob-close": "Close a MoB funding position",
+		"mob-keys": "Manage the scoped MoB API key",
+		"mob-markets": "Perp markets, venues, costs and charts",
 	};
+	// First-contact phrases carry a domain word; bare menu phrases such as
+	// "my positions" are checked live, not pinned here (see audit-3 report).
 	const everyday: Record<string, string> = {
-		mob: "what can you do",
-		"mob-scan": "where is the best funding right now",
+		mob: "what can mstack do",
+		"mob-scan": "best funding now",
 		"mob-setup": "set up mstack",
-		"mob-status": "what positions do I have",
-		"mob-markets": "all markets",
+		"mob-status": "my MoB positions",
+		"mob-markets": "all perp markets",
 	};
 	for (const [file, content] of generated) {
 		if (!file.endsWith("SKILL.md")) continue;

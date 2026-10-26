@@ -1,6 +1,6 @@
 ---
 name: mob-bind
-description: Repair venue binding or use native onboarding. Use for "repair binding", "bind all venues", "onboard without a browser", "bind hyperliquid", or "connect lighter"; every ceremony needs explicit id approval. (mstack)
+description: Bind or repair MoB venue access for this wallet. Use for "repair my MoB binding", "bind Hyperliquid on MoB", or "onboard to MoB without a browser"; each ceremony needs explicit id approval.
 license: MIT
 metadata:
   version: "0.5.1"
@@ -11,7 +11,7 @@ allowed-tools: Bash Read AskUserQuestion Bash(${CLAUDE_SKILL_DIR}/scripts/preamb
 bash "${CLAUDE_SKILL_DIR}/scripts/preamble.sh"
 ```
 
-If the preamble output contains a `<mob-home>` line, the welcome is the lines after `<mob-home>` and before `</mob-home>`. Put exactly those lines, verbatim, in a fenced code block at the top of your reply. The two tag lines are markers, not part of the welcome: never print `<mob-home>` or `</mob-home>`. Never strip, trim or summarize the welcome. When a reply completes the request (not when it asks a question), end with "You can": up to three rows from the preamble's `YOU_CAN` list or the welcome's `You can` rows that fit the moment, as words to say next. Only when the welcome printed in this reply, add that `/mstack:mob` opens the menu.
+If the preamble output contains a `<mob-home>` line, the welcome is the lines between `<mob-home>` and `</mob-home>`. The user cannot see tool output: write those lines yourself, verbatim, in a fenced code block at the top of your reply text, before any question. Never print the two tag lines. Never strip, trim or summarize the welcome. In text for the human, write commands as plain `mob …`: never the `MOB_BIN` path, `MOB_HOME`, or an `export` line. When a reply completes the request (not when it asks a question), end with "You can": up to three rows from the preamble's `YOU_CAN` list or the welcome's `You can` rows that fit the moment, as words to say next. Only when the welcome printed in this reply, add that `/mstack:mob` opens the menu.
 
 Run the preamble first. Use the printed `MOB_BIN` path in place of `mob`; shell-quote every public user value. If `MOB_MISSING` appears, show the install line and stop. Never run keystore commands or request a key, seed, or passphrase.
 
@@ -26,7 +26,7 @@ Read [venue and ceremony details](references/venues.md) before explaining capabi
 - Add `--rebind` only after the user asks to replace a binding and the CLI says rebind is allowed.
 - Do not infer Robinhood Lighter or Lighter mainnet from the word "Lighter". Ask which deployment.
 
-A batch command stages ceremony `c-N`. Show its owner, venues, exact steps, expiry, and next line. In the same reply: Use AskUserQuestion with four choices: "Sign <id> in the browser wallet" / "Sign <id> with WalletConnect" / "Sign <id> in my approver terminal" when `mob hello --json` reports `approver.running`, otherwise "I will sign <id> myself in my terminal with the keystore" / "Reject <id>". Replace <id> with the staged id in every choice. Only a chosen label that starts with Sign <id> authorizes. Run the command that matches the choice, with a ten-minute tool timeout while the human approves: the browser choice means `mob sign <id> --with browser`, WalletConnect means `mob sign <id> --with walletconnect`, and the approver choice means `mob sign <id> --with approver`, which hands the card to the human's approver terminal. The keystore choice means stop and tell the human to run `mob sign <id> --with keystore` in their own terminal.
+A batch command stages ceremony `c-N`. Show its owner, venues, exact steps, expiry, and next line. In the same reply: Use AskUserQuestion with the choice that fits the user's wallet, then "Reject <id>": browser wallet, "Sign <id> in the browser wallet"; phone wallet, "Sign <id> with WalletConnect"; keystore wallet, "Sign <id> in my approver terminal" when `mob hello --json` reports `approver.running`, else "I will sign <id> myself in my terminal with the keystore". The wallet comes from this conversation or `mob config get signer`; if neither says, offer every way. Put the staged id in place of <id> in every choice. Only a chosen label that starts with Sign <id> authorizes. Run the matching command with a ten-minute tool timeout: `mob sign <id> --with browser`, `mob sign <id> --with walletconnect`, or `mob sign <id> --with approver`. For the keystore choice, stop and tell the human to run `mob sign <id> --with keystore` in their own terminal.
 
 ## Explicit-id rule
 

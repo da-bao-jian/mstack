@@ -43,14 +43,16 @@ mstack is an open agent stack for funding-rate arbitrage on perpetual futures. Y
 
 ```text
 Install mstack, the open agent stack for delta-neutral funding trades, with MoB execution. I authorize exactly:
-claude plugin marketplace add da-bao-jian/mstack && claude plugin install mstack@mstack
+claude plugin marketplace add da-bao-jian/mstack && claude plugin marketplace update mstack && claude plugin install mstack@mstack && claude plugin update mstack@mstack
 curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.5.1/install.sh | sh
-Then follow https://raw.githubusercontent.com/da-bao-jian/mstack/v0.5.1/docs/AGENT-INSTALL.md from Verify: `mob --version`, `mob doctor`,
+Then follow https://raw.githubusercontent.com/da-bao-jian/mstack/v0.5.1/docs/AGENT-INSTALL.md from Verify: `mob --version`, `claude plugin list`, `mob doctor`,
 run `mob` and reproduce its output verbatim in a fenced block as the welcome.
 Finish by telling me to type /reload-plugins, then show how to use mstack: how to invoke it and the welcome's "You can" options (research needs no account; "set up mstack" only to trade).
 ```
 
-The prompt lists every command it runs, so you can review them before you paste. It is pinned to release v0.5.1 and follows the [agent install guide](docs/AGENT-INSTALL.md). On Codex, paste the [Codex prompt](docs/AGENT-PROMPT.md#codex) instead.
+The prompt lists every command it runs, so you can review them before you paste. It installs the latest release, or updates an older install, and checks that the plugin and the `mob` binary have the same version. It follows the [agent install guide](docs/AGENT-INSTALL.md). On Codex, paste the [Codex prompt](docs/AGENT-PROMPT.md#codex) instead.
+
+In its default permission mode, Claude Code asks once before it uses each mstack skill. Choose "Yes, and don't ask again" to stop the prompts.
 
 <details>
 <summary><b>Other ways to install</b></summary>
@@ -65,12 +67,14 @@ curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.5.1/install.s
 
 Then type `/reload-plugins` (or restart Claude Code) and `/mstack:mob`. The plugin ships 11 skills, puts `mob` on the agent's Bash PATH and adds a Bash guard. It registers no MCP server: the skills call the CLI.
 
+If the installer prints an `export PATH` line, add that line to `~/.zshrc` (zsh, the macOS default) or `~/.bashrc` (bash), then open a new terminal. You need `mob` in your own terminal for the steps that mstack hands to you, such as `mob upgrade`.
+
 #### Codex
 
 Setup needs [Bun](https://bun.sh) 1.3 or newer.
 
 ```sh
-git clone --branch v0.5.1 https://github.com/da-bao-jian/mstack ~/.mstack && cd ~/.mstack && ./setup --host codex
+git clone -c advice.detachedHead=false --branch v0.5.1 https://github.com/da-bao-jian/mstack ~/.mstack && cd ~/.mstack && ./setup --host codex
 export PATH="$HOME/.agents/skills/mstack/bin:$PATH"
 ```
 
@@ -78,28 +82,22 @@ Start a new Codex session and type `$mob`.
 
 #### Cursor, Windsurf, Claude Desktop and other MCP clients
 
-Install the binary, then add `mob mcp` to the client with the absolute path that `command -v mob` prints.
+Install the binary, then print the entry for your client's config with your own path in it.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.5.1/install.sh | sh
-command -v mob
+printf '"mstack": {"command": "%s", "args": ["mcp"]}\n' "$(command -v mob)"
 ```
 
-```json
-{
-  "mcpServers": {
-    "mstack": { "command": "/absolute/path/to/mob", "args": ["mcp"] }
-  }
-}
-```
+Add that entry inside the existing `mcpServers` object of the config file, next to your other servers, then restart the client.
 
 | Client | Config file |
 |---|---|
 | Cursor | `~/.cursor/mcp.json` |
 | Windsurf | `~/.codeium/windsurf/mcp_config.json` |
-| Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Claude Desktop | macOS `~/Library/Application Support/Claude/claude_desktop_config.json`, Windows `%APPDATA%\Claude\claude_desktop_config.json` |
 
-The MCP server reads data and stages Proposals. Signing and key import stay in your terminal.
+The MCP server reads data and stages Proposals. Setup, signing and submission stay in your terminal: `mob onboard`, `mob sign <id>` and `mob submit <id>`.
 
 #### Terminal only
 
@@ -108,7 +106,7 @@ curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v0.5.1/install.s
 mob
 ```
 
-The installer verifies the SHA-256 checksum, keeps `~/.mob/bin/mob-<version>` and links `~/.local/bin/mob`. Builds cover macOS and Linux (x64 and arm64) and Windows x64.
+The installer verifies the SHA-256 checksum, keeps `~/.mob/bin/mob-<version>` and links `~/.local/bin/mob`. Builds cover macOS and Linux (x64 and arm64) and Windows x64; on Windows, run the installer in Git Bash or WSL.
 
 </details>
 
@@ -157,7 +155,7 @@ Annualized rates are simple, not compounded. Fees, marks and costs are estimates
 
 Research never needs this section. When you want to trade:
 
-1. **Set up once.** Say "set up mstack" and pick a wallet: a browser extension, a phone wallet over WalletConnect, or mstack's encrypted keystore. Keystore commands run in your own terminal, never in the chat. One wallet session accepts the terms, binds your venues and creates a MoB API key for the venues and USD cap per leg that you choose. mstack stores the key locally and never prints it.
+1. **Set up once.** Before you start, choose two venues where your wallet already has an account; Hyperliquid also needs USDC in its perps account. Say "set up mstack" and pick a wallet: a browser extension, a phone wallet over WalletConnect (it needs a free project id from [Reown](https://cloud.reown.com)), your existing key in mstack's encrypted keystore, or a new keystore wallet. Keystore commands run in your own terminal, never in the chat. One wallet session of about five minutes, with 5 to 7 approvals, accepts the terms, binds your venues and creates a MoB API key for the venues and USD cap per leg that you choose. mstack stores the key locally and never prints it.
 2. **Open.** Say, for example, "open ETH long hl short lighter-mainnet 500". The agent checks the markets, stages Proposal `p-N` and shows you a preview.
 3. **Approve.** Reply `submit p-N`. Under the default policy, the agent cannot submit without that exact id in your latest message.
 4. **Track.** Say "my positions". A submitted order is not a confirmed fill; status shows what the MoB worker did.
@@ -249,10 +247,10 @@ Safety settings (`policy`, the API bases, `key_store` and `walletconnect_project
 
 ## Update and uninstall
 
-- **Plugin:** run `claude plugin marketplace update mstack && claude plugin update mstack@mstack`, then restart Claude Code.
-- **Binary:** run `mob upgrade` in your own terminal. It downloads and verifies the latest release.
-- **Codex and clone installs:** see [installation maintenance](docs/USAGE.md#installation-maintenance).
-- **Uninstall:** run `mob keys delete`, then follow [Uninstall](docs/AGENT-INSTALL.md#uninstall). Revoke the key on the MoB API page too: deleting the local copy does not revoke it.
+- **Update:** paste the [prompt](#paste-this-into-your-agent) again. It updates the plugin and the binary and checks that their versions match.
+- **By hand:** run `claude plugin marketplace update mstack && claude plugin update mstack@mstack`, then `/reload-plugins`; for the binary, run `mob upgrade` in your own terminal. It downloads and verifies the latest release.
+- **Codex and clone installs:** run `mob upgrade` in your own terminal, or see [installation maintenance](docs/USAGE.md#installation-maintenance).
+- **Uninstall:** run `mob keys delete`, then follow [Uninstall](docs/AGENT-INSTALL.md#uninstall), which also removes the marketplace. Revoke the key on the MoB API page too: deleting the local copy does not revoke it.
 
 ## Project layout
 

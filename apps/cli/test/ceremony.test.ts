@@ -66,8 +66,12 @@ test("bind --all stages one ceremony and keystore signs the batch with one unloc
 	};
 	expect(await run(["bind", "--all", "--venues", "hl,lighter"], rt)).toBe(0);
 	expect(out.join("\n")).toContain(
-		"c-1 · venue binding ceremony · hl, lighter",
+		"c-1 · venue binding for hl and lighter · expires in 5:00",
 	);
+	// No readiness route here: staging names the failed read and goes on.
+	expect(err.splice(0)).toEqual([
+		"mob: could not read MoB venue readiness (Fixture transport permits loopback only.); continuing without it",
+	]);
 	expect(out.join("\n")).toContain("Next: mob sign c-1");
 	out.length = 0;
 	expect(await run(["proposals"], rt)).toBe(0);
@@ -330,9 +334,11 @@ test("native onboard binds, creates the key, and stores it in one wallet session
 			rt,
 		),
 	).toBe(0);
-	expect(lines.join("\n")).toContain("c-1 · onboarding ceremony · hl, lighter");
 	expect(lines.join("\n")).toContain(
-		"One wallet session: bind hl, lighter, then create key “mstack” (cap $5,000) and store it locally.",
+		"c-1 · setup for hl and lighter · expires in 5:00",
+	);
+	expect(lines.join("\n")).toContain(
+		"One wallet session: bind hl and lighter, then create key “mstack” for hl and lighter with a cap of $5,000 per leg, and store it locally.",
 	);
 	expect(lines.join("\n")).toContain("Next: mob sign c-1");
 	expect(await run(["sign", "c-1"], rt)).toBe(0);
@@ -411,7 +417,10 @@ test("native onboard signs the legal terms first when they are not accepted", as
 		),
 	).toBe(0);
 	expect(lines.join("\n")).toContain(
-		"One wallet session: accept legal terms, then bind hl, lighter, then create key “desk” (cap $2,500) and store it locally.",
+		"One wallet session: accept the MoB terms, then bind hl and lighter, then create key “desk” for hl and lighter with a cap of $2,500 per leg, and store it locally.",
+	);
+	expect(lines.join("\n")).toContain(
+		"Read before signing: Terms 2026-10-12 https://mob.exchange/terms · Privacy 2026-10-12 https://mob.exchange/privacy",
 	);
 	const staged = await new CeremonyStore(home, () => now).get("c-1");
 	expect(staged.legal?.id).toBe("c-1:legal");
@@ -491,7 +500,7 @@ test("onboard stops before staging when MoB holds an unusable key, and --rebind 
 	];
 	expect(await run(args, rt)).not.toBe(0);
 	expect(lines.join("\n")).toContain(
-		"hl has a MoB key that no longer works (key_invalid). MoB replaces such a key only when asked: run this again with --rebind to bind a new one. Nothing was staged.",
+		"The hl trading key that MoB holds for this wallet no longer works. Your MoB API key is not affected. MoB replaces the venue key only when asked: run this again with --rebind to bind a new one. Nothing was staged.",
 	);
 	expect(await new CeremonyStore(home, () => now).list()).toHaveLength(0);
 	expect(await run([...args, "--rebind"], rt)).toBe(0);
@@ -710,7 +719,7 @@ test("onboarding stops before staging when the wallet never deposited on Hyperli
 	const args = ["onboard", "--native", "--owner", api.owner.address];
 	expect(await run([...args, "--venues", "hl,lighter"], rt)).not.toBe(0);
 	expect(lines.join("\n")).toContain(
-		"This wallet's Hyperliquid perps account holds no USDC, so MoB reports Hyperliquid as unavailable and cannot create a key for it. Deposit USDC into Hyperliquid perps (app.hyperliquid.xyz, from Arbitrum), then run this again, or leave it out with --venues lighter. Nothing was staged.",
+		"This wallet's Hyperliquid perps account holds no USDC, so MoB reports Hyperliquid as unavailable and cannot create a key for it. Deposit USDC into Hyperliquid perps (app.hyperliquid.xyz, from Arbitrum), then run this again, or use another venue where this wallet has an account, for example --venues lighter,aster (a key needs two venues, one for each leg). Nothing was staged.",
 	);
 	expect(await new CeremonyStore(home, () => now).list()).toHaveLength(0);
 });
@@ -777,4 +786,39 @@ test("a 5xx from prepare keeps the ceremony, and mob sign sends the same signed 
 	expect(await run(["sign", "c-1"], rt)).toBe(0);
 	expect(lines.slice(signed).join("\n")).not.toContain("c-1:prepare");
 	expect(lines.join("\n")).toContain("Ready · 2 venues bound");
+});
+
+test("reject ends a staged ceremony, and preview shows its card", async () => {
+	const now = 1_800_000_000_000;
+	const home = await mkdtemp(join(tmpdir(), "mstack-cli-ceremony-"));
+	homes.push(home);
+	const store = new CeremonyStore(home, () => now);
+	await store.stage({
+		owner: "0x0000000000000000000000000000000000000001",
+		apiBase: "http://127.0.0.1:9988",
+		venues: [{ venue: "hl" }],
+	});
+	const out: string[] = [];
+	const err: string[] = [];
+	const rt: Partial<Runtime> = {
+		home,
+		now: () => now,
+		out: (line) => out.push(line),
+		err: (line) => err.push(line),
+	};
+	expect(await run(["preview", "c-1"], rt)).toBe(0);
+	expect(out.splice(0).join("\n")).toContain(
+		"c-1 · ceremony · awaiting-prepare-signature · expires in 5:00",
+	);
+	expect(await run(["reject", "c-1"], rt)).toBe(0);
+	expect(out.splice(0)).toEqual([
+		"c-1 rejected. No further step of it can be signed; stage a new setup to try again.",
+	]);
+	expect((await store.get("c-1")).status).toBe("rejected");
+	expect(await run(["reject", "c-1"], rt)).toBe(1);
+	expect(err.join("\n")).toContain("c-1 already ended (rejected)");
+	expect(await run(["preview", "c-1"], rt)).toBe(0);
+	// An ended ceremony shows no countdown.
+	expect(out.join("\n")).toContain("c-1 · ceremony · rejected\n");
+	expect(out.join("\n")).not.toContain("expires in");
 });

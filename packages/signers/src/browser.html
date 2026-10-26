@@ -92,6 +92,7 @@
 <p class="eyebrow"><span id="kind">Signature request</span> · <span id="id"></span></p>
 <h1><span id="intent">This signature authorizes:</span> <span id="purpose">Loading…</span></h1>
 <p id="statement" hidden></p>
+<p id="legal-links" hidden></p>
 <p class="scope">Sign only if this matches what you asked for. Each step names what it allows.</p>
 <section class="card" id="steps-card" aria-labelledby="steps-title" hidden><h2 id="steps-title">Steps in this wallet session</h2><ol id="steps"></ol></section>
 <section class="card" aria-label="Account check">
@@ -398,12 +399,26 @@ function show(view) {
   const statement = view.signing.type === "typed" ? view.signing.typedData.message?.statement : undefined;
   el("statement").textContent = typeof statement === "string" ? statement : "";
   el("statement").hidden = typeof statement !== "string";
+  // A legal acceptance names the documents it accepts: link them before the signature.
+  const legal = view.signing.type === "typed" ? view.signing.typedData.message : undefined;
+  const links = [["termsUrl", "termsVersion", "Terms of Service"], ["privacyUrl", "privacyVersion", "Privacy Policy"]].flatMap(([url, version, name]) => {
+    let href;
+    try { href = new URL(String(legal?.[url])); } catch { return []; }
+    // Secure links only; the page itself loads nothing remote.
+    if (href.protocol.replace(":", "") !== "https") return [];
+    const a = document.createElement("a"); a.href = href.href; a.target = "_blank"; a.rel = "noopener noreferrer";
+    a.textContent = `${name}${typeof legal?.[version] === "string" ? ` (${legal[version]})` : ""}`;
+    return [a];
+  });
+  const text = value => { const span = document.createElement("span"); span.textContent = value; return span; };
+  el("legal-links").replaceChildren(...(links.length ? [text("Read before you sign: "), ...links.flatMap((a, i) => (i ? [text(" · "), a] : [a]))] : []));
+  el("legal-links").hidden = !links.length;
   el("message").textContent = view.signing.type === "text" ? view.signing.message : JSON.stringify(view.signing.typedData, null, 2);
   el("message-title").textContent = view.signing.type === "typed" ? "Exact typed data JSON" : "Exact message";
   el("copy").disabled = false;
   if (next && matches()) status("ready", "Next step ready. Review it, then sign in your wallet.");
   else if (address) accountStatus();
-  else status("ready", "Connect your wallet to review this Proposal.");
+  else status("ready", "Connect your wallet to review this request.");
 }
 // The ceremony server reports how mob ended before it stops, so the page never
 // ends on a dropped connection.

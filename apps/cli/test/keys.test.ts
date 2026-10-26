@@ -238,7 +238,7 @@ test("keys import refuses no TTY, 401, and network errors without an override", 
 			async () => {
 				throw new Error("down");
 			},
-			"could not verify; not stored",
+			"could not verify; not stored: the MoB Strategy API at 127.0.0.1:9988 did not answer",
 		],
 	] as const) {
 		const home = await setup();
@@ -518,4 +518,53 @@ test("show JSON and delete never reveal the secret", async () => {
 	).toMatchObject({ status: "pass", critical: false });
 	const removed = await invoke(home, ["keys", "delete"]);
 	expect(removed.out).toContain("still works until it is revoked");
+	expect((await invoke(home, ["keys", "delete"])).out).toBe(
+		"No local key was stored.",
+	);
+});
+
+test("keys delete with no saved wallet is a quiet success, as uninstall runs it", async () => {
+	const home = await mkdtemp(join(tmpdir(), "mstack-cli-keys-"));
+	homes.push(home);
+	expect(await invoke(home, ["keys", "delete"])).toMatchObject({
+		code: 0,
+		out: "No local key was stored.",
+	});
+});
+
+test("keys import --owner saves the address that made a page key, and only that one", async () => {
+	const home = await mkdtemp(join(tmpdir(), "mstack-cli-keys-"));
+	homes.push(home);
+	await setConfig("key_store", "file", home);
+	await setConfig("strategy_api_base", "http://127.0.0.1:9988", home);
+	const missing = await invoke(home, ["keys", "import", "--stdin"], {
+		readStdin: async () => key,
+	});
+	expect(missing.code).toBe(1);
+	expect(missing.err).toContain("add --owner 0x…");
+	const imported = await invoke(
+		home,
+		["keys", "import", "--stdin", "--owner", owner],
+		{ readStdin: async () => key },
+	);
+	expect(imported.code).toBe(0);
+	expect(await invoke(home, ["config", "get", "owner"])).toMatchObject({
+		out: owner,
+	});
+	const other = await invoke(
+		home,
+		[
+			"keys",
+			"import",
+			"--stdin",
+			"--owner",
+			"0x0000000000000000000000000000000000000002",
+		],
+		{ readStdin: async () => key },
+	);
+	expect(other.code).toBe(1);
+	expect(other.err).toContain("To switch wallets, run mob config set owner");
+	expect(
+		(await invoke(home, ["keys", "show", "--owner", owner])).err,
+	).toContain("--owner works only with mob keys import");
 });

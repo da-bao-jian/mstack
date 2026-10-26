@@ -1,7 +1,9 @@
 import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { createInterface } from "node:readline";
 import { verifyApiKey } from "@mstack/keys";
 import { MobiusClient } from "@mstack/mobius-client";
+import { CeremonyStore } from "@mstack/proposals";
 import { openSuppressed, openUrl } from "@mstack/signers";
 import { getAddress } from "viem";
 import pkg from "../package.json";
@@ -12,6 +14,7 @@ import {
 	readConfig,
 	setConfig,
 	UsageError,
+	unsetConfig,
 } from "./config.ts";
 import { paint } from "./format.ts";
 import { home } from "./home.ts";
@@ -27,13 +30,27 @@ type Readiness = {
 	issue?: string;
 };
 
+// Shown only while no key is stored.
 const handoff = [
-	"Then the user copies the key and pastes it into the chat; the agent stores it with `mob keys import --stdin` and the CLI never prints it again.",
-	"A human at a terminal may instead run `mob keys import` and paste it hidden.",
+	"Copy the key from the page. In a chat, paste it there; the agent stores it with `mob keys import --stdin` and never prints it again.",
+	"In a terminal, run `mob keys import` and paste it at the hidden prompt.",
 ];
 
+/** Without --venues, check the stored key's venues, else every venue. */
+async function selectedVenues(
+	value: unknown,
+	owner: string,
+	rt: CommandRuntime,
+): Promise<OnboardingVenue[]> {
+	if (value !== undefined) return venuesFlag(value);
+	const stored = (await (await cliKeyStore(rt)).describe(owner))?.meta.venues;
+	return stored?.length &&
+		stored.every((venue) => venuesAllowed.some((item) => item === venue))
+		? (stored as OnboardingVenue[])
+		: [...venuesAllowed];
+}
+
 function venuesFlag(value: unknown): OnboardingVenue[] {
-	if (value === undefined) return [...venuesAllowed];
 	const venues = String(value)
 		.split(",")
 		.map((item) => item.trim()) as OnboardingVenue[];
@@ -181,21 +198,27 @@ function render(state: OnboardingSnapshot, rt: Runtime): string {
 	const ok = (text: string) => paint(text, "success", rt);
 	const warning = (text: string) => paint(text, "warning", rt);
 	const danger = (text: string) => paint(text, "danger", rt);
+	const width =
+		Math.max(
+			...["Legal", ...state.venues.map((row) => row.venue)].map(
+				(label) => label.length,
+			),
+		) + 2;
+	const label = (text: string) => text.padEnd(width);
 	const lines = [
-		`Legal  ${state.legal ? ok("✓ accepted") : danger(`✗ missing${state.legalError ? ` · ${state.legalError}` : ""}`)}`,
+		`${label("Legal")}${state.legal ? ok("✓ accepted") : danger(`✗ missing${state.legalError ? ` · ${state.legalError}` : ""}`)}`,
 		...state.venues.map((row) => {
-			const label = row.venue.padEnd(8);
-			if (row.ready) return `${label}${ok("✓ bound")}`;
+			if (row.ready) return `${label(row.venue)}${ok("✓ bound")}`;
 			if (row.bound)
-				return `${label}${danger(`✗ needs repair${row.issue ? ` · ${row.issue}` : ""}`)}`;
-			return `${label}${warning(`– not bound${row.issue ? ` · ${row.issue}` : ""}`)}`;
+				return `${label(row.venue)}${danger(`✗ needs repair${row.issue ? ` · ${row.issue}` : ""}`)}`;
+			return `${label(row.venue)}${warning(`– not bound${row.issue && row.issue !== "not_bound" ? ` · ${row.issue}` : ""}`)}`;
 		}),
 		state.key === "none"
-			? `Key    ${warning("– none")}`
+			? `${label("Key")}${warning("– none")}`
 			: state.key === "ok"
-				? `Key    ${ok(`✓ verified ok · ${state.prefix}`)}`
-				: `Key    ${danger(`✗ stored ${state.prefix} · ${state.key}`)}`,
-		...handoff,
+				? `${label("Key")}${ok(`✓ verified ok · ${state.prefix}`)}`
+				: `${label("Key")}${danger(`✗ stored ${state.prefix} · ${state.key}`)}`,
+		...(state.key === "none" ? handoff : []),
 	];
 	return lines.join("\n");
 }
@@ -203,12 +226,27 @@ function render(state: OnboardingSnapshot, rt: Runtime): string {
 function next(state: OnboardingSnapshot, tty: boolean): string {
 	const incomplete = state.venues.find((venue) => !venue.ready);
 	if (incomplete) return `Next: bind ${incomplete.venue} on the page`;
-	if (state.key === "none")
-		return tty
-			? "Next: mob keys import --stdin"
-			: "Next: paste the key in the chat";
-	if (state.key !== "ok") return "Next: mob keys import --stdin";
+	if (state.key === "unreachable")
+		return "Next: the MoB Strategy API did not answer; run mob onboard again in a minute";
+	if (state.key !== "ok")
+		return tty ? "Next: mob keys import" : "Next: paste the key in the chat";
 	return "Ready";
+}
+
+/** A line from the human's terminal; the agent's shell has no TTY. */
+async function ask(question: string): Promise<string> {
+	const terminal = createInterface({
+		input: process.stdin,
+		crlfDelay: Infinity,
+		terminal: false,
+	});
+	try {
+		process.stderr.write(`${question}: `);
+		const line = await terminal[Symbol.asyncIterator]().next();
+		return line.done ? "" : line.value;
+	} finally {
+		terminal.close();
+	}
 }
 
 export async function onboardingStatus(
@@ -217,9 +255,15 @@ export async function onboardingStatus(
 ) {
 	const config = await readConfig(rt.home);
 	const configuredOwner = options.owner ?? config.owner;
-	if (!configuredOwner) throw new UsageError("Run mob onboard first.");
+	// A fresh install is a normal state, not an error.
+	if (!configuredOwner)
+		return {
+			owner: null,
+			ready: false,
+			next: "Not set up. Research needs no account. To trade, run mob onboard in a terminal.",
+		};
 	const owner = getAddress(ownerAddress(configuredOwner));
-	const selected = venuesFlag(options.venues?.join(","));
+	const selected = await selectedVenues(options.venues?.join(","), owner, rt);
 	const state = await snapshot(selected, owner, rt);
 	return {
 		owner,
@@ -237,9 +281,19 @@ export async function onboard(
 	let owner = typeof values.owner === "string" ? values.owner : current.owner;
 	if (!owner) {
 		if (!rt.stdinIsTTY)
-			throw new UsageError("Non-interactive onboard requires --owner");
-		owner = (await rt.prompt?.("Owner", ""))?.trim();
-		if (!owner) throw new UsageError("Owner is required");
+			throw new UsageError(
+				"mob onboard needs your public wallet address: run it again with --owner 0x…",
+			);
+		owner = (
+			await (rt.prompt ?? ask)(
+				"Your wallet address (public, starts with 0x)",
+				"",
+			)
+		).trim();
+		if (!owner)
+			throw new UsageError(
+				"mob onboard needs your public wallet address (it starts with 0x)",
+			);
 	}
 	ownerAddress(owner);
 	owner = getAddress(owner);
@@ -248,14 +302,23 @@ export async function onboard(
 		await setConfig("app_base", values["app-base"], rt.home);
 	if (values.native === true) {
 		const { nativeOnboard } = await import("./ceremony-command.ts");
-		await nativeOnboard(values, rt);
+		try {
+			await nativeOnboard(values, rt);
+		} catch (error) {
+			// A stop before anything is staged leaves the saved owner as it was.
+			if (current.owner !== owner && !(await staged(owner, rt)))
+				await (current.owner
+					? setConfig("owner", current.owner, rt.home)
+					: unsetConfig("owner", rt.home));
+			throw error;
+		}
 		return;
 	}
 	const config = await readConfig(rt.home);
 	const appBase = String(getConfig(config, "app_base"));
 	const url = `${appBase}/?nav=api`;
 	rt.out(`Open ${url}`);
-	const selected = venuesFlag(values.venues);
+	const selected = await selectedVenues(values.venues, owner, rt);
 	const tty = Boolean(rt.stdinIsTTY && rt.stdoutIsTTY);
 	const watch = tty && (values.watch === true || values.watch === undefined);
 	const started = rt.now();
@@ -263,7 +326,8 @@ export async function onboard(
 	if (next(state, tty) !== "Ready") await maybeOpen(rt.home, owner, url, rt);
 	for (;;) {
 		const frame = render(state, rt);
-		if (watch) rt.writeStatus?.(`\x1b[2J\x1b[H${frame}\n`);
+		// A redraw clears the screen, so each frame repeats the page link.
+		if (watch) rt.writeStatus?.(`\x1b[2J\x1b[HOpen ${url}\n${frame}\n`);
 		else rt.out(frame);
 		if (next(state, tty) === "Ready" || !watch || rt.now() - started >= 900_000)
 			break;
@@ -271,20 +335,28 @@ export async function onboard(
 		state = await snapshot(selected, owner, rt);
 	}
 	if (watch) rt.out(render(state, rt));
-	if (next(state, tty) === "Ready") {
-		await home(
-			{
-				suppressKeyLegal: true,
-				readyVenues: state.venues
-					.filter((venue) => venue.ready)
-					.map((venue) => venue.venue),
-			},
-			rt,
-		);
-		const cap = state.cap?.toLocaleString("en-US") ?? "unknown";
-		rt.out(
-			`Ready · ${state.venues.filter((venue) => venue.ready).length} venues bound · key ${state.prefix} · cap ${cap === "unknown" ? "unknown" : `$${cap}`}`,
-		);
+	if (next(state, tty) !== "Ready") {
+		rt.out(next(state, tty));
+		return;
 	}
-	rt.out(next(state, tty));
+	const bound = state.venues.filter((venue) => venue.ready);
+	await home(
+		{ suppressKeyLegal: true, readyVenues: bound.map((venue) => venue.venue) },
+		rt,
+	);
+	const cap = state.cap?.toLocaleString("en-US");
+	rt.out(
+		`Ready · ${bound.length} ${bound.length === 1 ? "venue" : "venues"} bound · key ${state.prefix} · cap ${cap === undefined ? "unknown" : `$${cap}`}`,
+	);
+}
+
+/** Whether this owner has a ceremony that is still open to sign. */
+async function staged(owner: string, rt: Runtime): Promise<boolean> {
+	return (await new CeremonyStore(rt.home, rt.now, rt.err).list()).some(
+		(ceremony) =>
+			getAddress(ceremony.owner) === owner &&
+			!["complete", "partial", "rejected", "failed", "expired"].includes(
+				ceremony.status,
+			),
+	);
 }

@@ -17,12 +17,12 @@ case "$(uname -s)" in
   Linux) os=linux ;;
   Darwin) os=darwin ;;
   MINGW*|MSYS*|CYGWIN*) os=windows ;;
-  *) fail 'unsupported OS; use a supported GitHub release or build with Bun' ;;
+  *) fail "unsupported OS ($(uname -s)); releases cover macOS, Linux and Windows x64. To build from source, see https://github.com/da-bao-jian/mstack#development" ;;
 esac
 case "$(uname -m)" in
   x86_64|amd64) arch=x64 ;;
   arm64|aarch64) arch=arm64 ;;
-  *) fail 'unsupported architecture; build with Bun' ;;
+  *) fail "unsupported architecture ($(uname -m)); releases cover x64 and arm64. To build from source, see https://github.com/da-bao-jian/mstack#development" ;;
 esac
 asset="mob-$os-$arch"
 if [ "$os" = windows ]; then
@@ -64,14 +64,14 @@ trap 'rm -rf "$staging"' 0
 trap 'exit 1' HUP INT TERM
 if [ -z "$version" ]; then
   # GitHub's latest asset route; fixture overrides use the same /download suffix.
-  fetch "${base%/download}/latest/download/VERSION" "$staging/VERSION" || fail 'cannot fetch the latest release version'
+  fetch "${base%/download}/latest/download/VERSION" "$staging/VERSION" || fail 'cannot fetch the latest release version; check the network or proxy, then run the installer again'
   version=$(cat "$staging/VERSION")
 fi
 case "$version" in *[!0-9.]*) fail 'invalid release version' ;; esac
 printf '%s\n' "$version" | LC_ALL=C grep -Eq '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$' || fail 'invalid release version'
 printf 'mob: downloading %s v%s\n' "$asset" "$version" >&2
-fetch "$base/v$version/$asset" "$staging/$asset" || fail 'binary download failed'
-fetch "$base/v$version/SHA256SUMS" "$staging/SHA256SUMS" || fail 'checksum download failed'
+fetch "$base/v$version/$asset" "$staging/$asset" || fail 'binary download failed; check the network or proxy, then run the installer again'
+fetch "$base/v$version/SHA256SUMS" "$staging/SHA256SUMS" || fail 'checksum download failed; check the network or proxy, then run the installer again'
 expected=$(awk -v name="$asset" '$2 == name || $2 == "*" name { print $1 }' "$staging/SHA256SUMS")
 [ "${#expected}" -eq 64 ] || fail "missing or duplicate checksum for $asset"
 case "$expected" in *[!0-9a-fA-F]*) fail "invalid checksum for $asset" ;; esac
@@ -82,7 +82,7 @@ else
 fi
 actual=${actual%% *}
 expected=$(printf '%s' "$expected" | tr 'A-F' 'a-f')
-[ "$actual" = "$expected" ] || fail "SHA-256 mismatch for $asset; nothing installed"
+[ "$actual" = "$expected" ] || fail "SHA-256 mismatch for $asset; nothing installed. Run the installer again; if it fails again, report it at https://github.com/da-bao-jian/mstack/security"
 chmod 0755 "$staging/$asset"
 target="$cache/mob-$version"
 mv -f "$staging/$asset" "$target"
@@ -93,15 +93,22 @@ mkdir -p "$local_bin"
 [ ! -d "$local_bin/mob" ] || fail "$local_bin/mob is a directory"
 ln -sf "$target" "$local_bin/mob"
 printf 'Installed mob %s: %s\n' "$version" "$local_bin/mob"
-case ":${PATH:-}:" in
-  *":$local_bin:"*) ;;
-  *) printf '%s\n' 'Add this line to your shell profile, then run it here:' "  export PATH=\"\$HOME/.local/bin:\$PATH\"" ;;
-esac
 printf '%s\n' '' 'Next steps:' \
   '  mob                         # open the home screen' \
   '  mob scan --size 1000        # find delta-neutral funding trades (no account needed)' \
-  '  mob onboard                 # trade through MoB: one-time setup, about two minutes' \
-  '  In Claude Code:' \
-  '    /plugin marketplace add da-bao-jian/mstack' \
-  '    /plugin install mstack' \
-  '  Alternative: clone the repository and run ./setup --host claude or ./setup --host codex.'
+  '  mob onboard                 # trade through MoB: one-time setup, about five minutes'
+# The plugin lines only when Claude Code is here and the plugin is not.
+if command -v claude >/dev/null 2>&1 && ! claude plugin list 2>/dev/null | grep -q 'mstack@mstack'; then
+  printf '%s\n' '  In Claude Code, add the skills: claude plugin marketplace add da-bao-jian/mstack && claude plugin install mstack@mstack' \
+    '  Then type /reload-plugins in Claude Code.'
+fi
+case ":${PATH:-}:" in
+  *":$local_bin:"*) ;;
+  *)
+    case "${SHELL##*/}" in
+      zsh) profile='~/.zshrc' ;;
+      bash) if [ "$os" = darwin ]; then profile='~/.bash_profile'; else profile='~/.bashrc'; fi ;;
+      *) profile="your shell's startup file" ;;
+    esac
+    printf '%s\n' '' "mob is not on your PATH yet. Add this line to $profile, then open a new terminal:" "  export PATH=\"\$HOME/.local/bin:\$PATH\"" ;;
+esac

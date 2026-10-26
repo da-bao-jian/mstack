@@ -1,7 +1,6 @@
 import {
 	detectMode,
 	type Mode,
-	renderBrandPalette,
 	renderTerminalLogo,
 	style,
 } from "@mstack/brand";
@@ -44,7 +43,7 @@ function readText<T>(
 }
 function upgradeText(data: HomeData) {
 	return readText(data.upgrade, ({ available }) =>
-		available ? `available ${available}` : "none",
+		available ? `${available} available · run mob upgrade` : "up to date",
 	);
 }
 function legalText(data: HomeData) {
@@ -287,16 +286,20 @@ export async function home(options: HomeOptions, rt: Runtime): Promise<void> {
 	);
 	if (!options.compact) info.push(row("Chat", CHAT_LINE));
 	const freshness = textMode(freshnessText(market), mode);
-	const palette =
-		mode === "truecolor" || mode === "ansi256"
-			? renderBrandPalette({ mode })
-			: "";
-	const columns = rt.columns ?? process.stdout.columns ?? 80;
-	const stacked = options.stacked || columns < 72;
-	if (!stacked) while (info.length < logo.length - 1) info.push("");
 	info.push(
-		`${paint(freshness, market.freshness.state === "live" ? "sky" : "orange")}${palette ? `          ${palette}` : ""}`,
+		paint(freshness, market.freshness.state === "live" ? "sky" : "orange"),
 	);
+	// In a terminal, side by side only when the widest row fits next to the
+	// logo; piped output for an agent stays compact.
+	const columns = rt.columns ?? process.stdout.columns ?? 80;
+	const stacked =
+		options.stacked ||
+		(terminal.isTTY
+			? columns <
+				size + 3 + Math.max(...info.map((line) => Bun.stringWidth(line)))
+			: columns < 72);
+	if (!stacked)
+		while (info.length < logo.length) info.splice(info.length - 1, 0, "");
 	const lines = stacked
 		? [...logo, "", ...info]
 		: Array.from({ length: Math.max(logo.length, info.length) }, (_, index) => {
@@ -367,8 +370,20 @@ interface Check {
 	critical: boolean;
 	detail: string;
 }
+// MoB's readiness codes, as words.
+const issues: Record<string, string> = {
+	not_bound: "not bound",
+	key_invalid: "MoB's venue key no longer works",
+	builder_fee_missing: "builder fee not approved",
+	integrator_approval_missing: "integrator not approved",
+	unavailable: "MoB cannot use it right now",
+};
+const OFFLINE =
+	/Unable to connect|ConnectionRefused|ECONNREFUSED|ENOTFOUND|EAI_AGAIN|getaddrinfo|fetch failed|timed out|TimeoutError/i;
+
 export async function doctor(json: boolean, rt: Runtime): Promise<number> {
 	const data = await collectHome(rt, { doctor: true });
+	const tty = rt.stdoutIsTTY ?? rt.isTTY ?? Boolean(process.stdout.isTTY);
 	const checks: Check[] = [];
 	const add = (
 		name: string,
@@ -388,59 +403,71 @@ export async function doctor(json: boolean, rt: Runtime): Promise<number> {
 		passes: (value: T) => boolean,
 		detail: (value: T) => string,
 		critical = true,
+		host?: string,
 	) {
+		const read =
+			["ok", "slow"].includes(reading.state) && reading.value !== undefined;
 		add(
 			name,
-			["ok", "slow"].includes(reading.state) && reading.value !== undefined
-				? passes(reading.value)
+			read
+				? passes(reading.value as T)
 				: reading.state === "not checked"
 					? null
 					: false,
-			["ok", "slow"].includes(reading.state) && reading.value !== undefined
-				? detail(reading.value)
-				: `${reading.state}${reading.error ? `: ${reading.error}` : ""}`,
+			read
+				? detail(reading.value as T)
+				: reading.error && OFFLINE.test(reading.error)
+					? `cannot reach ${host ?? "the service"}; check the network or proxy`
+					: `${reading.state}${reading.error ? `: ${reading.error}` : ""}`,
 			critical,
 		);
 	}
-	// Research never needs an account. Config, owner, signer, legal and venue
-	// checks become critical once trading setup has started (an owner is set).
-	const trading = Boolean(data.owner);
-	const untilTrading =
-		'not set · optional until you trade · say "set up mstack"';
+	// Research never needs an account. Trading lines show once setup starts
+	// (an owner is saved) and become critical once a key is stored.
+	const started = Boolean(data.owner);
+	const trading = Boolean(data.key.description);
+	const untilTrading = `not set · needed only to trade · ${tty ? "run mob onboard" : 'say "set up mstack"'}`;
 	add("Binary", true, `mob ${data.version}`);
-	add(
-		"Research",
-		true,
-		"scan, rates, history, explain and status --owner need no account",
-	);
-	add(
-		"Bun",
-		data.diagnostics.bun,
-		data.diagnostics.bun
-			? "present (for upgrades)"
-			: "missing (needed for upgrades)",
-		false,
-	);
+	add("Research", true, "all research commands need no account");
+	if (data.diagnostics.checkout)
+		add(
+			"Bun",
+			data.diagnostics.bun,
+			data.diagnostics.bun
+				? "present (this checkout builds with Bun)"
+				: "missing (this checkout builds with Bun)",
+			false,
+		);
 	add(
 		"Config",
-		data.config.present ? data.config.valid : trading ? false : null,
-		data.config.error ??
-			(data.config.present ? data.config.path : untilTrading),
-		trading || data.config.present,
+		data.config.present ? data.config.valid : started ? false : null,
+		data.config.error
+			? /malformed JSON/.test(data.config.error)
+				? "config.json is not valid JSON · fix it or move it away"
+				: data.config.error
+			: data.config.present
+				? "valid"
+				: untilTrading,
+		started || data.config.present,
 	);
-	add("Owner", trading ? true : null, data.owner ?? untilTrading, trading);
+	add("Owner", started ? true : null, data.owner ?? untilTrading, started);
 	add(
 		"Signer",
-		trading ? data.diagnostics.signer.usable : null,
-		trading
-			? `${data.signer ? `${data.signer}: ` : ""}${data.diagnostics.signer.detail}${data.approver.running ? " · approver running" : ""}`
-			: untilTrading,
+		data.signer ? data.diagnostics.signer.usable : null,
+		data.signer
+			? `${data.signer}: ${data.diagnostics.signer.detail}${data.approver.running ? " · approver running" : ""}`
+			: started
+				? "chosen at the first signature"
+				: untilTrading,
 		trading,
 	);
 	add(
 		"Policy",
+		data.config.valid ? true : null,
+		data.config.valid
+			? `${data.policy}${data.policy === "locked" ? " (mutations disabled)" : ""}`
+			: "unknown until config.json is valid",
 		data.config.valid,
-		`${data.policy}${data.policy === "locked" ? " (mutations disabled)" : ""}`,
 	);
 	add(
 		"Key",
@@ -453,48 +480,62 @@ export async function doctor(json: boolean, rt: Runtime): Promise<number> {
 		data.api,
 		() => true,
 		({ latencyMs }) => `${data.api.host} ${reachabilityLabel(latencyMs)}`,
+		trading,
+		data.api.host,
 	);
 	network(
 		"Auth",
 		data.auth,
 		() => true,
 		() => `${data.auth.host} ok`,
+		trading,
+		data.auth.host,
 	);
 	network(
 		"Legal",
 		data.legal,
 		(v) => v.accepted,
-		() => (trading ? legalText(data) : untilTrading),
+		() => (started ? legalText(data) : untilTrading),
 		trading,
+		data.auth.host,
 	);
 	for (const venue of homeVenues) {
 		const reading = data.venues[venue];
-		// Unbound venues are optional. A bound but broken credential is critical.
-		network(
-			`Venue ${venue}`,
-			reading,
-			(v) => v.ready,
-			(v) => (v.ready ? "ready" : (v.issue ?? "not bound")),
-			trading && reading.value?.issue !== "not_bound",
-		);
+		// An unbound venue is a choice, not a fault. A bound but broken
+		// credential is critical once trading is set up.
+		if (reading.value && !reading.value.bound && !reading.value.ready)
+			add(`Venue ${venue}`, null, "not bound", false);
+		else
+			network(
+				`Venue ${venue}`,
+				reading,
+				(v) => v.ready,
+				(v) =>
+					v.ready
+						? "ready"
+						: v.issue
+							? (issues[v.issue] ?? v.issue)
+							: "not bound",
+				trading,
+			);
 	}
 	network(
-		"HL deposit",
+		"Deposit hl",
 		data.diagnostics.hlDeposit,
 		Boolean,
 		(v) =>
 			v
 				? "present (perpetual account value > 0)"
-				: "no positive perpetual account value",
-		data.venues.hl.value?.bound === true,
+				: "no USDC in Hyperliquid perps",
+		trading && data.venues.hl.value?.bound === true,
 	);
 	for (const venue of ["lighter", "lighter-mainnet"] as const)
 		network(
-			`${venue} account`,
+			`Account ${venue}`,
 			data.diagnostics.lighterAccounts[venue],
 			Boolean,
-			(v) => (v ? "exists" : "create a Lighter account first"),
-			data.venues[venue].value?.bound === true,
+			(v) => (v ? "exists" : "no account · create one at app.lighter.xyz"),
+			trading && data.venues[venue].value?.bound === true,
 		);
 	network(
 		"Proposals",
@@ -507,22 +548,38 @@ export async function doctor(json: boolean, rt: Runtime): Promise<number> {
 		"Upgrade",
 		data.upgrade,
 		() => true,
-		() => `${upgradeText(data)} (cached origin/main)`,
+		() => upgradeText(data),
 		false,
 	);
 	const ok = checks.every((c) => !c.critical || c.status === "pass");
 	if (json)
 		rt.out(JSON.stringify({ version: data.version, ok, checks }, null, 2));
 	else {
-		const mode = detectMode({
-			env: rt.env ?? process.env,
-			isTTY: rt.stdoutIsTTY ?? rt.isTTY ?? Boolean(process.stdout.isTTY),
-		});
+		const mode = detectMode({ env: rt.env ?? process.env, isTTY: tty });
+		// Before setup starts, the trading lines fold into one.
+		const folded = /^(?:Owner|Signer|Key|Legal|Venue |Deposit |Account )/;
+		const shown: Check[] = started
+			? checks
+			: [
+					...checks.filter(
+						(c) =>
+							!folded.test(c.name) &&
+							!(c.name === "Config" && c.status === "skip"),
+					),
+					{
+						name: "Trading",
+						status: "skip",
+						critical: false,
+						detail: `not set up · optional · ${tty ? "run mob onboard" : 'say "set up mstack"'}`,
+					},
+				];
 		rt.out(
-			checks
+			shown
 				.map((c) =>
 					textMode(
-						`${c.status === "pass" ? "✓" : c.status === "fail" ? "✗" : "–"} ${c.name.padEnd(23)} ${clean(c.detail)}${!c.critical ? " (optional)" : ""}`,
+						// The fail mark only where the check fails; an optional
+						// problem keeps its words and the skip mark.
+						`${c.status === "pass" ? "✓" : c.status === "fail" && c.critical ? "✗" : "–"} ${c.name.padEnd(23)} ${clean(c.detail)}${!c.critical && !/optional|only to trade/.test(c.detail) ? " (optional)" : ""}`,
 						mode,
 					),
 				)

@@ -167,3 +167,42 @@ test("malformed successful reads fail instead of returning an empty result", asy
 		client.read("/api/binding/hl/credential", { ownerAddress: "0x1" }),
 	).rejects.toThrow("invalid bound");
 });
+
+test("readiness keeps the venues this client trades on and drops new server venues", async () => {
+	const answer = (body: unknown) =>
+		new MobiusClient({
+			version: "0.2.0",
+			limit: async () => {},
+			fetch: async () => Response.json(body),
+		}).read("/api/binding/readiness", { ownerAddress: "0x1" });
+	// Recorded live shape after MoB added QFEX (2026-10-25).
+	const live = await answer({
+		ready: false,
+		venues: [
+			{ venue: "aster", ready: true },
+			{ venue: "hl", ready: true },
+			{ venue: "qfex", ready: false, issue: "not_bound" },
+		],
+	});
+	expect(live.venues.map((row) => row.venue)).toEqual(["aster", "hl"]);
+	// The server's false covers qfex; the kept venues decide.
+	expect(live.ready).toBe(true);
+	const partial = await answer({
+		ready: false,
+		venues: [
+			{ venue: "hl", ready: false, issue: "not_bound" },
+			{ venue: "qfex", ready: false, issue: "not_bound" },
+		],
+	});
+	expect(partial.ready).toBe(false);
+	expect(
+		(await answer({ venues: [{ venue: "qfex", ready: true }] })).ready,
+	).toBe(false);
+	// A known venue still gets the strict checks.
+	await expect(
+		answer({ venues: [{ venue: "hl", ready: "yes" }, { venue: "qfex" }] }),
+	).rejects.toThrow("invalid readiness for hl");
+	await expect(answer({ venues: [{ ready: true }] })).rejects.toThrow(
+		"invalid venue",
+	);
+});

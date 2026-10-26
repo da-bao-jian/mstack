@@ -221,6 +221,13 @@ function distance(a: string, b: string): number {
 	}
 	return row[b.length];
 }
+/** The closest name within two edits, for a "Did you mean" hint. */
+export function nearest(word: string, names: string[]): string | undefined {
+	const best = [...names].sort(
+		(a, b) => distance(word, a) - distance(word, b),
+	)[0];
+	return best && distance(word, best) <= 2 ? best : undefined;
+}
 export function parseCommand(
 	command: string,
 	args: string[],
@@ -235,14 +242,10 @@ export function parseCommand(
 			args.find((arg) => arg.startsWith("-") && arg !== "--");
 		const see = `See \`mob ${command} --help\`.`;
 		if (e.code === "ERR_PARSE_ARGS_UNKNOWN_OPTION" && option) {
-			const nearest = Object.keys(options ?? {}).sort(
-				(a, b) => distance(option.slice(2), a) - distance(option.slice(2), b),
-			)[0];
-			const suggestion =
-				nearest && distance(option.slice(2), nearest) <= 2
-					? ` Did you mean --${nearest}?`
-					: "";
-			throw new UsageError(`Unknown option ${option}.${suggestion} ${see}`);
+			const near = nearest(option.slice(2), Object.keys(options ?? {}));
+			throw new UsageError(
+				`Unknown option ${option}.${near ? ` Did you mean --${near}?` : ""} ${see}`,
+			);
 		}
 		if (e.code?.startsWith("ERR_PARSE_ARGS"))
 			throw new UsageError(`Invalid value for ${option ?? "option"}. ${see}`);

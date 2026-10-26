@@ -72,7 +72,7 @@ test("agent install doc stays short and exposes executable host commands", async
 	expect(mobReferences.length).toBeGreaterThan(0);
 	for (const command of mobReferences)
 		expect(command).toMatch(
-			/^mob (?:--version|doctor|mcp|onboard|scan --size 1000|keys (?:import|delete))$/,
+			/^mob (?:--version|doctor|mcp|onboard|upgrade|scan --size 1000|keys (?:import|delete)|(?:sign|submit) <id>)$/,
 		);
 
 	const setup = await readFile(resolve(root, "scripts/setup.ts"), "utf8");
@@ -90,10 +90,25 @@ test("agent install doc stays short and exposes executable host commands", async
 	expect(plugin.name).toBe("mstack");
 	expect(marketplace.name).toBe("mstack");
 
-	for (const command of install.match(/claude plugin [^\n`]+/g) ?? [])
+	// The install line chains add, refresh, install and update, so it also
+	// updates an older plugin.
+	for (const command of (install.match(/claude plugin [^\n`]+/g) ?? []).flatMap(
+		(line) => line.split(" && "),
+	))
 		expect(command).toMatch(
-			/^claude plugin (marketplace add da-bao-jian\/mstack|install mstack@mstack|uninstall mstack@mstack)$/,
+			/^claude plugin (marketplace (?:add da-bao-jian\/mstack|update mstack|remove mstack)|(?:install|update|uninstall) mstack@mstack|list)$/,
 		);
+	expect(shellCommandsInSection(install, "Claude Code")[0]).toBe(
+		"claude plugin marketplace add da-bao-jian/mstack && claude plugin marketplace update mstack && claude plugin install mstack@mstack && claude plugin update mstack@mstack",
+	);
+	// No export line in Claude Code: it triggers a permission warning, and the
+	// plugin puts mob on the agent's PATH.
+	expect(
+		shellCommandsInSection(install, "Claude Code").join("\n"),
+	).not.toContain("export");
+	expect(install).toContain("Do not download `install.sh` or this guide");
+	expect(install).toContain("claude plugin marketplace remove mstack");
+	expect(install).toContain("Never offer to change permission settings");
 	for (const command of install.match(/\.\/setup [^\n`]+/g) ?? [])
 		expect(command).toMatch(/^\.\/setup --host codex(?: --uninstall)?$/);
 });

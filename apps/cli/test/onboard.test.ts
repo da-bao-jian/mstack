@@ -95,15 +95,15 @@ test("onboard saves owner and app base, prints public states and exact handoff",
 	expect(result.code).toBe(0);
 	expect(result.opened).toEqual(["https://app.example.test/base/?nav=api"]);
 	expect(result.out).toContain("Open https://app.example.test/base/?nav=api");
-	expect(result.out).toContain("Legal  ✓ accepted");
-	expect(result.out).toContain("hl      ✓ bound");
-	expect(result.out).toContain("lighter – not bound · not_bound");
-	expect(result.out).toContain("Key    – none");
+	expect(result.out).toContain("Legal    ✓ accepted");
+	expect(result.out).toContain("hl       ✓ bound");
+	expect(result.out).toContain("lighter  – not bound\n");
+	expect(result.out).toContain("Key      – none");
 	expect(result.out).toContain(
-		"Then the user copies the key and pastes it into the chat; the agent stores it with `mob keys import --stdin` and the CLI never prints it again.",
+		"Copy the key from the page. In a chat, paste it there; the agent stores it with `mob keys import --stdin` and never prints it again.",
 	);
 	expect(result.out).toContain(
-		"A human at a terminal may instead run `mob keys import` and paste it hidden.",
+		"In a terminal, run `mob keys import` and paste it at the hidden prompt.",
 	);
 	expect(result.out.endsWith("Next: bind lighter on the page")).toBe(true);
 	expect(await invoke(path, ["config", "get", "owner"])).toMatchObject({
@@ -134,9 +134,11 @@ test("onboard reports repair text and throttles opener per owner for one hour", 
 		fetch: fakeFetch({ hl: "repair" }),
 	});
 	expect(first.opened).toHaveLength(1);
+	// With no key and no --venues, every venue is listed.
 	expect(first.out).toContain(
-		"hl      ✗ needs repair · builder approval missing",
+		`${"hl".padEnd(17)}✗ needs repair · builder approval missing`,
 	);
+	expect(first.out).toContain(`${"lighter-mainnet".padEnd(17)}– not bound`);
 	const second = await invoke(path, ["onboard"], {
 		fetch: fakeFetch({ hl: "repair" }),
 	});
@@ -180,7 +182,7 @@ test("onboard shows missing legal acceptance without staging or signing", async 
 	);
 	expect(result.code).toBe(0);
 	expect(result.out).toContain("Legal  ✗ missing");
-	expect(result.out).toContain("hl      ✓ bound");
+	expect(result.out).toContain("hl     ✓ bound");
 	expect(result.out.endsWith("Next: paste the key in the chat")).toBe(true);
 });
 
@@ -233,8 +235,10 @@ test("non-TTY onboard requires owner and imported key makes the checklist Ready"
 	expect(ready.code).toBe(0);
 	expect(ready.out).not.toContain(key);
 	expect(ready.out).toContain(
-		"Key    ✓ verified ok · mobius_01234567-89ab-cdef-0123-456789abcdef…",
+		"Key      ✓ verified ok · mobius_01234567-89ab-cdef-0123-456789abcdef…",
 	);
+	// Once a key is stored, the paste-the-key lines are gone.
+	expect(ready.out).not.toContain("Copy the key from the page");
 	expect(ready.out).toContain(
 		"Ready · 2 venues bound · key mobius_01234567-89ab-cdef-0123-456789abcdef… · cap $5,000",
 	);
@@ -244,7 +248,20 @@ test("non-TTY onboard requires owner and imported key makes the checklist Ready"
 	expect(ready.out).not.toContain("░");
 	expect(ready.out).not.toMatch(/^Key\s+.*not checked$/m);
 	expect(ready.out).not.toMatch(/^Legal\s+.*not checked$/m);
-	expect(ready.out.endsWith("Ready")).toBe(true);
+	expect(ready.out.endsWith("cap $5,000")).toBe(true);
+	// Without --venues, the stored key's venues decide, so setup can finish
+	// when other venues stay unbound.
+	const finished = await invoke(path, ["onboard"], {
+		fetch: fakeFetch({
+			hl: "bound",
+			lighter: "bound",
+			aster: "unbound",
+			"lighter-mainnet": "unbound",
+		}),
+	});
+	expect(finished.code).toBe(0);
+	expect(finished.out).not.toContain("aster");
+	expect(finished.out.endsWith("cap $5,000")).toBe(true);
 });
 
 test("TTY onboard prompts for owner and watch redraws with an injected clock", async () => {
@@ -278,7 +295,64 @@ test("TTY onboard prompts for owner and watch redraws with an injected clock", a
 	});
 	expect(result.code).toBe(0);
 	expect(reads).toBe(2);
-	expect(frames.join("\n")).toContain("\x1b[2J\x1b[H");
+	// Each redraw keeps the page link on screen.
+	expect(frames.join("\n")).toContain(
+		"\x1b[2J\x1b[HOpen https://app.mob.exchange/?nav=api\n",
+	);
 	expect(result.out).not.toContain("<mob-home>");
-	expect(result.out.endsWith("Ready")).toBe(true);
+	expect(result.out).toMatch(/Ready · 1 venue bound · key .* · cap unknown$/);
+});
+
+test("TTY onboard asks for the wallet address when none is saved", async () => {
+	const path = await home();
+	const questions: string[] = [];
+	const result = await invoke(path, ["onboard", "--venues", "hl"], {
+		stdinIsTTY: true,
+		prompt: async (question) => {
+			questions.push(question);
+			return ` ${casedOwner} `;
+		},
+		fetch: fakeFetch({ hl: "bound" }),
+	});
+	expect(result.code).toBe(0);
+	expect(questions).toEqual(["Your wallet address (public, starts with 0x)"]);
+	expect(await invoke(path, ["config", "get", "owner"])).toMatchObject({
+		out: getAddress(casedOwner),
+	});
+	const empty = await invoke(await home(), ["onboard"], {
+		stdinIsTTY: true,
+		prompt: async () => "",
+	});
+	expect(empty.code).toBe(1);
+	expect(empty.err).toContain("needs your public wallet address");
+});
+
+test("native onboard that stops before staging leaves no saved owner", async () => {
+	const path = await home();
+	const stopped = await invoke(path, [
+		"onboard",
+		"--native",
+		"--owner",
+		owner,
+		"--venues",
+		"hl",
+	]);
+	expect(stopped.code).toBe(1);
+	expect(stopped.err).toContain("needs at least two venues");
+	expect(await invoke(path, ["config", "get", "owner"])).toMatchObject({
+		out: "",
+	});
+	// A previously saved owner is restored, not removed.
+	await setConfig("owner", getAddress(casedOwner), path);
+	await invoke(path, [
+		"onboard",
+		"--native",
+		"--owner",
+		owner,
+		"--venues",
+		"hl",
+	]);
+	expect(await invoke(path, ["config", "get", "owner"])).toMatchObject({
+		out: getAddress(casedOwner),
+	});
 });

@@ -26,7 +26,9 @@ export class UsageError extends Error {}
 
 export function ownerAddress(value: string): string {
 	if (!/^0x[0-9a-fA-F]{40}$/.test(value))
-		throw new UsageError("owner must be a 20-byte 0x address");
+		throw new UsageError(
+			"The wallet address must be 0x and 40 hex characters: the public address, never a key",
+		);
 	return value;
 }
 
@@ -204,6 +206,24 @@ export async function readConfig(home = configHome()): Promise<Config> {
 	return value as Config;
 }
 
+/**
+ * Research needs no account, so a config file that cannot be read only
+ * warns: the command runs with the default settings.
+ */
+export async function researchConfig(rt: {
+	home: string;
+	err?: (text: string) => void;
+}): Promise<Config> {
+	try {
+		return await readConfig(rt.home);
+	} catch (error) {
+		(rt.err ?? console.error)(
+			`mob: ${error instanceof Error ? error.message : String(error)}; research uses the default settings. Fix config.json or move it away, then run mob doctor.`,
+		);
+		return {};
+	}
+}
+
 export function getConfig(config: Config, key: string): string | number {
 	knownKey(key);
 	if (key === "auth_base")
@@ -242,6 +262,27 @@ export async function setConfig(
 			[key.slice(14)]: parsed as number,
 		};
 	else Object.assign(config, { [key]: parsed });
+	await writeConfig(config, home);
+	return parsed;
+}
+
+/** Removes one setting; the default applies again. */
+export async function unsetConfig(
+	key: string,
+	home = configHome(),
+): Promise<void> {
+	knownKey(key);
+	const config = await readConfig(home);
+	if (key.startsWith("taker_fee_bps.")) {
+		if (!config.taker_fee_bps || !(key.slice(14) in config.taker_fee_bps))
+			return;
+		delete config.taker_fee_bps[key.slice(14)];
+	} else if (key in config) delete config[key as keyof Config];
+	else return;
+	await writeConfig(config, home);
+}
+
+async function writeConfig(config: Config, home: string): Promise<void> {
 	await mkdir(home, { recursive: true, mode: 0o700 });
 	const temporary = join(
 		home,
@@ -253,7 +294,6 @@ export async function setConfig(
 	});
 	await chmod(temporary, 0o600);
 	await rename(temporary, join(home, "config.json"));
-	return parsed;
 }
 /**
  * A signer named with --with becomes the saved one, so later wallet
@@ -277,7 +317,7 @@ export async function rememberSigner(
 
 /** Trading needs MoB; research never does. Every execution gate says both. */
 export const SETUP_FIRST =
-	'Trading runs through MoB and needs a one-time setup, about two minutes: say "set up mstack", or run `mob onboard` in your terminal. It sets your wallet address, how you sign, and the venues. Research needs no account: `mob scan`, `mob rates`, `mob history`, `mob explain`, and `mob status --owner 0x…` work as they are.';
+	'Trading runs through MoB and needs a one-time setup, about five minutes: say "set up mstack", or run `mob onboard` in your terminal. It sets your wallet address, how you sign, and the venues. Research needs no account: `mob scan`, `mob rates`, `mob history`, `mob explain`, and `mob status --owner 0x…` work as they are.';
 /** Status is a public read by address; it never needs an account. */
 export const OWNER_NEEDED =
 	'mob status reads public tasks by address and needs no account: add `--owner 0x…`. To save an address, run `mob config set owner 0x…`; to trade, say "set up mstack".';

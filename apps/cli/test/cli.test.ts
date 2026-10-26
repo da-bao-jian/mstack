@@ -384,8 +384,61 @@ test("config stores only allowed settings at mode 0600 and affects scans", async
 		expect(row.sizeUsd).toBe(5000);
 		expect(row.roundTripFeePct).toBe(0.02);
 		expect(row.builderFeePct).toBe(0);
+		// Research needs no account: a broken config warns and uses defaults.
 		await writeFile(join(isolated, "config.json"), "{bad");
-		expect((await invoke(["scan"], { home: isolated })).code).toBe(1);
+		const broken = await invoke(["scan", "--venues", "hl,lighter", "--json"], {
+			home: isolated,
+		});
+		expect(broken.code).toBe(0);
+		expect(broken.err).toContain(
+			"malformed JSON; research uses the default settings. Fix config.json or move it away, then run mob doctor.",
+		);
+		expect(JSON.parse(broken.out).view.executable[0].sizeUsd).toBe(1000);
+		expect((await invoke(["keys", "show"], { home: isolated })).code).toBe(1);
+	} finally {
+		await rm(isolated, { recursive: true, force: true });
+	}
+});
+
+test("config unset restores a default; protected keys still need the human", async () => {
+	const isolated = await mkdtemp(join(tmpdir(), "mob-config-unset-"));
+	try {
+		const human = {
+			home: isolated,
+			stdinIsTTY: true,
+			stdoutIsTTY: true,
+			readSecret: async () => "yes",
+		};
+		await invoke(["config", "set", "default_size_usd", "5000"], human);
+		await invoke(["config", "set", "api_base", "https://example.test"], human);
+		expect(
+			await invoke(["config", "unset", "default_size_usd"], { home: isolated }),
+		).toMatchObject({ code: 0, out: "default_size_usd unset" });
+		expect(
+			(await invoke(["config", "get", "default_size_usd"], { home: isolated }))
+				.out,
+		).toBe("1000");
+		// Unsetting a key that is not set is a quiet success.
+		expect(
+			(await invoke(["config", "unset", "owner"], { home: isolated })).code,
+		).toBe(0);
+		const agent = await invoke(["config", "unset", "api_base"], {
+			home: isolated,
+			stdinIsTTY: false,
+			stdoutIsTTY: false,
+			readSecret: async () => "yes",
+		});
+		expect(agent.code).toBe(1);
+		expect(agent.err).toContain(
+			"mob config unset api_base needs your own terminal",
+		);
+		expect((await invoke(["config", "unset", "api_base"], human)).code).toBe(0);
+		expect(
+			(await invoke(["config", "get", "api_base"], { home: isolated })).out,
+		).toBe("https://funding.mob.exchange");
+		expect(
+			(await invoke(["config", "unset", "nope"], { home: isolated })).err,
+		).toContain("Unknown config key nope");
 	} finally {
 		await rm(isolated, { recursive: true, force: true });
 	}
@@ -593,4 +646,61 @@ test("status defaults to the saved owner, permits an override, and names the uns
 	} finally {
 		await rm(isolated, { recursive: true, force: true });
 	}
+});
+
+test("when no venue answers, research says so instead of printing empty tables", async () => {
+	const offline = async () => {
+		throw new Error(
+			"Unable to connect. Is the computer able to access the url?",
+		);
+	};
+	for (const args of [
+		["scan", "--venues", "hl,lighter"],
+		["market", "ETH"],
+	]) {
+		const result = await invoke(args, { fetch: offline });
+		expect(result.code).toBe(2);
+		expect(result.out).toStartWith(
+			"No venue answered. Check the network or proxy (HTTPS_PROXY), then run the command again.",
+		);
+		expect(result.out).not.toContain("No market lists");
+		expect(result.out).toContain("failed: ");
+	}
+	// JSON keeps the failures for an agent to report.
+	const json = await invoke(["scan", "--venues", "hl", "--json"], {
+		fetch: offline,
+	});
+	expect(JSON.parse(json.out).failed.length).toBeGreaterThan(0);
+});
+
+test("help leads with research, takes mob help <command>, and suggests a near command", async () => {
+	const overview = (await invoke(["--help"])).out;
+	expect(overview.split("\n")[0]).toContain(
+		"funding research across 20 venues, with optional trading through MoB",
+	);
+	for (const heading of [
+		"Research (no account needed):",
+		"Trade through MoB (one-time setup first):",
+		"Keys and signing (run these in your own terminal):",
+		"Maintenance:",
+	])
+		expect(overview).toContain(heading);
+	// Internal commands stay out of the overview.
+	for (const internal of ["mob hook", "mob grant", "mob risk-ack", "PRD"])
+		expect(overview).not.toContain(internal);
+	expect(overview).toContain(
+		"(trade Proposals p-N, sent with the MoB API key)",
+	);
+	expect((await invoke(["help", "scan"])).out).toBe(
+		(await invoke(["scan", "--help"])).out,
+	);
+	expect((await invoke(["help"])).out).toBe(overview);
+	const typo = await invoke(["scna"]);
+	expect(typo.code).toBe(1);
+	expect(typo.err).toContain(
+		"Unknown command scna. Did you mean mob scan? Run mob --help.",
+	);
+	expect((await invoke(["zzzzzz"])).err).toContain(
+		"Unknown command zzzzzz. Run mob --help.",
+	);
 });

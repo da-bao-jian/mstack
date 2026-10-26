@@ -6,7 +6,7 @@ import {
 	pricesAgree,
 	unitPrice,
 } from "@mstack/opportunities";
-import { readConfig, UsageError } from "../config.ts";
+import { researchConfig, UsageError } from "../config.ts";
 import {
 	base,
 	type Runtime,
@@ -122,7 +122,7 @@ export async function watchAdd(
 	},
 	rt: Runtime,
 ) {
-	await readConfig(rt.home);
+	await researchConfig(rt);
 	const ticker = base(options.base);
 	if (!ticker)
 		throw new UsageError(
@@ -162,7 +162,7 @@ export async function watchAdd(
 }
 
 export async function watchRemove(index: string | undefined, rt: Runtime) {
-	await readConfig(rt.home);
+	await researchConfig(rt);
 	const pairs = await load(rt.home);
 	const n = Number(index);
 	if (!index || !Number.isSafeInteger(n) || n < 1 || n > pairs.length)
@@ -228,7 +228,7 @@ function triggered(row: WatchRow): string[] {
 }
 
 export async function watchList(rt: Runtime) {
-	await readConfig(rt.home);
+	await researchConfig(rt);
 	const pairs = await load(rt.home);
 	const venues = [
 		...new Set(

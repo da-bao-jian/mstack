@@ -285,7 +285,7 @@ export const mcpTools = [
 	),
 	tool<HistoryOptions>(
 		"funding_history",
-		"Read settled keyless funding history, interval-weighted averages, coverage, and the best average spread. Lighter has no keyless history. Annualization is simple, not compounded.",
+		"Read settled keyless funding history, interval-weighted averages, coverage, and the best average spread. Venues that publish no settled history are listed as unsupported. Annualization is simple, not compounded.",
 		{
 			base: text("Required normalized base ticker, for example BTC or PEPE."),
 			days: number("Positive lookback in days; default 7."),
@@ -515,7 +515,8 @@ export const mcpTools = [
 			proposals: (await new ProposalStore(rt.home, rt.now).list()).map(
 				proposalResult,
 			),
-			message: "Nothing is signed or sent until a human runs `mob sign <id>`.",
+			message:
+				"Nothing is signed or sent until a human runs, in their own terminal, `mob sign <id>` for a wallet Proposal or `mob submit <id>` for an API Proposal.",
 		}),
 	),
 	tool<{ id: string }>(

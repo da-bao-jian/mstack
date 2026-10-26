@@ -9,7 +9,13 @@ import {
 	venueKey,
 	venueKind,
 } from "@mstack/opportunities";
-import { getConfig, numberFlag, readConfig, UsageError } from "../config.ts";
+import {
+	getConfig,
+	numberFlag,
+	type readConfig,
+	researchConfig,
+	UsageError,
+} from "../config.ts";
 import { priceView, scanView } from "../scan-view.ts";
 import { category } from "./markets.ts";
 import { pairKey, type Realized, realizedSpreads } from "./realized.ts";
@@ -176,7 +182,7 @@ async function withRealized<
 export async function priceScan(options: ScanOptions, rt: Runtime) {
 	const { venues, market, top, topExec, minVolume24hUsd, config } = common(
 		options,
-		await readConfig(rt.home),
+		await researchConfig(rt),
 	);
 	const input = await snapshot(venues, rt);
 	const keep = legFilter(options, assetClasses(options, input.rates));
@@ -225,7 +231,7 @@ export async function priceScan(options: ScanOptions, rt: Runtime) {
 export async function scan(options: ScanOptions, rt: Runtime) {
 	const { venues, market, top, topExec, minVolume24hUsd, config } = common(
 		options,
-		await readConfig(rt.home),
+		await researchConfig(rt),
 	);
 	const sizeUsd = numberFlag(
 		options.sizeUsd ?? Number(getConfig(config, "default_size_usd")),

@@ -198,7 +198,41 @@ export async function p1(
 	if (args.length !== 1) throw new UsageError(`Usage: mob ${command} <id>`);
 	const id = args[0];
 	if (command === "reject") {
+		if (/^c-[1-9]\d*$/.test(id)) {
+			await new CeremonyStore(rt.home, rt.now, rt.err).update(id, (record) => {
+				if (
+					["complete", "partial", "rejected", "failed", "expired"].includes(
+						record.status,
+					)
+				)
+					throw new UsageError(`${id} already ended (${record.status})`);
+				if (
+					ceremonySteps(record).some(
+						(step) =>
+							step.signatureAttemptedAt !== undefined && !step.signature,
+					)
+				)
+					throw new UsageError(
+						`${id} is being signed now; reject the request in the wallet or on the signing page`,
+					);
+				record.status = "rejected";
+			});
+			rt.out(
+				`${id} rejected. No further step of it can be signed; stage a new setup to try again.`,
+			);
+			return;
+		}
 		rt.out(show(await store.reject(id)));
+		return;
+	}
+	if (command === "preview" && /^c-[1-9]\d*$/.test(id)) {
+		// A ceremony's steps carry their own digests; the card lists them.
+		rt.out(
+			ceremonyCard(
+				await new CeremonyStore(rt.home, rt.now, rt.err).get(id),
+				rt.now(),
+			),
+		);
 		return;
 	}
 	if (command === "preview") {

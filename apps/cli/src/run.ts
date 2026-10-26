@@ -9,6 +9,7 @@ import {
 	type Runtime as CommandRuntime,
 	commandError,
 	exitFor,
+	noVenueAnswered,
 } from "./commands/runtime.ts";
 import { priceScan, scan } from "./commands/scan.ts";
 import { readinessStatus, status, statusApi } from "./commands/status.ts";
@@ -21,19 +22,18 @@ import {
 } from "./config.ts";
 import { paint } from "./format.ts";
 import { withGlossary } from "./glossary.ts";
-import { commandHelp, helpTopic, parseCommand } from "./help.ts";
+import { commandHelp, helpTopic, nearest, parseCommand } from "./help.ts";
 import type { HomeServices } from "./home-data.ts";
 import { footer, pct, renderScan, table } from "./render.ts";
 import { renderHistory } from "./render-history.ts";
 import { renderStatus, statusFooter } from "./status.ts";
 import { installationRoot, upgrade } from "./upgrade.ts";
 
-const help = `mob ${pkg.version} — funding reads and explicit Proposal signing
+const help = `mob ${pkg.version} — funding research across 20 venues, with optional trading through MoB
 
-Usage:
+Research (no account needed):
   mob [--big | --compact] [--stacked] [--plain | --ascii] [--offline] [--json]
   mob hello [--big | --compact] [--stacked] [--plain | --ascii] [--offline] [--json]
-  mob doctor [--json]
   mob menu [--json]            (what you can do now, by account state: words to say and commands; no network)
   mob scan [--by funding|price] [--size N=1000] [--market BASE] [--venues a,b] [--top N=10]
            [--all-pairs] [--executable] [--min-apy PCT] [--strict] [--json | --json-full]
@@ -57,23 +57,11 @@ Usage:
   mob history <BASE> [--days N=7] [--venues a,b] [--strict] [--json]
   mob explain [topic] [--simple]
   mob status [--owner 0x…] [--task ID] [--trims] [--resizes] [--api-base URL] [--json]
-  mob config get <key>
-  mob config set <key> <value>
-  mob setup [--owner 0x… --signer keystore|browser|walletconnect --policy manual|locked|auto]
-            [--auth-base URL] [--legal-chain-id N] [--walletconnect-project-id ID] [--no-legal]
+
+Trade through MoB (one-time setup first):
   mob onboard [--owner 0x…] [--app-base URL] [--watch] [--native] [--venues a,b]
               [--name <n>] [--max-size <usd>]   (native: one wallet session binds and creates the key)
   mob bind <hl|aster|lighter|lighter-mainnet>
-  mob keys import [--stdin] [--unverified] [--name <n>] [--venues a,b] [--max-size <usd>]
-  mob keys create --name <n> --venues a,b[,c,d] --max-size <usd>
-  mob keys list | revoke <uuid> | show [--json] | delete
-  mob keystore create | import | list
-  mob proposals
-  mob proposal show <id>
-  mob preview <id>
-  mob sign <id> [--with keystore|browser|walletconnect]
-  mob submit <id>
-  mob reject <id>
   mob open <BASE> --long venue:market --short venue:market --size USD
            [--protect pct|off --assume-leverage L[,S]] [--auto-close on|off]
            [--min-apy N] [--max-spread-bps N=50] [--size-mismatch pct]
@@ -86,13 +74,30 @@ Usage:
   mob size-mismatch-close <task> on|off --pct N
   mob status --readiness [--owner 0x…] [--json]
   mob restage <p-N>            (expired Proposal: same intent, new id, needs new consent)
-  mob risk-ack                 (records the first-open risk questions for 24 hours)
+
+Keys and signing (run these in your own terminal):
+  mob keys import [--stdin] [--owner 0x…] [--unverified] [--name <n>] [--venues a,b] [--max-size <usd>]
+  mob keys create --name <n> --venues a,b[,c,d] --max-size <usd>
+  mob keys list | revoke <uuid> | show [--json] | delete
+  mob keystore create | import | list
+  mob proposals
+  mob proposal show <id>
+  mob preview <id>
+  mob sign <id> [--with keystore|browser|walletconnect]   (wallet Proposals: setup c-N, binding, key changes)
+  mob submit <id>              (trade Proposals p-N, sent with the MoB API key)
+  mob reject <id>
   mob approver [--idle-minutes N=30]   (your terminal: unlock the keystore once, approve each card with y)
-  mob grant create --scopes a,b --max-notional <usd> --max-tasks <n> --venues a,b [--markets *|BTC,ETH] [--expires-hours N=24]
-  mob grant show | mob grant revoke <agent>   (session grants, PRD 6.6; needs MoB API support)
+  mob setup [--owner 0x… --signer keystore|browser|walletconnect --policy manual|locked|auto]
+            [--auth-base URL] [--legal-chain-id N] [--walletconnect-project-id ID] [--no-legal]
+
+Maintenance:
+  mob doctor [--json]
+  mob config get <key>
+  mob config set <key> <value>
+  mob config unset <key>
   mob upgrade
-  mob mcp
-  mob hook sign-guard
+  mob mcp                      (a stdio MCP server for Cursor, Windsurf, Claude Desktop)
+  mob help <command>
   mob --version
   mob --help
 
@@ -173,6 +178,7 @@ export const definitions: Record<string, ParseArgsConfig["options"]> = {
 	keys: {
 		help: flag("boolean"),
 		json: flag("boolean"),
+		owner: flag("string"),
 		unverified: flag("boolean"),
 		stdin: flag("boolean"),
 		"from-env": flag("boolean"),
@@ -330,10 +336,11 @@ function display(
 	ending: string,
 	json: boolean,
 ): void {
+	// Empty tables would read as "nothing worth trading" when no venue answered.
 	rt.out(
 		json
 			? JSON.stringify(withGlossary(data), null, 2)
-			: `${human}\n${paint(ending, "dim", rt)}`,
+			: `${noVenueAnswered(data) ? "No venue answered. Check the network or proxy (HTTPS_PROXY), then run the command again." : human}\n${paint(ending, "dim", rt)}`,
 	);
 	if (json) rt.err(ending);
 }
@@ -356,6 +363,9 @@ export async function run(
 		...supplied,
 	};
 	try {
+		// `mob help scan` is `mob scan --help`.
+		if (args[0] === "help")
+			args = args.length > 1 ? [...args.slice(1), "--help"] : ["--help"];
 		if (args.length === 1 && args[0] === "--help") {
 			rt.out(help);
 			return 0;
@@ -368,8 +378,12 @@ export async function run(
 		if (supplied.home === undefined) rt.home = configHome();
 		if (!args.length || args[0].startsWith("--")) args = ["hello", ...args];
 		const command = args[0];
-		if (!Object.hasOwn(definitions, command))
-			throw new UsageError(`Unknown command ${command}. Run mob --help.`);
+		if (!Object.hasOwn(definitions, command)) {
+			const near = nearest(command, Object.keys(definitions));
+			throw new UsageError(
+				`Unknown command ${command}.${near ? ` Did you mean mob ${near}?` : ""} Run mob --help.`,
+			);
+		}
 		const { values: parsedValues, positionals } = parseCommand(
 			command,
 			args.slice(1),
@@ -585,15 +599,23 @@ export async function run(
 			const [action, key, value] = positionals;
 			if (
 				!key ||
-				(action === "get"
+				(action === "get" || action === "unset"
 					? positionals.length !== 2
 					: action !== "set" || positionals.length !== 3)
 			)
-				throw new UsageError("Usage: mob config get <key> | set <key> <value>");
+				throw new UsageError(
+					"Usage: mob config get <key> | set <key> <value> | unset <key>",
+				);
 			const result = await config(
-				action === "get" ? { action, key } : { action: "set", key, value },
+				action === "get" || action === "unset"
+					? { action, key }
+					: { action: "set", key, value },
 				rt,
 			);
+			if (action === "unset") {
+				rt.out(`${key} unset`);
+				return 0;
+			}
 			if (result !== "" || rt.stdoutIsTTY)
 				rt.out(result === "" ? "(unset)" : String(result));
 			return 0;

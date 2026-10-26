@@ -9,6 +9,7 @@ import {
 	type VenueBindingBatch,
 } from "@mstack/mobius-api";
 import {
+	ApiError,
 	type ApiKeyCreateBody,
 	type ArbitrageVenue,
 	apiKeyMessage,
@@ -49,6 +50,7 @@ import {
 	SETUP_FIRST,
 	UsageError,
 } from "./config.ts";
+import { expiry } from "./format.ts";
 import { storeCreatedKey } from "./key-create.ts";
 import { cliKeyStore, requireWritableKeyStore } from "./key-store.ts";
 import { keysCommand } from "./keys-command.ts";
@@ -57,6 +59,7 @@ import { type LegalPlan, legalPlan, stageLegal } from "./setup-command.ts";
 import {
 	HL_DEPOSIT_HINT,
 	hlDeposited,
+	leaveOutHint,
 	unavailableHint,
 	venueAccounts,
 } from "./venue-accounts.ts";
@@ -86,9 +89,11 @@ function parseVenues(raw: unknown): Venue[] {
 // to rebind it (mobius@0e3ff530 api-server/venue-bindings.md, "Prepare").
 // A Lighter key that lacks only its integrator approval stays: the ceremony
 // signs the approval instead.
+// The venue trading key MoB holds for this wallet, not the user's MoB API key.
 const unusableKey: Record<string, string> = {
-	key_invalid: "has a MoB key that no longer works",
-	builder_fee_missing: "has a MoB key without its builder fee approval",
+	key_invalid: "trading key that MoB holds for this wallet no longer works",
+	builder_fee_missing:
+		"trading key that MoB holds for this wallet has no builder fee approval",
 };
 
 type LighterVenue = "lighter" | "lighter-mainnet";
@@ -118,6 +123,19 @@ async function integratorIndex(
 	return credential.integratorIndex;
 }
 
+/** "hl", "hl and aster", "hl, aster and lighter". */
+function words(items: readonly string[]): string {
+	return items.length < 2
+		? items.join("")
+		: `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;
+}
+
+/** The terms and privacy links that the legal step accepts. */
+function termsLinks(plan: LegalPlan): string {
+	const message = plan.signing.typedData.message as Record<string, unknown>;
+	return `Terms ${message.termsVersion} ${message.termsUrl} · Privacy ${message.privacyVersion} ${message.privacyUrl}`;
+}
+
 async function venueReadiness(base: string, owner: string, rt: Runtime) {
 	try {
 		const value = await new MobiusClient({
@@ -132,8 +150,13 @@ async function venueReadiness(base: string, owner: string, rt: Runtime) {
 					: [],
 			),
 		);
-	} catch {
-		// The batch API remains authoritative when the legacy readiness route is absent.
+	} catch (error) {
+		// The batch API remains authoritative when the legacy readiness route is
+		// absent; any other failure is named so the plan is not silently partial.
+		if (!(error instanceof ApiError && error.status === 404))
+			rt.err(
+				`mob: could not read MoB venue readiness (${error instanceof Error ? error.message : String(error)}); continuing without it`,
+			);
 		return new Map<string, { ready: boolean; issue?: string }>();
 	}
 }
@@ -173,7 +196,7 @@ export async function stageCeremony(
 	if (unavailable) {
 		const rest = requested.filter((venue) => venue !== unavailable);
 		throw new UsageError(
-			`${unavailableHint(unavailable)}${rest.length ? `, or leave it out with --venues ${rest.join(",")}` : ""}. Nothing was staged.`,
+			`${unavailableHint(unavailable)}${leaveOutHint(rest, requested, Boolean(extras.keyPlan))}. Nothing was staged.`,
 		);
 	}
 	const approve = venues.filter(
@@ -187,12 +210,12 @@ export async function stageCeremony(
 	const unusable = bind.flatMap((venue) => {
 		const issue = readiness.get(venue)?.issue;
 		return issue && unusableKey[issue]
-			? [`${venue} ${unusableKey[issue]} (${issue})`]
+			? [`The ${venue} ${unusableKey[issue]}`]
 			: [];
 	});
 	if (unusable.length && values.rebind !== true)
 		throw new UsageError(
-			`${unusable.join("; ")}. MoB replaces such a key only when asked: run this again with --rebind to bind a new one. Nothing was staged.`,
+			`${unusable.join("; ")}. Your MoB API key is not affected. MoB replaces the venue key only when asked: run this again with --rebind to bind a new one. Nothing was staged.`,
 		);
 	const lighterAccount =
 		typeof values["lighter-account"] === "string"
@@ -204,11 +227,12 @@ export async function stageCeremony(
 		rt,
 		lighterAccount,
 		requested,
+		Boolean(extras.keyPlan),
 	);
 	if (bind.includes("hl") && !(await hlDeposited(owner, rt))) {
 		const rest = requested.filter((venue) => venue !== "hl");
 		throw new UsageError(
-			`${HL_DEPOSIT_HINT}${rest.length ? `, or leave it out with --venues ${rest.join(",")}` : ""}. Nothing was staged.`,
+			`${HL_DEPOSIT_HINT}${leaveOutHint(rest, requested, Boolean(extras.keyPlan))}. Nothing was staged.`,
 		);
 	}
 	const integrators = await Promise.all(
@@ -270,29 +294,30 @@ export async function stageCeremony(
 			ready,
 			integrators,
 		}));
-	if (extras.legal || extras.keyPlan || approve.length) {
-		const parts = [
-			...(extras.legal ? ["accept legal terms"] : []),
-			...(approve.length
-				? [
-						`approve the zero-fee integrator on ${approve.join(", ")} (keeps the key)`,
-					]
-				: []),
-			...(bind.length ? [`bind ${bind.join(", ")}`] : []),
-			...(extras.keyPlan
-				? [
-						`create key “${extras.keyPlan.name}” (cap $${extras.keyPlan.maxSizeUsd.toLocaleString("en-US")}) and store it locally`,
-					]
-				: []),
-		];
-		rt.out(
-			`${ceremony.id} · ${extras.keyPlan ? "onboarding" : "venue binding"} ceremony · ${venues.join(", ")} · ${ceremony.status}`,
-		);
-		rt.out(`One wallet session: ${parts.join(", then ")}.`);
-	} else
-		rt.out(
-			`${ceremony.id} · venue binding ceremony · ${venues.join(", ")} · ${ceremony.status}`,
-		);
+	const parts = [
+		...(extras.legal ? ["accept the MoB terms"] : []),
+		...(approve.length
+			? [
+					`approve the zero-fee integrator on ${approve.join(", ")} (keeps the key)`,
+				]
+			: []),
+		...(bind.length
+			? [
+					`bind ${words(bind)}${ready.length ? ` (${words(ready)} ${ready.length === 1 ? "is" : "are"} already bound)` : ""}`,
+				]
+			: []),
+		...(extras.keyPlan
+			? [
+					`create key “${extras.keyPlan.name}” for ${words(requested)} with a cap of $${extras.keyPlan.maxSizeUsd.toLocaleString("en-US")} per leg, and store it locally`,
+				]
+			: []),
+	];
+	// The window runs from staging, so the card says how long is left.
+	rt.out(
+		`${ceremony.id} · ${extras.keyPlan ? "setup" : "venue binding"} for ${words(requested)} · ${expiry(ceremony.expiresAt, rt.now())}`,
+	);
+	rt.out(`One wallet session: ${parts.join(", then ")}.`);
+	if (extras.legal) rt.out(`Read before signing: ${termsLinks(extras.legal)}`);
 	rt.out(`Next: mob sign ${ceremony.id}`);
 	return ceremony;
 }
@@ -313,11 +338,18 @@ export async function nativeOnboard(
 	const name = typeof values.name === "string" ? values.name.trim() : "mstack";
 	if (!name || name.length > 64 || /[\p{Cc}\p{Cf}]/u.test(name))
 		throw new UsageError("name must be 1 to 64 visible characters");
-	const maxSizeUsd = numberFlag(
-		typeof values["max-size"] === "string" ? values["max-size"] : "5000",
-		"max-size",
-		10,
-	);
+	let maxSizeUsd: number;
+	try {
+		maxSizeUsd = numberFlag(
+			typeof values["max-size"] === "string" ? values["max-size"] : "5000",
+			"max-size",
+			10,
+		);
+	} catch {
+		throw new UsageError(
+			"The key cap (--max-size) must be a USD amount of at least 10 per leg",
+		);
+	}
 	await requireWritableKeyStore(rt, config.owner);
 	if (parseVenues(values.venues).length < 2)
 		throw new UsageError(
@@ -718,7 +750,7 @@ export async function signCeremony(
 				});
 				rt.out(`Key ${prefix} stored in ${backend}.`);
 				rt.out(
-					`Ready · ${venues.length} venues bound · key ${prefix} · cap $${plan.maxSizeUsd.toLocaleString("en-US")}`,
+					`Ready · ${venues.length} ${venues.length === 1 ? "venue" : "venues"} bound · key ${prefix} · cap $${plan.maxSizeUsd.toLocaleString("en-US")}`,
 				);
 			} catch (error) {
 				const message = redactKey(
@@ -970,7 +1002,7 @@ export async function signCeremony(
 			if (!["bound", "already_bound"].includes(result.status))
 				rt.out(explainVenueResult(result, failureContext));
 		rt.out(
-			`${id} ${successful.length === latest.results.length ? "complete" : "partial"} · ${successful.length} venues bound`,
+			`${id} ${successful.length === latest.results.length ? "complete" : "partial"} · ${successful.length} ${successful.length === 1 ? "venue" : "venues"} bound`,
 		);
 		if (ceremony.keyPlan && successful.length === latest.results.length)
 			await createKeyInSession(ceremony, [

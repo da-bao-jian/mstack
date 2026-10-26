@@ -222,21 +222,97 @@ test.each(["wrong", "duplicate", "missing-sums"])(
 		const result = await run(shim(taskHome), taskHome, base);
 		expect(result.code).toBe(1);
 		expect(result.out).toBe("");
-		expect(result.err).toContain("Install options:");
+		expect(result.err).toContain("could not find or download its mob binary");
 		expect(await readdir(join(taskHome, ".mob/bin"))).toEqual([]);
 	},
 );
 
-test("offline shim prints all three install options", async () => {
+test("offline shim names the pinned installer for the human's terminal", async () => {
 	const taskHome = await home();
 	const { base, server } = fixture();
 	await server.stop(true);
 	const result = await run(shim(taskHome), taskHome, base);
 	expect(result.code).toBe(1);
-	expect(result.err).toContain("1. Install Bun");
-	expect(result.err).toContain("2. Install the release binary");
-	expect(result.err).toContain("3. Download mob");
+	expect(result.err).toContain(
+		`curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v${version}/install.sh | sh`,
+	);
+	expect(result.err).toContain("MSTACK_MOB_BIN");
 	expect(await readdir(join(taskHome, ".mob/bin"))).toEqual([]);
+});
+
+test("offline shim falls back to an older verified binary and says so", async () => {
+	const taskHome = await home();
+	const { base, server } = fixture();
+	await server.stop(true);
+	await script(join(taskHome, ".mob/bin/mob-0.0.9"), "printf 'older\\n'");
+	await script(join(taskHome, ".mob/bin/mob-0.0.10"), "printf 'newest\\n'");
+	const result = await run(shim(taskHome), taskHome, base);
+	expect(result).toEqual({
+		code: 0,
+		out: "newest\n",
+		err: expect.stringContaining(
+			`mstack ${version} is using mob 0.0.10; run mob upgrade`,
+		),
+	});
+});
+
+test("the hook never downloads, and with no binary it blocks only mob commands", async () => {
+	const taskHome = await home();
+	const { base, calls } = fixture();
+	const hook = (command: string) =>
+		Bun.spawn([join(taskHome, "plugin/bin/mob"), "hook", "sign-guard"], {
+			cwd: taskHome,
+			env: {
+				...process.env,
+				HOME: taskHome,
+				PATH: "/usr/bin:/bin",
+				MSTACK_MOB_BIN: "",
+				MSTACK_RELEASE_BASE_URL: base,
+			},
+			stdin: new Blob([
+				JSON.stringify({ tool_input: { command }, cwd: "/work/mob-app" }),
+			]),
+			stderr: "pipe",
+		});
+	const ls = hook("ls -la");
+	expect(await ls.exited).toBe(0);
+	const mob = hook("cd /tmp\nmob doctor");
+	expect(await mob.exited).toBe(2);
+	expect(await new Response(mob.stderr).text()).toContain(
+		`the mob binary is missing, so mstack cannot check it. Ask the human to run this in their own terminal: curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v${version}/install.sh | sh`,
+	);
+	expect(await hook("x submit p-2").exited).toBe(2);
+	expect(calls).toEqual([]);
+	// An older verified binary does the check instead.
+	await script(
+		join(taskHome, ".mob/bin/mob-0.0.1"),
+		'printf \'checked %s %s\\n\' "$1" "$2"',
+	);
+	const older = hook("ls");
+	expect(await new Response(older.stdout).text()).toBe(
+		"checked hook sign-guard\n",
+	);
+	expect(await older.exited).toBe(0);
+	expect(calls).toEqual([]);
+});
+
+test("a plugin copy with source but no .git downloads the release instead of building", async () => {
+	const taskHome = await home();
+	const { base, calls } = fixture();
+	await script(join(taskHome, "tools/bun"), "exit 99");
+	await mkdir(join(taskHome, "plugin/apps/cli/src"), { recursive: true });
+	const env = { PATH: `${taskHome}/tools:/usr/bin:/bin` };
+	const result = await run(shim(taskHome), taskHome, base, env);
+	expect(result.code).toBe(0);
+	expect(result.out).toBe("fixture binary: --json two words\n");
+	expect(result.err).not.toContain("building checkout binary");
+	expect(calls).toHaveLength(2);
+	// A real checkout builds with Bun (the fake Bun fails here).
+	await rm(join(taskHome, `.mob/bin/mob-${version}`));
+	await mkdir(join(taskHome, "plugin/.git"));
+	const built = await run(shim(taskHome), taskHome, base, env);
+	expect(built.code).toBe(1);
+	expect(built.err).toContain("building checkout binary with Bun");
 });
 
 test("curl-to-sh installer discovers latest, installs, links, and prints next steps", async () => {
@@ -257,12 +333,13 @@ test("curl-to-sh installer discovers latest, installs, links, and prints next st
 	expect(result.err).toContain("verified SHA-256");
 	for (const expected of [
 		"export PATH=",
+		"mob is not on your PATH yet. Add this line to",
 		"home screen",
-		"/plugin marketplace add da-bao-jian/mstack",
-		"/plugin install mstack",
-		"./setup",
+		"no account needed",
 	])
 		expect(result.out).toContain(expected);
+	// The PATH hint comes last, where it is seen.
+	expect(result.out.trimEnd().split("\n").at(-1)).toContain("export PATH=");
 	expect(await readlink(join(taskHome, ".local/bin/mob"))).toBe(
 		join(taskHome, `.mob/bin/mob-${version}`),
 	);
@@ -462,4 +539,21 @@ test("shell installer verifies through sha256sum when shasum is unavailable", as
 	});
 	expect(result.code).toBe(0);
 	expect(result.err).toContain("verified SHA-256");
+});
+
+test("upgrade on the latest linked release downloads nothing", async () => {
+	const taskHome = await home();
+	const { base, calls } = fixture();
+	expect((await run(upgrade, taskHome, base)).code).toBe(0);
+	const before = calls.length;
+	const again = await run(upgrade, taskHome, base);
+	expect(again.code).toBe(0);
+	expect(again.out).toContain(
+		`mob ${version} is the latest release; nothing to do.`,
+	);
+	// Only the VERSION file is read again (through its release redirect).
+	expect(calls.length).toBeGreaterThan(before);
+	expect(calls.slice(before).every((url) => url.endsWith("/VERSION"))).toBe(
+		true,
+	);
 });

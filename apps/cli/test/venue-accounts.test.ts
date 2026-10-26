@@ -42,10 +42,23 @@ test("a venue without an account stops before staging and names the rest", async
 			runtime(["lighter-mainnet"]),
 		),
 	).rejects.toThrow(
-		`No lighter-mainnet (Lighter) account for ${owner}. Create it on the venue's official website, then run this again, or leave it out with --venues hl,lighter. Nothing was staged.`,
+		`No lighter-mainnet (Lighter) account for ${owner}. Create it at app.lighter.xyz, then run this again, or leave it out with --venues hl,lighter. Nothing was staged.`,
 	);
 	await expect(venueAccounts(owner, ["hl"], runtime(["hl"]))).rejects.toThrow(
 		"No hl (Hyperliquid) account",
+	);
+	// A key needs two venues, so a one-venue retry is never offered.
+	await expect(
+		venueAccounts(
+			owner,
+			["hl", "lighter-mainnet"],
+			runtime(["lighter-mainnet"]),
+			undefined,
+			["hl", "lighter-mainnet"],
+			true,
+		),
+	).rejects.toThrow(
+		"Create it at app.lighter.xyz, then run this again, or use another venue where this wallet has an account, for example --venues hl,aster (a key needs two venues, one for each leg). Nothing was staged.",
 	);
 });
 

@@ -8,7 +8,7 @@ import {
 	spreadSeries,
 	spreadStats,
 } from "@mstack/opportunities";
-import { numberFlag, readConfig, UsageError } from "../config.ts";
+import { numberFlag, researchConfig, UsageError } from "../config.ts";
 import { type Runtime, selectedVenues } from "./runtime.ts";
 
 const MAX_DAYS: Record<CandleInterval, number> = {
@@ -40,7 +40,7 @@ function leg(value: string | undefined, name: string) {
 
 /** `mob spread A B`: B over A from aligned candle closes. */
 export async function spread(options: SpreadOptions, rt: Runtime) {
-	await readConfig(rt.home);
+	await researchConfig(rt);
 	const a = leg(options.a, "the first leg");
 	const b = leg(options.b, "the second leg");
 	if (a.venue === b.venue && a.market === b.market)

@@ -1,3 +1,3 @@
 interface:
   display_name: "mob-close"
-  short_description: "Close a position with a scoped API key"
+  short_description: "Close a MoB funding position with the scoped key"

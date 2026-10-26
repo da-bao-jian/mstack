@@ -1,6 +1,6 @@
 ---
 name: mob-explain
-description: Explain funding and MoB mechanics from bundled sources. Use for "how does funding work", "what is basis", "why did it close", "like I'm 13", or "I don't get it". (mstack)
+description: Explains perp funding and MoB mechanics from bundled sources. Use for "how does perp funding work", "what is basis", "how do MoB keys work", or "why did my MoB position close". Not for explaining code. (mstack)
 license: MIT
 metadata:
   version: "0.5.1"
@@ -10,7 +10,7 @@ metadata:
 bash ~/.agents/skills/mstack/bin/mob-preamble
 ```
 
-If the preamble output contains a `<mob-home>` line, the welcome is the lines after `<mob-home>` and before `</mob-home>`. Put exactly those lines, verbatim, in a fenced code block at the top of your reply. The two tag lines are markers, not part of the welcome: never print `<mob-home>` or `</mob-home>`. Never strip, trim or summarize the welcome. When a reply completes the request (not when it asks a question), end with "You can": up to three rows from the preamble's `YOU_CAN` list or the welcome's `You can` rows that fit the moment, as words to say next. Only when the welcome printed in this reply, add that `$mob` opens the menu.
+If the preamble output contains a `<mob-home>` line, the welcome is the lines between `<mob-home>` and `</mob-home>`. The user cannot see tool output: write those lines yourself, verbatim, in a fenced code block at the top of your reply text, before any question. Never print the two tag lines. Never strip, trim or summarize the welcome. In text for the human, write commands as plain `mob …`: never the `MOB_BIN` path, `MOB_HOME`, or an `export` line. When a reply completes the request (not when it asks a question), end with "You can": up to three rows from the preamble's `YOU_CAN` list or the welcome's `You can` rows that fit the moment, as words to say next. Only when the welcome printed in this reply, add that `$mob` opens the menu.
 
 # Explain a topic
 

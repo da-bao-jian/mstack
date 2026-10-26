@@ -1,5 +1,5 @@
 import { classifyMarket } from "@mstack/opportunities";
-import { readConfig } from "../config.ts";
+import { researchConfig } from "../config.ts";
 import {
 	base,
 	type Runtime,
@@ -14,7 +14,7 @@ export interface RatesOptions {
 }
 
 export async function rates(options: RatesOptions, rt: Runtime) {
-	await readConfig(rt.home);
+	await researchConfig(rt);
 	const venues = selectedVenues(options.venue?.split(","));
 	const market = base(options.market);
 	const input = await snapshot(venues, rt);

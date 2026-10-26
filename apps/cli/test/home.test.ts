@@ -219,18 +219,28 @@ test("terminal under 72 columns stacks the 13-row logo above info", async () => 
 	expect(out.split("\n")[14]).toBe(`mstack ${pkg.version} · 0x0000…0001`);
 	expect(out).not.toContain("\x1b");
 });
-test("TTY home uses brand colors and the three-swatch palette only", async () => {
+test("TTY home uses brand colors and no palette legend", async () => {
 	const { invoke, rt } = await context(false);
 	rt.env = { LANG: "en_US.UTF-8", COLORTERM: "truecolor" };
 	const { out } = await invoke([]);
 	expect(out).toContain("\x1b[38;2;2;123;176mmstack");
 	expect(out).toContain("\x1b[38;2;246;96;71mTop pairs");
 	expect(out).toContain("\x1b[38;2;127;216;255m─");
-	expect(out).toContain("\x1b[48;2;127;216;255m  \x1b[0m sky");
-	expect(out).toContain("\x1b[48;2;246;96;71m  \x1b[0m orange");
-	expect(out).toContain("\x1b[48;2;2;123;176m  \x1b[0m navy");
+	for (const swatch of [" sky", " orange", " navy"])
+		expect(out).not.toContain(swatch);
 	expect(out).not.toContain(" bg");
 	expect(out).not.toContain("<mob-home>");
+});
+test("an 80-column terminal stacks the logo above rows that do not fit beside it", async () => {
+	const { invoke, rt } = await context(false);
+	rt.columns = 80;
+	const { out } = await invoke(["hello", "--plain"]);
+	const lines = out.split("\n");
+	expect(lines.slice(0, 13)).toEqual(renderLogo({ size: 32, mode: "mono" }));
+	expect(lines.every((line) => Bun.stringWidth(line) <= 80)).toBe(true);
+	rt.columns = 120;
+	const wide = (await invoke(["hello", "--plain"])).out.split("\n");
+	expect(wide[0].indexOf("mstack")).toBe(35);
 });
 test("non-TTY home uses one marked ASCII block; flags still force their modes", async () => {
 	const { invoke, rt } = await context();
@@ -336,7 +346,7 @@ test("mob menu prints the You can rows from local state with no network read", a
 		"Find trades · funding arb, price gaps, RWA farms, watchlist",
 		"Explore markets · all markets, one asset, venues, RWA",
 		"Charts & costs · cost to trade, spread chart, funding history, WTI vs Brent",
-		"Trade & account · finish the one-time setup to trade through MoB",
+		"Trade & account · finish the one-time setup to trade through MoB; learn how funding and keys work",
 	]);
 	expect(lines).toContainEqual(
 		expect.stringMatching(/^"set up mstack" {2}to finish setup +mob onboard$/),
@@ -422,14 +432,34 @@ test("doctor passes healthy configured state with optional unbound venues", asyn
 	const data = JSON.parse(r.out);
 	expect(r.code).toBe(0);
 	expect(data.ok).toBe(true);
-	expect(data.checks).toHaveLength(20);
+	// A release binary needs no Bun, so the line is left out.
+	expect(data.checks).toHaveLength(19);
+	expect(data.checks.some((c: { name: string }) => c.name === "Bun")).toBe(
+		false,
+	);
 	expect(fake.calls).toHaveLength(11);
 	expect(
 		data.checks.find((c: { name: string }) => c.name === "Venue aster"),
-	).toMatchObject({ status: "fail", critical: false });
+	).toMatchObject({ status: "skip", critical: false, detail: "not bound" });
 });
-test("doctor fails readiness, legal, venue deposit/account and signer errors", async () => {
-	const { invoke, fake, rt } = await context();
+async function storeKey(home: string) {
+	await setConfig("key_store", "file", home);
+	const store = await createKeyStore({
+		home,
+		selection: "file",
+		env: {},
+		apiBase: "https://api.test",
+		now: () => homeNow,
+	});
+	await store.put(
+		homeOwner,
+		`mobius_01234567-89ab-cdef-0123-456789abcdef.${"ab".repeat(32)}`,
+		{ importedAt: homeNow, apiBase: "https://api.test", maxSizeUsd: 5000 },
+	);
+}
+test("with a stored key, doctor fails readiness, legal, venue deposit/account and signer errors", async () => {
+	const { invoke, fake, rt, home } = await context();
+	await storeKey(home);
 	fake.state.builderApproved = false;
 	fake.state.accepted = false;
 	fake.state.funded = false;
@@ -442,47 +472,94 @@ test("doctor fails readiness, legal, venue deposit/account and signer errors", a
 		"Signer",
 		"Legal",
 		"Venue hl",
-		"HL deposit",
-		"lighter account",
+		"Deposit hl",
+		"Account lighter",
 	])
 		expect(
 			data.checks.find((c: { name: string }) => c.name === name),
 		).toMatchObject({ critical: true, status: "fail" });
+	// Before a key exists, the same problems show but do not fail the check.
+	await rm(join(home, "keys"), { recursive: true, force: true });
+	const unfinished = await invoke(["doctor", "--json"]);
+	expect(unfinished.code).toBe(0);
+	expect(
+		JSON.parse(unfinished.out).checks.find(
+			(c: { name: string }) => c.name === "Legal",
+		),
+	).toMatchObject({ critical: false, status: "fail" });
 });
-test("doctor timeout skips critical reads and returns exit 1", async () => {
-	const { invoke, rt, fake } = await context();
+test("doctor timeout marks the read failed; it fails the check once trading is set up", async () => {
+	const { invoke, rt, fake, home } = await context();
 	fake.state.hang = "/legal/acceptance";
 	rt.homeServices = { ...rt.homeServices, networkBudgetMs: 50 };
-	const r = await invoke(["doctor", "--json"]);
-	expect(r.code).toBe(1);
-	expect(
-		JSON.parse(r.out).checks.find((c: { name: string }) => c.name === "Auth")
-			.status,
-	).toBe("fail");
+	const auth = (out: string) =>
+		JSON.parse(out).checks.find((c: { name: string }) => c.name === "Auth");
+	const unfinished = await invoke(["doctor", "--json"]);
+	expect(unfinished.code).toBe(0);
+	expect(auth(unfinished.out)).toMatchObject({
+		status: "fail",
+		critical: false,
+	});
+	await storeKey(home);
+	const trading = await invoke(["doctor", "--json"]);
+	expect(trading.code).toBe(1);
+	expect(auth(trading.out).status).toBe("fail");
 });
-test("doctor passes on a fresh install: trading checks are optional until an owner is set", async () => {
-	const { invoke } = await context(false);
+test("doctor passes on a fresh install: the trading lines fold into one optional line", async () => {
+	const { invoke, rt } = await context(false);
 	const r = await invoke(["doctor"]);
 	expect(r.code).toBe(0);
 	expect(r.out).toContain("✓ Research");
-	for (const name of ["Config", "Owner", "Signer", "Legal", "Venue hl"])
-		expect(r.out).toMatch(new RegExp(`^– ${name} .*\\(optional\\)$`, "m"));
-	expect(r.out).toContain('say "set up mstack"');
+	expect(r.out).toMatch(
+		/^– Trading {17}not set up · optional · run mob onboard$/m,
+	);
+	for (const name of ["Owner", "Signer", "Legal", "Venue hl", "Bun"])
+		expect(r.out).not.toMatch(new RegExp(`^. ${name} `, "m"));
+	expect(r.out).not.toContain("(optional) (optional)");
+	expect(r.out).not.toContain("optional · run mob onboard (optional)");
 	expect(r.out).not.toContain("✗");
+	rt.isTTY = false;
+	rt.stdoutIsTTY = false;
+	expect((await invoke(["doctor"])).out).toContain(
+		'- Trading                 not set up . optional . say "set up mstack"',
+	);
 	const json = JSON.parse((await invoke(["doctor", "--json"])).out);
 	expect(json.ok).toBe(true);
 	expect(
 		json.checks.find((c: { name: string }) => c.name === "Owner"),
 	).toMatchObject({ status: "skip", critical: false });
 });
-test("doctor fails a missing signer once an owner is set", async () => {
+test("an unfinished setup keeps doctor passing: the signer is chosen at the first signature", async () => {
 	const { invoke, home } = await context(false);
 	await setConfig("owner", "0x0000000000000000000000000000000000000001", home);
+	await setConfig("default_size_usd", "2000", home);
 	const r = await invoke(["doctor"]);
-	expect(r.code).toBe(1);
-	expect(r.out).toContain("✗ Signer");
+	expect(r.code).toBe(0);
+	expect(r.out).toMatch(
+		/^– Signer +chosen at the first signature \(optional\)$/m,
+	);
+	expect(r.out).toMatch(/^– Venue aster +not bound \(optional\)$/m);
+	expect(r.out).toMatch(/^✓ Config +valid$/m);
+	expect(r.out).not.toContain(home);
 	expect(r.out).toMatch(/^✓ Legal/m);
-	expect(r.out).not.toContain("optional until you trade");
+});
+test("doctor on a checkout shows Bun, and names an unreachable MoB plainly", async () => {
+	const { invoke, rt } = await context(false);
+	rt.homeServices = { ...rt.homeServices, checkout: true, which: () => null };
+	rt.fetch = async () => {
+		throw new Error(
+			"Unable to connect. Is the computer able to access the url?",
+		);
+	};
+	const r = await invoke(["doctor"]);
+	// Research works without MoB, so a fresh install still passes.
+	expect(r.code).toBe(0);
+	expect(r.out).toContain(
+		"– Bun                     missing (this checkout builds with Bun) (optional)",
+	);
+	expect(r.out).toContain(
+		"– API                     cannot reach funding.mob.exchange; check the network or proxy (optional)",
+	);
 });
 test("signer diagnostics require a regular 0600 keystore and never read its contents", async () => {
 	const { rt, home } = await context();
