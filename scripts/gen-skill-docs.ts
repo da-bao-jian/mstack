@@ -3,7 +3,9 @@ import { resolve } from "node:path";
 
 const repo = resolve(import.meta.dir, "..");
 const greetingRule =
-	"If the preamble output contains a `<mob-home>` line, the welcome is the lines after `<mob-home>` and before `</mob-home>`. Put exactly those lines, verbatim, in a fenced code block at the top of your reply. The two tag lines are markers, not part of the welcome: never print `<mob-home>` or `</mob-home>`. Never strip, trim or summarize the welcome.";
+	"If the preamble output contains a `<mob-home>` line, the welcome is the lines between `<mob-home>` and `</mob-home>`. The user cannot see tool output: write those lines yourself, verbatim, in a fenced code block at the top of your reply text, before any question. Never print the two tag lines. Never strip, trim or summarize the welcome.";
+const humanCommandsRule =
+	"In text for the human, write commands as plain `mob …`: never the `MOB_BIN` path, `MOB_HOME`, or an `export` line.";
 const nextStepsRule = (invoke: string) =>
 	`When a reply completes the request (not when it asks a question), end with "You can": up to three rows from the preamble's \`YOU_CAN\` list or the welcome's \`You can\` rows that fit the moment, as words to say next. Only when the welcome printed in this reply, add that \`${invoke}\` opens the menu.`;
 
@@ -61,7 +63,7 @@ export async function renderSkills(root = repo): Promise<Map<string, string>> {
 					? // biome-ignore lint/suspicious/noTemplateCurlyInString: Host and shell substitutions are literal skill content.
 						'bash "${CLAUDE_SKILL_DIR}/scripts/preamble.sh"'
 					: "bash ~/.agents/skills/mstack/bin/mob-preamble";
-			replacements.PREAMBLE = `\`\`\`bash\n${command}${name === "mob" ? " --router" : ""}\n\`\`\`\n\n${greetingRule} ${nextStepsRule(host === "claude" ? "/mstack:mob" : "$mob")}`;
+			replacements.PREAMBLE = `\`\`\`bash\n${command}${name === "mob" ? " --router" : ""}\n\`\`\`\n\n${greetingRule} ${humanCommandsRule} ${nextStepsRule(host === "claude" ? "/mstack:mob" : "$mob")}`;
 			let body = source.replace(/\{\{([A-Z_]+)\}\}/g, (_, key: string) => {
 				if (!Object.hasOwn(replacements, key))
 					throw new Error(`Unknown template field ${key}`);
@@ -72,6 +74,8 @@ export async function renderSkills(root = repo): Promise<Map<string, string>> {
 			if (host === "codex" && /AskUserQuestion|allowed-tools:/.test(body))
 				throw new Error(`Claude-only tool in ${file}`);
 			if (host === "codex") body = body.replace(/`\/(mob[\w-]*)`/g, "`$$$1`");
+			// Claude Code already tags a plugin skill with "(mstack)".
+			else body = body.replace(/^(description: .*) \(mstack\)$/m, "$1");
 			const directory = `${host === "claude" ? "skills" : "skills-codex"}/${name}`;
 			outputs.set(`${directory}/SKILL.md`, `${body.trimEnd()}\n`);
 			if (host === "claude")
@@ -88,9 +92,13 @@ export async function renderSkills(root = repo): Promise<Map<string, string>> {
 			if (host === "codex") {
 				const description = /^description: (.+)$/m.exec(source)?.[1];
 				if (!description) throw new Error(`Missing description in ${file}`);
+				// Codex shows the first sentence whole; never cut it mid-word.
+				const short = description.split(". ")[0];
+				if (short.length > 64)
+					throw new Error(`First sentence of ${file} is over 64 characters`);
 				outputs.set(
 					`${directory}/agents/openai.yaml`,
-					`interface:\n  display_name: "${name}"\n  short_description: ${JSON.stringify(description.split(". ")[0].slice(0, 64))}\n`,
+					`interface:\n  display_name: "${name}"\n  short_description: ${JSON.stringify(short)}\n`,
 				);
 			}
 		}

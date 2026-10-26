@@ -3,17 +3,51 @@ set -eu
 MOB_BIN_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P)
 MSTACK_ROOT=$(CDPATH='' cd -- "$MOB_BIN_DIR/.." && pwd -P)
 export MSTACK_ROOT
+MOB_VERSION=
 verbose() {
   if [ "${MSTACK_VERBOSE:-}" = 1 ]; then
     printf 'mob: using %s %s\n' "$1" "$2" >&2
   fi
 }
+install_line() {
+  if [ -n "$MOB_VERSION" ]; then
+    printf "curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v%s/install.sh | sh" "$MOB_VERSION"
+  else
+    printf '%s' "curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/main/install.sh | sh"
+  fi
+}
 install_error() {
-  printf '%s\n' 'mob could not find or install a binary. Install options:' \
-    '  1. Install Bun >= 1.3, then run ./setup --host claude or ./setup --host codex in the checkout.' \
-    "  2. Install the release binary: curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/main/install.sh | sh" \
-    '  3. Download mob and SHA256SUMS from https://github.com/da-bao-jian/mstack/releases, verify it, and set MSTACK_MOB_BIN to its path.' >&2
+  printf '%s\n' "mob: mstack could not find or download its mob binary${MOB_VERSION:+ $MOB_VERSION}." \
+    'Check the network, then run this in your own terminal:' \
+    "  $(install_line)" \
+    'Other ways: in a checkout, install Bun >= 1.3 and run ./setup --host claude (or --host codex);' \
+    'or download mob and SHA256SUMS from https://github.com/da-bao-jian/mstack/releases, verify it, and set MSTACK_MOB_BIN to its path.' >&2
   exit 1
+}
+# The newest verified release binary already in ~/.mob/bin, if any.
+newest_cached() {
+  for candidate in "$HOME"/.mob/bin/mob-*; do
+    [ -x "$candidate" ] && printf '%s\n' "${candidate##*/mob-}"
+  done | LC_ALL=C grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' |
+    awk -F. '{ printf "%09d%09d%09d %s\n", $1, $2, $3, $0 }' | sort | tail -n 1 | cut -d' ' -f2
+}
+# The Bash guard runs on every command in every project: it never downloads or
+# builds, and with no binary at all it blocks only commands that involve mob.
+hook_fallback() {
+  fallback=$(newest_cached || true)
+  if [ -n "$fallback" ]; then
+    printf 'mob: mstack %s is checking with mob %s; run mob upgrade in your own terminal\n' "$MOB_VERSION" "$fallback" >&2
+    exec "$HOME/.mob/bin/mob-$fallback" "$@"
+  fi
+  input=$(cat)
+  command=$(printf '%s' "$input" | sed -nE 's/.*"command"[[:space:]]*:[[:space:]]*"(([^"\\]|\\.)*)".*/\1/p')
+  [ -n "$command" ] || command=$input
+  command=$(printf '%s' "$command" | sed 's/\\[nrt]/ /g')
+  if printf '%s' "$command" | LC_ALL=C grep -Eiq '(^|[^A-Za-z.])mob([^A-Za-z]|$)|(sign|submit)[^;&|]*[pc]-[1-9]'; then
+    printf '%s\n' "mstack guard blocked this command: the mob binary is missing, so mstack cannot check it. Ask the human to run this in their own terminal: $(install_line)" >&2
+    exit 2
+  fi
+  exit 0
 }
 if [ -n "${MSTACK_MOB_BIN:-}" ]; then
   [ -x "$MSTACK_MOB_BIN" ] || { printf 'MSTACK_MOB_BIN is not executable: %s\n' "$MSTACK_MOB_BIN" >&2; install_error; }
@@ -25,8 +59,9 @@ if [ -x "$MSTACK_ROOT/apps/cli/dist/mob" ]; then
   exec "$MSTACK_ROOT/apps/cli/dist/mob" "$@"
 fi
 MOB_VERSION=$(sed -n 's/^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$MSTACK_ROOT/.claude-plugin/plugin.json") || install_error
-case "$MOB_VERSION" in *[!0-9.]*) printf '%s\n' 'mob: invalid plugin version' >&2; install_error ;; esac
+case "$MOB_VERSION" in *[!0-9.]*) MOB_VERSION=; printf '%s\n' 'mob: invalid plugin version' >&2; install_error ;; esac
 if ! printf '%s\n' "$MOB_VERSION" | LC_ALL=C grep -Eq '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'; then
+  MOB_VERSION=
   printf '%s\n' 'mob: invalid plugin version' >&2
   install_error
 fi
@@ -35,7 +70,11 @@ if [ -x "$MOB_CACHE" ]; then
   verbose 'cached binary' "$MOB_CACHE"
   exec "$MOB_CACHE" "$@"
 fi
-if command -v bun >/dev/null 2>&1 && [ -d "$MSTACK_ROOT/apps/cli/src" ]; then
+if [ "${1:-}" = hook ]; then
+  hook_fallback "$@"
+fi
+# Only a real checkout builds from source; a plugin copy downloads the release.
+if [ -e "$MSTACK_ROOT/.git" ] && [ -d "$MSTACK_ROOT/apps/cli/src" ] && command -v bun >/dev/null 2>&1; then
   printf '%s\n' 'mob: building checkout binary with Bun' >&2
   (cd "$MSTACK_ROOT" && bun install --frozen-lockfile >&2 && bun run build >&2) || install_error
   [ -x "$MSTACK_ROOT/apps/cli/dist/mob" ] || install_error
@@ -43,5 +82,11 @@ if command -v bun >/dev/null 2>&1 && [ -d "$MSTACK_ROOT/apps/cli/src" ]; then
 fi
 if sh "$MSTACK_ROOT/install.sh" --version "$MOB_VERSION" --cache-only >&2; then
   exec "$MOB_CACHE" "$@"
+fi
+# A plugin ahead of its release, or no network: an older verified binary still works.
+fallback=$(newest_cached || true)
+if [ -n "$fallback" ]; then
+  printf 'mob: mstack %s is using mob %s; run mob upgrade in your own terminal\n' "$MOB_VERSION" "$fallback" >&2
+  exec "$HOME/.mob/bin/mob-$fallback" "$@"
 fi
 install_error

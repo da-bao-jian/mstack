@@ -8,6 +8,9 @@ const owner = "0x0000000000000000000000000000000000000001";
 class Element {
 	textContent = "";
 	className = "";
+	href = "";
+	target = "";
+	rel = "";
 	value: string | number = "0";
 	hidden = false;
 	src = "";
@@ -35,6 +38,7 @@ async function page(
 	options: {
 		typed?: boolean;
 		statement?: string;
+		legal?: Record<string, string>;
 		mismatch?: boolean;
 		refuseChain?: boolean;
 		fallback?: boolean;
@@ -84,6 +88,7 @@ async function page(
 		message: {
 			n: "123",
 			...(options.statement ? { statement: options.statement } : {}),
+			...options.legal,
 		},
 	};
 	const signing = options.typed
@@ -553,6 +558,32 @@ test("legal typed statement appears beneath headline before owner and exact JSON
 	expect((html as unknown as string).indexOf('id="statement"')).toBeLessThan(
 		(html as unknown as string).indexOf('id="owner"'),
 	);
+	expect(p.el("legal-links").hidden).toBe(true);
+});
+
+test("a legal acceptance links its terms and privacy documents, https only", async () => {
+	const p = await page({
+		typed: true,
+		statement:
+			"I have read and agree to the Terms of Service and Privacy Policy.",
+		legal: {
+			termsUrl: "https://mob.exchange/terms",
+			termsVersion: "2026-10-12",
+			privacyUrl: "javascript:alert(1)",
+			privacyVersion: "2026-10-12",
+		},
+	});
+	const links = p.el("legal-links");
+	expect(links.hidden).toBe(false);
+	const anchors = links.children.filter((child) => child.href);
+	expect(anchors.map((a) => [a.href, a.textContent, a.rel])).toEqual([
+		[
+			"https://mob.exchange/terms",
+			"Terms of Service (2026-10-12)",
+			"noopener noreferrer",
+		],
+	]);
+	expect(links.children[0].textContent).toBe("Read before you sign: ");
 });
 
 const step = (id: string, status: string, purpose = `Purpose ${id}`) => ({

@@ -1,6 +1,6 @@
 ---
 name: mob-markets
-description: Explore perpetual markets across venues; needs no account. Use for "all markets", "BTC on every venue", "venues by volume", "which exchanges", "RWA markets", "stocks and gold perps", "cost to trade BTC", "chart BTC on Hyperliquid vs Lighter", "WTI vs Brent", "my watchlist", "save this pair", or "alert me when the spread drops". (mstack)
+description: Perp markets, venues, costs and charts; needs no account. Use for "all perp markets", "BTC perps on every venue", "perp venues by volume", "RWA perps", "cost to trade BTC perps", "chart BTC on Hyperliquid vs Lighter", "WTI vs Brent", "my mstack watchlist", or "alert me when the funding spread drops". (mstack)
 license: MIT
 metadata:
   version: "0.5.1"
@@ -10,7 +10,7 @@ metadata:
 bash ~/.agents/skills/mstack/bin/mob-preamble
 ```
 
-If the preamble output contains a `<mob-home>` line, the welcome is the lines after `<mob-home>` and before `</mob-home>`. Put exactly those lines, verbatim, in a fenced code block at the top of your reply. The two tag lines are markers, not part of the welcome: never print `<mob-home>` or `</mob-home>`. Never strip, trim or summarize the welcome. When a reply completes the request (not when it asks a question), end with "You can": up to three rows from the preamble's `YOU_CAN` list or the welcome's `You can` rows that fit the moment, as words to say next. Only when the welcome printed in this reply, add that `$mob` opens the menu.
+If the preamble output contains a `<mob-home>` line, the welcome is the lines between `<mob-home>` and `</mob-home>`. The user cannot see tool output: write those lines yourself, verbatim, in a fenced code block at the top of your reply text, before any question. Never print the two tag lines. Never strip, trim or summarize the welcome. In text for the human, write commands as plain `mob …`: never the `MOB_BIN` path, `MOB_HOME`, or an `export` line. When a reply completes the request (not when it asks a question), end with "You can": up to three rows from the preamble's `YOU_CAN` list or the welcome's `You can` rows that fit the moment, as words to say next. Only when the welcome printed in this reply, add that `$mob` opens the menu.
 
 Read [the market glossary](references/markets.md) for field meanings instead of reading the source tree.
 

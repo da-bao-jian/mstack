@@ -149,7 +149,7 @@ test("onboard once, open with one consent, restage after expiry, interview once 
 	]);
 	expect(staged.code).toBe(0);
 	expect(staged.out).toContain(
-		"One wallet session: accept legal terms, then bind hl, lighter, then create key “mstack” (cap $2,000) and store it locally.",
+		"One wallet session: accept the MoB terms, then bind hl and lighter, then create key “mstack” for hl and lighter with a cap of $2,000 per leg, and store it locally.",
 	);
 	expect(staged.out).toContain("Next: mob sign c-1");
 	const signed = await invoke(["sign", "c-1"]);

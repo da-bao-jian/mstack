@@ -14,8 +14,10 @@ import type { Runtime as CommandRuntime } from "./commands/runtime.ts";
 import {
 	getConfig,
 	numberFlag,
+	ownerAddress,
 	readConfig,
 	SETUP_FIRST,
+	setConfig,
 	UsageError,
 } from "./config.ts";
 import { cliKeyStore, requireWritableKeyStore } from "./key-store.ts";
@@ -94,7 +96,20 @@ async function importKey(
 	read: SecretReader,
 ) {
 	const config = await readConfig(rt.home);
-	if (!config.owner) throw new UsageError(SETUP_FIRST);
+	// A key made on the MoB page needs only the public address that made it.
+	const supplied =
+		typeof values.owner === "string"
+			? getAddress(ownerAddress(values.owner))
+			: undefined;
+	if (supplied && config.owner && getAddress(config.owner) !== supplied)
+		throw new UsageError(
+			`The saved wallet address is ${getAddress(config.owner)}, not ${supplied}. To switch wallets, run mob config set owner ${supplied} first.`,
+		);
+	const owner = supplied ?? config.owner;
+	if (!owner)
+		throw new UsageError(
+			"Import needs the public wallet address that made this key: add --owner 0x…",
+		);
 	const store = await cliKeyStore(rt);
 	rt.out(`Key store: ${store.backend}`);
 	if (store.backend === "env")
@@ -121,7 +136,7 @@ async function importKey(
 		throw new UsageError("key rejected by the API, not stored");
 	if (checked.status !== "ok" && values.unverified !== true)
 		throw new UsageError(
-			"could not verify; not stored (use --unverified to store anyway)",
+			`could not verify; not stored: the MoB Strategy API at ${new URL(apiBase).host} ${checked.status === "rejected" ? `answered HTTP ${checked.httpStatus}` : `did not answer (${checked.error})`}. Try again in a minute.`,
 		);
 	if (checked.status !== "ok")
 		rt.out("Warning: storing an unverified API key.");
@@ -137,7 +152,8 @@ async function importKey(
 		...(checked.status === "ok" ? { verifiedAt: rt.now() } : {}),
 		apiBase,
 	};
-	await store.put(config.owner, secret, meta);
+	await store.put(owner, secret, meta);
+	if (supplied && !config.owner) await setConfig("owner", supplied, rt.home);
 	const prefix = prefixOf(secret);
 	rt.out(`Key ${prefix} stored in ${store.backend}.`);
 }
@@ -346,6 +362,8 @@ export async function keysCommand(
 		throw new UsageError(
 			"Usage: mob keys import|create|list|revoke|show|delete",
 		);
+	if (values.owner !== undefined && action !== "import")
+		throw new UsageError("--owner works only with mob keys import");
 	if (action === "import") {
 		if (rest.length)
 			throw new UsageError(
@@ -361,12 +379,18 @@ export async function keysCommand(
 		return stage(action, rest, values, rt);
 	if (rest.length) throw new UsageError(`Usage: mob keys ${action}`);
 	const config = await readConfig(rt.home);
+	// Deleting nothing is a success: uninstall runs this for every user.
+	if (action === "delete" && !config.owner) {
+		rt.out("No local key was stored.");
+		return;
+	}
 	if (!config.owner) throw new UsageError(SETUP_FIRST);
 	const store = await cliKeyStore(rt);
 	if (action === "delete") {
-		const removed = await store.delete(config.owner);
 		rt.out(
-			`${removed ? "Local key deleted." : "No local key was stored."} The API key still works until it is revoked.`,
+			(await store.delete(config.owner))
+				? "Local key deleted. The API key still works until it is revoked."
+				: "No local key was stored.",
 		);
 		return;
 	}

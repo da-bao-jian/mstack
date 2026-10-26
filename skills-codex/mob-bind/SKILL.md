@@ -1,6 +1,6 @@
 ---
 name: mob-bind
-description: Repair venue binding or use native onboarding. Use for "repair binding", "bind all venues", "onboard without a browser", "bind hyperliquid", or "connect lighter"; every ceremony needs explicit id approval. (mstack)
+description: Bind or repair MoB venue access for this wallet. Use for "repair my MoB binding", "bind Hyperliquid on MoB", or "onboard to MoB without a browser"; each ceremony needs explicit id approval. (mstack)
 license: MIT
 metadata:
   version: "0.5.1"
@@ -10,7 +10,7 @@ metadata:
 bash ~/.agents/skills/mstack/bin/mob-preamble
 ```
 
-If the preamble output contains a `<mob-home>` line, the welcome is the lines after `<mob-home>` and before `</mob-home>`. Put exactly those lines, verbatim, in a fenced code block at the top of your reply. The two tag lines are markers, not part of the welcome: never print `<mob-home>` or `</mob-home>`. Never strip, trim or summarize the welcome. When a reply completes the request (not when it asks a question), end with "You can": up to three rows from the preamble's `YOU_CAN` list or the welcome's `You can` rows that fit the moment, as words to say next. Only when the welcome printed in this reply, add that `$mob` opens the menu.
+If the preamble output contains a `<mob-home>` line, the welcome is the lines between `<mob-home>` and `</mob-home>`. The user cannot see tool output: write those lines yourself, verbatim, in a fenced code block at the top of your reply text, before any question. Never print the two tag lines. Never strip, trim or summarize the welcome. In text for the human, write commands as plain `mob …`: never the `MOB_BIN` path, `MOB_HOME`, or an `export` line. When a reply completes the request (not when it asks a question), end with "You can": up to three rows from the preamble's `YOU_CAN` list or the welcome's `You can` rows that fit the moment, as words to say next. Only when the welcome printed in this reply, add that `$mob` opens the menu.
 
 Run the preamble first. Use the printed `MOB_BIN` path in place of `mob`; shell-quote every public user value. If `MOB_MISSING` appears, show the install line and stop. Never run keystore commands or request a key, seed, or passphrase.
 
@@ -25,7 +25,7 @@ Read [venue and ceremony details](references/venues.md) before explaining capabi
 - Add `--rebind` only after the user asks to replace a binding and the CLI says rebind is allowed.
 - Do not infer Robinhood Lighter or Lighter mainnet from the word "Lighter". Ask which deployment.
 
-A batch command stages ceremony `c-N`. Show its owner, venues, exact steps, expiry, and next line. In the same reply: Ask in prose: "Reply `sign <id>` to sign <id> in the browser wallet, `sign <id> walletconnect` to sign with WalletConnect, `sign <id> approver` when your approver terminal is running, or `reject <id>`; to sign yourself, run `mob sign <id> --with keystore` in your own terminal." Replace <id> with the staged id. Only a reply that says `sign <id>` authorizes. Run the matching command with a ten-minute tool timeout while the human approves: `sign <id>` means `mob sign <id> --with browser`, `walletconnect` means `--with walletconnect`, and `approver` means `--with approver`.
+A batch command stages ceremony `c-N`. Show its owner, venues, exact steps, expiry, and next line. In the same reply: Ask in prose, offering the way that fits the user's wallet, plus `reject <id>`: browser wallet, "Reply `sign <id>` to sign <id> in the browser wallet"; phone wallet, "Reply `sign <id> walletconnect` to sign with WalletConnect"; keystore wallet, "Reply `sign <id> approver` when your approver terminal is running, or run `mob sign <id> --with keystore` in your own terminal". The wallet comes from this conversation or `mob config get signer`; if neither says, offer every way. Put the staged id in place of <id>. Only a reply that says `sign <id>` authorizes. Run the matching command with a ten-minute tool timeout: `sign <id>` means `mob sign <id> --with browser`, `walletconnect` means `--with walletconnect`, and `approver` means `--with approver`.
 
 ## Explicit-id rule
 

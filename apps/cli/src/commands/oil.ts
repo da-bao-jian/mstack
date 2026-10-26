@@ -5,7 +5,7 @@ import {
 	MOB_VENUES,
 	normalizeFundingRatePerHour,
 } from "@mstack/opportunities";
-import { readConfig } from "../config.ts";
+import { researchConfig } from "../config.ts";
 import {
 	type Runtime,
 	selectedVenues,
@@ -143,7 +143,7 @@ export function oilView(rates: readonly ObservedFundingRate[]) {
 }
 
 export async function oil(rt: Runtime) {
-	await readConfig(rt.home);
+	await researchConfig(rt);
 	const input = await snapshot(selectedVenues(), rt);
 	return withRateCount(
 		{

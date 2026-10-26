@@ -292,17 +292,16 @@ export function withGlossary(
 	data: unknown,
 	options: { compact?: boolean } = {},
 ) {
-	const meanings: Record<string, string> = options.compact
-		? Object.create(null)
-		: Object.assign(Object.create(null), fields);
+	// Only the fields this output carries, so an agent's tool result stays small.
+	const meanings: Record<string, string> = Object.create(null);
 	const seen = new Set<string>();
 	function visit(value: unknown) {
 		if (Array.isArray(value)) {
 			for (const item of value) visit(item);
 		} else if (value && typeof value === "object")
 			for (const [key, item] of Object.entries(value)) {
-				// JSON drops undefined fields; a compact glossary must not list them.
-				if (options.compact && item === undefined) continue;
+				// JSON drops undefined fields; the glossary must not list them.
+				if (item === undefined) continue;
 				if (key === "venue" && typeof item === "string" && item in venues)
 					seen.add(item);
 				meanings[key] =

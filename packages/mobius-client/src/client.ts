@@ -84,34 +84,42 @@ function validateRead(route: keyof ReadRoutes, value: unknown): unknown {
 		const root = Array.isArray(value) ? undefined : record(value);
 		const raw = Array.isArray(value) ? value : root?.venues;
 		if (!Array.isArray(raw)) throw new Error("invalid venues");
-		const venues = raw.map((item) => {
+		const rows = raw.map((item) => {
 			const venue = record(item);
 			required(venue, "venue", "string");
+			return venue;
+		});
+		// MoB adds venues over time; keep the ones this client can trade on.
+		const known = rows.filter((venue) =>
+			["aster", "hl", "lighter", "lighter-mainnet"].includes(
+				String(venue.venue),
+			),
+		);
+		const venues = known.map((venue) => {
 			if (
-				!["aster", "hl", "lighter", "lighter-mainnet"].includes(
-					String(venue.venue),
-				) ||
-				(venue.issue !== undefined &&
-					(typeof venue.issue !== "string" ||
-						!/\S/.test(venue.issue) ||
-						/[\p{Cc}\p{Cf}]/u.test(venue.issue)))
+				venue.issue !== undefined &&
+				(typeof venue.issue !== "string" ||
+					!/\S/.test(venue.issue) ||
+					/[\p{Cc}\p{Cf}]/u.test(venue.issue))
 			)
-				throw new Error("invalid venue readiness");
+				throw new Error(`invalid readiness for ${String(venue.venue)}`);
 			const ready =
 				venue.ready === true ||
 				(venue.ready === undefined && venue.bound === true);
 			if (venue.ready !== undefined && typeof venue.ready !== "boolean")
-				throw new Error("invalid venue readiness");
+				throw new Error(`invalid readiness for ${String(venue.venue)}`);
 			return { ...venue, ready };
 		});
 		if (root?.ready !== undefined && typeof root.ready !== "boolean")
 			throw new Error("invalid readiness");
+		// The server's overall verdict also covers venues dropped above.
+		const dropped = known.length !== rows.length;
 		return {
 			...root,
 			ready:
-				typeof root?.ready === "boolean"
+				typeof root?.ready === "boolean" && !dropped
 					? root.ready
-					: venues.every((venue) => venue.ready),
+					: venues.length > 0 && venues.every((venue) => venue.ready),
 			venues,
 		};
 	}

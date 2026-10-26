@@ -151,13 +151,15 @@ test("doctor hides non-public config and unexpected server bodies, including mal
 					upgrade: async () => ({ state: "not checked" }),
 				},
 			});
-		expect(await invoke()).toBe(1);
+		// No key yet, so MoB's errors are shown but do not fail the check.
+		expect(await invoke()).toBe(0);
+		expect(lines.join("\n")).toContain("HTTP 500");
 		expect(lines.join("\n")).not.toContain(sentinel);
 		expect(lines.join("\n")).not.toContain("ab".repeat(16));
 		await writeFile(join(home, "config.json"), `{"owner": "${sentinel}`);
 		lines.length = 0;
 		expect(await invoke()).toBe(1);
-		expect(lines.join("\n")).toContain("malformed JSON");
+		expect(lines.join("\n")).toContain("config.json is not valid JSON");
 		expect(lines.join("\n")).not.toContain(sentinel);
 	} finally {
 		await rm(home, { recursive: true, force: true });

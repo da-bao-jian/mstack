@@ -6,7 +6,12 @@ import {
 	groupAssets,
 	MOB_VENUES,
 } from "@mstack/opportunities";
-import { getConfig, numberFlag, readConfig, UsageError } from "../config.ts";
+import {
+	getConfig,
+	numberFlag,
+	researchConfig,
+	UsageError,
+} from "../config.ts";
 import {
 	type Runtime,
 	selectedVenues,
@@ -37,7 +42,7 @@ function sizes(value: string | undefined): number[] {
 }
 
 export async function cost(options: CostOptions, rt: Runtime) {
-	const config = await readConfig(rt.home);
+	const config = await researchConfig(rt);
 	const raw = options.base?.trim();
 	if (!raw || !/^[\p{L}\p{N}][\p{L}\p{N}._-]*$/u.test(raw))
 		throw new UsageError(

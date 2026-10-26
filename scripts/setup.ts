@@ -38,20 +38,22 @@ async function isLink(path: string, target: string): Promise<boolean> {
 	);
 }
 
+// The build log shows only when a step fails.
 async function build(root: string, quiet: boolean): Promise<void> {
+	if (!quiet) console.log("Building mob with Bun; this takes about a minute.");
 	for (const args of [
 		["install", "--frozen-lockfile"],
 		["run", "build"],
 	]) {
 		const proc = Bun.spawn(["bun", ...args], {
 			cwd: root,
-			stdout: quiet ? "pipe" : "inherit",
-			stderr: quiet ? "pipe" : "inherit",
+			stdout: "pipe",
+			stderr: "pipe",
 		});
 		const [code, out, err] = await Promise.all([
 			proc.exited,
-			quiet ? new Response(proc.stdout).text() : "",
-			quiet ? new Response(proc.stderr).text() : "",
+			new Response(proc.stdout).text(),
+			new Response(proc.stderr).text(),
 		]);
 		if (code !== 0)
 			throw new Error(`bun ${args.join(" ")} failed (${code})\n${out}${err}`);
@@ -241,10 +243,10 @@ export async function setup(
 		}
 		if (!values.quiet) {
 			out(
-				`Installed ${host}: mob, mob-scan, mob-explain, mob-status, mob-setup, mob-bind, mob-open, mob-manage, mob-close, mob-keys, mob-markets. Binary: ${join(home, host === "codex" ? ".agents" : ".claude", "skills/mstack/bin/mob")}`,
+				`Installed ${host}: mob, mob-scan, mob-explain, mob-status, mob-setup, mob-bind, mob-open, mob-manage, mob-close, mob-keys, mob-markets. Binary: ~/${host === "codex" ? ".agents" : ".claude"}/skills/mstack/bin/mob`,
 			);
 			out(
-				`Optional AGENTS.md integration:\nUse ${host === "claude" ? "/mob" : "$mob"} for funding and MoB questions. The installed mstack skills cover scanning, explanations, status, onboarding, keys, binding repair, opening, managing, and closing. Manual submit and wallet signing require the latest user message to name the Proposal id; keystore signing needs the human's own terminal.`,
+				`Optional: to point your agent at mstack, add this paragraph to ${host === "claude" ? "~/.claude/CLAUDE.md" : "~/.codex/AGENTS.md"}:\nUse ${host === "claude" ? "/mob" : "$mob"} for funding and MoB questions. The installed mstack skills cover scanning, explanations, status, onboarding, keys, binding repair, opening, managing, and closing. Manual submit and wallet signing require the latest user message to name the Proposal id; keystore signing needs the human's own terminal.`,
 			);
 		}
 	}
@@ -267,7 +269,29 @@ export async function setup(
 				if ((await child.exited) !== 0) throw new Error("Home screen failed");
 			})
 		)(join(root, "apps/cli/dist/mob"), home);
-		out("Next commands:\n  mob setup\n  mob scan --size 1000\n  mob doctor");
+		// Research first; trading setup only when the user wants it.
+		const sessions = plans.map(({ host }) =>
+			host === "codex"
+				? "a new Codex session and type $mob"
+				: "a new Claude Code session and type /mob",
+		);
+		const bins = plans.map(({ host }) =>
+			join(home, host === "codex" ? ".agents" : ".claude", "skills/mstack/bin"),
+		);
+		const onPath = (process.env.PATH ?? "").split(":");
+		const missing = bins.find((bin) => !onPath.includes(bin));
+		out(
+			[
+				`Next: start ${sessions.join(", or ")}.`,
+				"In a terminal, research needs no account: mob scan --size 1000",
+				'To trade later, say "set up mstack" in a session, or run mob onboard in a terminal.',
+				...(missing
+					? [
+							`To run mob in your terminal, add this line to your shell profile (~/.zshrc or ~/.bashrc):\n  export PATH="${missing.replace(home, "$HOME")}:$PATH"`,
+						]
+					: []),
+			].join("\n"),
+		);
 	}
 }
 

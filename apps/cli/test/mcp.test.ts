@@ -170,7 +170,12 @@ test("funding_scan defaults stay under 100 KB and includeFull explicitly adds th
 	expect(full.isError).not.toBe(true);
 	const { opportunities, ...summary } = JSON.parse(text(full));
 	expect(opportunities).toHaveLength(329);
-	expect(summary).toEqual(bounded);
+	// The glossary names only the fields an output carries, so the full array
+	// can add a few; everything else matches.
+	const { glossary: fullGlossary, ...fullBody } = summary;
+	const { glossary: boundedGlossary, ...boundedBody } = bounded;
+	expect(fullBody).toEqual(boundedBody);
+	expect(fullGlossary).toMatchObject(boundedGlossary);
 	const fullOut: string[] = [];
 	expect(
 		await run(["scan", "--json-full"], {
@@ -756,4 +761,17 @@ test("proposal tools reject malformed input, missing config, missing ids and exp
 	expect(
 		JSON.parse(text(await closed.call("proposal_list"))).proposals,
 	).toEqual([]);
+});
+
+test("onboarding_status on a fresh install is a normal state, not an error", async () => {
+	const fresh = await mkdtemp(join(tmpdir(), "mob-mcp-fresh-"));
+	cleanup.push(() => rm(fresh, { recursive: true, force: true }));
+	const { call } = await connect({ home: fresh });
+	const result = await call("onboarding_status");
+	expect(result.isError).toBeFalsy();
+	expect(JSON.parse(text(result))).toEqual({
+		owner: null,
+		ready: false,
+		next: "Not set up. Research needs no account. To trade, run mob onboard in a terminal.",
+	});
 });

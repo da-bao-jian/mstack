@@ -158,12 +158,46 @@ test("generator is deterministic and committed output matches both host overlays
 		expect(await readFile(join(root, file), "utf8")).toBe(body);
 		if (!file.endsWith("SKILL.md")) continue;
 		const frontmatter = body.split("---")[1];
-		expect(frontmatter).toMatch(/description: .*\(mstack\)/);
 		if (file.startsWith("skills-codex")) {
+			expect(frontmatter).toMatch(/description: .*\(mstack\)/);
 			expect(frontmatter).not.toContain("allowed-tools:");
 			expect(body).not.toContain("AskUserQuestion");
-		} else
+		} else {
+			expect(frontmatter).not.toMatch(/description: .*\(mstack\)/);
 			expect(frontmatter).toContain("allowed-tools: Bash Read AskUserQuestion");
+		}
+	}
+});
+
+test("every skill trigger names mstack, MoB or a perp-funding term, so no skill fires on generic words", () => {
+	// A plugin skill sits in the model's skill list in every session and every
+	// project: "connect wallet" in a dApp repo or "I don't get it" must not
+	// start MoB.
+	const domain =
+		/\b(mstack|MoB|perps?|funding|basis|delta[- ]neutral|BTC|HYPE|Hyperliquid|WTI|price gaps?)\b/i;
+	const generic: string[] = [];
+	for (const [file, body] of outputs) {
+		if (!file.endsWith("SKILL.md")) continue;
+		const description = /^description: (.+)$/m.exec(body)?.[1] ?? "";
+		const triggers = [...description.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+		expect(triggers.length).toBeGreaterThan(1);
+		for (const trigger of triggers)
+			if (!domain.test(trigger)) generic.push(`${file}: "${trigger}"`);
+	}
+	expect(generic).toEqual([]);
+});
+
+test("the Codex short description is the whole first sentence of the skill description", () => {
+	for (const [file, body] of outputs) {
+		if (!file.endsWith("agents/openai.yaml")) continue;
+		const short = JSON.parse(
+			/short_description: (.+)$/m.exec(body)?.[1] ?? '""',
+		);
+		const skill =
+			outputs.get(file.replace("agents/openai.yaml", "SKILL.md")) ?? "";
+		const description = /^description: (.+)$/m.exec(skill)?.[1] ?? "";
+		expect(short.length).toBeLessThanOrEqual(64);
+		expect(description.startsWith(`${short}. `)).toBe(true);
 	}
 });
 
@@ -399,9 +433,36 @@ test("missing binary stops with an install line before any API call", async () =
 		path,
 	);
 	expect(result.code).toBe(1);
-	expect(result.out).toContain("MOB_MISSING\nInstall:");
+	// The installer pinned to these skills, not a checkout placeholder.
+	expect(result.out).toContain(
+		`MOB_MISSING\nInstall: curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/v${pkg.version}/install.sh | sh`,
+	);
+	expect(result.out).not.toContain("<mstack-checkout>");
 	expect(result.out).not.toContain("API_BASE");
 }, 60_000); // One preamble shell; missing mob prevents all CLI spawns.
+
+test("a binary from another release prints one VERSION_SKEW line", async () => {
+	const { home, bin, path } = await preambleHome();
+	const real = join(bin, "mob-real");
+	await copyFile(join(bin, "mob"), real);
+	await chmod(real, 0o755);
+	await script(
+		join(bin, "mob"),
+		`if [ "$1" = --version ]; then printf '0.0.1\\n'; else exec "${real}" "$@"; fi`,
+	);
+	const result = await command(
+		[
+			"/bin/bash",
+			"-c",
+			preamble(outputs.get("skills/mob-scan/SKILL.md") as string, home),
+		],
+		home,
+		path,
+	);
+	expect(result.out).toContain(
+		`VERSION_SKEW: mob 0.0.1, skills ${pkg.version}; tell the human once to update in their own terminal`,
+	);
+}, 60_000); // One preamble shell.
 
 test("skill wrapper puts the shipped shim on PATH without exported Claude variables", async () => {
 	const { home, bin } = await preambleHome();
@@ -443,6 +504,7 @@ test("upgrade checks fetch once per hour, print changed hashes, and never use a 
       printf '%s\\n' "fatal: could not read Username for 'https://github.com': terminal prompts disabled" 'credential-helper diagnostic must not leak' >&2
       exit 128
     fi ;;
+  'symbolic-ref -q') printf 'refs/heads/main\\n' ;;
   'rev-parse HEAD') printf 'local-hash\\n' ;;
   'rev-parse origin/main') printf 'remote-hash\\n' ;;
   'merge-base --is-ancestor') [ "\${TEST_AHEAD:-0}" = 1 ] && exit 1 || exit 0 ;;
@@ -672,7 +734,7 @@ test("session skills keep keys off argv and require exact ids for manual mutatio
 		}
 		expect(new Set(named)).toEqual(
 			new Set([
-				"mob config set walletconnect_project_id <id>",
+				"mob config set walletconnect_project_id",
 				"mob keystore import",
 				"mob keystore create",
 			]),
@@ -894,8 +956,11 @@ test("preamble config errors are explicit reports and do not block a local skill
 		path,
 	);
 	expect(result.code).toBe(0);
-	expect(result.out).toContain("API_BASE: fail");
-	expect(result.out).toContain("API_REACHABLE: unreachable");
+	// An unreadable config is not an API outage, and research still works.
+	expect(result.out).toContain(
+		"API_BASE: fail (config.json unreadable; research still works with default settings)",
+	);
+	expect(result.out).not.toContain("API_REACHABLE");
 	expect(result.out).toContain("OWNER: fail");
 	expect(result.out).toContain("POLICY: fail");
 	expect(result.out).toContain("SIGNER: fail");
@@ -941,7 +1006,13 @@ test("auto setup selects detected hosts and prints each host integration paragra
 	await mkdir(join(home, ".claude"));
 	await mkdir(join(home, ".codex"));
 	await setup([], options);
-	expect(lines.join("\n")).toContain("Optional AGENTS.md integration:");
+	expect(lines.join("\n")).toContain(
+		"Optional: to point your agent at mstack, add this paragraph to ~/.codex/AGENTS.md:",
+	);
+	expect(lines.join("\n")).toContain("~/.claude/CLAUDE.md");
+	expect(lines.join("\n")).toContain(
+		"Next: start a new Claude Code session and type /mob, or a new Codex session and type $mob.",
+	);
 	expect(lines.join("\n")).toContain("Use $mob for funding");
 	expect(lines.join("\n")).toContain("Use /mob for funding");
 	await expect(setup(["--host", "unknown"], options)).rejects.toThrow(
@@ -954,6 +1025,8 @@ test("POSIX shim builds only when missing and keeps build output off stdout", as
 	await mkdir(join(home, "bin"));
 	await mkdir(join(home, ".claude-plugin"));
 	await mkdir(join(home, "apps/cli/src"), { recursive: true });
+	// Only a real checkout builds; a plugin copy downloads the release.
+	await mkdir(join(home, ".git"));
 	await copyFile(
 		join(root, ".claude-plugin/plugin.json"),
 		join(home, ".claude-plugin/plugin.json"),
@@ -987,7 +1060,7 @@ fi`,
 	await unlink(join(home, "apps/cli/dist/mob"));
 	const missing = await command(args, home, "/usr/bin:/bin");
 	expect(missing.code).toBe(1);
-	expect(missing.err).toContain("Install Bun");
+	expect(missing.err).toContain("Bun >= 1.3");
 	expect(
 		(await command(["/bin/sh", "-n", join(root, "bin/mob")], home)).code,
 	).toBe(0);
@@ -999,7 +1072,7 @@ fi`,
 				"/usr/bin:/bin",
 			)
 		).err,
-	).toContain("requires Bun");
+	).toContain("setup builds mob with Bun 1.3 or newer");
 }, 60_000); // Five shell spawns; the first shim also launches two build stubs.
 
 test.each(["skills", "skills-codex"])(
@@ -1073,13 +1146,13 @@ test("shared splash greets once per owner or home while the router always greets
 		...new Bun.Glob("hello-owner-*-stamp").scanSync(join(home, ".mob")),
 	]).toHaveLength(1);
 	const greeting =
-		"If the preamble output contains a `<mob-home>` line, the welcome is the lines after `<mob-home>` and before `</mob-home>`. Put exactly those lines, verbatim, in a fenced code block at the top of your reply. The two tag lines are markers, not part of the welcome: never print `<mob-home>` or `</mob-home>`. Never strip, trim or summarize the welcome.";
+		"If the preamble output contains a `<mob-home>` line, the welcome is the lines between `<mob-home>` and `</mob-home>`. The user cannot see tool output: write those lines yourself, verbatim, in a fenced code block at the top of your reply text, before any question. Never print the two tag lines. Never strip, trim or summarize the welcome.";
 	for (const [file, body] of skills) {
 		expect(body).toContain(greeting);
 		expect(body.indexOf(greeting)).toBeGreaterThan(body.indexOf("```bash"));
 		expect(body).not.toContain("hello --compact --ascii");
 		if (file.endsWith("/mob-setup/SKILL.md"))
-			expect(body).toContain("home-screen block printed with Ready verbatim");
+			expect(body).toContain("reproduce its home-screen block verbatim");
 	}
 }, 60_000);
 
@@ -1111,7 +1184,13 @@ test("setup runs the fresh binary home after building, then prints three command
 	expect(events[0]).toBe("build");
 	expect(events.at(-2)).toBe("home screen");
 	expect(events.at(-1)).toBe(
-		"Next commands:\n  mob setup\n  mob scan --size 1000\n  mob doctor",
+		[
+			"Next: start a new Codex session and type $mob.",
+			"In a terminal, research needs no account: mob scan --size 1000",
+			'To trade later, say "set up mstack" in a session, or run mob onboard in a terminal.',
+			"To run mob in your terminal, add this line to your shell profile (~/.zshrc or ~/.bashrc):",
+			'  export PATH="$HOME/.agents/skills/mstack/bin:$PATH"',
+		].join("\n"),
 	);
 	events.length = 0;
 	await setup(["--host", "codex", "--uninstall"], options);
@@ -1141,7 +1220,7 @@ test("setup's default home runner invokes the newly built file with the target H
 	expect(await readFile(join(home, "home-invocation"), "utf8")).toBe(
 		`hello\n${join(home, ".mob")}\n`,
 	);
-	expect(lines.at(-1)).toContain("Next commands:");
+	expect(lines.at(-1)).toContain("Next: start a new Codex session");
 }, 60_000); // One fake binary spawn through setup's default home runner.
 
 test("slow reachability is advisory and measured within a fifteen-second budget", async () => {

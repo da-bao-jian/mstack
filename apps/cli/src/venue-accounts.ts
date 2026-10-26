@@ -17,6 +17,11 @@ const names: Record<string, string> = {
 	lighter: "lighter (Lighter on Robinhood Chain)",
 	"lighter-mainnet": "lighter-mainnet (Lighter)",
 };
+const sites: Record<string, string> = {
+	hl: "app.hyperliquid.xyz",
+	lighter: "app.lighter.xyz",
+	"lighter-mainnet": "app.lighter.xyz",
+};
 // Lighter answers HTTP 400 with this code when the wallet has no account.
 const NO_ACCOUNT = 21100;
 
@@ -116,6 +121,24 @@ export async function hlDeposited(
 
 export const HL_DEPOSIT_HINT =
 	"This wallet's Hyperliquid perps account holds no USDC, so MoB reports Hyperliquid as unavailable and cannot create a key for it. Deposit USDC into Hyperliquid perps (app.hyperliquid.xyz, from Arbitrum), then run this again";
+/** How to go on without a venue; a key needs one venue for each leg. */
+export function leaveOutHint(
+	rest: readonly string[],
+	selected: readonly string[],
+	key: boolean,
+): string {
+	if (rest.length >= (key ? 2 : 1))
+		return `, or leave it out with --venues ${rest.join(",")}`;
+	if (!key) return "";
+	const example = [
+		...rest,
+		...["hl", "aster", "lighter-mainnet", "lighter"].filter(
+			(venue) => !selected.includes(venue),
+		),
+	].slice(0, 2);
+	return `, or use another venue where this wallet has an account, for example --venues ${example.join(",")} (a key needs two venues, one for each leg)`;
+}
+
 /** MoB's readiness reason that is not a binding problem. */
 export function unavailableHint(venue: string): string {
 	return venue === "hl"
@@ -135,6 +158,8 @@ export async function venueAccounts(
 	explicitLighter?: number,
 	/** Every venue the user asked for, for the "leave it out" hint. */
 	selected: readonly string[] = venues,
+	/** The plan creates a key, which needs two venues. */
+	key = false,
 ): Promise<Map<Lighter, number>> {
 	const lighters = venues.filter(isLighter);
 	if (explicitLighter !== undefined && lighters.length !== 1)
@@ -152,7 +177,7 @@ export async function venueAccounts(
 	if (missing.length) {
 		const rest = selected.filter((venue) => !missing.includes(venue));
 		throw new UsageError(
-			`No ${missing.map((venue) => names[venue]).join(" or ")} account for ${owner}. Create it on the venue's official website, then run this again${rest.length ? `, or leave it out with --venues ${rest.join(",")}` : ""}. Nothing was staged.`,
+			`No ${missing.map((venue) => names[venue]).join(" or ")} account for ${owner}. Create it at ${[...new Set(missing.map((venue) => sites[venue]))].join(" and ")}, then run this again${leaveOutHint(rest, selected, key)}. Nothing was staged.`,
 		);
 	}
 	const indexes = new Map<Lighter, number>();

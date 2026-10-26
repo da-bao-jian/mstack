@@ -36,6 +36,14 @@ const VERB = /(?<![\w./-])(?:sign|submit)(?![\w./-])/g;
 const VERB_WITH_ID =
 	/(?<![\w./-])(?:sign|submit)(?![\w./-])[^\n;&|]*?(?<![\w-])[pc]-[1-9]\d*(?![\w-])/g;
 const MOB_MENTION = /(?<![A-Za-z])mob(?![A-Za-z])/i;
+// The mstack home `~/.mob` and the site `mob.exchange` are not the command;
+// a copy such as /tmp/.mob still is.
+const mentionsMob = (text: string) =>
+	MOB_MENTION.test(
+		text
+			.replace(/(?:~|\$HOME|\$\{HOME\})\/\.mob(?![\w.-])/g, "")
+			.replace(/mob\.exchange/gi, ""),
+	);
 const PROTECTED_KEYS =
 	"policy|api_base|strategy_api_base|auth_base|app_base|key_store|walletconnect_project_id";
 // Constructs that run text the guard cannot read as a literal command.
@@ -67,32 +75,46 @@ const SHELL_RECEIVERS =
 	/^(?:(?:ba|z|da|k|fi|a|mk|tc|c|y)?sh|busybox|eval|source|\.|exec|env|sudo|doas|su|command|builtin|nohup|time|nice|timeout|xargs|ssh|script|parallel|watch)$/;
 
 /**
- * The command with the body of each data heredoc blanked. A heredoc with a
- * quoted delimiter is literal stdin: the shell expands nothing in it. Fed to
- * a program that is not a shell, such as python3, jq or mob mcp, its body is
- * data, so the checks of shell structure skip it; the sign and submit counts
- * still read it. Any doubt keeps the whole command: a line outside the bodies
- * that the guard cannot read simply, or a body line that ends in a backslash.
+ * The command with the body of each data heredoc blanked, and those bodies.
+ * A heredoc with a quoted delimiter is literal stdin: the shell expands
+ * nothing in it; an unquoted one is literal too when its body has no `$`,
+ * backquote or backslash. Fed to a program that is not a shell, such as
+ * python3, jq or mob mcp, its body is data, so the checks of shell structure
+ * skip it; the sign and submit counts still read it. Any doubt keeps the
+ * whole command: a line outside the bodies that the guard cannot read
+ * simply, or a body line that ends in a backslash.
  */
-function withoutDataHeredocs(command: string): string {
+function dataHeredocs(command: string): { shell: string; bodies: string[] } {
+	const whole = { shell: command, bodies: [] };
 	const lines = command.split("\n");
 	const kept: string[] = [];
+	const bodies: string[] = [];
 	let i = 0;
 	while (i < lines.length) {
 		const line = lines[i++];
 		kept.push(line);
 		const docs = heredocs(line);
-		if (!docs) return command;
-		for (const doc of docs)
+		if (!docs) return whole;
+		for (const doc of docs) {
+			const body: string[] = [];
+			let end: string | undefined;
 			while (i < lines.length) {
-				const body = lines[i++];
-				const done = (doc.dash ? body.replace(/^\t+/, "") : body) === doc.end;
-				if (!done && body.endsWith("\\")) return command;
-				kept.push(doc.data && !done ? "" : body);
-				if (done) break;
+				const next = lines[i++];
+				if ((doc.dash ? next.replace(/^\t+/, "") : next) === doc.end) {
+					end = next;
+					break;
+				}
+				if (next.endsWith("\\")) return whole;
+				body.push(next);
 			}
+			const data =
+				doc.reader && (doc.quoted || !body.some((part) => /[$`\\]/.test(part)));
+			if (data) bodies.push(body.join("\n"));
+			kept.push(...(data ? body.map(() => "") : body));
+			if (end !== undefined) kept.push(end);
+		}
 	}
-	return kept.join("\n");
+	return { shell: kept.join("\n"), bodies };
 }
 
 /**
@@ -101,8 +123,20 @@ function withoutDataHeredocs(command: string): string {
  * string left open, or a backslash at the end.
  */
 function heredocs(line: string) {
-	if (/\$[('{]|`|\\$|(?<![\w./-])alias(?![\w./-])/.test(line)) return null;
-	const found: { end: string; dash: boolean; data: boolean }[] = [];
+	// The preamble's own `$(command -v mob)` hides nothing.
+	if (
+		/\$[('{]|`|\\$|(?<![\w./-])alias(?![\w./-])/.test(
+			line.replace(/\$\((?:command -v|which) mob\)/g, "mob"),
+		)
+	)
+		return null;
+	const found: {
+		end: string;
+		dash: boolean;
+		quoted: boolean;
+		/** The program reads the body as data, not as shell. */
+		reader: boolean;
+	}[] = [];
 	let quote = "";
 	let start = 0;
 	for (let i = 0; i < line.length; i++) {
@@ -134,8 +168,8 @@ function heredocs(line: string) {
 			found.push({
 				end: end ?? match[5],
 				dash: match[1] === "-",
-				data:
-					end !== undefined &&
+				quoted: end !== undefined,
+				reader:
 					/^(?:[\w.~-]*\/)*[A-Za-z_][\w.+-]*$/.test(program) &&
 					!SHELL_RECEIVERS.test(program.split("/").pop() ?? ""),
 			});
@@ -159,6 +193,97 @@ function namesMob(token: string): boolean {
 	);
 }
 
+// Programs whose arguments are search patterns, and filters that only show
+// what reaches them; a sign or submit there is text being searched for.
+const SEARCH = /^(?:grep|egrep|fgrep|rg)$/;
+const DISPLAY = /^(?:head|tail|wc|cut|nl|cat|less|more|sort|uniq)$/;
+
+/**
+ * Sign and submit words that are only search patterns: arguments of a grep
+ * whose output goes, through display filters at most, to the screen. Any
+ * expansion, file redirection, or option that runs or writes something
+ * keeps the words counted.
+ */
+function searchedVerbs(shell: string, unquote: (value: string) => string) {
+	const tokens = shell.match(SHELL_TOKEN) ?? [];
+	const pipelines: string[][][] = [];
+	let pipeline: string[][] = [[]];
+	tokens.forEach((token, at) => {
+		const previous = tokens[at - 1];
+		const next = tokens[at + 1];
+		if (token === "|" && previous !== "|" && next !== "|") pipeline.push([]);
+		// `2>&1`, `>&2` and `&>file` are redirections, not separators.
+		else if (token === "&" && (previous === ">" || next === ">"))
+			pipeline[pipeline.length - 1].push(token);
+		else if (/^[;&|()\n]$/.test(token)) {
+			pipelines.push(pipeline);
+			pipeline = [[]];
+		} else pipeline[pipeline.length - 1].push(token);
+	});
+	pipelines.push(pipeline);
+	// A leading assignment such as PATH=… could change which grep runs.
+	const program = (words: string[]) =>
+		/^[A-Za-z_]\w*\+?=/.test(words[0] ?? "")
+			? ""
+			: (unquote(words[0] ?? "")
+					.split("/")
+					.pop() ?? "");
+	const plain = (words: string[]) =>
+		words.every(
+			(word, at) =>
+				!/[$`]/.test(word.replace(/'[^']*'/g, "")) &&
+				(word !== ">" ||
+					words[at + 1] === "&" ||
+					(words[at + 1] === ">" ? words[at + 2] : words[at + 1]) ===
+						"/dev/null"),
+		);
+	const writes = (words: string[]) =>
+		words.some((word) =>
+			/^-[A-Za-z]*o|^--(?:output|pre)\b/.test(unquote(word)),
+		) ||
+		(program(words) === "uniq" &&
+			words.slice(1).some((word) => !unquote(word).startsWith("-")));
+	let count = 0;
+	for (const commands of pipelines)
+		commands.forEach((words, at) => {
+			const rest = commands.slice(at);
+			if (
+				SEARCH.test(program(words)) &&
+				rest.slice(1).every((later) => DISPLAY.test(program(later))) &&
+				rest.every(plain) &&
+				!rest.slice(1).some(writes) &&
+				!words.some((word) => /^--pre\b/.test(unquote(word)))
+			)
+				for (const word of words)
+					count += [...unquote(word).matchAll(VERB)].length;
+		});
+	return count;
+}
+
+/**
+ * Sign and submit words on comment lines of a data heredoc, such as a
+ * Python `# submit only after…`: a comment runs nothing. A comment that also
+ * names mob or a Proposal id still counts.
+ */
+function commentVerbs(bodies: string[], unquote: (value: string) => string) {
+	let count = 0;
+	for (const body of bodies)
+		for (const line of body.split("\n")) {
+			const flat = unquote(line);
+			if (
+				/^\s*(?:#|\/\/)/.test(line) &&
+				!mentionsMob(flat) &&
+				![...flat.matchAll(VERB_WITH_ID)].length
+			)
+				count += [...flat.matchAll(VERB)].length;
+		}
+	return count;
+}
+
+// This repository's own installer, piped into sh as its documents show.
+const INSTALLER =
+	/(?:^|(?<=[\n;&|]))[ \t]*curl[ \t]+-fsSL[ \t]+https:\/\/raw\.githubusercontent\.com\/da-bao-jian\/mstack\/[\w.-]+\/install\.sh[ \t]*\|[ \t]*sh(?:[ \t]+-s[ \t]+--[ \t]+--version[ \t]+\d+\.\d+\.\d+)?(?=[ \t]*(?:$|\n|;|&&|\|\|))/g;
+
 /** True when a command word runs mob without an expansion the guard cannot read. */
 function mobWord(word: string): boolean {
 	if (/^'[^']*'$/.test(word)) return LITERAL_PATH.test(word.slice(1, -1));
@@ -172,7 +297,12 @@ function mobWord(word: string): boolean {
 // only when mob is in play (named anywhere, through MOB/MOB_BIN, or the CLI's
 // dev entry) or when sign/submit is followed by a Proposal id; then anything
 // outside a plain `mob sign|submit <id>` is denied.
-function commandChecks(text: string, shell: string, invocations: number): void {
+function commandChecks(
+	text: string,
+	shell: string,
+	bodies: string[],
+	invocations: number,
+): void {
 	// What the shell sees after quote removal: `mob 'si'gn` and `s\ign` read as sign.
 	const unquote = (value: string) =>
 		value.replace(/\\(.)/gs, "$1").replace(/["']/g, "");
@@ -196,7 +326,7 @@ function commandChecks(text: string, shell: string, invocations: number): void {
 			"mob setup --policy changes the signing policy; ask the human to run it in their own terminal",
 		);
 	const mentioned = (value: string) =>
-		MOB_MENTION.test(value) ||
+		mentionsMob(value) ||
 		/\$\{?MOB(?:_BIN)?\b/.test(value) ||
 		/apps\/cli\/src\/main\.ts/.test(value);
 	if (mentioned(flat) && /(?<![\w-])--app-base(?![\w-])/.test(flat))
@@ -220,7 +350,7 @@ function commandChecks(text: string, shell: string, invocations: number): void {
 	// because the guard checked policy and consent for its own home and binary.
 	const mutates =
 		VERB.test(unset) ||
-		/(?<![\w./-])(?:config|setup|upgrade|onboard|keys|keystore|grant|approver|reject|restage|risk-ack)(?![\w./-])/.test(
+		/(?<![\w./-])(?:config(?![ \t]+get(?![\w-]))|setup|upgrade|onboard|keys|keystore|grant|approver|reject|restage|risk-ack)(?![\w./-])/.test(
 			unset,
 		);
 	VERB.lastIndex = 0;
@@ -229,7 +359,7 @@ function commandChecks(text: string, shell: string, invocations: number): void {
 			"MSTACK_* and MOB_HOME change which mob runs and where it keeps state; do not set them in a command that runs mob",
 		);
 	for (const match of text.matchAll(
-		/(?<![\w$])MOB(?:_BIN)?\+?=("[^"\n]*"|'[^'\n]*'|[^\s;&|]*)/g,
+		/(?<![\w$])MOB(?:_BIN)?\+?=("[^"\n]*"|'[^'\n]*'|\$\([^()\n]*\)|[^\s;&|]*)/g,
 	)) {
 		const value = match[1].replace(/^(["'])(.*)\1$/, "$2");
 		if (
@@ -243,12 +373,16 @@ function commandChecks(text: string, shell: string, invocations: number): void {
 		SHELL_RUNNERS.some(([pattern]) => pattern.test(shellFlat))
 	)
 		deny("decoded text cannot run as shell commands");
-	const verbs = [...flat.matchAll(VERB)].length;
+	const verbs =
+		[...flat.matchAll(VERB)].length -
+		searchedVerbs(shell, unquote) -
+		commentVerbs(bodies, unquote);
 	const targeted = [...flat.matchAll(VERB_WITH_ID)].length > 0;
 	const inPlay = mentioned(flat);
 	if (!inPlay && !targeted) return;
+	const structure = shellFlat.replace(INSTALLER, "");
 	for (const [pattern, name] of INDIRECTION)
-		if (pattern.test(shellFlat))
+		if (pattern.test(structure))
 			deny(
 				`${name} cannot be combined with mob, sign, or submit; run mob as its own plain command`,
 			);
@@ -286,12 +420,20 @@ function commandChecks(text: string, shell: string, invocations: number): void {
 	for (const match of shell.matchAll(COMMAND_WORD))
 		if (/^["']?[$`]/.test(match[1]) && !mobWord(match[1]))
 			deny(
-				`a command name from a variable (${match[1]}) cannot be combined with mob, sign, or submit`,
+				`a command name from a variable (${match[1]}) cannot run next to mob, sign, or submit; call mob by name, by its path, or as "$MOB_BIN"`,
 			);
-	if (verbs !== invocations)
-		deny(
-			"`sign` or `submit` appears outside a plain `mob sign|submit <id>` command; run it as its own command",
+	if (verbs !== invocations) {
+		const lines = text.split("\n");
+		const at = lines.findIndex(
+			(line) =>
+				new RegExp(VERB.source).test(unquote(line)) &&
+				![...line.matchAll(INVOCATION)].some((match) => mobWord(match[1])),
 		);
+		const word = at < 0 ? undefined : unquote(lines[at]).match(VERB)?.[0];
+		deny(
+			`${word ? `the word \`${word}\`${lines.length > 1 ? ` (line ${at + 1})` : ""}` : "`sign` or `submit`"} is outside a plain \`mob sign|submit <id>\` command. If it is only text, leave it out of commands that run mob; to sign or submit, run that command on its own`,
+		);
+	}
 }
 
 async function check(raw: string, home: string): Promise<void> {
@@ -299,7 +441,8 @@ async function check(raw: string, home: string): Promise<void> {
 	const command: unknown = input?.tool_input?.command;
 	if (typeof command !== "string") deny("missing Bash command in hook input");
 	const text = command.replace(/\\\r?\n/g, "");
-	const shell = withoutDataHeredocs(command).replace(/\\\r?\n/g, "");
+	const data = dataHeredocs(command);
+	const shell = data.shell.replace(/\\\r?\n/g, "");
 	const invocations = [...text.matchAll(INVOCATION)].filter((match) =>
 		mobWord(match[1]),
 	);
@@ -367,7 +510,7 @@ async function check(raw: string, home: string): Promise<void> {
 			deny("use one literal Proposal id in each sign command");
 		return { action, id: ids[0] };
 	});
-	commandChecks(text, shell, requests.length);
+	commandChecks(text, shell, data.bodies, requests.length);
 	if (!requests.length) return;
 	await readFile(join(home, "config.json"), "utf8").catch(() =>
 		deny("missing or unreadable config; cannot verify policy"),
@@ -525,9 +668,15 @@ function latestHumanInput(events: unknown[]): Latest {
 		// Claude Code's own markers: command output, notifications, interrupts.
 		if (/^\s*<[a-z][\w-]*>/.test(text)) continue;
 		latest =
-			marked || text.startsWith("[Request interrupted")
-				? { kind: "none", reason: "the latest message is not marked human" }
-				: { kind: "text", text };
+			event.promptSource === "sdk"
+				? {
+						kind: "none",
+						reason:
+							"this host (claude -p or an SDK) does not mark a message as typed by a person, so no message here can authorize it; the human can run the command in their own terminal",
+					}
+				: marked || text.startsWith("[Request interrupted")
+					? { kind: "none", reason: "the latest message is not marked human" }
+					: { kind: "text", text };
 	}
 	return latest;
 }
@@ -615,7 +764,7 @@ export async function signGuard(
 		return 0;
 	} catch (error) {
 		err(
-			`mob mutation blocked: ${error instanceof Error ? error.message : String(error)}`,
+			`mstack guard blocked this command: ${error instanceof Error ? error.message : String(error)}`,
 		);
 		return 2;
 	}

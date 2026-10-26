@@ -144,7 +144,7 @@ export function ceremonyCard(ceremony: Ceremony, now: number): string {
 		"expired",
 	].includes(ceremony.status);
 	return [
-		`${ceremony.id} · ceremony · ${ceremony.status} · ${expiry(ceremony.expiresAt, now)}`,
+		`${ceremony.id} · ceremony · ${ceremony.status}${signable ? ` · ${expiry(ceremony.expiresAt, now)}` : ""}`,
 		`Owner    ${ceremony.owner}`,
 		`Venues   ${[
 			...ceremony.venues.map((venue) => venue.venue),

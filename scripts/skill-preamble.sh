@@ -1,4 +1,7 @@
 set -uo pipefail
+# The plugin or checkout this preamble belongs to, and the version of its skills.
+MOB_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd "$(pwd -P)/.." && pwd -P)"
+MOB_SKILLS_VERSION="$(sed -n 's/^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"\([0-9.]*\)".*/\1/p' "$MOB_ROOT/.claude-plugin/plugin.json" 2>/dev/null | head -n 1)"
 # Honor a caller-supplied root; skill wrappers also put their own bin on PATH.
 if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
   export PATH="$PATH:$CLAUDE_PLUGIN_ROOT/bin"
@@ -12,11 +15,17 @@ elif [ -x "$HOME/.agents/skills/mstack/bin/mob" ]; then
 elif [ -x "$HOME/.codex/skills/mstack/bin/mob" ]; then
   MOB="$HOME/.codex/skills/mstack/bin/mob"
 else
-  printf '%s\n' 'MOB_MISSING' 'Install: cd <mstack-checkout> && ./setup --host auto (Bun >= 1.3 required)'
+  MOB_REF=main
+  if [ -n "$MOB_SKILLS_VERSION" ]; then MOB_REF="v$MOB_SKILLS_VERSION"; fi
+  printf '%s\n' 'MOB_MISSING' "Install: curl -fsSL https://raw.githubusercontent.com/da-bao-jian/mstack/$MOB_REF/install.sh | sh"
   exit 1
 fi
 printf 'MOB_BIN: %s\n' "$MOB"
 if MOB_VERSION="$("$MOB" --version)"; then printf 'MOB_VERSION: %s\n' "$MOB_VERSION"; else printf 'MOB_VERSION: fail\n'; fi
+# Skills from one release driving a binary from another fail in odd ways.
+if [ -n "$MOB_SKILLS_VERSION" ] && [ -n "${MOB_VERSION:-}" ] && [ "$MOB_VERSION" != fail ] && [ "$MOB_VERSION" != "$MOB_SKILLS_VERSION" ]; then
+  printf 'VERSION_SKEW: mob %s, skills %s; tell the human once to update in their own terminal: mob upgrade, then paste the install prompt again\n' "$MOB_VERSION" "$MOB_SKILLS_VERSION"
+fi
 if MOB_OWNER="$("$MOB" config get owner)"; then
   if [ -n "$MOB_OWNER" ]; then printf 'OWNER: set\n'; else printf 'OWNER: unset\n'; fi
 else
@@ -36,9 +45,11 @@ else
     printf 'YOU_CAN: fail\n'
   fi
 fi
-if API_BASE="$("$MOB" config get api_base)"; then printf 'API_BASE: %s\n' "$API_BASE"; else API_BASE=''; printf 'API_BASE: fail\n'; fi
+if API_BASE="$("$MOB" config get api_base 2>/dev/null)"; then printf 'API_BASE: %s\n' "$API_BASE"; else API_BASE=''; printf 'API_BASE: fail (config.json unreadable; research still works with default settings)\n'; fi
 # Advisory only: this result never gates a venue read or changes scan filters.
-if [ -n "$API_BASE" ] && MOB_HTTP="$(curl -m 15 -s -o /dev/null -w '%{http_code} %{time_total}' -H "X-Mobius-Client: mstack/$MOB_VERSION" -A "mstack/$MOB_VERSION" "$API_BASE/api/client-ip")"; then
+if [ -z "$API_BASE" ]; then
+  :
+elif MOB_HTTP="$(curl -m 15 -s -o /dev/null -w '%{http_code} %{time_total}' -H "X-Mobius-Client: mstack/$MOB_VERSION" -A "mstack/$MOB_VERSION" "$API_BASE/api/client-ip")"; then
   read -r MOB_STATUS MOB_SECONDS <<< "$MOB_HTTP"
   case "$MOB_STATUS" in
     2[0-9][0-9]) awk -v seconds="${MOB_SECONDS:-0}" 'BEGIN { if (seconds >= 3) { printf "API_REACHABLE: slow · %.1f s\n", seconds; print "API slow; venue reads are unaffected" } else if (seconds >= 1) printf "API_REACHABLE: ok · %.1f s\n", seconds; else printf "API_REACHABLE: ok · %.0f ms\n", seconds * 1000 }' ;;
@@ -78,7 +89,7 @@ mob_update_check() {
   case "$MOB_LAST" in ''|*[!0-9]*) return 1 ;; esac
   if [ "$((MOB_NOW - MOB_LAST))" -ge 3600 ]; then
     (umask 077; printf '%s pending\n' "$MOB_NOW" > "$MOB_STAMP") || return 1
-    if MOB_FETCH_ERROR="$(GIT_TERMINAL_PROMPT=0 git -C "$MOB_REPO" fetch -q origin 2>&1)"; then
+    if MOB_FETCH_ERROR="$(GIT_TERMINAL_PROMPT=0 git -C "$MOB_REPO" fetch -q --tags origin 2>&1)"; then
       printf '%s ok\n' "$MOB_NOW" > "$MOB_STAMP" || return 1
       MOB_CHECK=ok
     else
@@ -97,6 +108,15 @@ mob_update_check() {
   if [ "$MOB_CHECK" != ok ]; then
     MOB_UPDATE_REASON="${MOB_CACHED_REASON:-previous update check failed or did not complete; retry after the hourly interval}"
     return 1
+  fi
+  # A release-tag checkout (the Codex install) compares release tags, so a
+  # documentation commit on main is not an upgrade.
+  if ! git -C "$MOB_REPO" symbolic-ref -q HEAD >/dev/null 2>&1; then
+    MOB_TAG="$(git -C "$MOB_REPO" describe --tags --exact-match HEAD 2>/dev/null)" || return 0
+    MOB_UPDATE_REASON='cannot read release tags'
+    MOB_LATEST="$(git -C "$MOB_REPO" tag --list 'v*' --sort=-v:refname | LC_ALL=C grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)" || return 1
+    if [ -n "$MOB_LATEST" ] && [ "$MOB_LATEST" != "$MOB_TAG" ]; then printf 'UPGRADE_AVAILABLE %s %s\n' "$MOB_TAG" "$MOB_LATEST"; fi
+    return 0
   fi
   MOB_UPDATE_REASON='cannot resolve HEAD or origin/main'
   MOB_LOCAL="$(git -C "$MOB_REPO" rev-parse HEAD)" || return 1

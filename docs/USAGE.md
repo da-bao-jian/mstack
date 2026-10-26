@@ -102,7 +102,7 @@ A staging call returns `{ proposal, message }`. The view contains the exact mess
 
 ## Onboard and manage keys
 
-Run `mob onboard`. It always prints the MoB API page URL and then reads legal acceptance, venue readiness, and local key state. An agent shell prints once. A terminal watches every five seconds by default. The page flow connects the wallet, accepts legal terms, binds venues, and creates one key.
+Run `mob onboard`. In a terminal with no saved address, it first asks for your public wallet address. It always prints the MoB API page URL and then reads legal acceptance, venue readiness, and local key state; without `--venues`, it checks the venues of the stored key, or every venue before a key exists. An agent shell prints once. A terminal watches every five seconds by default. The page flow connects the wallet, accepts legal terms, binds venues, and creates one key.
 
 Create the key with only the required venues and a modest USD cap per leg. The key can open, cancel, close, and resize positions inside those limits. It cannot withdraw, bind venues, approve fees, accept legal terms, or create another key. It has no expiry.
 
@@ -130,7 +130,7 @@ On Linux, run `secret-tool clear service 'mstack.mobius-api:<id>'`. Neither comm
 
 ## Native onboarding and binding repair
 
-The default browser path does not need local wallet signing. Use `mob bind --all` for batch repair or `mob onboard --native` for terminals without the API page. These stage a durable `c-N` ceremony. The latest user message must name that exact ceremony before browser or WalletConnect signing. A keystore ceremony belongs in the human's own terminal.
+In a chat, setup uses `mob onboard --native`: one wallet session in the browser wallet, over WalletConnect, or with the keystore in your own terminal. In a terminal, `mob onboard` opens the MoB API page instead, and `mob onboard --native` runs the same one-session flow as chat. A native run saves the wallet address only once it stages the ceremony. Use `mob bind --all` for batch repair, and `mob reject c-N` to end a staged ceremony. These stage a durable `c-N` ceremony. The latest user message must name that exact ceremony before browser or WalletConnect signing. A keystore ceremony belongs in the human's own terminal.
 
 The older `mob setup` command configures a manual signer and can stage legal acceptance. `mob bind <venue>` remains the single-venue repair path.
 

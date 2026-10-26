@@ -153,7 +153,7 @@ export function buildMenu(input: MenuInput): Menu {
 		say: "set up mstack",
 		note,
 		run: "mob onboard",
-		about: "one wallet session, about two minutes",
+		about: "one wallet session, about five minutes",
 	});
 	let state: MenuState;
 	let account: MenuRow[];
@@ -191,11 +191,13 @@ export function buildMenu(input: MenuInput): Menu {
 		];
 	} else if (input.owner) {
 		state = "setting-up";
-		accountNote = "finish the one-time setup to trade through MoB";
+		accountNote =
+			"finish the one-time setup to trade through MoB; learn how funding and keys work";
 		account = [setUp("to finish setup"), ...learn];
 	} else {
 		state = "fresh";
-		accountNote = "one-time setup to trade through MoB";
+		accountNote =
+			"one-time setup to trade through MoB; learn how funding and keys work";
 		account = [setUp("to trade"), ...learn];
 	}
 	const first = input.awaiting[0];

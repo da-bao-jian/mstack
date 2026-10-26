@@ -75,6 +75,25 @@ export async function installLatestRelease(
 	).trim();
 	if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version))
 		throw new Error("Invalid release version");
+	const cache = join(home, ".mob/bin");
+	const target = join(cache, `mob-${version}`);
+	const localBin = join(home, ".local/bin");
+	const link = join(localBin, "mob");
+	// Already installed and linked: no second download of the same release.
+	try {
+		if (
+			resolve(localBin, await readlink(link)) === target &&
+			(await lstat(target)).isFile()
+		)
+			return `mob ${version} is the latest release; nothing to do.`;
+	} catch (error) {
+		if (
+			!["ENOENT", "EINVAL"].includes(
+				(error as NodeJS.ErrnoException).code ?? "",
+			)
+		)
+			throw error;
+	}
 	const sums = await (await get(`${base}/v${version}/SHA256SUMS`)).text();
 	const matches = sums
 		.split(/\r?\n/)
@@ -91,10 +110,6 @@ export async function installLatestRelease(
 	if (digest !== matches[0]?.[1].toLowerCase())
 		throw new Error(`SHA-256 mismatch for ${asset}; nothing installed`);
 
-	const cache = join(home, ".mob/bin");
-	const target = join(cache, `mob-${version}`);
-	const localBin = join(home, ".local/bin");
-	const link = join(localBin, "mob");
 	// Refuse to replace an unrelated local command.
 	try {
 		const info = await lstat(link);

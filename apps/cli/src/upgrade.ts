@@ -60,6 +60,34 @@ export async function upgrade(
 	const remotes = await run(["git", "remote"]);
 	if (!remotes.out.split(/\r?\n/).includes("origin"))
 		return "no remote configured";
+	// A clone of a release tag (the Codex install) has no branch to pull:
+	// it moves to the newest release tag instead.
+	if ((await exec(["git", "symbolic-ref", "-q", "HEAD"], root)).code !== 0) {
+		await run(["git", "fetch", "--quiet", "--tags", "origin"]);
+		const latest = (
+			await run(["git", "tag", "--list", "v*", "--sort=-v:refname"])
+		).out
+			.split(/\r?\n/)
+			.find((tag) => /^v\d+\.\d+\.\d+$/.test(tag));
+		if (!latest) return "no release tag found";
+		const current = await exec(
+			["git", "describe", "--tags", "--exact-match", "HEAD"],
+			root,
+		);
+		if (current.code === 0 && current.out.trim() === latest)
+			return `mstack ${latest} is the latest release; nothing to do.`;
+		await run([
+			"git",
+			"-c",
+			"advice.detachedHead=false",
+			"checkout",
+			"--quiet",
+			latest,
+		]);
+		await run(["bun", "install", "--frozen-lockfile"]);
+		await run(["bun", "run", "build"]);
+		return `Updated mstack to ${latest} and rebuilt the binary. If the release adds skills, run ./setup --host codex again.`;
+	}
 	await run(["git", "pull", "--ff-only"]);
 	await run(["bun", "install", "--frozen-lockfile"]);
 	await run(["bun", "run", "build"]);

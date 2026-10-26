@@ -64,6 +64,8 @@ export interface HomeData {
 	upgrade: Reading<{ available: string | null }>;
 	diagnostics: {
 		bun: boolean;
+		/** A git checkout builds with Bun; a release binary never needs it. */
+		checkout: boolean;
 		signer: { usable: boolean; detail: string };
 		hlDeposit: Reading<boolean>;
 		lighterAccounts: Record<"lighter" | "lighter-mainnet", Reading<boolean>>;
@@ -73,6 +75,7 @@ export interface HomeData {
 export interface HomeServices {
 	networkBudgetMs?: number;
 	which?: (command: string) => string | null;
+	checkout?: boolean;
 	platform?: NodeJS.Platform;
 	upgrade?: () => Promise<Reading<{ available: string | null }>>;
 	marketSnapshot?: (budgetMs: number) => Promise<Snapshot>;
@@ -104,6 +107,22 @@ async function cachedUpgrade(): Promise<Reading<{ available: string | null }>> {
 		} finally {
 			clearTimeout(timer);
 		}
+	}
+	// A release-tag checkout (the Codex install) compares the tags that the
+	// preamble fetched, so a documentation commit on main is not an upgrade.
+	if ((await git(["symbolic-ref", "-q", "HEAD"])).code) {
+		const [tag, tags] = await Promise.all([
+			git(["describe", "--tags", "--exact-match", "HEAD"]),
+			git(["tag", "--list", "v*", "--sort=-v:refname"]),
+		]);
+		if (tag.code || tags.code) return unchecked();
+		const latest = tags.output
+			.split("\n")
+			.find((name) => /^v\d+\.\d+\.\d+$/.test(name));
+		return {
+			state: "ok",
+			value: { available: latest && latest !== tag.output ? latest : null },
+		};
 	}
 	const [head, remote] = await Promise.all([
 		git(["rev-parse", "HEAD"]),
@@ -208,6 +227,9 @@ export async function collectHome(
 		upgrade: unchecked(),
 		diagnostics: {
 			bun: Boolean((services.which ?? Bun.which)("bun")),
+			checkout:
+				services.checkout ??
+				(await installationRoot().catch(() => null)) !== null,
 			signer: { usable: false, detail: "not checked" },
 			hlDeposit: unchecked(),
 			lighterAccounts: { lighter: unchecked(), "lighter-mainnet": unchecked() },
@@ -473,15 +495,25 @@ export async function collectHome(
 								venue === "lighter"
 									? "https://api.rh.lighter.xyz"
 									: "https://mainnet.zklighter.elliot.ai";
-							const result = object(
-								await request(
+							let answer: unknown;
+							try {
+								answer = await request(
 									rt.fetch,
 									`${rest}/api/v1/account?by=l1_address&value=${owner}`,
 									"GET",
 									undefined,
 									signal,
-								),
-							);
+								);
+							} catch (error) {
+								// Lighter answers HTTP 400, code 21100, for a wallet with no account.
+								if (
+									error instanceof ApiError &&
+									(error.data as { code?: unknown } | undefined)?.code === 21100
+								)
+									return false;
+								throw error;
+							}
+							const result = object(answer);
 							if (result.code !== 200 || !Array.isArray(result.accounts))
 								throw new Error("Malformed Lighter account response");
 							for (const account of result.accounts) {

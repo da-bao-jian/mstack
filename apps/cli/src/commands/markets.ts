@@ -12,7 +12,13 @@ import {
 	type VenueKind,
 	venueKey,
 } from "@mstack/opportunities";
-import { getConfig, numberFlag, readConfig, UsageError } from "../config.ts";
+import {
+	getConfig,
+	numberFlag,
+	type readConfig,
+	researchConfig,
+	UsageError,
+} from "../config.ts";
 import {
 	snapshot as fetchInput,
 	type Runtime,
@@ -61,7 +67,7 @@ interface VenueRow {
 }
 
 export async function venues(options: { kind?: string }, rt: Runtime) {
-	const config = await readConfig(rt.home);
+	const config = await researchConfig(rt);
 	if (
 		options.kind !== undefined &&
 		options.kind !== "dex" &&
@@ -190,7 +196,7 @@ export function category(value: string | undefined): RwaCategory | undefined {
 }
 
 export async function markets(options: MarketsOptions, rt: Runtime) {
-	const config = await readConfig(rt.home);
+	const config = await researchConfig(rt);
 	if (options.rwa && options.crypto)
 		throw new UsageError("Choose --rwa or --crypto, not both");
 	const wanted = category(options.category);
@@ -379,7 +385,7 @@ function marketRow(
 }
 
 export async function market(options: { base?: string }, rt: Runtime) {
-	await readConfig(rt.home);
+	await researchConfig(rt);
 	const raw = options.base?.trim();
 	if (!raw || !/^[\p{L}\p{N}][\p{L}\p{N}._-]*$/u.test(raw))
 		throw new UsageError("Usage: mob market <BASE>");

@@ -7,6 +7,32 @@ not a claim that public release tags or artifacts were published.
 <!-- release-start -->
 ## [Unreleased]
 
+### Fixed
+
+- MoB's binding readiness now lists a fifth venue (QFEX). mstack drops venues it cannot trade instead of rejecting the whole answer, so `mob onboard`, `mob keys create`, MCP `onboarding_status` and the doctor's venue verdict work again. Native setup now names a failed readiness read instead of hiding it.
+- `mob onboard` reaches `Ready` after setup: without `--venues` it checks the stored key's venues, not all four, and it prints the paste-the-key lines only while no key is stored.
+- `mob onboard` in a terminal with no saved address asks for it, instead of stopping at "Owner is required". `mob onboard --native` saves the address only once it stages the setup, so a stop leaves no trace.
+- Interactive `/mstack:mob` shows the welcome: the picker's preview pane holds it, and the question carries the one-line intro. Claude Code collapses tool output and showed no text before the picker.
+- The Bash guard no longer blocks read-only commands that only search for or comment on "sign" or "submit": `mob --help | grep -i sign`, `grep -rn "mob submit" docs`, a Python comment in a heredoc, `MOB=$(command -v mob)`, `mob config get`, paths under `~/.mob`, and this repository's installer piped into `sh`. Real sign and submit commands keep every check. Its messages start "mstack guard blocked this command" and name the word and line.
+- The plugin's Bash hook never downloads or builds. With the binary missing, it uses an older verified binary, or blocks only commands that involve mob, with the install line for the human; before, a missing binary offline, or a plugin ahead of its release, blocked every Bash command.
+- A fresh `mob doctor` passes when the MoB API cannot be reached, shows no Bun line for a release binary, folds the trading lines into one, and shows the fail mark only for a check that fails. An unfinished setup no longer fails it. Lighter's "no account" answer reads as such.
+- `mob keys delete` with no key says "No local key was stored." and succeeds, so uninstall no longer starts with an error.
+- `mob upgrade` on a Codex tag checkout moves to the newest release tag instead of failing in `git pull`; on the latest release binary it downloads nothing.
+- Research commands run with default settings and a warning when `config.json` is not valid JSON. When no venue answers, they say so instead of printing empty tables.
+- The status skill asks you to type your wallet address, instead of naming a picker option that Claude Code now labels "Type something."
+
+### Changed
+
+- The paste prompt adds `claude plugin marketplace update` and `claude plugin update`, so pasting it again updates an older install, and Verify checks that the plugin and `mob --version` match. The guide no longer runs `export PATH`, ends on how to use mstack instead of a CLAUDE.md question, and its uninstall removes the marketplace.
+- The setup card names every venue the key covers, the time left, and links to the terms; the signing page links the Terms of Service and Privacy Policy. A venue hint never suggests a one-venue key, and "No account" names the venue's site.
+- The setup skill says what setup needs first, offers the sign choice that fits the chosen wallet, suggests a 1,000 USD cap, and links Reown for a WalletConnect project id. Commands for the human are plain `mob …`.
+- `mob reject c-N` ends a staged setup; `mob preview c-N` shows it. `mob config unset <key>` restores a default. `mob keys import --owner 0x…` imports a key made on the MoB page.
+- `mob --help` groups commands by research, trading, keys and maintenance, hides internal commands, takes `mob help <command>`, and suggests the nearest command for a typo.
+- Codex `./setup` builds quietly, ends with research-first next steps and a PATH line, and explains how to get Bun. `install.sh` names the shell profile file, prints the PATH hint last, and gives a next step for each failure.
+- The preamble flags a binary from another release (`VERSION_SKEW`), prints a pinned install line when `mob` is missing, compares release tags for a tag checkout, and no longer reports an unreadable config as an API outage.
+- JSON glossaries list only the fields the output carries, so a default scan result is smaller.
+- Every skill trigger phrase names mstack, MoB, or a perp-funding word, and a test enforces it. Requests in other projects such as "connect wallet", "what can you do?", "set me up" or "close task 12" no longer start an mstack skill. The 11 descriptions are also shorter (2,343 characters, was 2,448). A Codex short description is the whole first sentence, never cut mid-word.
+
 ## [0.5.1] - 2026-10-23
 
 ### Changed

@@ -4,7 +4,7 @@ import {
 	HISTORY_VENUES,
 } from "@mstack/funding";
 import { classifyMarket } from "@mstack/opportunities";
-import { numberFlag, readConfig, UsageError } from "../config.ts";
+import { numberFlag, researchConfig, UsageError } from "../config.ts";
 import {
 	base,
 	snapshot as fetchInput,
@@ -20,7 +20,7 @@ export interface HistoryOptions {
 }
 
 export async function history(options: HistoryOptions, rt: Runtime) {
-	await readConfig(rt.home);
+	await researchConfig(rt);
 	const venues = selectedVenues(options.venues);
 	const market = base(options.base);
 	if (!market) throw new UsageError("Usage: mob history <BASE> [--days N]");

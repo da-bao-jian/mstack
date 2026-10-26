@@ -31,6 +31,7 @@ export interface Runtime {
 	now: () => number;
 	home: string;
 	signal?: AbortSignal;
+	err?: (text: string) => void;
 }
 
 const adapters = [
@@ -109,6 +110,17 @@ export function withRateCount<T extends { failed: Snapshot["failed"] }>(
 	return Object.defineProperty(data, rateCount, { value: rates }) as T & {
 		readonly [rateCount]: number;
 	};
+}
+
+/** True when a read returned no rate at all and some venue reported a failure. */
+export function noVenueAnswered(data: unknown): boolean {
+	if (!data || typeof data !== "object") return false;
+	const read = data as { failed?: unknown; [rateCount]?: number };
+	return (
+		read[rateCount] === 0 &&
+		Array.isArray(read.failed) &&
+		read.failed.length > 0
+	);
 }
 
 export function exitFor(

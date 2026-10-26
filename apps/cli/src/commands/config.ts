@@ -5,12 +5,14 @@ import {
 	readConfig,
 	setConfig,
 	UsageError,
+	unsetConfig,
 } from "../config.ts";
 import type { Runtime } from "./runtime.ts";
 
 type ConfigOptions =
 	| { action: "get"; key: string }
-	| { action: "set"; key: string; value: string };
+	| { action: "set"; key: string; value: string }
+	| { action: "unset"; key: string };
 
 // Settings that let the agent submit, or move requests and keys elsewhere.
 // Only the human's own terminal may change them; an agent shell has no TTY.
@@ -34,21 +36,24 @@ export async function config(
 ): Promise<string | number> {
 	if (options.action === "get")
 		return getConfig(await readConfig(rt.home), options.key);
-	if (options.action === "set") {
-		if (HUMAN_ONLY.includes(options.key)) {
-			const value = parsedValue(options.key, options.value);
-			if (!rt.stdinIsTTY || !rt.stdoutIsTTY)
-				throw new UsageError(
-					`mob config set ${options.key} needs your own terminal; run it there`,
-				);
-			// The confirmation comes from the controlling terminal, not stdin.
-			const answer = await (rt.readSecret ?? readSecretFromTty)(
-				`Type yes and press Enter to set ${options.key} to ${value} (input is hidden): `,
+	if (HUMAN_ONLY.includes(options.key)) {
+		const change =
+			options.action === "set"
+				? `set ${options.key} to ${parsedValue(options.key, options.value)}`
+				: `unset ${options.key}`;
+		if (!rt.stdinIsTTY || !rt.stdoutIsTTY)
+			throw new UsageError(
+				`mob config ${options.action} ${options.key} needs your own terminal; run it there`,
 			);
-			if (answer.trim().toLowerCase() !== "yes")
-				throw new UsageError(`${options.key} unchanged`);
-		}
-		return setConfig(options.key, options.value, rt.home);
+		// The confirmation comes from the controlling terminal, not stdin.
+		const answer = await (rt.readSecret ?? readSecretFromTty)(
+			`Type yes and press Enter to ${change} (input is hidden): `,
+		);
+		if (answer.trim().toLowerCase() !== "yes")
+			throw new UsageError(`${options.key} unchanged`);
 	}
-	throw new UsageError("Usage: mob config get <key> | set <key> <value>");
+	if (options.action === "set")
+		return setConfig(options.key, options.value, rt.home);
+	await unsetConfig(options.key, rt.home);
+	return "";
 }
